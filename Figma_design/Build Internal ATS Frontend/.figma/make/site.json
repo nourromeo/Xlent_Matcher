@@ -1,0 +1,10 @@
+{
+  "description": "Streamlines recruitment by extracting and analyzing CVs with AI to rank candidates against job requirements using explainable scores and blind evaluation.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
