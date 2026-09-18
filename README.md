@@ -16,5 +16,3 @@ Production build:
 ```powershell
 npm run build
 ```
-
-The original Figma Make export remains in `Figma_design/` as a temporary reference and backup.

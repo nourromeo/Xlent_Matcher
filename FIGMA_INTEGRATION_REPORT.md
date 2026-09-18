@@ -1,6 +1,6 @@
 # Figma integration report
 
-Date: 2026-09-18. Scope: the entire current working tree, including hidden/ignored project files, source imports, configuration, lockfile metadata, and Git status. Git internals are not application source. This is a static analysis; no dependencies were installed and no build, application, deployment, or backend scripts were run.
+Date: 2026-09-18. Scope: the entire current working tree, including hidden/ignored project files, source imports, configuration, lockfile metadata, and Git status. Git internals are not application source. This was a static analysis; the Figma export was subsequently copied to the root frontend and the original `Figma_design/` folder was deleted with explicit approval. The root frontend remains backend-free.
 
 ## Current project structure
 
@@ -106,4 +106,4 @@ No whole source file is demonstrably unused. Small unused items include `ArrowUp
 5. Consolidate mock data, fix routing/state/style defects, and verify build, explicit TypeScript checking, all routes, languages, themes, and key interactions. Keep backend integration out of this stage.
 6. Present the frontend changes for review before any separately approved backend work.
 
-**Status:** analysis only. This report is the sole intended addition. No existing files were modified, moved, overwritten, or deleted; no backend was connected. Awaiting approval before integration.
+**Status:** superseded by the root frontend integration. The original Figma export has been deleted after the root copy was validated. No backend was connected.
