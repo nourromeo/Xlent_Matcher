@@ -35,6 +35,9 @@ export default function ConsultantProfile() {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"profile" | "original">("profile");
   const [editMode, setEditMode] = useState(false);
+  const [profile, setProfile] = useState(PROFILE);
+  const [draft, setDraft] = useState(PROFILE);
+  const [reviewStatus, setReviewStatus] = useState<"Needs Review" | "Verified">("Needs Review");
 
   return (
     <div className="flex flex-col h-full">
@@ -43,22 +46,23 @@ export default function ConsultantProfile() {
         <Link to="/talent" className="text-3 hover:text-base transition-colors mt-0.5"><ChevronLeft size={16} /></Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-indigo-sub flex items-center justify-center text-sm font-semibold text-indigo">{PROFILE.initials}</div>
+            <div className="w-9 h-9 rounded-full bg-indigo-sub flex items-center justify-center text-sm font-semibold text-indigo">{profile.initials}</div>
             <div>
               <h1 className="text-sm font-semibold text-base">
-                {PROFILE.name} — {t("cand_blind")}
+                {profile.name} — {t("cand_blind")}
               </h1>
-              <p className="text-xs text-muted">{PROFILE.role} · {PROFILE.office} · {PROFILE.totalYearsExperience} {t("cand_exp")}</p>
+              <p className="text-xs text-muted">{profile.role} · {profile.office} · {profile.totalYearsExperience} {t("cand_exp")}</p>
             </div>
-            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--ats-green)", background: "rgba(34,197,94,0.10)" }}>{PROFILE.availability === "Immediate" ? t("immediate") : PROFILE.availability}</span>
+            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--ats-green)", background: "rgba(34,197,94,0.10)" }}>{profile.availability === "Immediate" ? t("immediate") : profile.availability}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: reviewStatus === "Verified" ? "var(--ats-green)" : "var(--ats-amber, #f59e0b)", background: reviewStatus === "Verified" ? "rgba(34,197,94,0.10)" : "rgba(245,158,11,0.10)" }}>{reviewStatus}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setEditMode((e) => !e)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors"
+          <button onClick={() => { setDraft(profile); setEditMode(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors"
             style={editMode ? { border: "1px solid var(--ats-indigo)", color: "var(--ats-indigo)", background: "var(--ats-indigo-sub)" } : { border: "1px solid var(--ats-border)", color: "var(--ats-text-2)" }}>
-            <Edit3 size={12} /> {editMode ? t("cand_editing") : t("cand_edit")}
+            <Edit3 size={12} /> {t("cand_edit")}
           </button>
-          {editMode && (
+          {false && (
             <button className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded hover:opacity-80 transition-opacity" style={{ background: "var(--ats-indigo)" }}>
               <Save size={12} /> {t("cand_save")} <RefreshCw size={10} className="ml-0.5 opacity-70" />
             </button>
@@ -83,6 +87,11 @@ export default function ConsultantProfile() {
         {activeTab === "profile" ? (
           <div className="p-6 grid grid-cols-3 gap-5">
             <div className="col-span-2 space-y-4">
+              <div className="flex items-center justify-between">
+                <div><p className="text-xs font-semibold text-base">Consultant CV Extraction</p><p className="text-[11px] text-muted mt-1">Structured information extracted from the consultant CV for XLENT review.</p></div>
+                <span className="text-[10px] text-3">Human review required</span>
+              </div>
+
               {/* Skills */}
               <div className="bg-surface border border-base rounded-lg overflow-hidden" style={{ boxShadow: "var(--ats-shadow)" }}>
                 <div className="px-4 py-3 border-b border-base flex items-center gap-2">
@@ -90,8 +99,8 @@ export default function ConsultantProfile() {
                   <span className="text-xs font-medium text-base">{t("cand_skills")}</span>
                 </div>
                 <div>
-                  {PROFILE.skills.map((s, i) => (
-                    <div key={s.name} className="px-4 py-3" style={{ borderBottom: i < PROFILE.skills.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>
+                  {profile.skills.map((s, i) => (
+                    <div key={s.name} className="px-4 py-3" style={{ borderBottom: i < profile.skills.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>
                       <div className="flex items-start gap-3">
                         <div className="flex-none w-28">
                           <p className="text-xs font-medium text-base font-mono">{s.name}</p>
@@ -114,8 +123,8 @@ export default function ConsultantProfile() {
                   <Briefcase size={12} className="text-3" />
                   <span className="text-xs font-medium text-base">{t("cand_experience")}</span>
                 </div>
-                {PROFILE.experience.map((e, i) => (
-                  <div key={i} className="px-4 py-3 space-y-2" style={{ borderBottom: i < PROFILE.experience.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>
+                {profile.experience.map((e, i) => (
+                  <div key={i} className="px-4 py-3 space-y-2" style={{ borderBottom: i < profile.experience.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-xs font-medium text-base">{e.role}</p>
@@ -144,29 +153,34 @@ export default function ConsultantProfile() {
             <div className="space-y-4">
               <div className="bg-surface border border-base rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--ats-shadow)" }}>
                 <div className="flex items-center gap-2 mb-1"><GraduationCap size={12} className="text-3" /><span className="text-xs font-medium text-base">{t("cand_education")}</span></div>
-                {PROFILE.education.map((e, i) => (
+                {profile.education.map((e, i) => (
                   <div key={i}><p className="text-xs text-base">{e.degree}</p><p className="text-[11px] text-muted">{e.school} · {e.year}</p></div>
                 ))}
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
                 <div className="flex items-center gap-2 mb-3"><Globe size={12} className="text-3" /><span className="text-xs font-medium text-base">{t("cand_languages")}</span></div>
-                <div className="space-y-1.5">{PROFILE.languages.map((l) => <p key={l} className="text-[11px] text-2">{l}</p>)}</div>
+                <div className="space-y-1.5">{profile.languages.map((l) => <p key={l} className="text-[11px] text-2">{l}</p>)}</div>
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
                 <p className="text-xs font-medium text-base mb-3">{t("cand_industries")}</p>
-                <div className="flex flex-wrap gap-1.5">{PROFILE.industries.map((industry) => <span key={industry} className="text-[10px] text-2 px-1.5 py-0.5 rounded" style={{ background: "var(--ats-surface-r)", border: "1px solid var(--ats-border)" }}>{industry}</span>)}</div>
+                <div className="flex flex-wrap gap-1.5">{profile.industries.map((industry) => <span key={industry} className="text-[10px] text-2 px-1.5 py-0.5 rounded" style={{ background: "var(--ats-surface-r)", border: "1px solid var(--ats-border)" }}>{industry}</span>)}</div>
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
                 <p className="text-xs font-medium text-base mb-3">{t("cand_certifications")}</p>
-                <div className="space-y-1.5">{PROFILE.certifications.map((certification) => <p key={certification} className="text-[11px] text-2">{certification}</p>)}</div>
+                <div className="space-y-1.5">{profile.certifications.map((certification) => <p key={certification} className="text-[11px] text-2">{certification}</p>)}</div>
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
-                <p className="text-[10px] text-3 uppercase tracking-wider mb-3 font-medium">{t("cand_ai")}</p>
-                <div className="space-y-2 text-[11px]">
+                <details className="group"><summary className="cursor-pointer list-none text-[10px] text-3 uppercase tracking-wider font-medium flex items-center justify-between"><span>Extraction Details</span><span className="text-[10px] text-muted group-open:rotate-180 transition-transform">⌄</span></summary><div className="space-y-2 text-[11px] mt-3">
                   {[["Parser model", "gpt-4o"], ["Prompt version", "v2.3"], ["Embedding", "text-embedding-3-large"], ["Parse cost", "$0.032"], ["Tokens", "4,821"]].map(([k, v]) => (
                     <div key={k} className="flex justify-between"><span className="text-muted">{k}</span><span className="font-mono text-2">{v}</span></div>
                   ))}
-                </div>
+                </div></details>
+              </div>
+              <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
+                <p className="text-xs font-medium text-base mb-2">Extraction Review</p>
+                <p className="text-[11px] text-muted mb-3">Review extracted fields before using this consultant in matching.</p>
+                <div className="flex items-center justify-between text-[11px] mb-3"><span className="text-muted">Status</span><span className="text-2">{reviewStatus}</span></div>
+                <button onClick={() => setReviewStatus("Verified")} className="w-full text-xs px-3 py-1.5 rounded border transition-colors" style={{ borderColor: "var(--ats-border)", color: "var(--ats-text-2)" }}>{reviewStatus === "Verified" ? "Verified" : "Mark as Reviewed"}</button>
               </div>
             </div>
           </div>
@@ -182,6 +196,24 @@ export default function ConsultantProfile() {
           </div>
         )}
       </div>
+
+      {editMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.65)" }}>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-auto bg-surface border border-base rounded-lg p-5" style={{ boxShadow: "var(--ats-shadow)" }}>
+            <div className="flex items-center justify-between mb-5"><div><h2 className="text-sm font-semibold text-base">Edit Consultant Profile</h2><p className="text-[11px] text-muted mt-1">Update extracted consultant information before matching.</p></div><button onClick={() => setEditMode(false)} className="text-xs text-muted">Close</button></div>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="space-y-1"><span className="text-[10px] text-muted">Full name</span><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+              <label className="space-y-1"><span className="text-[10px] text-muted">Headline</span><input value={draft.headline} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+              <label className="space-y-1"><span className="text-[10px] text-muted">Role</span><input value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+              <label className="space-y-1"><span className="text-[10px] text-muted">Seniority</span><input value={draft.seniority} onChange={(e) => setDraft({ ...draft, seniority: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+              <label className="space-y-1"><span className="text-[10px] text-muted">Availability</span><input value={draft.availability} onChange={(e) => setDraft({ ...draft, availability: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+              <label className="space-y-1"><span className="text-[10px] text-muted">Office / Location</span><input value={draft.office} onChange={(e) => setDraft({ ...draft, office: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+              <label className="space-y-1"><span className="text-[10px] text-muted">Years of experience</span><input type="number" value={draft.totalYearsExperience} onChange={(e) => setDraft({ ...draft, totalYearsExperience: Number(e.target.value) })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+            </div>
+            <div className="flex justify-end gap-2 mt-6"><button onClick={() => setEditMode(false)} className="text-xs px-3 py-1.5 rounded border border-base text-muted">Cancel</button><button onClick={() => { setProfile(draft); setEditMode(false); }} className="text-xs px-3 py-1.5 rounded text-white" style={{ background: "var(--ats-indigo)" }}>Save Changes</button></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
