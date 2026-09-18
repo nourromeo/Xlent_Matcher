@@ -2,25 +2,22 @@ import { useState } from "react";
 import {
   Sparkles,
   FileText,
-  Clipboard,
   ChevronDown,
   ChevronUp,
   CheckCircle,
-  AlertTriangle,
   Info,
   Zap,
   Tag,
   BookOpen,
   TrendingUp,
 } from "lucide-react";
-import { useI18n } from "../i18n";
 
 // ── Types ────────────────────────────────────────────────
 type Severity = "high" | "medium" | "low";
 
 interface Suggestion {
   id: string;
-  category: "keyword" | "credential" | "clarity" | "structure" | "ats";
+  category: "keyword" | "credential" | "clarity" | "structure" | "evidence";
   severity: Severity;
   title: string;
   detail: string;
@@ -40,26 +37,26 @@ const MOCK_RESULT: AnalysisResult = {
   estimatedScore: 54,
   projectedScore: 82,
   summary:
-    "Your CV demonstrates solid backend experience but misses several ATS-critical keywords and credential signals that appear explicitly in the spec. Addressing the high-priority items below is estimated to raise your match score by ~28 points.",
+    "The consultant CV demonstrates solid backend experience but does not clearly address several important assignment keywords and experience signals. The suggested changes would make the consultant’s match with the assignment easier for the XLENT reviewer to assess.",
   suggestions: [
     {
       id: "s1",
       category: "keyword",
       severity: "high",
-      title: 'Missing keyword: "event-driven architecture"',
+      title: 'Missing assignment requirement: "event-driven architecture"',
       detail:
-        'The spec explicitly lists "event-driven architecture" as a must-have. Your CV mentions Kafka and message queues but never uses this phrase — ATS parsers score on exact or near-exact matches.',
+        'The assignment explicitly lists "event-driven architecture" as a required capability. The consultant CV mentions Kafka and message queues, but does not clearly connect that experience to this requirement.',
       example:
-        'Add to your summary: "…designing event-driven architectures on top of Kafka and RabbitMQ…"',
+        'Add to the consultant summary: "…designing event-driven architectures on top of Kafka and RabbitMQ…"',
       scoreDelta: 8,
     },
     {
       id: "s2",
       category: "credential",
       severity: "high",
-      title: "Kubernetes experience lacks proof of scale",
+      title: "Kubernetes experience needs clearer project evidence",
       detail:
-        'The spec requires production Kubernetes at ≥100 nodes. Your CV says "managed Kubernetes clusters" with no cluster size or workload details, which parsers treat as junior-level evidence.',
+        'The assignment requires production Kubernetes at ≥100 nodes. The consultant CV says "managed Kubernetes clusters" without cluster size or workload details, so the evidence is not yet strong enough for this requirement.',
       example:
         'Clarify: "Managed 3 production Kubernetes clusters (80–120 nodes, ~400 pods) across EU regions at Zalando."',
       scoreDelta: 7,
@@ -70,7 +67,7 @@ const MOCK_RESULT: AnalysisResult = {
       severity: "high",
       title: 'Missing keyword: "observability"',
       detail:
-        'The spec mentions OpenTelemetry and observability practices 3 times. You mention Prometheus but omit the word "observability" and never reference tracing or structured logging explicitly.',
+        'The assignment requirements mention OpenTelemetry and observability practices three times. The consultant CV mentions Prometheus but does not clearly describe tracing or structured logging.',
       example:
         '"Introduced observability stack (OpenTelemetry traces, Prometheus metrics, structured JSON logging) reducing MTTR by 40%."',
       scoreDelta: 6,
@@ -81,18 +78,18 @@ const MOCK_RESULT: AnalysisResult = {
       severity: "medium",
       title: "Go experience period is ambiguous",
       detail:
-        'Your CV lists Go as a skill but the dates are unclear — one role says 2021–2023, another implies Go was used before. ATS systems calculate lastUsedYear and yearsUsed; ambiguity defaults to the minimum.',
+        'The consultant CV lists Go as a skill, but the dates are unclear. One project says 2021–2023 while another implies earlier use, making the total and most recent experience difficult to assess.',
       example:
         "Add an explicit date range per role: \"Backend Engineer (Go, Kafka) · Zalando · Jan 2021 – Dec 2023\"",
       scoreDelta: 5,
     },
     {
       id: "s5",
-      category: "ats",
+      category: "evidence",
       severity: "medium",
-      title: "Achievement quantification is inconsistent",
+      title: "Project context and outcomes are inconsistent",
       detail:
-        'Roles at FinCo have strong quantified achievements ("P99 18ms → 4ms") but your Schibsted role uses vague language ("improved performance", "large datasets"). Inconsistent quantification lowers confidence scoring.',
+        'One project has strong quantified outcomes ("P99 18ms → 4ms"), while another uses broad phrases such as "improved performance" and "large datasets". Clear outcomes would strengthen the assignment evidence.',
       example:
         '"Reduced search latency from 820ms to 330ms (60%) for a 2TB PostgreSQL-backed marketplace via composite index redesign."',
       scoreDelta: 5,
@@ -103,7 +100,7 @@ const MOCK_RESULT: AnalysisResult = {
       severity: "medium",
       title: "No explicit seniority signal in headline",
       detail:
-        'The spec targets a Senior or Staff engineer. Your headline reads "Backend Engineer" — omitting the level means ATS seniority classifiers must infer from context, which introduces noise.',
+        'The assignment requests a Senior or Staff consultant. The current headline says "Backend Engineer", so the consultant’s seniority must be inferred from the surrounding project history.',
       example: '"Senior Backend Engineer · Go · Distributed Systems · 8 yrs"',
       scoreDelta: 4,
     },
@@ -113,7 +110,7 @@ const MOCK_RESULT: AnalysisResult = {
       severity: "low",
       title: 'Nice-to-have: "gRPC" not mentioned',
       detail:
-        "The spec lists gRPC as a nice-to-have. If you have used it (even peripherally), adding it increases your nice-to-have coverage score.",
+        "The assignment lists gRPC as a preferred skill. If the consultant has used it, adding concrete project evidence would strengthen the match.",
       example: '"Defined gRPC service contracts for 12 internal microservices."',
       scoreDelta: 3,
     },
@@ -123,7 +120,7 @@ const MOCK_RESULT: AnalysisResult = {
       severity: "low",
       title: "Availability not stated",
       detail:
-        "The job has a 4-week start deadline. CVs that don't mention availability lose points on the practical-fit dimension of the hybrid score.",
+        "The client assignment has a four-week start window. The consultant CV does not state availability, so the XLENT reviewer cannot confirm this practical requirement.",
       example: 'Add a footer line: "Available from: October 2026 · Open to remote-first roles in CET±2"',
       scoreDelta: 2,
     },
@@ -136,7 +133,7 @@ const CATEGORY_CFG = {
   credential: { label: "Credential gap",    icon: BookOpen,  color: "var(--ats-amber)"  },
   clarity:    { label: "Clarity",           icon: Info,      color: "var(--ats-text-2)" },
   structure:  { label: "Structure",         icon: FileText,  color: "var(--ats-muted)"  },
-  ats:        { label: "ATS optimisation",  icon: TrendingUp,color: "var(--ats-green)"  },
+  evidence:   { label: "Experience evidence", icon: TrendingUp, color: "var(--ats-green)" },
 } as const;
 
 const SEVERITY_CFG: Record<Severity, { label: string; color: string; bg: string }> = {
@@ -171,14 +168,6 @@ function TextArea({
 }
 
 function ScoreGauge({ before, after }: { before: number; after: number }) {
-  const beforeAngle = (before / 100) * 180;
-  const afterAngle  = (after  / 100) * 180;
-
-  const polarX = (pct: number, r: number) =>
-    50 + r * Math.cos(Math.PI - (pct / 100) * Math.PI);
-  const polarY = (pct: number, r: number) =>
-    54 - r * Math.sin((pct / 100) * Math.PI) * -1;
-
   // simple arc
   const arc = (pct: number, r: number, color: string) => {
     const x = 50 + r * Math.cos(Math.PI - (pct / 100) * Math.PI);
@@ -282,8 +271,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
 }
 
 // ── Main page ────────────────────────────────────────────
-export default function CvCoach() {
-  const { t } = useI18n();
+export default function CvAdaptation() {
   const [cv, setCv] = useState("");
   const [spec, setSpec] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -318,9 +306,9 @@ export default function CvCoach() {
         <div className="flex items-center gap-2.5">
           <Sparkles size={15} style={{ color: "var(--ats-indigo)" }} />
           <div>
-            <h1 className="text-sm font-semibold text-base">CV Coach</h1>
+            <h1 className="text-sm font-semibold text-base">CV Adaptation Assistant</h1>
             <p className="text-xs text-muted mt-0.5">
-              Paste a CV and a job spec — AI identifies gaps, missing keywords, and ATS improvements
+              Paste a consultant CV and assignment requirements to identify gaps and improve the CV for the assignment
             </p>
           </div>
         </div>
@@ -331,17 +319,17 @@ export default function CvCoach() {
           {/* Input grid */}
           <div className="grid grid-cols-2 gap-4 mb-5">
             <TextArea
-              label="Candidate CV"
+              label="Consultant CV"
               value={cv}
               onChange={setCv}
-              placeholder={"Paste the full CV text here...\n\nJane Doe\nSenior Backend Engineer\n\nExperience:\n- Zalando SE (2021–2023): Built Go microservices...\n\nSkills: Go, PostgreSQL, Kafka, Kubernetes..."}
+              placeholder={"Paste the consultant CV here...\n\nAnna Kovacs\nSenior Backend Consultant\n\nProjects:\n- Order platform renewal (2021–2023): Built Go microservices...\n\nSkills: Go, PostgreSQL, Kafka, Kubernetes..."}
               rows={12}
             />
             <TextArea
-              label="Job / Recruitment Spec"
+              label="Client Assignment Requirements"
               value={spec}
               onChange={setSpec}
-              placeholder={"Paste the full job description here...\n\nWe are looking for a Senior Backend Engineer with:\n- 5+ years of Go in production\n- Event-driven architecture (Kafka)\n- Kubernetes at scale (100+ nodes)\n- Observability (OpenTelemetry)\n..."}
+              placeholder={"Paste the client assignment requirements here...\n\nThe client needs a Senior Backend Consultant with:\n- 5+ years of Go in production\n- Event-driven architecture (Kafka)\n- Kubernetes at scale (100+ nodes)\n- Observability (OpenTelemetry)\n..."}
               rows={12}
             />
           </div>
@@ -379,7 +367,7 @@ export default function CvCoach() {
                   style={{ boxShadow: "var(--ats-shadow)" }}
                 >
                   <p className="text-[10px] text-3 uppercase tracking-wider font-medium mb-3">
-                    ATS Score Estimate
+                    Match Score Estimate
                   </p>
                   <ScoreGauge before={result.estimatedScore} after={result.projectedScore} />
                 </div>
@@ -480,11 +468,11 @@ export default function CvCoach() {
               >
                 <CheckCircle size={14} style={{ color: "var(--ats-indigo)", flexShrink: 0 }} />
                 <p className="text-xs text-2">
-                  Applying all suggestions adds an estimated{" "}
+                  Applying the highest-impact suggestions adds an estimated{" "}
                   <span className="font-semibold text-indigo font-mono">
-                    +{result.suggestions.reduce((a, s) => a + s.scoreDelta, 0)} points
+                    +{result.projectedScore - result.estimatedScore} points
                   </span>{" "}
-                  — raising the estimated ATS score from{" "}
+                  — improving the estimated assignment match from{" "}
                   <span className="font-mono text-base">{result.estimatedScore}</span> to{" "}
                   <span className="font-mono text-indigo">{result.projectedScore}</span>.
                 </p>
@@ -496,9 +484,9 @@ export default function CvCoach() {
           {!result && !loading && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Sparkles size={32} className="text-3 mb-4" />
-              <p className="text-sm text-3">Paste a CV and job spec above, then click Analyse</p>
+              <p className="text-sm text-3">Paste a consultant CV and assignment requirements above, then click Analyse</p>
               <p className="text-xs text-3 mt-1">
-                AI will identify keyword gaps, ATS optimisations, and credential clarifications
+                The assistant will identify missing requirements, unclear skills, project evidence, seniority signals, and availability information
               </p>
             </div>
           )}

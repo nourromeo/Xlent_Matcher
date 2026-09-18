@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3, Save, RefreshCw } from "lucide-react";
 import { useI18n } from "../i18n";
 
 const PROFILE = {
-  id: "1", initials: "AK", headline: "Senior Backend Engineer",
+  id: "1", initials: "AK", name: "Anna Kovacs", role: "Senior Backend Consultant", office: "XLENT Stockholm", headline: "Backend architecture and distributed systems",
   totalYearsExperience: 8, seniority: "Senior", availability: "Immediate",
   skills: [
     { name: "Go", category: "Language", yearsUsed: 5, level: "Expert", evidence: "Led rewrite of order-processing microservices in Go at Zalando (2021–2023)." },
@@ -15,12 +15,14 @@ const PROFILE = {
     { name: "gRPC", category: "Protocol", yearsUsed: 3, level: "Proficient", evidence: "Defined service contracts for 12 microservices, generated clients in 3 languages." },
   ],
   experience: [
-    { company: "FinCo GmbH", role: "Senior Software Engineer", start: "2023", end: "Present", stack: ["Rust", "PostgreSQL", "Kafka"], achievements: ["Built low-latency serialization layer reducing P99 from 18ms → 4ms.", "Introduced E2E tracing with OpenTelemetry; cut MTTR by 40%."] },
-    { company: "Zalando SE", role: "Backend Engineer", start: "2021", end: "2023", stack: ["Go", "Kafka", "Kubernetes", "PostgreSQL"], achievements: ["Led migration of monolith order-processing to Go microservices.", "Achieved 99.99% uptime across Black Friday peak load."] },
-    { company: "Schibsted", role: "Software Engineer", start: "2019", end: "2021", stack: ["Java", "PostgreSQL", "Redis"], achievements: ["Designed sharding strategy for 2TB marketplace dataset.", "Improved search latency by 60% via Elasticsearch index tuning."] },
+    { company: "Nordic Financial Services", role: "Payments Platform Modernisation", start: "2023", end: "Present", stack: ["Rust", "PostgreSQL", "Kafka"], achievements: ["Built a low-latency serialization layer reducing P99 from 18ms → 4ms.", "Introduced end-to-end tracing with OpenTelemetry; cut MTTR by 40%."] },
+    { company: "European Commerce Group", role: "Order Platform Renewal", start: "2021", end: "2023", stack: ["Go", "Kafka", "Kubernetes", "PostgreSQL"], achievements: ["Led migration of order processing to Go microservices.", "Achieved 99.99% uptime across peak seasonal load."] },
+    { company: "Nordic Media Group", role: "Marketplace Data Platform", start: "2019", end: "2021", stack: ["Java", "PostgreSQL", "Redis"], achievements: ["Designed a sharding strategy for a 2TB marketplace dataset.", "Improved search latency by 60% through index tuning."] },
   ],
   education: [{ degree: "M.Sc. Computer Science", school: "TU Berlin", year: "2019" }],
   languages: ["English (C2)", "German (B2)", "Hungarian (Native)"],
+  industries: ["Financial Services", "E-commerce", "Media"],
+  certifications: ["CKA — Certified Kubernetes Administrator", "Microsoft Azure Fundamentals"],
 };
 
 const LEVEL_BG: Record<string, React.CSSProperties> = {
@@ -29,8 +31,7 @@ const LEVEL_BG: Record<string, React.CSSProperties> = {
   Familiar:  { color: "var(--ats-muted)",  background: "var(--ats-surface-r)"  },
 };
 
-export default function CandidateDetail() {
-  const { id } = useParams();
+export default function ConsultantProfile() {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"profile" | "original">("profile");
   const [editMode, setEditMode] = useState(false);
@@ -45,9 +46,9 @@ export default function CandidateDetail() {
             <div className="w-9 h-9 rounded-full bg-indigo-sub flex items-center justify-center text-sm font-semibold text-indigo">{PROFILE.initials}</div>
             <div>
               <h1 className="text-sm font-semibold text-base">
-                {t("dash_candidate")} #{id} — {t("cand_blind")}
+                {PROFILE.name} — {t("cand_blind")}
               </h1>
-              <p className="text-xs text-muted">{PROFILE.headline} · {PROFILE.seniority} · {PROFILE.totalYearsExperience} {t("cand_exp")}</p>
+              <p className="text-xs text-muted">{PROFILE.role} · {PROFILE.office} · {PROFILE.totalYearsExperience} {t("cand_exp")}</p>
             </div>
             <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--ats-green)", background: "rgba(34,197,94,0.10)" }}>{PROFILE.availability === "Immediate" ? t("immediate") : PROFILE.availability}</span>
           </div>
@@ -152,6 +153,14 @@ export default function CandidateDetail() {
                 <div className="space-y-1.5">{PROFILE.languages.map((l) => <p key={l} className="text-[11px] text-2">{l}</p>)}</div>
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
+                <p className="text-xs font-medium text-base mb-3">{t("cand_industries")}</p>
+                <div className="flex flex-wrap gap-1.5">{PROFILE.industries.map((industry) => <span key={industry} className="text-[10px] text-2 px-1.5 py-0.5 rounded" style={{ background: "var(--ats-surface-r)", border: "1px solid var(--ats-border)" }}>{industry}</span>)}</div>
+              </div>
+              <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
+                <p className="text-xs font-medium text-base mb-3">{t("cand_certifications")}</p>
+                <div className="space-y-1.5">{PROFILE.certifications.map((certification) => <p key={certification} className="text-[11px] text-2">{certification}</p>)}</div>
+              </div>
+              <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
                 <p className="text-[10px] text-3 uppercase tracking-wider mb-3 font-medium">{t("cand_ai")}</p>
                 <div className="space-y-2 text-[11px]">
                   {[["Parser model", "gpt-4o"], ["Prompt version", "v2.3"], ["Embedding", "text-embedding-3-large"], ["Parse cost", "$0.032"], ["Tokens", "4,821"]].map(([k, v]) => (
@@ -166,8 +175,8 @@ export default function CandidateDetail() {
             <div className="bg-surface border border-base rounded-lg h-[600px] flex items-center justify-center" style={{ boxShadow: "var(--ats-shadow)" }}>
               <div className="text-center">
                 <FileText size={32} className="text-3 mx-auto mb-3" />
-                <p className="text-sm text-3">CV viewer</p>
-                <p className="text-xs text-3 mt-1">PDF/DOCX rendered from Blob storage</p>
+                <p className="text-sm text-3">Original consultant CV</p>
+                <p className="text-xs text-3 mt-1">PDF/DOCX preview for the XLENT consultant profile</p>
               </div>
             </div>
           </div>

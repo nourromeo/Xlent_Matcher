@@ -50,7 +50,7 @@ export default function Layout() {
             <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: "var(--ats-indigo)" }}>
               <Zap size={12} className="text-white" />
             </div>
-            <span className="text-sm font-semibold tracking-tight text-base">Recruit OS</span>
+            <span className="text-sm font-semibold tracking-tight text-base">XLENT Match</span>
           </div>
           <span className="ml-auto text-[10px] font-mono text-3 bg-raised px-1.5 py-0.5 rounded">
             v1.0
@@ -85,8 +85,8 @@ export default function Layout() {
               JD
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-base truncate">Jane Doe</p>
-              <p className="text-[10px] text-muted">Recruiter</p>
+              <p className="text-xs font-medium text-base truncate">Johan Lind</p>
+              <p className="text-[10px] text-muted">Consultant Manager</p>
             </div>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function Layout() {
         {/* Topbar */}
         <header className="h-12 flex items-center px-5 border-b border-base bg-surface flex-none">
           <div className="flex items-center gap-1.5 text-sm text-3">
-            <span>Recruit OS</span>
+            <span>XLENT Match</span>
             {crumb && crumb.to !== "/" && (
               <>
                 <ChevronRight size={12} />

@@ -12,21 +12,21 @@ const SKILLS = [
 
 const PROMPTS = [
   { id: "p1", name: "CV Parser", model: "gpt-4o", version: "v2.3", tokens: "~4.8k", cost: "$0.032", active: true },
-  { id: "p2", name: "Job Extractor", model: "gpt-4o", version: "v1.1", tokens: "~1.2k", cost: "$0.008", active: true },
-  { id: "p3", name: "Match Judge", model: "gpt-4o", version: "v1.4", tokens: "~2.1k", cost: "$0.014", active: true },
+  { id: "p2", name: "Assignment Requirements Extractor", model: "gpt-4o", version: "v1.1", tokens: "~1.2k", cost: "$0.008", active: true },
+  { id: "p3", name: "Match Explanation", model: "gpt-4o", version: "v1.4", tokens: "~2.1k", cost: "$0.014", active: true },
   { id: "p4", name: "CV Parser", model: "gpt-4o-mini", version: "v2.2", tokens: "~4.6k", cost: "$0.006", active: false },
 ];
 
 const AI_COSTS = [
   { date: "Sep 9", model: "gpt-4o", operation: "cv_parse", runs: 5, cost: 0.16 },
   { date: "Sep 9", model: "text-embedding-3-large", operation: "embed_cv", runs: 12, cost: 0.04 },
-  { date: "Sep 9", model: "gpt-4o", operation: "match_judge", runs: 3, cost: 0.042 },
+  { date: "Sep 9", model: "gpt-4o", operation: "match_explanation", runs: 3, cost: 0.042 },
   { date: "Sep 8", model: "gpt-4o", operation: "cv_parse", runs: 18, cost: 0.576 },
   { date: "Sep 8", model: "cohere-rerank-v3", operation: "rerank", runs: 8, cost: 0.016 },
 ];
 
 const FLAGS_DATA = [
-  { key: "BlindMode", desc: "Exclude name, photo, age, gender, nationality from scoring", enabled: true },
+  { key: "SkillsFirstAnalysis", desc: "Base matching on assignment evidence and exclude personal attributes from scoring", enabled: true },
   { key: "UseReranker", desc: "Enable Cohere reranking pass before hybrid scoring", enabled: true },
   { key: "UseCloudOcr", desc: "Use Azure Document Intelligence for scanned PDFs", enabled: false },
   { key: "UseStubAi", desc: "Use fake AI responses (no API keys required)", enabled: false },
@@ -36,18 +36,17 @@ export default function Admin() {
   const { t } = useI18n();
 
   const TABS = [t("tab_taxonomy"), t("tab_weights"), t("tab_prompts"), t("tab_costs"), t("tab_flags")] as const;
-  type TabT = (typeof TABS)[number];
 
   const WEIGHTS_DEF = [
     { key: "mustHaveCoverage", label: t("score_mustHave"), value: 40, desc: "Strong penalty if a required skill is missing" },
     { key: "semanticSimilarity", label: t("score_semantic"), value: 20, desc: "Post-rerank cosine similarity score" },
     { key: "experienceRecency", label: t("score_experience"), value: 15, desc: "Weighted by 0.85^(yearNow - lastUsedYear)" },
-    { key: "seniority", label: t("score_seniority"), value: 10, desc: "How well candidate seniority matches job level" },
+    { key: "seniority", label: t("score_seniority"), value: 10, desc: "How well consultant seniority matches the assignment level" },
     { key: "niceToHave", label: t("score_niceToHave"), value: 5, desc: "Optional skills coverage" },
     { key: "availability", label: t("score_availability"), value: 10, desc: "Practical fit factors" },
   ];
 
-  const [tab, setTab] = useState<TabT>(TABS[0]);
+  const [tab, setTab] = useState(0);
   const [weights, setWeights] = useState<Record<string, number>>(Object.fromEntries(WEIGHTS_DEF.map((w) => [w.key, w.value])));
   const [flags, setFlags] = useState<Record<string, boolean>>(Object.fromEntries(FLAGS_DATA.map((f) => [f.key, f.enabled])));
 
@@ -62,17 +61,17 @@ export default function Admin() {
       </div>
 
       <div className="flex border-b border-base gap-0">
-        {TABS.map((tb) => (
-          <button key={tb} onClick={() => setTab(tb)}
+        {TABS.map((tb, index) => (
+          <button key={tb} onClick={() => setTab(index)}
             className="text-xs px-4 py-2 border-b-2 transition-colors"
-            style={tab === tb ? { borderColor: "var(--ats-indigo)", color: "var(--ats-text)", fontWeight: 500 } : { borderColor: "transparent", color: "var(--ats-muted)" }}>
+            style={tab === index ? { borderColor: "var(--ats-indigo)", color: "var(--ats-text)", fontWeight: 500 } : { borderColor: "transparent", color: "var(--ats-muted)" }}>
             {tb}
           </button>
         ))}
       </div>
 
       {/* Taxonomy */}
-      {tab === TABS[0] && (
+      {tab === 0 && (
         <div className="bg-surface border border-base rounded-lg overflow-hidden" style={{ boxShadow: "var(--ats-shadow)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-base">
             <span className="text-xs font-medium text-base">{t("tab_taxonomy")}</span>
@@ -107,7 +106,7 @@ export default function Admin() {
       )}
 
       {/* Weights */}
-      {tab === TABS[1] && (
+      {tab === 1 && (
         <div className="space-y-3">
           <div className="text-xs px-3 py-2 rounded flex items-center gap-2"
             style={{ background: ok ? "rgba(34,197,94,0.06)" : "rgba(245,158,11,0.06)", border: `1px solid ${ok ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`, color: ok ? "var(--ats-green)" : "var(--ats-amber)" }}>
@@ -138,7 +137,7 @@ export default function Admin() {
       )}
 
       {/* Prompts */}
-      {tab === TABS[2] && (
+      {tab === 2 && (
         <div className="bg-surface border border-base rounded-lg overflow-hidden" style={{ boxShadow: "var(--ats-shadow)" }}>
           <table className="w-full">
             <thead>
@@ -170,7 +169,7 @@ export default function Admin() {
       )}
 
       {/* AI Costs */}
-      {tab === TABS[3] && (
+      {tab === 3 && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             {[{ label: "Sep total", value: "$38.40" }, { label: "Avg per CV", value: "$0.048" }, { label: "Avg per match", value: "$0.022" }].map((s) => (
@@ -206,7 +205,7 @@ export default function Admin() {
       )}
 
       {/* Feature Flags */}
-      {tab === TABS[4] && (
+      {tab === 4 && (
         <div className="bg-surface border border-base rounded-lg" style={{ boxShadow: "var(--ats-shadow)" }}>
           {FLAGS_DATA.map((f, i) => (
             <div key={f.key} className="flex items-center justify-between px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>

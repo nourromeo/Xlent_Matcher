@@ -6,7 +6,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { FileText, Briefcase, GitMerge, DollarSign, Clock, CheckCircle, AlertCircle, ArrowUpRight } from "lucide-react";
+import { FileText, Briefcase, GitMerge, Users, Clock, CheckCircle, AlertCircle, ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
 
@@ -23,19 +23,19 @@ const costData = [
 ];
 
 const QUEUE = [
-  { name: "aleksandra_kovacs_cv.pdf", status: "parsing", added: "2m ago" },
-  { name: "marcus_lee_resume.docx", status: "extracting", added: "4m ago" },
+  { name: "anna_kovacs_consultant_cv.pdf", status: "parsing", added: "2m ago" },
+  { name: "marcus_lee_consultant_cv.docx", status: "extracting", added: "4m ago" },
   { name: "priya_sharma_cv.pdf", status: "embedding", added: "7m ago" },
   { name: "tobias_renz_cv.pdf", status: "done", added: "12m ago" },
   { name: "seo_yun_resume.pdf", status: "error", added: "15m ago" },
 ];
 
 const RECENT_MATCHES = [
-  { candidate: "A. Kovacs", job: "Senior Backend Engineer", score: 91, date: "Today" },
-  { candidate: "M. Lee", job: "ML Engineer (NLP)", score: 84, date: "Today" },
-  { candidate: "P. Sharma", job: "Staff SRE", score: 78, date: "Yesterday" },
-  { candidate: "T. Renz", job: "Senior Backend Engineer", score: 73, date: "Yesterday" },
-  { candidate: "S. Yun", job: "Frontend Engineer", score: 67, date: "Sep 7" },
+  { consultant: "Anna Kovacs", assignment: "Payments Platform Modernisation", score: 91, date: "Today" },
+  { consultant: "Marcus Lee", assignment: "Applied AI Enablement", score: 84, date: "Today" },
+  { consultant: "Priya Sharma", assignment: "Cloud Reliability Programme", score: 78, date: "Yesterday" },
+  { consultant: "Tobias Renz", assignment: "Azure Commerce Platform", score: 73, date: "Yesterday" },
+  { consultant: "Sofia Yun", assignment: "Design System Delivery", score: 67, date: "Sep 7" },
 ];
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
@@ -81,14 +81,14 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-base font-semibold text-base">{t("dash_title")}</h1>
-        <p className="text-xs text-muted mt-0.5">Tuesday, September 9, 2026</p>
+        <p className="text-xs text-muted mt-0.5">This internal tool helps XLENT compare client assignments with existing consultants and understand why a consultant matches or does not match.</p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t("dash_queue")} value="18" sub={`5 ${t("dash_queue_sub")}`} icon={FileText} accent />
+        <StatCard label={t("dash_consultants")} value="124" sub={`18 ${t("dash_consultants_sub")}`} icon={Users} accent />
         <StatCard label={t("dash_active_jobs")} value="7" sub={`3 ${t("dash_active_jobs_sub")}`} icon={Briefcase} />
-        <StatCard label={t("dash_matches")} value="34" sub={`+12 ${t("dash_matches_sub")}`} icon={GitMerge} />
-        <StatCard label={t("dash_cost")} value="$38.40" sub={`↑ $6.20 ${t("dash_cost_sub")}`} icon={DollarSign} />
+        <StatCard label={t("dash_queue")} value="18" sub={`5 ${t("dash_queue_sub")}`} icon={FileText} />
+        <StatCard label={t("dash_active_matching")} value="3" sub={t("dash_active_matching_sub")} icon={GitMerge} />
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -138,7 +138,7 @@ export default function Dashboard() {
                 <YAxis tick={{ fill: "var(--ats-text-3)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
                 <Tooltip
                   contentStyle={{ backgroundColor: "var(--ats-surface-r)", border: "1px solid var(--ats-border)", borderRadius: 6, fontSize: 11, color: "var(--ats-text)" }}
-                  formatter={(v: number) => [`$${v.toFixed(2)}`, "Cost"]}
+                  formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, "Cost"]}
                 />
                 <Area type="monotone" dataKey="cost" stroke="var(--ats-indigo)" strokeWidth={1.5} fill="url(#costGrad)" />
               </AreaChart>
@@ -165,9 +165,9 @@ export default function Dashboard() {
           </thead>
           <tbody>
             {RECENT_MATCHES.map((m) => (
-              <tr key={m.candidate + m.job} className="border-b border-sub hover:bg-raised transition-colors">
-                <td className="px-4 py-2.5 text-xs text-base font-medium">{m.candidate}</td>
-                <td className="px-4 py-2.5 text-xs text-2">{m.job}</td>
+              <tr key={m.consultant + m.assignment} className="border-b border-sub hover:bg-raised transition-colors">
+                <td className="px-4 py-2.5 text-xs text-base font-medium">{m.consultant}</td>
+                <td className="px-4 py-2.5 text-xs text-2">{m.assignment}</td>
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="w-20 h-1.5 rounded-full bg-raised">

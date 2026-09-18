@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
-import TalentPool from "./pages/TalentPool";
-import CandidateDetail from "./pages/CandidateDetail";
-import Jobs from "./pages/Jobs";
+import ConsultantPool from "./pages/TalentPool";
+import ConsultantProfile from "./pages/CandidateDetail";
+import ClientAssignments from "./pages/Jobs";
 import Matching from "./pages/Matching";
 import Upload from "./pages/Upload";
 import Admin from "./pages/Admin";
-import CvCoach from "./pages/CvCoach";
+import CvAdaptation from "./pages/CvCoach";
 
 export default function App() {
   return (
@@ -15,12 +15,12 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="talent" element={<TalentPool />} />
-          <Route path="talent/:id" element={<CandidateDetail />} />
-          <Route path="jobs" element={<Jobs />} />
+          <Route path="talent" element={<ConsultantPool />} />
+          <Route path="talent/:id" element={<ConsultantProfile />} />
+          <Route path="jobs" element={<ClientAssignments />} />
           <Route path="matching" element={<Matching />} />
           <Route path="upload" element={<Upload />} />
-          <Route path="coach" element={<CvCoach />} />
+          <Route path="coach" element={<CvAdaptation />} />
           <Route path="admin" element={<Admin />} />
         </Route>
       </Routes>

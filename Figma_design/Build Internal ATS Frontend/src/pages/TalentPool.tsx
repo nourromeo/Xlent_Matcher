@@ -3,29 +3,29 @@ import { Search, Filter, ChevronDown, ArrowUpRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
 
-const CANDIDATES = [
-  { id: "1", initials: "AK", name: "A. Kovacs", headline: "Senior Backend Engineer · Go, Rust, PostgreSQL", seniority: "Senior", experience: "8 yrs", skills: ["Go", "Rust", "PostgreSQL", "Kafka", "Kubernetes"], availability: "Immediate", score: 91, starred: true },
-  { id: "2", initials: "ML", name: "M. Lee", headline: "ML Engineer · PyTorch, Transformers, NLP", seniority: "Mid", experience: "5 yrs", skills: ["Python", "PyTorch", "NLP", "Azure ML", "FastAPI"], availability: "2 weeks", score: 84, starred: false },
-  { id: "3", initials: "PS", name: "P. Sharma", headline: "Staff SRE · Platform, Observability, Terraform", seniority: "Staff", experience: "11 yrs", skills: ["Terraform", "Kubernetes", "Prometheus", "Go", "Python"], availability: "1 month", score: 78, starred: false },
-  { id: "4", initials: "TR", name: "T. Renz", headline: "Full-Stack Engineer · .NET, React, Azure", seniority: "Mid", experience: "6 yrs", skills: ["C#", ".NET", "React", "TypeScript", "Azure"], availability: "Immediate", score: 73, starred: false },
-  { id: "5", initials: "SY", name: "S. Yun", headline: "Frontend Engineer · React, Design Systems", seniority: "Mid", experience: "4 yrs", skills: ["React", "TypeScript", "CSS", "Figma", "Storybook"], availability: "3 months", score: 67, starred: false },
-  { id: "6", initials: "RO", name: "R. Okonkwo", headline: "Data Engineer · Spark, dbt, Snowflake", seniority: "Senior", experience: "7 yrs", skills: ["Python", "Spark", "dbt", "Snowflake", "Airflow"], availability: "Immediate", score: 62, starred: false },
-  { id: "7", initials: "FM", name: "F. Martinez", headline: "DevOps · CI/CD, Docker, AWS", seniority: "Junior", experience: "2 yrs", skills: ["Docker", "GitHub Actions", "AWS", "Python", "Bash"], availability: "2 weeks", score: 55, starred: false },
+const CONSULTANTS = [
+  { id: "1", initials: "AK", name: "Anna Kovacs", headline: "Senior Backend Consultant · Go, Rust, PostgreSQL", seniority: "Senior", experience: "8 yrs", skills: ["Go", "Rust", "PostgreSQL", "Kafka", "Kubernetes"], availability: "Immediate", score: 91, starred: true },
+  { id: "2", initials: "ML", name: "Marcus Lee", headline: "AI Consultant · PyTorch, Transformers, NLP", seniority: "Mid", experience: "5 yrs", skills: ["Python", "PyTorch", "NLP", "Azure ML", "FastAPI"], availability: "2 weeks", score: 84, starred: false },
+  { id: "3", initials: "PS", name: "Priya Sharma", headline: "Platform Consultant · Observability, Terraform", seniority: "Staff", experience: "11 yrs", skills: ["Terraform", "Kubernetes", "Prometheus", "Go", "Python"], availability: "1 month", score: 78, starred: false },
+  { id: "4", initials: "TR", name: "Tobias Renz", headline: "Full-Stack Consultant · .NET, React, Azure", seniority: "Mid", experience: "6 yrs", skills: ["C#", ".NET", "React", "TypeScript", "Azure"], availability: "Immediate", score: 73, starred: false },
+  { id: "5", initials: "SY", name: "Sofia Yun", headline: "Frontend Consultant · React, Design Systems", seniority: "Mid", experience: "4 yrs", skills: ["React", "TypeScript", "CSS", "Figma", "Storybook"], availability: "3 months", score: 67, starred: false },
+  { id: "6", initials: "RO", name: "Ravi Okonkwo", headline: "Data Consultant · Spark, dbt, Snowflake", seniority: "Senior", experience: "7 yrs", skills: ["Python", "Spark", "dbt", "Snowflake", "Airflow"], availability: "Immediate", score: 62, starred: false },
+  { id: "7", initials: "FM", name: "Fatima Martinez", headline: "Cloud Consultant · CI/CD, Docker, AWS", seniority: "Junior", experience: "2 yrs", skills: ["Docker", "GitHub Actions", "AWS", "Python", "Bash"], availability: "2 weeks", score: 55, starred: false },
 ];
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
 const AVAIL_OPTIONS = ["All", "Immediate", "2 weeks", "1 month", "3 months"];
 
-export default function TalentPool() {
+export default function ConsultantPool() {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [seniority, setSeniority] = useState("All");
   const [avail, setAvail] = useState("All");
   const [starred, setStarred] = useState<Record<string, boolean>>(
-    Object.fromEntries(CANDIDATES.map((c) => [c.id, c.starred]))
+    Object.fromEntries(CONSULTANTS.map((c) => [c.id, c.starred]))
   );
 
-  const filtered = CANDIDATES.filter((c) => {
+  const filtered = CONSULTANTS.filter((c) => {
     if (seniority !== "All" && c.seniority !== seniority) return false;
     if (avail !== "All" && c.availability !== avail) return false;
     if (query && !c.name.toLowerCase().includes(query.toLowerCase()) && !c.headline.toLowerCase().includes(query.toLowerCase()) && !c.skills.some((s) => s.toLowerCase().includes(query.toLowerCase()))) return false;
@@ -40,7 +40,7 @@ export default function TalentPool() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-base font-semibold text-base">{t("talent_title")}</h1>
-          <p className="text-xs text-muted mt-0.5">{CANDIDATES.length} {t("talent_sub")}</p>
+          <p className="text-xs text-muted mt-0.5">{CONSULTANTS.length} {t("talent_sub")}</p>
         </div>
         <Link to="/upload" className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded transition-opacity hover:opacity-80" style={{ backgroundColor: "var(--ats-indigo)" }}>
           {t("talent_upload")}
@@ -82,7 +82,7 @@ export default function TalentPool() {
           className="text-[11px] rounded px-2 py-1 focus:outline-none"
           style={{ background: "var(--ats-surface)", border: "1px solid var(--ats-border)", color: "var(--ats-text-2)" }}
         >
-          {AVAIL_OPTIONS.map((o) => <option key={o}>{o === "All" ? t("talent_all") : o}</option>)}
+          {AVAIL_OPTIONS.map((o) => <option key={o} value={o}>{o === "All" ? t("talent_all") : o}</option>)}
         </select>
       </div>
 
@@ -93,7 +93,7 @@ export default function TalentPool() {
             <tr className="border-b border-base">
               {["", t("col_candidate"), t("col_seniority"), t("col_experience"), t("col_skills"), t("col_avail"), t("col_score"), ""].map((h, i) => (
                 <th key={i} className="text-[10px] font-medium text-3 uppercase tracking-wider text-left px-3 py-2.5">
-                  {h && <div className="flex items-center gap-1">{h}{["Candidate", "Experience", "Score", t("col_candidate"), t("col_experience"), t("col_score")].includes(h) && <ChevronDown size={9} className="text-3" />}</div>}
+                  {h && <div className="flex items-center gap-1">{h}{["Consultant", "Experience", "Match Score", t("col_candidate"), t("col_experience"), t("col_score")].includes(h) && <ChevronDown size={9} className="text-3" />}</div>}
                 </th>
               ))}
             </tr>
@@ -141,7 +141,7 @@ export default function TalentPool() {
           </tbody>
         </table>
         <div className="border-t border-base px-4 py-2.5 flex items-center justify-between bg-surface">
-          <span className="text-[10px] text-3">{t("talent_showing")} {filtered.length} {t("talent_of")} {CANDIDATES.length} {t("talent_candidates")}</span>
+          <span className="text-[10px] text-3">{t("talent_showing")} {filtered.length} {t("talent_of")} {CONSULTANTS.length} {t("talent_candidates")}</span>
           <div className="flex items-center gap-1">
             {[1, 2, 3].map((p) => (
               <button key={p} className="text-[10px] w-6 h-6 rounded flex items-center justify-center"

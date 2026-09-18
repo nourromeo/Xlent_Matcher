@@ -3,27 +3,27 @@ import { CheckCircle, AlertTriangle, ChevronDown, Send, Info } from "lucide-reac
 import { useI18n } from "../i18n";
 
 const MATCHES = [
-  { id: "m1", initials: "AK", name: "Candidate #1", headline: "Senior Backend Engineer · 8 yrs", score: 91,
+  { id: "m1", initials: "AK", name: "Anna Kovacs", headline: "Senior Backend Consultant · 8 yrs", score: 91,
     breakdown: { mustHave: 96, semantic: 88, experience: 92, seniority: 90, niceToHave: 70, availability: 100 },
     mustHaveCoverage: ["Go", "PostgreSQL", "Kafka", "Kubernetes"], gaps: [], niceToHave: ["Rust", "gRPC"],
     evidence: [
-      { skill: "Go", cite: "Led rewrite of order-processing microservices in Go at Zalando (2021–2023), serving 50M+ daily transactions." },
-      { skill: "Kafka", cite: "Architected event streaming backbone handling 200k msg/s at Zalando; zero data loss across 18 months." },
+      { skill: "Go", cite: "Led the renewal of order-processing microservices in Go for a European commerce client, serving 50M+ daily transactions." },
+      { skill: "Kafka", cite: "Architected an event-streaming backbone handling 200k msg/s with zero data loss across 18 months." },
       { skill: "Kubernetes", cite: "Managed production clusters across 3 regions; introduced HPA policies reducing cloud spend by 22%." },
     ],
-    llmVerdict: "Strong fit. Covers all must-have requirements with senior-level evidence. Kafka and Go expertise directly applicable to the event-driven order pipeline.",
+    llmVerdict: "Strong match. The consultant covers all required skills with senior-level evidence. Kafka and Go experience is directly relevant to the client’s event-driven payments platform.",
   },
-  { id: "m2", initials: "ML", name: "Candidate #2", headline: "ML Engineer · 5 yrs", score: 77,
+  { id: "m2", initials: "ML", name: "Marcus Lee", headline: "AI Consultant · 5 yrs", score: 77,
     breakdown: { mustHave: 75, semantic: 82, experience: 74, seniority: 70, niceToHave: 50, availability: 90 },
     mustHaveCoverage: ["Go", "PostgreSQL", "Kafka"], gaps: ["Kubernetes"], niceToHave: ["gRPC"],
     evidence: [{ skill: "Go", cite: "Built internal CLI tooling and data-pipeline orchestrator in Go for DataLayer AG (2022–2023)." }],
-    llmVerdict: "Partial fit. Go and PostgreSQL covered, but Kubernetes experience missing. Pipeline work in Go is relevant but less production-scale.",
+    llmVerdict: "Partial match. Go and PostgreSQL are covered, while Kubernetes evidence is missing. The consultant’s Go pipeline work is relevant but demonstrates less production scale than the assignment requests.",
   },
-  { id: "m3", initials: "PS", name: "Candidate #3", headline: "Staff SRE · 11 yrs", score: 71,
+  { id: "m3", initials: "PS", name: "Priya Sharma", headline: "Platform Consultant · 11 yrs", score: 71,
     breakdown: { mustHave: 68, semantic: 75, experience: 80, seniority: 85, niceToHave: 30, availability: 60 },
     mustHaveCoverage: ["Kubernetes", "PostgreSQL"], gaps: ["Go", "Kafka"], niceToHave: [],
     evidence: [{ skill: "Kubernetes", cite: "Managed 40-node production cluster at CloudCore; implemented RBAC, PSPs, and network policies." }],
-    llmVerdict: "Weak programming-language fit. Strong infra/Kubernetes coverage, but no Go or Kafka production exposure on record.",
+    llmVerdict: "The consultant has strong platform and Kubernetes experience, but the CV does not show the Go or Kafka production experience required for this assignment.",
   },
 ];
 
@@ -45,8 +45,8 @@ export default function Matching() {
       {/* Left */}
       <div className="w-72 flex-none border-r border-base bg-surface flex flex-col">
         <div className="px-4 py-3 border-b border-base">
-          <p className="text-xs font-medium text-base">Senior Backend Engineer</p>
-          <p className="text-[10px] text-muted mt-0.5">FinStream GmbH · {MATCHES.length} {t("match_matches")}</p>
+          <p className="text-xs font-medium text-base">Payments Platform Modernisation</p>
+          <p className="text-[10px] text-muted mt-0.5">Nordic Financial Services · {MATCHES.length} {t("match_matches")}</p>
         </div>
         <div className="flex-1 overflow-auto">
           {MATCHES.map((m, i) => (
@@ -129,20 +129,20 @@ export default function Matching() {
                     <span className="text-xs font-mono text-base">{s}</span>
                   </div>
                 ))}
-                {selected.gaps.map((s) => (
-                  <div key={s} className="flex items-center gap-2">
-                    <AlertTriangle size={11} style={{ color: "var(--ats-amber)" }} />
-                    <span className="text-xs font-mono" style={{ color: "var(--ats-amber)" }}>{s}</span>
-                    <span className="text-[10px] text-3">{t("match_gap")}</span>
-                  </div>
-                ))}
+                <p className="text-[10px] text-3 uppercase tracking-wider pt-2">{t("match_missing")}</p>
+                {selected.gaps.length > 0 ? selected.gaps.map((s) => (
+                    <div key={s} className="flex items-center gap-2">
+                      <AlertTriangle size={11} style={{ color: "var(--ats-amber)" }} />
+                      <span className="text-xs font-mono" style={{ color: "var(--ats-amber)" }}>{s}</span>
+                    </div>
+                  )) : <p className="text-xs text-3">{t("match_none_missing")}</p>}
               </div>
             </div>
             <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
               <p className="text-xs font-medium text-base mb-3">{t("match_nice")}</p>
               {selected.niceToHave.length > 0
                 ? <div className="space-y-2">{selected.niceToHave.map((s) => (<div key={s} className="flex items-center gap-2"><CheckCircle size={11} style={{ color: "var(--ats-indigo)" }} /><span className="text-xs font-mono text-2">{s}</span></div>))}</div>
-                : <p className="text-xs text-3">None covered</p>}
+                : <p className="text-xs text-3">{t("match_none_strengths")}</p>}
             </div>
           </div>
 
@@ -153,6 +153,7 @@ export default function Matching() {
               <div>
                 <p className="text-[11px] text-3 mb-1 font-mono uppercase tracking-wider">{t("match_judge")}</p>
                 <p className="text-xs text-2 leading-relaxed">{selected.llmVerdict}</p>
+                <p className="text-[10px] text-3 leading-relaxed mt-2">{t("match_decision")}</p>
               </div>
             </div>
           </div>
