@@ -427,3 +427,12 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# React / Vite frontend
+dist/
+.cache/
+.vite/
+.env*
+vite.config.*.timestamp-*
+*.tsbuildinfo
+*-debug.log*

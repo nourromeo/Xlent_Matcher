@@ -1,0 +1,11 @@
+{
+  "title": "XLENT Consultant Matching Platform",
+  "description": "An internal XLENT tool for comparing client assignments with existing consultants and understanding each match.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
