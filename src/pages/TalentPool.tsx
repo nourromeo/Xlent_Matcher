@@ -4,13 +4,13 @@ import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
 
 const CONSULTANTS = [
-  { id: "1", initials: "AK", name: "Anna Kovacs", headline: "Senior Backend Consultant · Go, Rust, PostgreSQL", seniority: "Senior", experience: "8 yrs", skills: ["Go", "Rust", "PostgreSQL", "Kafka", "Kubernetes"], availability: "Immediate", score: 91, starred: true },
-  { id: "2", initials: "ML", name: "Marcus Lee", headline: "AI Consultant · PyTorch, Transformers, NLP", seniority: "Mid", experience: "5 yrs", skills: ["Python", "PyTorch", "NLP", "Azure ML", "FastAPI"], availability: "2 weeks", score: 84, starred: false },
-  { id: "3", initials: "PS", name: "Priya Sharma", headline: "Platform Consultant · Observability, Terraform", seniority: "Staff", experience: "11 yrs", skills: ["Terraform", "Kubernetes", "Prometheus", "Go", "Python"], availability: "1 month", score: 78, starred: false },
-  { id: "4", initials: "TR", name: "Tobias Renz", headline: "Full-Stack Consultant · .NET, React, Azure", seniority: "Mid", experience: "6 yrs", skills: ["C#", ".NET", "React", "TypeScript", "Azure"], availability: "Immediate", score: 73, starred: false },
-  { id: "5", initials: "SY", name: "Sofia Yun", headline: "Frontend Consultant · React, Design Systems", seniority: "Mid", experience: "4 yrs", skills: ["React", "TypeScript", "CSS", "Figma", "Storybook"], availability: "3 months", score: 67, starred: false },
-  { id: "6", initials: "RO", name: "Ravi Okonkwo", headline: "Data Consultant · Spark, dbt, Snowflake", seniority: "Senior", experience: "7 yrs", skills: ["Python", "Spark", "dbt", "Snowflake", "Airflow"], availability: "Immediate", score: 62, starred: false },
-  { id: "7", initials: "FM", name: "Fatima Martinez", headline: "Cloud Consultant · CI/CD, Docker, AWS", seniority: "Junior", experience: "2 yrs", skills: ["Docker", "GitHub Actions", "AWS", "Python", "Bash"], availability: "2 weeks", score: 55, starred: false },
+  { id: "1", initials: "AK", name: "Anna Kovacs", headline: "Senior Backend Consultant · Go, Rust, PostgreSQL", seniority: "Senior", experience: "8 yrs", skills: ["Go", "Rust", "PostgreSQL", "Kafka", "Kubernetes"], availability: "Immediate", starred: true },
+  { id: "2", initials: "ML", name: "Marcus Lee", headline: "AI Consultant · PyTorch, Transformers, NLP", seniority: "Mid", experience: "5 yrs", skills: ["Python", "PyTorch", "NLP", "Azure ML", "FastAPI"], availability: "2 weeks", starred: false },
+  { id: "3", initials: "PS", name: "Priya Sharma", headline: "Platform Consultant · Observability, Terraform", seniority: "Staff", experience: "11 yrs", skills: ["Terraform", "Kubernetes", "Prometheus", "Go", "Python"], availability: "1 month", starred: false },
+  { id: "4", initials: "TR", name: "Tobias Renz", headline: "Full-Stack Consultant · .NET, React, Azure", seniority: "Mid", experience: "6 yrs", skills: ["C#", ".NET", "React", "TypeScript", "Azure"], availability: "Immediate", starred: false },
+  { id: "5", initials: "SY", name: "Sofia Yun", headline: "Frontend Consultant · React, Design Systems", seniority: "Mid", experience: "4 yrs", skills: ["React", "TypeScript", "CSS", "Figma", "Storybook"], availability: "3 months", starred: false },
+  { id: "6", initials: "RO", name: "Ravi Okonkwo", headline: "Data Consultant · Spark, dbt, Snowflake", seniority: "Senior", experience: "7 yrs", skills: ["Python", "Spark", "dbt", "Snowflake", "Airflow"], availability: "Immediate", starred: false },
+  { id: "7", initials: "FM", name: "Fatima Martinez", headline: "Cloud Consultant · CI/CD, Docker, AWS", seniority: "Junior", experience: "2 yrs", skills: ["Docker", "GitHub Actions", "AWS", "Python", "Bash"], availability: "2 weeks", starred: false },
 ];
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
@@ -31,9 +31,6 @@ export default function ConsultantPool() {
     if (query && !c.name.toLowerCase().includes(query.toLowerCase()) && !c.headline.toLowerCase().includes(query.toLowerCase()) && !c.skills.some((s) => s.toLowerCase().includes(query.toLowerCase()))) return false;
     return true;
   });
-
-  const scoreColor = (s: number) =>
-    s >= 85 ? "var(--ats-green)" : s >= 70 ? "var(--ats-indigo)" : "var(--ats-muted)";
 
   return (
     <div className="p-6 space-y-4">
@@ -91,9 +88,9 @@ export default function ConsultantPool() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-base">
-              {["", t("col_candidate"), t("col_seniority"), t("col_experience"), t("col_skills"), t("col_avail"), t("col_score"), ""].map((h, i) => (
+              {[t("col_candidate"), t("col_seniority"), t("col_experience"), t("col_skills"), t("col_avail"), "Actions"].map((h, i) => (
                 <th key={i} className="text-[10px] font-medium text-3 uppercase tracking-wider text-left px-3 py-2.5">
-                  {h && <div className="flex items-center gap-1">{h}{["Consultant", "Experience", "Match Score", t("col_candidate"), t("col_experience"), t("col_score")].includes(h) && <ChevronDown size={9} className="text-3" />}</div>}
+                  <div className="flex items-center gap-1">{h}{["Consultant", "Experience", t("col_candidate"), t("col_experience")].includes(h) && <ChevronDown size={9} className="text-3" />}</div>
                 </th>
               ))}
             </tr>
@@ -101,11 +98,6 @@ export default function ConsultantPool() {
           <tbody>
             {filtered.map((c) => (
               <tr key={c.id} className="group border-b border-sub hover:bg-raised transition-colors">
-                <td className="px-3 py-2.5 w-8">
-                  <button onClick={() => setStarred((s) => ({ ...s, [c.id]: !s[c.id] }))} style={{ color: starred[c.id] ? "var(--ats-amber)" : "var(--ats-border)" }}>
-                    <Star size={12} fill={starred[c.id] ? "currentColor" : "none"} />
-                  </button>
-                </td>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-full bg-indigo-sub flex items-center justify-center text-[10px] font-semibold text-indigo flex-none">{c.initials}</div>
@@ -129,12 +121,14 @@ export default function ConsultantPool() {
                   {c.availability === "Immediate" ? t("immediate") : c.availability}
                 </td>
                 <td className="px-3 py-2.5">
-                  <span className="text-xs font-mono font-medium px-2 py-0.5 rounded" style={{ color: scoreColor(c.score), background: `${scoreColor(c.score)}18` }}>{c.score}</span>
-                </td>
-                <td className="px-3 py-2.5">
-                  <Link to={`/talent/${c.id}`} className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-[10px] text-indigo transition-all hover:opacity-70">
-                    {t("view")} <ArrowUpRight size={10} />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setStarred((s) => ({ ...s, [c.id]: !s[c.id] }))} aria-label={`Star ${c.name}`} style={{ color: starred[c.id] ? "var(--ats-amber)" : "var(--ats-border)" }}>
+                      <Star size={12} fill={starred[c.id] ? "currentColor" : "none"} />
+                    </button>
+                    <Link to={`/talent/${c.id}`} className="flex items-center gap-1 text-[10px] text-indigo transition-opacity hover:opacity-70">
+                      {t("view")} <ArrowUpRight size={10} />
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
