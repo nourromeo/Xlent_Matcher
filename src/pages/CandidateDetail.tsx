@@ -31,12 +31,28 @@ const LEVEL_BG: Record<string, React.CSSProperties> = {
   Familiar:  { color: "var(--ats-muted)",  background: "var(--ats-surface-r)"  },
 };
 
+
+const lines = (value: string) => value.split("\\n").map((line) => line.trim()).filter(Boolean);
+const parseSkills = (value: string) => lines(value).map((line) => {
+  const [name, category = "Skill", yearsUsed = "0", level = "Familiar", ...evidence] = line.split("|").map((part) => part.trim());
+  return { name, category, yearsUsed: Number(yearsUsed) || 0, level, evidence: evidence.join(" | ") || "Evidence requires review." };
+});
+const parseEducation = (value: string) => lines(value).map((line) => {
+  const [degree, school = "", year = ""] = line.split("|").map((part) => part.trim());
+  return { degree, school, year };
+});
+const parseExperience = (value: string) => lines(value).map((line) => {
+  const [role, company = "", start = "", end = "Present", stack = "", ...achievements] = line.split("|").map((part) => part.trim());
+  return { role, company, start, end, stack: stack.split(",").map((item) => item.trim()).filter(Boolean), achievements: achievements.length ? achievements : ["Achievement requires review."] };
+});
+
 export default function ConsultantProfile() {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"profile" | "original">("profile");
   const [editMode, setEditMode] = useState(false);
   const [profile, setProfile] = useState(PROFILE);
   const [draft, setDraft] = useState(PROFILE);
+  const [draftLists, setDraftLists] = useState({ skills: "", experience: "", education: "", languages: "", industries: "", certifications: "" });
   const [reviewStatus, setReviewStatus] = useState<"Needs Review" | "Verified">("Needs Review");
 
   return (
@@ -58,7 +74,7 @@ export default function ConsultantProfile() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => { setDraft(profile); setEditMode(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors"
+          <button onClick={() => { setDraft(profile); setDraftLists({ skills: profile.skills.map((s) => [s.name, s.category, s.yearsUsed, s.level, s.evidence].join(" | ")).join("\\n"), experience: profile.experience.map((e) => [e.role, e.company, e.start, e.end, e.stack.join(", "), e.achievements.join("; ")].join(" | ")).join("\\n"), education: profile.education.map((e) => [e.degree, e.school, e.year].join(" | ")).join("\\n"), languages: profile.languages.join("\\n"), industries: profile.industries.join("\\n"), certifications: profile.certifications.join("\\n") }); setEditMode(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors"
             style={editMode ? { border: "1px solid var(--ats-indigo)", color: "var(--ats-indigo)", background: "var(--ats-indigo-sub)" } : { border: "1px solid var(--ats-border)", color: "var(--ats-text-2)" }}>
             <Edit3 size={12} /> {t("cand_edit")}
           </button>
@@ -199,21 +215,30 @@ export default function ConsultantProfile() {
 
       {editMode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.65)" }}>
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-auto bg-surface border border-base rounded-lg p-5" style={{ boxShadow: "var(--ats-shadow)" }}>
-            <div className="flex items-center justify-between mb-5"><div><h2 className="text-sm font-semibold text-base">Edit Consultant Profile</h2><p className="text-[11px] text-muted mt-1">Update extracted consultant information before matching.</p></div><button onClick={() => setEditMode(false)} className="text-xs text-muted">Close</button></div>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="space-y-1"><span className="text-[10px] text-muted">Full name</span><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
-              <label className="space-y-1"><span className="text-[10px] text-muted">Headline</span><input value={draft.headline} onChange={(e) => setDraft({ ...draft, headline: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
-              <label className="space-y-1"><span className="text-[10px] text-muted">Role</span><input value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
-              <label className="space-y-1"><span className="text-[10px] text-muted">Seniority</span><input value={draft.seniority} onChange={(e) => setDraft({ ...draft, seniority: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
-              <label className="space-y-1"><span className="text-[10px] text-muted">Availability</span><input value={draft.availability} onChange={(e) => setDraft({ ...draft, availability: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
-              <label className="space-y-1"><span className="text-[10px] text-muted">Office / Location</span><input value={draft.office} onChange={(e) => setDraft({ ...draft, office: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
-              <label className="space-y-1"><span className="text-[10px] text-muted">Years of experience</span><input type="number" value={draft.totalYearsExperience} onChange={(e) => setDraft({ ...draft, totalYearsExperience: Number(e.target.value) })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+          <div className="w-full max-w-4xl max-h-[92vh] overflow-auto bg-surface border border-base rounded-lg p-5" style={{ boxShadow: "var(--ats-shadow)" }}>
+            <div className="flex items-center justify-between mb-5">
+              <div><h2 className="text-sm font-semibold text-base">Edit Extracted Consultant Profile</h2><p className="text-[11px] text-muted mt-1">Correct the structured information extracted from the consultant CV.</p></div>
+              <button onClick={() => setEditMode(false)} className="text-xs text-muted">Close</button>
             </div>
-            <div className="flex justify-end gap-2 mt-6"><button onClick={() => setEditMode(false)} className="text-xs px-3 py-1.5 rounded border border-base text-muted">Cancel</button><button onClick={() => { setProfile(draft); setEditMode(false); }} className="text-xs px-3 py-1.5 rounded text-white" style={{ background: "var(--ats-indigo)" }}>Save Changes</button></div>
+            <div className="space-y-5">
+              <section><h3 className="text-xs font-medium text-base mb-3">Basic Information</h3><div className="grid grid-cols-2 gap-3">
+                {[["Full name","name"],["Headline","headline"],["Role","role"],["Seniority","seniority"],["Availability","availability"],["Office / Location","office"]].map(([label,key]) => <label key={key} className="space-y-1"><span className="text-[10px] text-muted">{label}</span><input value={draft[key as keyof typeof draft] as string} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>)}
+                <label className="space-y-1"><span className="text-[10px] text-muted">Years of experience</span><input type="number" value={draft.totalYearsExperience} onChange={(e) => setDraft({ ...draft, totalYearsExperience: Number(e.target.value) })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+              </div></section>
+              <section><h3 className="text-xs font-medium text-base mb-1">Skills & Evidence</h3><p className="text-[10px] text-muted mb-2">One skill per line: Name | Category | Years | Level | Evidence</p><textarea value={draftLists.skills} onChange={(e) => setDraftLists({ ...draftLists, skills: e.target.value })} rows={6} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base font-mono outline-none" /></section>
+              <section><h3 className="text-xs font-medium text-base mb-1">Previous Projects</h3><p className="text-[10px] text-muted mb-2">One project per line: Role | Company | Start | End | Technologies | Achievement</p><textarea value={draftLists.experience} onChange={(e) => setDraftLists({ ...draftLists, experience: e.target.value })} rows={5} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base font-mono outline-none" /></section>
+              <div className="grid grid-cols-2 gap-4">
+                <section><h3 className="text-xs font-medium text-base mb-1">Education</h3><p className="text-[10px] text-muted mb-2">Degree | Institution | Year</p><textarea value={draftLists.education} onChange={(e) => setDraftLists({ ...draftLists, education: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base font-mono outline-none" /></section>
+                <section><h3 className="text-xs font-medium text-base mb-1">Languages</h3><p className="text-[10px] text-muted mb-2">One language per line</p><textarea value={draftLists.languages} onChange={(e) => setDraftLists({ ...draftLists, languages: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base outline-none" /></section>
+                <section><h3 className="text-xs font-medium text-base mb-1">Industries</h3><p className="text-[10px] text-muted mb-2">One industry per line</p><textarea value={draftLists.industries} onChange={(e) => setDraftLists({ ...draftLists, industries: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base outline-none" /></section>
+                <section><h3 className="text-xs font-medium text-base mb-1">Certifications</h3><p className="text-[10px] text-muted mb-2">One certification per line</p><textarea value={draftLists.certifications} onChange={(e) => setDraftLists({ ...draftLists, certifications: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base outline-none" /></section>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6"><button onClick={() => setEditMode(false)} className="text-xs px-3 py-1.5 rounded border border-base text-muted">Cancel</button><button onClick={() => { setProfile({ ...draft, skills: parseSkills(draftLists.skills), experience: parseExperience(draftLists.experience), education: parseEducation(draftLists.education), languages: lines(draftLists.languages), industries: lines(draftLists.industries), certifications: lines(draftLists.certifications) }); setEditMode(false); }} className="text-xs px-3 py-1.5 rounded text-white" style={{ background: "var(--ats-indigo)" }}>Save Changes</button></div>
           </div>
         </div>
       )}
+
     </div>
   );
 }
