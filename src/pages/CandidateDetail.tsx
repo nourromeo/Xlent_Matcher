@@ -59,7 +59,7 @@ export default function ConsultantProfile() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-6 py-4 border-b border-base bg-surface flex items-start gap-4 flex-none">
-        <Link to="/talent" className="text-3 hover:text-base transition-colors mt-0.5"><ChevronLeft size={16} /></Link>
+        <Link to="/talent" className="text-3 hover:text-2 transition-colors mt-0.5"><ChevronLeft size={16} /></Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-indigo-sub flex items-center justify-center text-sm font-semibold text-indigo">{profile.initials}</div>
