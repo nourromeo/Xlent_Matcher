@@ -81,6 +81,14 @@ html, body, #root {
 .bg-indigo-sub2 { background-color: var(--ats-indigo-sub2); }
 .border-indigo  { border-color: var(--ats-indigo); }
 
-/* Keep controls at a stable size on hover. */
-button, a { transform: none !important; }
-button:hover, a:hover { transform: none !important; }
+/* Disable every visual size change on hover for controls and navigation. */
+button, a, nav a {
+  transform: scale(1) !important;
+  zoom: 1 !important;
+}
+button:hover, a:hover, nav a:hover {
+  transform: scale(1) !important;
+  zoom: 1 !important;
+  font-size: inherit !important;
+  letter-spacing: inherit !important;
+}
