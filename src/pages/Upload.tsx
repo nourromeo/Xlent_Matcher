@@ -119,7 +119,7 @@ export default function Upload() {
                   </div>
                   {f.error && <p className="text-[10px] font-mono" style={{ color: "var(--ats-red)" }}>{f.error}</p>}
                 </div>
-                <button onClick={() => setFiles((p) => p.filter((x) => x.id !== f.id))} className="opacity-0 group-hover:opacity-100 text-3 hover:text-base transition-all">
+                <button onClick={() => setFiles((p) => p.filter((x) => x.id !== f.id))} className="opacity-0 group-hover:opacity-100 text-3 hover:text-2 transition-all">
                   <X size={12} />
                 </button>
               </div>
