@@ -68,7 +68,7 @@ export default function Layout() {
                 `flex items-center gap-2.5 px-2.5 py-1.5 rounded text-sm transition-colors ${
                   isActive
                     ? "bg-indigo-sub text-indigo font-medium"
-                    : "text-2 hover:text-base hover:bg-raised"
+                    : "text-2 hover:text-2 hover:bg-raised"
                 }`
               }
             >
@@ -122,7 +122,7 @@ export default function Layout() {
                   className={`text-[10px] font-mono px-2 py-1 transition-colors ${
                     locale === loc
                       ? "bg-indigo-sub text-indigo font-semibold"
-                      : "text-3 hover:text-base hover:bg-raised"
+                      : "text-3 hover:text-2 hover:bg-raised"
                   }`}
                 >
                   {LOCALE_LABELS[loc]}
@@ -133,7 +133,7 @@ export default function Layout() {
             {/* Theme toggle */}
             <button
               onClick={toggle}
-              className="w-7 h-7 rounded flex items-center justify-center text-muted hover:text-base hover:bg-raised border border-base transition-colors"
+              className="w-7 h-7 rounded flex items-center justify-center text-muted hover:text-2 hover:bg-raised border border-base transition-colors"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
