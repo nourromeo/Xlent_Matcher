@@ -118,13 +118,6 @@ export default function AssignmentDetail() {
         </div>
       </section>
 
-      <section className="bg-surface border border-base rounded-xl p-5" style={{ boxShadow: "var(--ats-shadow)" }}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div><h2 className="text-sm font-medium text-base">Matching Readiness</h2><p className="text-xs text-muted mt-1">This assignment has the information needed to compare XLENT consultants.</p></div>
-          <Link to={"/matching?assignment=" + assignment.id} className="inline-flex items-center justify-center gap-1.5 text-xs text-white px-3 py-2 rounded" style={{ background: "var(--ats-indigo)" }}><GitMerge size={12} />Start Matching</Link>
-        </div>
-      </section>
-
       {editMode && <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}>
         <div className="w-full max-w-3xl max-h-[92vh] overflow-auto bg-surface border border-base rounded-xl" style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
           <div className="sticky top-0 z-10 bg-surface flex items-center justify-between px-6 py-5 border-b border-base"><div><h2 className="text-base font-semibold text-base">Edit Client Assignment</h2><p className="text-xs text-muted mt-1">Update the assignment details and matching criteria.</p></div><button onClick={() => setEditMode(false)} className="p-1 text-muted hover:text-base" aria-label="Close"><X size={16} /></button></div>
