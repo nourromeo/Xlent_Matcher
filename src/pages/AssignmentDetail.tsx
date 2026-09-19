@@ -37,7 +37,7 @@ function SkillEditor({ label, hint, skills, onChange, accent }: { label: string;
       </div>
       <div className="flex gap-2">
         <input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSkill(); } }} placeholder="Add a skill" className="flex-1 bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" />
-        <button type="button" onClick={addSkill} className="inline-flex items-center gap-1 text-xs text-2 border border-base rounded px-2.5 py-2 hover:text-base"><Plus size={12} />Add</button>
+        <button type="button" onClick={addSkill} className="inline-flex items-center gap-1 text-xs text-2 border border-base rounded px-2.5 py-2 hover:text-2"><Plus size={12} />Add</button>
       </div>
     </div>
   );
@@ -67,7 +67,7 @@ export default function AssignmentDetail() {
 
   return (
     <div className="p-6 space-y-5 max-w-6xl mx-auto">
-      <Link to="/jobs" className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-base"><ArrowLeft size={13} />Back to Client Assignments</Link>
+      <Link to="/jobs" className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-2"><ArrowLeft size={13} />Back to Client Assignments</Link>
 
       <header className="bg-surface border border-base rounded-xl p-5" style={{ boxShadow: "var(--ats-shadow)" }}>
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
@@ -84,10 +84,10 @@ export default function AssignmentDetail() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link to={"/matching?assignment=" + assignment.id} className="inline-flex items-center gap-1.5 text-xs text-white px-3 py-2 rounded" style={{ background: "var(--ats-indigo)" }}><GitMerge size={12} />Match Consultants</Link>
-            <button onClick={openEdit} className="inline-flex items-center gap-1.5 text-xs text-2 px-3 py-2 rounded border border-base hover:text-base"><Edit3 size={12} />Edit Assignment</button>
+            <button onClick={openEdit} className="inline-flex items-center gap-1.5 text-xs text-2 px-3 py-2 rounded border border-base hover:text-2"><Edit3 size={12} />Edit Assignment</button>
             <div className="relative">
-              <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded border border-base text-muted hover:text-base" aria-label="More actions"><MoreHorizontal size={14} /></button>
-              {menuOpen && <div className="absolute right-0 top-10 z-10 w-44 bg-surface border border-base rounded-lg p-1 shadow-lg"><button className="w-full flex items-center gap-2 text-xs text-muted px-2.5 py-2 rounded hover:bg-raised hover:text-base"><Archive size={13} />Archive Assignment</button></div>}
+              <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded border border-base text-muted hover:text-2" aria-label="More actions"><MoreHorizontal size={14} /></button>
+              {menuOpen && <div className="absolute right-0 top-10 z-10 w-44 bg-surface border border-base rounded-lg p-1 shadow-lg"><button className="w-full flex items-center gap-2 text-xs text-muted px-2.5 py-2 rounded hover:bg-raised hover:text-2"><Archive size={13} />Archive Assignment</button></div>}
             </div>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function AssignmentDetail() {
 
       {editMode && <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}>
         <div className="w-full max-w-3xl max-h-[92vh] overflow-auto bg-surface border border-base rounded-xl" style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
-          <div className="sticky top-0 z-10 bg-surface flex items-center justify-between px-6 py-5 border-b border-base"><div><h2 className="text-base font-semibold text-base">Edit Client Assignment</h2><p className="text-xs text-muted mt-1">Update the assignment details and matching criteria.</p></div><button onClick={() => setEditMode(false)} className="p-1 text-muted hover:text-base" aria-label="Close"><X size={16} /></button></div>
+          <div className="sticky top-0 z-10 bg-surface flex items-center justify-between px-6 py-5 border-b border-base"><div><h2 className="text-base font-semibold text-base">Edit Client Assignment</h2><p className="text-xs text-muted mt-1">Update the assignment details and matching criteria.</p></div><button onClick={() => setEditMode(false)} className="p-1 text-muted hover:text-2" aria-label="Close"><X size={16} /></button></div>
           <div className="p-6 space-y-7">
             <section><h3 className="text-xs font-semibold uppercase tracking-wide text-base mb-3">1. Basic Information</h3><div className="grid md:grid-cols-2 gap-4">{[["Assignment Title", "title"], ["Client", "client"], ["Seniority", "seniority"], ["Availability", "availability"]].map(([label, key]) => <label key={key} className="space-y-1.5"><span className="text-[11px] text-muted">{label}</span><input value={String(draft[key as keyof DraftAssignment])} onChange={(event) => setDraftField(key as keyof DraftAssignment, event.target.value as never)} className="w-full bg-base border border-base rounded-lg px-3 py-2.5 text-xs text-base outline-none" /></label>)}</div></section>
             <section><h3 className="text-xs font-semibold uppercase tracking-wide text-base mb-3">2. Assignment Description</h3><textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} className="w-full bg-base border border-base rounded-lg px-3 py-2.5 text-xs text-base outline-none resize-none" placeholder="Describe the client assignment..." /></section>
