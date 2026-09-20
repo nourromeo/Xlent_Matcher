@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Tabs } from "../components/ui/Tabs";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { SKILLS, PROMPTS, FLAGS_DATA } from "../data/mock";
+import { SKILLS, PROMPTS, FLAGS_DATA } from "../features/admin";
 
 
 
