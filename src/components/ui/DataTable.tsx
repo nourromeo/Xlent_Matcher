@@ -4,7 +4,7 @@ type Column<T> = { key: string; header: string; render?: (row: T) => ReactNode }
 
 type DataTableProps<T> = {
   columns: Column<T>[];
-  rows: T[];
+  rows: readonly T[];
   rowKey: (row: T) => string;
   emptyMessage?: string;
 };
