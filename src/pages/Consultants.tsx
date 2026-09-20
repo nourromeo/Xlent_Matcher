@@ -17,6 +17,17 @@ export default function Consultants() {
   const [seniority, setSeniority] = useState("All");
   const [avail, setAvail] = useState("All");
 
+  const displaySeniority = (value: string) =>
+    value === "Junior" ? t("seniority_junior") :
+    value === "Mid" ? t("seniority_mid") :
+    value === "Senior" ? t("seniority_senior") :
+    value === "Staff" ? t("seniority_staff") : value;
+  const displayAvailability = (value: string) =>
+    value === "Immediate" ? t("immediate") :
+    value === "2 weeks" ? t("availability_2_weeks") :
+    value === "1 month" ? t("availability_1_month") :
+    value === "3 months" ? t("availability_3_months") : value;
+
   const filtered = CONSULTANTS.filter((consultant) => {
     if (seniority !== "All" && consultant.seniority !== seniority) return false;
     if (avail !== "All" && consultant.availability !== avail) return false;
@@ -30,18 +41,18 @@ export default function Consultants() {
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex-1 relative max-w-xs"><Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" /><Input type="search" placeholder={t("talent_search")} value={query} onChange={(event) => setQuery(event.target.value)} className="pl-8 py-1.5" /></div>
         <div className="flex items-center gap-1.5 text-[10px] text-app-faint"><Filter size={10} /><span>{t("talent_seniority")}</span></div>
-        {SENIORITY_OPTIONS.map((option) => <button key={option} onClick={() => setSeniority(option)} className="text-[11px] px-2.5 py-1 rounded transition-colors" style={seniority === option ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)", fontWeight: 500 } : { color: "var(--color-text-muted)" }}>{option === "All" ? t("talent_all") : option}</button>)}
+        {SENIORITY_OPTIONS.map((option) => <button key={option} onClick={() => setSeniority(option)} className="text-[11px] px-2.5 py-1 rounded transition-colors" style={seniority === option ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)", fontWeight: 500 } : { color: "var(--color-text-muted)" }}>{option === "All" ? t("talent_all") : displaySeniority(option)}</button>)}
         <span className="text-[10px] text-app-faint">{t("talent_avail")}</span>
-        <select value={avail} onChange={(event) => setAvail(event.target.value)} className="text-[11px] rounded px-2 py-1 focus:outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}>{AVAIL_OPTIONS.map((option) => <option key={option} value={option}>{option === "All" ? t("talent_all") : option}</option>)}</select>
+        <select value={avail} onChange={(event) => setAvail(event.target.value)} className="text-[11px] rounded px-2 py-1 focus:outline-none" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}>{AVAIL_OPTIONS.map((option) => <option key={option} value={option}>{option === "All" ? t("talent_all") : displayAvailability(option)}</option>)}</select>
       </div>
       <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
         <DataTable
           columns={[
             { key: "consultant", header: t("col_candidate"), render: (consultant) => <div className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-full bg-app-brand-subtle flex items-center justify-center text-[10px] font-semibold text-app-brand flex-none">{consultant.initials}</div><div><p className="font-medium text-app-primary">{consultant.name}</p><p className="text-[10px] text-app-muted max-w-xs truncate">{consultant.headline}</p></div></div> },
-            { key: "seniority", header: t("col_seniority") },
+            { key: "seniority", header: t("col_seniority"), render: (consultant) => <span>{displaySeniority(consultant.seniority)}</span> },
             { key: "experience", header: t("col_experience"), render: (consultant) => <span className="font-mono">{consultant.experience}</span> },
             { key: "skills", header: t("col_skills"), render: (consultant) => <div className="flex flex-wrap gap-1">{consultant.skills.slice(0, 4).map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}{consultant.skills.length > 4 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 4}</span>}</div> },
-            { key: "availability", header: t("col_avail"), render: (consultant) => <span style={{ color: consultant.availability === "Immediate" ? "var(--color-success)" : "var(--color-text-secondary)" }}>{consultant.availability === "Immediate" ? t("immediate") : consultant.availability}</span> },
+            { key: "availability", header: t("col_avail"), render: (consultant) => <span style={{ color: consultant.availability === "Immediate" ? "var(--color-success)" : "var(--color-text-secondary)" }}>{displayAvailability(consultant.availability)}</span> },
             { key: "actions", header: t("common_actions"), render: (consultant) => <div className="flex items-center"><LinkButton to={`/consultants/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>{t("consultants_view")}</LinkButton></div> },
           ]}
           rows={filtered}
