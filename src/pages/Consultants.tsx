@@ -42,11 +42,11 @@ export default function Consultants() {
             { key: "experience", header: t("col_experience"), render: (consultant) => <span className="font-mono">{consultant.experience}</span> },
             { key: "skills", header: t("col_skills"), render: (consultant) => <div className="flex flex-wrap gap-1">{consultant.skills.slice(0, 4).map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}{consultant.skills.length > 4 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 4}</span>}</div> },
             { key: "availability", header: t("col_avail"), render: (consultant) => <span style={{ color: consultant.availability === "Immediate" ? "var(--color-success)" : "var(--color-text-secondary)" }}>{consultant.availability === "Immediate" ? t("immediate") : consultant.availability}</span> },
-            { key: "actions", header: "Actions", render: (consultant) => <div className="flex items-center"><LinkButton to={`/consultants/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>View Consultant</LinkButton></div> },
+            { key: "actions", header: t("common_actions"), render: (consultant) => <div className="flex items-center"><LinkButton to={`/consultants/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>{t("consultants_view")}</LinkButton></div> },
           ]}
           rows={filtered}
           rowKey={(consultant) => consultant.id}
-          emptyMessage="No consultants match the current filters."
+          emptyMessage={t("consultants_empty")}
         />
         <div className="border-t border-app px-4 py-2.5 flex items-center justify-between bg-app-surface"><span className="text-[10px] text-app-faint">{t("talent_showing")} {filtered.length} {t("talent_of")} {CONSULTANTS.length} {t("talent_candidates")}</span><div className="flex items-center gap-1">{[1, 2, 3].map((page) => <button key={page} className="text-[10px] w-6 h-6 rounded flex items-center justify-center" style={page === 1 ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)" } : { color: "var(--color-text-faint)" }}>{page}</button>)}</div></div>
       </div>
