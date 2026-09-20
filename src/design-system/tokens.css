@@ -55,7 +55,9 @@ html.light {
 .bg-app-raised { background-color: var(--color-surface-raised); }
 .border-app { border-color: var(--color-border); }
 .border-app-subtle { border-color: var(--color-border-subtle); }
+.border-app-brand { border-color: var(--color-brand); }
 .bg-app-brand { background-color: var(--color-brand); }
 .bg-app-brand-subtle { background-color: var(--color-brand-subtle); }
+.bg-app-brand-soft { background-color: var(--color-brand-soft); }
 .text-app-brand { color: var(--color-brand); }
 .shadow-app-surface { box-shadow: var(--shadow-surface); }
