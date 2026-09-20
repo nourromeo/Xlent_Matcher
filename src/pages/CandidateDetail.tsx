@@ -26,9 +26,9 @@ const PROFILE = {
 };
 
 const LEVEL_BG: Record<string, React.CSSProperties> = {
-  Expert:    { color: "var(--color-success)",  background: "rgba(34,197,94,0.10)"  },
+  Expert:    { color: "var(--color-success)",  background: "var(--color-success-subtle)"  },
   Proficient:{ color: "var(--color-brand)", background: "var(--color-brand-subtle)" },
-  Familiar:  { color: "var(--color-text-app-muted)",  background: "var(--color-surface-raised)"  },
+  Familiar:  { color: "var(--color-text-muted)",  background: "var(--color-surface-raised)"  },
 };
 
 
@@ -69,8 +69,8 @@ export default function ConsultantProfile() {
               </h1>
               <p className="text-xs text-app-muted">{profile.role} · {profile.office} · {profile.totalYearsExperience} {t("cand_exp")}</p>
             </div>
-            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--color-success)", background: "rgba(34,197,94,0.10)" }}>{profile.availability === "Immediate" ? t("immediate") : profile.availability}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: reviewStatus === "Verified" ? "var(--color-success)" : "var(--ats-amber, #f59e0b)", background: reviewStatus === "Verified" ? "rgba(34,197,94,0.10)" : "rgba(245,158,11,0.10)" }}>{reviewStatus}</span>
+            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}>{profile.availability === "Immediate" ? t("immediate") : profile.availability}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: reviewStatus === "Verified" ? "var(--color-success)" : "var(--color-warning)", background: reviewStatus === "Verified" ? "var(--color-success-subtle)" : "var(--color-warning-subtle)" }}>{reviewStatus}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export default function ConsultantProfile() {
         {(["profile", "original"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className="flex items-center gap-1.5 text-xs px-1 py-2.5 mr-5 border-b-2 transition-colors"
-            style={activeTab === tab ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 } : { borderColor: "transparent", color: "var(--color-text-app-muted)" }}>
+            style={activeTab === tab ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 } : { borderColor: "transparent", color: "var(--color-text-muted)" }}>
             {tab === "profile" ? <Code size={12} /> : <FileText size={12} />}
             {tab === "profile" ? t("cand_parsed") : t("cand_original")}
           </button>
@@ -214,7 +214,7 @@ export default function ConsultantProfile() {
       </div>
 
       {editMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.65)" }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "var(--color-overlay)" }}>
           <div className="w-full max-w-4xl max-h-[92vh] overflow-auto bg-app-surface border border-app rounded-lg p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
             <div className="flex items-center justify-between mb-5">
               <div><h2 className="text-sm font-semibold text-app-primary">Edit Extracted Consultant Profile</h2><p className="text-[11px] text-app-muted mt-1">Correct the structured information extracted from the consultant CV.</p></div>
