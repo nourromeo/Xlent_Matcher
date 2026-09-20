@@ -3,6 +3,7 @@ import { CheckCircle, AlertTriangle, ChevronDown, Send, Info } from "../design-s
 import { useI18n } from "../i18n";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "../design-system/icons";
+import { PageHeader } from "../components/ui/PageHeader";
 import { MATCHES, MATCH_WEIGHTS } from "../features/matching";
 
 
@@ -23,10 +24,8 @@ export default function Matching() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-none px-5 py-3 border-b border-app bg-app-surface">
-        <Link to="/jobs" className="inline-flex items-center gap-1.5 text-xs text-app-muted hover:text-app-secondary">
-          <ArrowLeft size={13} />Back to Client Assignments
-        </Link>
+      <div className="flex-none px-6 py-4 bg-app-surface">
+        <PageHeader title="Match Consultants" description="Payments Platform Modernisation · Nordic Financial Services" meta={MATCHES.length + " " + t("match_matches")} backTo="/jobs" backLabel="Back to Client Assignments" />
       </div>
       <div className="flex-1 flex min-h-0">
       {/* Left */}
