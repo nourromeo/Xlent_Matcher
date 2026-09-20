@@ -39,9 +39,11 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort 
     const column = columns.find((item) => item.key === sort.key);
     if (!column?.sortable || !column.sortValue) return [...rows];
 
+    const getSortValue = column.sortValue;
+
     return [...rows].sort((a, b) => {
-      const aValue = normalizeSortValue(column.sortValue(a));
-      const bValue = normalizeSortValue(column.sortValue(b));
+      const aValue = normalizeSortValue(getSortValue(a));
+      const bValue = normalizeSortValue(getSortValue(b));
 
       let result = 0;
       if (typeof aValue === "number" && typeof bValue === "number") {
