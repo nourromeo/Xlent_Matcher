@@ -3,7 +3,7 @@ import { CheckCircle, AlertTriangle, ChevronDown, Send, Info } from "../design-s
 import { useI18n } from "../i18n";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "../design-system/icons";
-import { MATCHES } from "../features/matching";
+import { MATCHES, MATCH_WEIGHTS } from "../features/matching";
 
 
 
@@ -16,7 +16,8 @@ export default function Matching() {
     mustHave: t("score_mustHave"), semantic: t("score_semantic"), experience: t("score_experience"),
     seniority: t("score_seniority"), niceToHave: t("score_niceToHave"), availability: t("score_availability"),
   };
-  const WEIGHTS: Record<string, number> = { mustHave: 40, semantic: 20, experience: 15, seniority: 10, niceToHave: 5, availability: 10 };
+  const WEIGHTS: Record<string, number> = MATCH_WEIGHTS;
+
 
   const barColor = (v: number) => v >= 85 ? "var(--color-success)" : v >= 65 ? "var(--color-brand)" : "var(--color-warning)";
 
