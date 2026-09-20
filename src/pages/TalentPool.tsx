@@ -6,7 +6,6 @@ import { LinkButton } from "../components/ui/LinkButton";
 import { Input } from "../components/ui/Input";
 import { DataTable } from "../components/ui/DataTable";
 import { SkillTag } from "../components/ui/SkillTag";
-import { EmptyState } from "../components/ui/EmptyState";
 import { CONSULTANTS } from "../data/mock";
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
@@ -52,7 +51,6 @@ export default function ConsultantPool() {
         />
         <div className="border-t border-app px-4 py-2.5 flex items-center justify-between bg-app-surface"><span className="text-[10px] text-app-faint">{t("talent_showing")} {filtered.length} {t("talent_of")} {CONSULTANTS.length} {t("talent_candidates")}</span><div className="flex items-center gap-1">{[1, 2, 3].map((page) => <button key={page} className="text-[10px] w-6 h-6 rounded flex items-center justify-center" style={page === 1 ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)" } : { color: "var(--color-text-faint)" }}>{page}</button>)}</div></div>
       </div>
-      {filtered.length === 0 && <EmptyState title="No consultants found." description="Try adjusting the search or filters." />}
     </div>
   );
 }
