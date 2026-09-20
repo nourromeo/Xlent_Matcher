@@ -11,7 +11,7 @@ import {
   Sun,
   Moon,
   Sparkles,
-} from "lucide-react";
+} from "../design-system/icons";
 import { useTheme } from "../theme";
 import { useI18n, type Locale } from "../i18n";
 
