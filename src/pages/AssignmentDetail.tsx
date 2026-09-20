@@ -1,19 +1,18 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { Edit3, Eye, MoreHorizontal, Plus, X } from "../design-system/icons";
+import { Link, useParams } from "react-router-dom";
+import { Briefcase, ChevronLeft, Edit3, Eye, Plus, X } from "../design-system/icons";
 import { ASSIGNMENTS } from "../features/assignments";
 import type { Assignment } from "../features/assignments";
+import { ASSIGNMENT_STATUS_CONFIG } from "../features/assignments";
+import { StatusBadge } from "../components/ui/StatusBadge";
 import { Button } from "../components/ui/Button";
-import { IconButton } from "../components/ui/IconButton";
 import { LinkButton } from "../components/ui/LinkButton";
-import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { SkillTag } from "../components/ui/SkillTag";
 import { EditFormModal } from "../components/ui/EditFormModal";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
-import { PageHeader } from "../components/ui/PageHeader";
 
 type DraftAssignment = Omit<Assignment, "requiredSkills" | "preferredSkills"> & {
   requiredSkills: string[];
@@ -71,13 +70,11 @@ export default function AssignmentDetail() {
   };
   const [assignment, setAssignment] = useState<Assignment>(baseAssignment);
   const [editMode, setEditMode] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [draft, setDraft] = useState<DraftAssignment>(toDraftAssignment(baseAssignment));
 
   const openEdit = () => {
     setDraft(toDraftAssignment(assignment));
     setEditMode(true);
-    setMenuOpen(false);
   };
 
   const saveEdit = () => {
@@ -90,14 +87,43 @@ export default function AssignmentDetail() {
 
   return (
     <div className="p-6 space-y-5 max-w-6xl mx-auto">
-      <PageHeader
-        backTo="/jobs"
-        backLabel="Back to Client Assignments"
-        eyebrow={"Client Assignment · " + statusLabel}
-        title={assignment.title}
-        description={assignment.client + " · Created " + assignment.created}
-        actions={<><LinkButton to={"/matching?assignment=" + assignment.id} variant="secondary" icon={<Eye size={12} />}>View Matches</LinkButton><Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>Edit Assignment</Button><IconButton onClick={() => setMenuOpen(!menuOpen)} icon={<MoreHorizontal size={14} />} label="More actions" /></>}
-      />
+      <header className="flex items-start gap-4 border-b border-app pb-4">
+        <Link
+          to="/jobs"
+          aria-label="Back to Client Assignments"
+          className="text-app-faint hover:text-app-secondary transition-colors mt-1"
+        >
+          <ChevronLeft size={16} />
+        </Link>
+
+        <div className="w-9 h-9 rounded-lg bg-app-brand-subtle flex items-center justify-center text-app-brand flex-none">
+          <Briefcase size={15} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-sm font-semibold text-app-primary">{assignment.title}</h1>
+            <StatusBadge tone={ASSIGNMENT_STATUS_CONFIG[assignment.status].tone}>{statusLabel}</StatusBadge>
+          </div>
+          <p className="text-xs text-app-muted mt-1">
+            {assignment.client} · {assignment.seniority} · Created {assignment.created}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <LinkButton
+            to={"/matching?assignment=" + assignment.id}
+            state={{ fromAssignment: true }}
+            variant="secondary"
+            icon={<Eye size={12} />}
+          >
+            View Matches
+          </LinkButton>
+          <Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>
+            Edit
+          </Button>
+        </div>
+      </header>
 
       <section className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
         <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-medium text-app-primary">Assignment Overview</h2><span className="text-[10px] text-app-muted">Client brief</span></div>
