@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { QUEUE, RECENT_MATCHES } from "../data/mock";
 import { DataTable } from "../components/ui/DataTable";
+import { PageHeader } from "../components/ui/PageHeader";
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
   parsing:   { color: "var(--color-warning)",  background: "var(--color-warning-subtle)" },
@@ -45,10 +46,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-app-primary font-semibold text-app-primary">{t("dash_title")}</h1>
-        <p className="text-xs text-app-muted mt-0.5">This internal tool helps XLENT compare client assignments with existing consultants and understand why a consultant matches or does not match.</p>
-      </div>
+      <PageHeader title={t("dash_title")} description="This internal tool helps XLENT compare client assignments with existing consultants and understand why a consultant matches or does not match." />
 
       <div className="grid grid-cols-4 gap-3">
         <StatCard label={t("dash_consultants")} value="124" sub={`18 ${t("dash_consultants_sub")}`} icon={Users} accent />
