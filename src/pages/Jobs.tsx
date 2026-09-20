@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Plus, GitMerge, Clock, CheckCircle, Zap, Eye, Archive } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { ASSIGNMENTS } from "../data/mock";
+export { ASSIGNMENTS };
 import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
