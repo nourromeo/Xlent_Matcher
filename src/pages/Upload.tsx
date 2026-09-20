@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Upload as UploadIcon, FileText, X, CheckCircle, AlertCircle, Loader } from "../design-system/icons";
 import { useI18n } from "../i18n";
+import { StatusBadge } from "../components/ui/StatusBadge";
 
 type FileStatus = "queued" | "extracting" | "parsing" | "embedding" | "done" | "error";
 
@@ -113,9 +114,9 @@ export default function Upload() {
                     <div className="flex-1 h-1 rounded-full" style={{ background: "var(--color-border)" }}>
                       <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${f.status === "done" || f.status === "error" ? 100 : f.progress}%`, backgroundColor: barColor(f.status) }} />
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] font-medium flex-none" style={{ color: statusColor(f.status) }}>
-                      {statusIcon(f.status)}{statusLabel(f.status)}
-                    </div>
+                    <StatusBadge tone={f.status === "done" ? "success" : f.status === "error" ? "danger" : f.status === "extracting" || f.status === "parsing" || f.status === "embedding" ? "brand" : "neutral"} icon={statusIcon(f.status)}>
+                      {statusLabel(f.status)}
+                    </StatusBadge>
                   </div>
                   {f.error && <p className="text-[10px] font-mono" style={{ color: "var(--color-danger)" }}>{f.error}</p>}
                 </div>
