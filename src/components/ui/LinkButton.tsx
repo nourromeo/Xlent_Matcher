@@ -20,7 +20,7 @@ const variantClasses: Record<ButtonVariant, string> = {
 export function LinkButton({ variant = "secondary", icon, children, className = "", ...props }: LinkButtonProps) {
   return (
     <Link
-      className={`ds-button inline-flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-md ${variantClasses[variant]} ${className}`}
+      className={`ds-button inline-flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${variantClasses[variant]} ${className}`}
       {...props}
     >
       {icon}
