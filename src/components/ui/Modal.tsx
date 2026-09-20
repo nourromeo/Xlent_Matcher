@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { X } from "../../design-system/icons";
+import { useI18n } from "../../i18n";
 import { IconButton } from "./IconButton";
 
 type ModalProps = {
@@ -11,6 +12,7 @@ type ModalProps = {
 };
 
 export function Modal({ open, title, description, onClose, children }: ModalProps) {
+  const { t } = useI18n();
   if (!open) return null;
 
   return (
@@ -21,7 +23,7 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
             <h2 className="text-sm font-semibold text-app-primary">{title}</h2>
             {description && <p className="text-xs text-app-muted mt-1">{description}</p>}
           </div>
-          <IconButton icon={<X size={14} />} label="Close" onClick={onClose} />
+          <IconButton icon={<X size={14} />} label={t("common_close")} onClick={onClose} />
         </div>
         {children}
       </div>
