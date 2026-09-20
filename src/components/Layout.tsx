@@ -38,21 +38,21 @@ export default function Layout() {
   );
 
   return (
-    <div className="flex h-full bg-base">
+    <div className="flex h-full bg-app">
       {/* Sidebar */}
       <aside
-        className="w-56 flex-none flex flex-col border-r border-base bg-surface"
-        style={{ boxShadow: "var(--ats-shadow)" }}
+        className="w-56 flex-none flex flex-col border-r border-app bg-app-surface"
+        style={{ boxShadow: "var(--shadow-surface)" }}
       >
         {/* Logo */}
-        <div className="h-12 flex items-center px-4 border-b border-base">
+        <div className="h-12 flex items-center px-4 border-b border-app">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: "var(--ats-indigo)" }}>
+            <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: "var(--color-brand)" }}>
               <Zap size={12} className="text-white" />
             </div>
             <span className="text-sm font-semibold tracking-tight text-app-primary">XLENT Match</span>
           </div>
-          <span className="ml-auto text-[10px] font-mono text-3 bg-raised px-1.5 py-0.5 rounded">
+          <span className="ml-auto text-[10px] font-mono text-app-faint bg-app-raised px-1.5 py-0.5 rounded">
             v1.0
           </span>
         </div>
@@ -67,8 +67,8 @@ export default function Layout() {
               className={({ isActive }) =>
                 `flex items-center gap-2.5 px-2.5 py-1.5 rounded text-sm transition-colors ${
                   isActive
-                    ? "bg-indigo-sub text-indigo font-medium"
-                    : "text-2 hover:text-2 hover:bg-raised"
+                    ? "bg-app-brand-subtle text-app-brand font-medium"
+                    : "text-app-secondary hover:text-app-secondary hover:bg-app-raised"
                 }`
               }
             >
@@ -79,50 +79,50 @@ export default function Layout() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-base p-3">
+        <div className="border-t border-app p-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-indigo-sub flex items-center justify-center text-[10px] font-semibold text-indigo">
+            <div className="w-6 h-6 rounded-full bg-app-brand-subtle flex items-center justify-center text-[10px] font-semibold text-app-brand">
               JD
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-app-primary truncate">Johan Lind</p>
-              <p className="text-[10px] text-muted">Consultant Manager</p>
+              <p className="text-[10px] text-app-muted">Consultant Manager</p>
             </div>
           </div>
         </div>
       </aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-base">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-app">
         {/* Topbar */}
-        <header className="h-12 flex items-center px-5 border-b border-base bg-surface flex-none">
-          <div className="flex items-center gap-1.5 text-sm text-3">
+        <header className="h-12 flex items-center px-5 border-b border-app bg-app-surface flex-none">
+          <div className="flex items-center gap-1.5 text-sm text-app-faint">
             <span>XLENT Match</span>
             {crumb && crumb.to !== "/" && (
               <>
                 <ChevronRight size={12} />
-                <span className="text-2">{crumb.label}</span>
+                <span className="text-app-secondary">{crumb.label}</span>
               </>
             )}
           </div>
 
           <div className="ml-auto flex items-center gap-3">
             {/* AI status */}
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-app-faint">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               {t("ai_online")}
             </div>
 
             {/* Language switcher */}
-            <div className="flex items-center rounded overflow-hidden border border-base">
+            <div className="flex items-center rounded overflow-hidden border border-app">
               {LOCALES.map((loc) => (
                 <button
                   key={loc}
                   onClick={() => setLocale(loc)}
                   className={`text-[10px] font-mono px-2 py-1 transition-colors ${
                     locale === loc
-                      ? "bg-indigo-sub text-indigo font-semibold"
-                      : "text-3 hover:text-2 hover:bg-raised"
+                      ? "bg-app-brand-subtle text-app-brand font-semibold"
+                      : "text-app-faint hover:text-app-secondary hover:bg-app-raised"
                   }`}
                 >
                   {LOCALE_LABELS[loc]}
@@ -133,7 +133,7 @@ export default function Layout() {
             {/* Theme toggle */}
             <button
               onClick={toggle}
-              className="w-7 h-7 rounded flex items-center justify-center text-muted hover:text-2 hover:bg-raised border border-base transition-colors"
+              className="w-7 h-7 rounded flex items-center justify-center text-app-muted hover:text-app-secondary hover:bg-app-raised border border-app transition-colors"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
@@ -142,7 +142,7 @@ export default function Layout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-base">
+        <main className="flex-1 overflow-auto bg-app">
           <Outlet />
         </main>
       </div>
