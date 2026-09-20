@@ -156,7 +156,7 @@ function TextArea({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full rounded-lg text-xs text-base placeholder-text-3 px-3 py-2.5 focus:outline-none resize-none font-mono leading-relaxed transition-colors"
+        className="w-full rounded-lg text-xs text-app-primary placeholder-text-3 px-3 py-2.5 focus:outline-none resize-none font-mono leading-relaxed transition-colors"
         style={{
           background: "var(--ats-surface-r)",
           border: "1px solid var(--ats-border)",
@@ -227,7 +227,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
         <CatIcon size={13} style={{ color: cat.color, flexShrink: 0 }} />
 
         {/* Title */}
-        <span className="flex-1 text-xs font-medium text-base">{s.title}</span>
+        <span className="flex-1 text-xs font-medium text-app-primary">{s.title}</span>
 
         {/* Severity */}
         <span
@@ -259,7 +259,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
               <p className="text-[10px] text-muted uppercase tracking-wider font-medium mb-1.5">
                 Suggested wording
               </p>
-              <p className="text-[11px] text-base font-mono leading-relaxed italic">
+              <p className="text-[11px] text-app-primary font-mono leading-relaxed italic">
                 {s.example}
               </p>
             </div>
@@ -306,7 +306,7 @@ export default function CvAdaptation() {
         <div className="flex items-center gap-2.5">
           <Sparkles size={15} style={{ color: "var(--ats-indigo)" }} />
           <div>
-            <h1 className="text-sm font-semibold text-base">CV Adaptation Assistant</h1>
+            <h1 className="text-sm font-semibold text-app-primary">CV Adaptation Assistant</h1>
             <p className="text-xs text-muted mt-0.5">
               Paste a consultant CV and assignment requirements to identify gaps and improve the CV for the assignment
             </p>
@@ -393,7 +393,7 @@ export default function CvAdaptation() {
                           }}
                         />
                       </div>
-                      <span className="text-xs font-mono text-base w-4 text-right">{row.count}</span>
+                      <span className="text-xs font-mono text-app-primary w-4 text-right">{row.count}</span>
                       <span className="text-[10px] text-muted w-28">{row.label}</span>
                     </div>
                   ))}
@@ -473,7 +473,7 @@ export default function CvAdaptation() {
                     +{result.projectedScore - result.estimatedScore} points
                   </span>{" "}
                   — improving the estimated assignment match from{" "}
-                  <span className="font-mono text-base">{result.estimatedScore}</span> to{" "}
+                  <span className="font-mono text-app-primary">{result.estimatedScore}</span> to{" "}
                   <span className="font-mono text-indigo">{result.projectedScore}</span>.
                 </p>
               </div>
