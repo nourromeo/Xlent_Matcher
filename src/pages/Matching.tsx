@@ -219,7 +219,7 @@ export default function Matching() {
 
               <section className="grid grid-cols-2 gap-4">
                 <div
-                  className="bg-app-surface border border-app rounded-lg p-4"
+                  className="h-40 bg-app-surface border border-app rounded-lg p-4 overflow-hidden"
                   style={{ boxShadow: "var(--shadow-surface)" }}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -229,23 +229,34 @@ export default function Matching() {
                     </span>
                   </div>
                   <div className="space-y-2">
-                    {selected.mustHaveCoverage.map((skill) => (
+                    {selected.mustHaveCoverage.slice(0, 4).map((skill) => (
                       <div key={skill} className="flex items-center gap-2">
                         <CheckCircle size={11} style={{ color: "var(--color-success)" }} />
                         <span className="text-xs font-mono text-app-primary">{skill}</span>
                       </div>
                     ))}
+                    {selected.mustHaveCoverage.length > 4 && (
+                      <p
+                        className="text-[10px] text-app-muted pl-5"
+                        title={selected.mustHaveCoverage.slice(4).join(", ")}
+                      >
+                        +{selected.mustHaveCoverage.length - 4} more
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div
-                  className="bg-app-surface border border-app rounded-lg p-4"
+                  className="h-40 bg-app-surface border border-app rounded-lg p-4 overflow-hidden"
                   style={{ boxShadow: "var(--shadow-surface)" }}
                 >
-                  <p className="text-xs font-medium text-app-primary mb-3">{t("match_missing")}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-medium text-app-primary">{t("match_missing")}</p>
+                    <span className="text-[10px] text-app-muted">{selected.gaps.length} missing</span>
+                  </div>
                   {selected.gaps.length > 0 ? (
                     <div className="space-y-2">
-                      {selected.gaps.map((skill) => (
+                      {selected.gaps.slice(0, 4).map((skill) => (
                         <div key={skill} className="flex items-center gap-2">
                           <AlertTriangle size={11} style={{ color: "var(--color-warning)" }} />
                           <span className="text-xs font-mono" style={{ color: "var(--color-warning)" }}>
@@ -253,6 +264,14 @@ export default function Matching() {
                           </span>
                         </div>
                       ))}
+                      {selected.gaps.length > 4 && (
+                        <p
+                          className="text-[10px] text-app-muted pl-5"
+                          title={selected.gaps.slice(4).join(", ")}
+                        >
+                          +{selected.gaps.length - 4} more
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
