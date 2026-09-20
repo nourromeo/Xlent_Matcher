@@ -47,7 +47,7 @@ const CATEGORY_CFG = {
   evidence: { labelKey: "cv_category_evidence", icon: TrendingUp, color: "var(--color-success)" },
 } as const;
 
-const SEVERITY_CFG: Record<Severity, { label: string; color: string; bg: string }> = {
+const SEVERITY_CFG: Record<Severity, { labelKey: string; color: string; bg: string }> = {
   high: { labelKey: "cv_severity_high", color: "var(--color-danger)", bg: "var(--color-danger-subtle)" },
   medium: { labelKey: "cv_severity_medium", color: "var(--color-warning)", bg: "var(--color-warning-subtle)" },
   low: { labelKey: "cv_severity_low", color: "var(--color-text-muted)", bg: "var(--color-surface-raised)" },
