@@ -4,3 +4,6 @@ export { CONSULTANTS } from "./consultants";
 export { MATCHES } from "./matches";
 export { SKILLS, PROMPTS, FLAGS_DATA } from "./admin";
 export { DEMO_FILES } from "./uploads";
+export { ADMIN_TABS, WEIGHTS_CONFIG } from "./adminConfig";
+export { MATCH_WEIGHTS } from "./matchingConfig";
+export { ASSIGNMENT_STATUS_CONFIG } from "./jobsConfig";
