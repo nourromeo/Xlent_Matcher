@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Save, Plus, Trash2, RefreshCw } from "lucide-react";
 import { useI18n } from "../i18n";
+import { Button } from "../components/ui/Button";
 
 const SKILLS = [
   { id: "s1", canonical: "Go", aliases: ["Golang", "Go lang"], category: "Language" },
@@ -75,7 +76,7 @@ export default function Admin() {
         <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <span className="text-xs font-medium text-app-primary">{t("tab_taxonomy")}</span>
-            <button className="flex items-center gap-1.5 text-[11px] text-app-brand hover:opacity-70"><Plus size={11} />{t("admin_add_skill")}</button>
+            <Button variant="ghost" icon={<Plus size={11} />}>{t("admin_add_skill")}</Button>
           </div>
           <table className="w-full">
             <thead>
