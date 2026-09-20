@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Archive, CheckCircle, Edit3, GitMerge, MoreHorizontal, Plus, X } from "lucide-react";
 import { ASSIGNMENTS } from "./Jobs";
+import { Button } from "../components/ui/Button";
+import { IconButton } from "../components/ui/IconButton";
+import { LinkButton } from "../components/ui/LinkButton";
+import { Card } from "../components/ui/Card";
 
 type Assignment = (typeof ASSIGNMENTS)[number];
 
@@ -83,10 +87,10 @@ export default function AssignmentDetail() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Link to={"/matching?assignment=" + assignment.id} className="inline-flex items-center gap-1.5 text-xs text-white px-3 py-2 rounded" style={{ background: "var(--color-brand)" }}><GitMerge size={12} />Match Consultants</Link>
-            <button onClick={openEdit} className="inline-flex items-center gap-1.5 text-xs text-app-secondary px-3 py-2 rounded border border-app hover:text-app-secondary"><Edit3 size={12} />Edit Assignment</button>
+            <LinkButton to={"/matching?assignment=" + assignment.id} variant="primary" icon={<GitMerge size={12} />}>Match Consultants</LinkButton>
+            <Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>Edit Assignment</Button>
             <div className="relative">
-              <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded border border-app text-app-muted hover:text-app-secondary" aria-label="More actions"><MoreHorizontal size={14} /></button>
+              <IconButton onClick={() => setMenuOpen(!menuOpen)} icon={<MoreHorizontal size={14} />} label="More actions" />
               {menuOpen && <div className="absolute right-0 top-10 z-10 w-44 bg-app-surface border border-app rounded-lg p-1 shadow-lg"><button className="w-full flex items-center gap-2 text-xs text-app-muted px-2.5 py-2 rounded hover:bg-app-raised hover:text-app-secondary"><Archive size={13} />Archive Assignment</button></div>}
             </div>
           </div>
@@ -126,7 +130,7 @@ export default function AssignmentDetail() {
             <section><h3 className="text-xs font-semibold uppercase tracking-wide text-app-primary mb-3">2. Assignment Description</h3><textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} className="w-full bg-app border border-app rounded-lg px-3 py-2.5 text-xs text-app-primary outline-none resize-none" placeholder="Describe the client assignment..." /></section>
             <section><h3 className="text-xs font-semibold uppercase tracking-wide text-app-primary mb-1">3. Matching Requirements</h3><p className="text-[11px] text-app-muted mb-4">Use required skills for essential criteria and preferred skills for criteria that improve the ranking.</p><div className="grid md:grid-cols-2 gap-5"><SkillEditor label="Required Skills" hint="Must-have skills" skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label="Preferred Skills" hint="Nice-to-have skills" skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div></section>
           </div>
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-app"><button onClick={() => setEditMode(false)} className="text-xs text-app-muted px-3 py-2">Cancel</button><button onClick={saveEdit} className="text-xs text-white px-3 py-2 rounded" style={{ background: "var(--color-brand)" }}>Save Changes</button></div>
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-app"><Button onClick={() => setEditMode(false)} variant="ghost">Cancel</Button><Button onClick={saveEdit} variant="primary">Save Changes</Button></div>
         </div>
       </div>}
     </div>
