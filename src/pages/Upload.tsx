@@ -42,7 +42,7 @@ export default function Upload() {
   const statusColor = (s: FileStatus) => {
     if (s === "done") return "var(--color-success)";
     if (s === "error") return "var(--color-danger)";
-    if (s === "queued") return "var(--color-text-app-muted)";
+    if (s === "queued") return "var(--color-text-muted)";
     return "var(--color-brand)";
   };
 
@@ -88,7 +88,7 @@ export default function Upload() {
         onClick={() => inputRef.current?.click()}
       >
         <input ref={inputRef} type="file" multiple accept=".pdf,.docx" className="hidden" onChange={(e) => addFiles(Array.from(e.target.files ?? []))} />
-        <UploadIcon size={28} className="mx-auto mb-3" style={{ color: dragging ? "var(--color-brand)" : "var(--color-text-app-muted)" }} />
+        <UploadIcon size={28} className="mx-auto mb-3" style={{ color: dragging ? "var(--color-brand)" : "var(--color-text-muted)" }} />
         <p className="text-sm text-app-secondary">{t("upload_drop")} <span className="text-app-brand">{t("upload_browse")}</span></p>
         <p className="text-xs text-app-faint mt-1">{t("upload_types")}</p>
       </div>
