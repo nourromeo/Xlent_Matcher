@@ -82,7 +82,7 @@ export default function AssignmentDetail() {
     setEditMode(false);
   };
 
-  const statusLabel = assignment.status === "done" ? "Match complete" : assignment.status === "matching" ? "Matching in progress" : "Draft";
+  const statusLabel = assignment.status === "done" ? t("assignment_match_complete") : assignment.status === "matching" ? t("assignment_matching") : t("assignment_draft");
   const setDraftField = <K extends keyof DraftAssignment>(key: K, value: DraftAssignment[K]) => setDraft((current) => ({ ...current, [key]: value }));
 
   return (
@@ -90,7 +90,7 @@ export default function AssignmentDetail() {
       <header className="px-6 py-4 border-b border-app bg-app-surface flex items-start gap-4 flex-none">
         <Link
           to="/client-assignments"
-          aria-label="Back to Client Assignments"
+          aria-label={t("assignment_back")}
           className="text-app-faint hover:text-app-secondary transition-colors mt-1"
         >
           <ChevronLeft size={16} />
@@ -150,12 +150,12 @@ export default function AssignmentDetail() {
 
       <EditFormModal
         open={editMode}
-        title="Edit Client Assignment"
-        description="Update the assignment details and matching criteria."
+        title={t("assignment_edit_title")}
+        description={t("assignment_edit_sub")}
         onClose={() => setEditMode(false)}
         onSubmit={saveEdit}
       >
-        <FormSection title="Basic Information">
+        <FormSection title={t("assignment_basic_info")}>
           <div className="grid md:grid-cols-2 gap-4">
             {[["Assignment Title", "title"], ["Client", "client"], ["Seniority", "seniority"], ["Availability", "availability"]].map(([label, key]) => (
               <FormField key={key} label={label}><Input value={String(draft[key as keyof DraftAssignment])} onChange={(event) => setDraftField(key as keyof DraftAssignment, event.target.value as never)} /></FormField>
@@ -163,10 +163,10 @@ export default function AssignmentDetail() {
           </div>
         </FormSection>
         <FormSection title="Assignment Description">
-          <Textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} placeholder="Describe the client assignment..." />
+          <Textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} placeholder={t("assignment_description_placeholder")} />
         </FormSection>
-        <FormSection title="Matching Requirements" description="Use required skills for essential criteria and preferred skills for criteria that improve the ranking.">
-          <div className="grid md:grid-cols-2 gap-5"><SkillEditor label="Required Skills" hint="Must-have skills" skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label="Preferred Skills" hint="Nice-to-have skills" skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div>
+        <FormSection title={t("assignment_requirements")} description={t("assignment_requirements_help")}>
+          <div className="grid md:grid-cols-2 gap-5"><SkillEditor label={t("assignment_required_skills")} hint="Must-have skills" skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label={t("assignment_preferred_skills")} hint="Nice-to-have skills" skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div>
         </FormSection>
       </EditFormModal>
         </div>
