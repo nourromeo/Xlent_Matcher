@@ -82,9 +82,7 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Operational overview */}
+          {/* Operational overview */}
         <div className="xl:col-span-2 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="px-4 py-3 border-b border-app">
             <p className="text-xs font-medium text-app-primary">Operational Overview</p>
@@ -113,10 +111,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Matches */}
-      <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+      <div className="xl:col-span-2 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-app">
-          <span className="text-xs font-medium text-app-primary">{t("dash_recent")}</span>
+          <div>
+            <p className="text-xs font-medium text-app-primary">{t("dash_recent")}</p>
+            <p className="text-[10px] text-app-muted mt-0.5">Latest consultant matches and ranking results</p>
+          </div>
           <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">
             {t("dash_view_all")} <ArrowUpRight size={10} />
           </Link>
@@ -134,5 +134,3 @@ export default function Dashboard() {
         />
       </div>
     </div>
-  );
-}
