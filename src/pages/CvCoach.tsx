@@ -14,9 +14,7 @@ import {
 import { MOCK_RESULT } from "../features/cvCoach";
 import { PageHeader } from "../components/ui/PageHeader";
 
-import type { CvSeverity as Severity, CvSuggestion as Suggestion, CvAnalysisResult as AnalysisResult } from "../features/cvCoach/types";
-
-// ── Mock AI result ───────────────────────────────────────
+import type { CvSeverity as Severity, CvSuggestion as Suggestion, CvAnalysisResult as AnalysisResult } from "../features/cvCoach";
 
 // ── Category config ──────────────────────────────────────
 const CATEGORY_CFG = {
@@ -140,7 +138,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
       </button>
 
       {open && (
-        <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid var(--color-border-app-subtletle)" }}>
+        <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid var(--color-border-subtle)" }}>
           <p className="text-[11px] text-app-secondary leading-relaxed pt-3">{s.detail}</p>
           {s.example && (
             <div
