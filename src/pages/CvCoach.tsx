@@ -93,8 +93,11 @@ function ScoreGauge({ before, after }: { before: number; after: number }) {
         <div className="text-center">
           <p className="text-lg font-semibold font-mono text-app-brand">~{after}</p>
           <p className="text-[10px] text-app-faint">Projected</p>
+        </div>
       </div>
+    </div>
   );
+}
 }
 
 function SuggestionCard({ s }: { s: Suggestion }) {
