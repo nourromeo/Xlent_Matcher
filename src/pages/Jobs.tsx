@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, GitMerge, Clock, CheckCircle, Zap, Eye, Archive } from "../design-system/icons";
+import { Plus, Search, Clock, CheckCircle, Zap, Eye, Archive } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { ASSIGNMENTS, ASSIGNMENT_STATUS_CONFIG } from "../features/assignments";
 export { ASSIGNMENTS };
@@ -48,6 +47,7 @@ function NewAssignmentModal({ onClose }: { onClose: () => void }) {
 export default function ClientAssignments() {
   const { t } = useI18n();
   const [showModal, setShowModal] = useState(false);
+  const [query, setQuery] = useState("");
   const [archived, setArchived] = useState<string[]>([]);
   const STATUS_CFG = {
     matching: { label: t("status_matching"), ...ASSIGNMENT_STATUS_CONFIG.matching, icon: <Zap size={9} /> },
@@ -55,21 +55,45 @@ export default function ClientAssignments() {
     draft: { label: "Draft", ...ASSIGNMENT_STATUS_CONFIG.draft, icon: <Clock size={9} /> },
   };
   const active = ASSIGNMENTS.filter((assignment) => !archived.includes(assignment.id));
+  const filtered = active.filter((assignment) => {
+    const search = query.trim().toLowerCase();
+    if (!search) return true;
+    return (
+      assignment.title.toLowerCase().includes(search) ||
+      assignment.client.toLowerCase().includes(search) ||
+      assignment.description.toLowerCase().includes(search) ||
+      assignment.seniority.toLowerCase().includes(search) ||
+      assignment.requiredSkills.some((skill) => skill.toLowerCase().includes(search)) ||
+      assignment.preferredSkills.some((skill) => skill.toLowerCase().includes(search))
+    );
+  });
 
   return (
     <div className="p-6 space-y-4">
       <PageHeader title={t("jobs_title")} meta={String(active.length) + " " + t("jobs_sub")} actions={<Button onClick={() => setShowModal(true)} variant="primary" icon={<Plus size={12} />}>{t("jobs_new")}</Button>} />
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex-1 relative max-w-xs">
+          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" />
+          <Input
+            type="search"
+            placeholder="Search by assignment, client, skill, or seniority..."
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="pl-8 py-1.5"
+          />
+        </div>
+      </div>
       <div className="space-y-2">
-        {active.map((assignment) => {
+        {filtered.map((assignment) => {
           const status = STATUS_CFG[assignment.status as keyof typeof STATUS_CFG];
           return <div key={assignment.id} className="bg-app-surface border border-app rounded-lg px-5 py-4 shadow-app-surface">
             <div className="flex items-start gap-4"><div className="flex-1"><div className="flex items-center gap-3 mb-2"><h2 className="text-sm font-medium text-app-primary">{assignment.title}</h2><StatusBadge tone={status.tone} icon={status.icon}>{status.label}</StatusBadge></div><p className="text-xs text-app-muted">{assignment.client} · {assignment.seniority} · {assignment.created}</p><p className="text-[11px] text-app-secondary mt-1 mb-3 max-w-3xl">{assignment.description}</p><div className="flex flex-wrap gap-1.5">{assignment.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}{assignment.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div></div>
-              <div className="flex items-center gap-2"><LinkButton to={"/jobs/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>View Assignment</LinkButton><LinkButton to={"/matching?assignment=" + assignment.id} variant="primary" icon={<GitMerge size={12} />}>Match Consultants</LinkButton><IconButton label="Archive assignment" icon={<Archive size={13} />} onClick={() => setArchived((current) => [...current, assignment.id])} /></div>
+              <div className="flex items-center gap-2"><LinkButton to={"/jobs/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>View Assignment</LinkButton><IconButton label="Archive assignment" icon={<Archive size={13} />} onClick={() => setArchived((current) => [...current, assignment.id])} /></div>
             </div>
           </div>;
         })}
       </div>
-      {active.length === 0 && <EmptyState title="No active client assignments." />}
+      {filtered.length === 0 && <EmptyState title={query ? "No assignments match your search." : "No active client assignments."} />}
       {showModal && <NewAssignmentModal onClose={() => setShowModal(false)} />}
     </div>
   );
