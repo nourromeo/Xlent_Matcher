@@ -269,7 +269,7 @@ export default function Matching() {
                   <div className="text-right">
                     <div className="flex items-baseline justify-end gap-1">
                       <span className="text-2xl font-semibold font-mono text-app-primary">{selected.score}%</span>
-                      <span className="text-xs font-medium text-app-secondary">Match</span>
+                      <span className="text-xs font-medium text-app-secondary">{t("common_match")}</span>
                     </div>
                     <p className="text-[10px] text-app-faint">{t("match_composite")}</p>
                   </div>
