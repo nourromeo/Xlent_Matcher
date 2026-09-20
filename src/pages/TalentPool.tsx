@@ -66,7 +66,7 @@ export default function ConsultantPool() {
             key={s}
             onClick={() => setSeniority(s)}
             className="text-[11px] px-2.5 py-1 rounded transition-colors"
-            style={seniority === s ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)", fontWeight: 500 } : { color: "var(--color-text-app-muted)" }}
+            style={seniority === s ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)", fontWeight: 500 } : { color: "var(--color-text-muted)" }}
           >
             {s === "All" ? t("talent_all") : s}
           </button>
