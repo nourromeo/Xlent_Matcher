@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, ChevronDown, ArrowUpRight, Star } from "lucide-react";
+import { Search, Filter, ChevronDown, ArrowUpRight, Star } from "../design-system/icons";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { LinkButton } from "../components/ui/LinkButton";
