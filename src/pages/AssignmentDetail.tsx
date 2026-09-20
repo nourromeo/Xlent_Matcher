@@ -134,10 +134,10 @@ export default function AssignmentDetail() {
             variant="secondary"
             icon={<Eye size={12} />}
           >
-            View Matches
+            {t("assignment_view_matches")}
           </LinkButton>
           <Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>
-            Edit
+            {t("assignment_edit")}
           </Button>
         </div>
       </header>
@@ -171,8 +171,15 @@ export default function AssignmentDetail() {
       >
         <FormSection title={t("assignment_basic_info")}>
           <div className="grid md:grid-cols-2 gap-4">
-            {[[t("assignment_title"), "title"], [t("assignment_client"), "client"], [t("assignment_seniority"), "seniority"], [t("assignment_availability"), "availability"]].map(([label, key]) => (
-              <FormField key={key} label={label}><Input value={String(draft[key as keyof DraftAssignment])} onChange={(event) => setDraftField(key as keyof DraftAssignment, event.target.value as never)} /></FormField>
+            {([
+              [t("assignment_title"), "title"],
+              [t("assignment_client"), "client"],
+              [t("assignment_seniority"), "seniority"],
+              [t("assignment_availability"), "availability"],
+            ] as const).map(([label, key]) => (
+              <FormField key={key} label={label}>
+                <Input value={draft[key]} onChange={(event) => setDraftField(key, event.target.value)} />
+              </FormField>
             ))}
           </div>
         </FormSection>
