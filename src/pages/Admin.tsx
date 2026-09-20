@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Save, Plus, Trash2, RefreshCw } from "../design-system/icons";
+import { Save, Plus, Trash2 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Button } from "../components/ui/Button";
 import { Tabs } from "../components/ui/Tabs";
 import { DataTable } from "../components/ui/DataTable";
-import { StatusBadge } from "../components/ui/StatusBadge";
 import { PageHeader } from "../components/ui/PageHeader";
-import { SKILLS, PROMPTS, FLAGS_DATA, ADMIN_TABS, WEIGHTS_CONFIG } from "../features/admin";
+import { SKILLS, FLAGS_DATA, ADMIN_TABS, WEIGHTS_CONFIG } from "../features/admin";
 
 
 
