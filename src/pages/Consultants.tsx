@@ -51,7 +51,7 @@ export default function Consultants() {
       <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
         <DataTable
           columns={[
-            { key: "consultant", header: t("col_candidate"), sortable: true, sortValue: (consultant) => consultant.name, render: (consultant) => <div className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-full bg-app-brand-subtle flex items-center justify-center text-[10px] font-semibold text-app-brand flex-none">{consultant.initials}</div><div><p className="font-medium text-app-primary">{consultant.name}</p><p className="text-[10px] text-app-muted max-w-xs truncate">{consultant.headline}</p></div></div> },
+            { key: "consultant", header: t("col_consultant"), sortable: true, sortValue: (consultant) => consultant.name, render: (consultant) => <div className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-full bg-app-brand-subtle flex items-center justify-center text-[10px] font-semibold text-app-brand flex-none">{consultant.initials}</div><div><p className="font-medium text-app-primary">{consultant.name}</p><p className="text-[10px] text-app-muted max-w-xs truncate">{consultant.headline}</p></div></div> },
             { key: "seniority", header: t("col_seniority"), sortable: true, sortValue: (consultant) => seniorityRank[consultant.seniority] ?? 99, render: (consultant) => <span>{displaySeniority(consultant.seniority)}</span> },
             { key: "experience", header: t("col_experience"), sortable: true, sortValue: (consultant) => Number.parseFloat(consultant.experience) || 0, render: (consultant) => <span className="font-mono">{consultant.experience}</span> },
             { key: "skills", header: t("col_skills"), render: (consultant) => <div className="flex flex-wrap gap-1">{consultant.skills.slice(0, 4).map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}{consultant.skills.length > 4 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 4}</span>}</div> },
@@ -62,7 +62,7 @@ export default function Consultants() {
           rowKey={(consultant) => consultant.id}
           emptyMessage={t("consultants_empty")}
         />
-        <div className="border-t border-app px-4 py-2.5 flex items-center justify-between bg-app-surface"><span className="text-[10px] text-app-faint">{t("consultants_showing")} {filtered.length} {t("consultants_of")} {CONSULTANTS.length} {t("consultants_label")}</span><div className="flex items-center gap-1">{[1, 2, 3].map((page) => <button key={page} className="text-[10px] w-6 h-6 rounded flex items-center justify-center" style={page === 1 ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)" } : { color: "var(--color-text-faint)" }}>{page}</button>)}</div></div>
+        <div className="border-t border-app px-4 py-2.5 bg-app-surface"><span className="text-[10px] text-app-faint">{t("consultants_showing")} {filtered.length} {t("consultants_of")} {CONSULTANTS.length} {t("consultants_label")}</span></div>
       </div>
     </div>
   );
