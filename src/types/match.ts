@@ -14,5 +14,5 @@ export type Match = {
   gaps: string[];
   niceToHave: string[];
   evidence: MatchEvidence[];
-  llmVerdict: string;
+  motivation: string;
 };
