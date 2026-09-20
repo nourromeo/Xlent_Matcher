@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Archive, CheckCircle, Edit3, GitMerge, MoreHorizontal, Plus, X } from "../design-system/icons";
-import { ASSIGNMENTS } from "./Jobs";
+import { ASSIGNMENTS } from "../features/assignments";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { LinkButton } from "../components/ui/LinkButton";
