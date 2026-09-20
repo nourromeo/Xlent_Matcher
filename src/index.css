@@ -30,3 +30,22 @@ button, a { transform: none; }
   transform: none;
   transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
 }
+
+
+/* Consistent pointer feedback for interactive controls. */
+a,
+button:not(:disabled),
+select,
+summary,
+[role="button"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
