@@ -6,7 +6,7 @@ import { LinkButton } from "../components/ui/LinkButton";
 import { Input } from "../components/ui/Input";
 import { DataTable } from "../components/ui/DataTable";
 import { SkillTag } from "../components/ui/SkillTag";
-import { CONSULTANTS } from "../data/mock";
+import { CONSULTANTS } from "../features/consultants";
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
 const AVAIL_OPTIONS = ["All", "Immediate", "2 weeks", "1 month", "3 months"];
