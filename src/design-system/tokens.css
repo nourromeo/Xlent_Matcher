@@ -81,3 +81,5 @@ html.light {
 .bg-app-brand-soft { background-color: var(--color-brand-soft); }
 .text-app-brand { color: var(--color-brand); }
 .shadow-app-surface { box-shadow: var(--shadow-surface); }
+
+.shadow-app-modal { box-shadow: var(--shadow-modal); }
