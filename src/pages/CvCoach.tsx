@@ -132,14 +132,14 @@ const CATEGORY_CFG = {
   keyword:    { label: "Missing keyword",   icon: Tag,       color: "var(--color-brand)" },
   credential: { label: "Credential gap",    icon: BookOpen,  color: "var(--color-warning)"  },
   clarity:    { label: "Clarity",           icon: Info,      color: "var(--color-text-secondary)" },
-  structure:  { label: "Structure",         icon: FileText,  color: "var(--color-text-app-muted)"  },
+  structure:  { label: "Structure",         icon: FileText,  color: "var(--color-text-muted)"  },
   evidence:   { label: "Experience evidence", icon: TrendingUp, color: "var(--color-success)" },
 } as const;
 
 const SEVERITY_CFG: Record<Severity, { label: string; color: string; bg: string }> = {
-  high:   { label: "High",   color: "var(--color-danger)",    bg: "rgba(239,68,68,0.10)"    },
-  medium: { label: "Medium", color: "var(--color-warning)",  bg: "rgba(245,158,11,0.10)"   },
-  low:    { label: "Low",    color: "var(--color-text-app-muted)",  bg: "var(--color-surface-raised)"    },
+  high:   { label: "High",   color: "var(--color-danger)",    bg: "var(--color-danger-subtle)"    },
+  medium: { label: "Medium", color: "var(--color-warning)",  bg: "var(--color-warning-subtle)"   },
+  low:    { label: "Low",    color: "var(--color-text-muted)",  bg: "var(--color-surface-raised)"    },
 };
 
 // ── Sub-components ───────────────────────────────────────
@@ -190,13 +190,13 @@ function ScoreGauge({ before, after }: { before: number; after: number }) {
         {/* track */}
         <path d="M 10 54 A 40 40 0 0 1 90 54" fill="none" stroke="var(--color-border)" strokeWidth={5} strokeLinecap="round" />
         {/* before */}
-        {arc(before, 40, "var(--color-text-app-muted)")}
+        {arc(before, 40, "var(--color-text-muted)")}
         {/* after */}
         {arc(after, 40, "var(--color-brand)")}
       </svg>
       <div className="flex items-center gap-6 -mt-1">
         <div className="text-center">
-          <p className="text-lg font-semibold font-mono" style={{ color: "var(--color-text-app-muted)" }}>{before}</p>
+          <p className="text-lg font-semibold font-mono" style={{ color: "var(--color-text-muted)" }}>{before}</p>
           <p className="text-[10px] text-app-faint">Current</p>
         </div>
         <div className="text-center">
@@ -240,7 +240,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
         {/* Score delta */}
         <span
           className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded flex-none"
-          style={{ color: "var(--color-success)", background: "rgba(34,197,94,0.10)" }}
+          style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}
         >
           +{s.scoreDelta} pts
         </span>
@@ -381,7 +381,7 @@ export default function CvAdaptation() {
                   {[
                     { label: "High priority",   count: highCount,   color: "var(--color-danger)"   },
                     { label: "Medium priority",  count: mediumCount, color: "var(--color-warning)" },
-                    { label: "Low priority",     count: lowCount,    color: "var(--color-text-app-muted)" },
+                    { label: "Low priority",     count: lowCount,    color: "var(--color-text-muted)" },
                   ].map((row) => (
                     <div key={row.label} className="flex items-center gap-2.5">
                       <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--color-border)" }}>
@@ -424,7 +424,7 @@ export default function CvAdaptation() {
                   style={
                     activeFilter === "all"
                       ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)", fontWeight: 500 }
-                      : { color: "var(--color-text-app-muted)" }
+                      : { color: "var(--color-text-muted)" }
                   }
                 >
                   All ({result.suggestions.length})
@@ -442,7 +442,7 @@ export default function CvAdaptation() {
                       style={
                         activeFilter === cat
                           ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)", fontWeight: 500 }
-                          : { color: "var(--color-text-app-muted)" }
+                          : { color: "var(--color-text-muted)" }
                       }
                     >
                       <CatIcon size={10} />
