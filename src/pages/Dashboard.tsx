@@ -42,7 +42,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         <StatCard label={t("dash_consultants")} value="124" sub={`18 ${t("dash_consultants_sub")}`} icon={Users} accent />
-        <StatCard label={t("dash_active_jobs")} value="7" sub={`3 ${t("dash_active_jobs_sub")}`} icon={Briefcase} />
+        <StatCard label={t("dash_assignments")} value="7" sub={`3 ${t("dash_assignments_sub")}`} icon={Briefcase} />
         <StatCard label={t("dash_queue")} value="18" sub={`5 ${t("dash_queue_sub")}`} icon={FileText} />
         <StatCard label={t("dash_active_matching")} value="3" sub={t("dash_active_matching_sub")} icon={GitMerge} />
       </div>
@@ -71,8 +71,8 @@ export default function Dashboard() {
           </div>
           <DataTable
             columns={[
-              { key: "consultant", header: t("dash_candidate"), sortable: true, sortValue: (match) => match.consultant, render: (match) => <span className="font-medium text-app-primary">{match.consultant}</span> },
-              { key: "assignment", header: t("dash_job"), sortable: true, sortValue: (match) => match.assignment },
+              { key: "consultant", header: t("dash_consultant"), sortable: true, sortValue: (match) => match.consultant, render: (match) => <span className="font-medium text-app-primary">{match.consultant}</span> },
+              { key: "assignment", header: t("dash_assignment"), sortable: true, sortValue: (match) => match.assignment },
               { key: "score", header: t("dash_score"), sortable: true, sortValue: (match) => match.score, render: (match) => <div className="flex items-center gap-2"><div className="w-20 h-1.5 rounded-full bg-app-raised"><div className="h-full rounded-full" style={{ width: match.score + "%", backgroundColor: "var(--color-brand)" }} /></div><span className="font-mono text-app-primary">{match.score}</span></div> },
               { key: "date", header: t("dash_date"), sortable: true, sortValue: (match) => match.date === "Today" ? 3 : match.date === "Yesterday" ? 2 : 1, render: (match) => <span className="text-app-faint">{match.date}</span> },
               { key: "view", header: "", render: () => <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70">{t("view")}</Link> },
