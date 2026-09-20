@@ -39,11 +39,11 @@ const RECENT_MATCHES = [
 ];
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
-  parsing:   { color: "var(--ats-amber)",  background: "rgba(245,158,11,0.10)" },
-  extracting:{ color: "var(--ats-indigo)", background: "var(--ats-indigo-sub)" },
-  embedding: { color: "var(--ats-indigo)", background: "var(--ats-indigo-sub)" },
-  done:      { color: "var(--ats-green)",  background: "rgba(34,197,94,0.10)"  },
-  error:     { color: "var(--ats-red)",    background: "rgba(239,68,68,0.10)"  },
+  parsing:   { color: "var(--color-warning)",  background: "rgba(245,158,11,0.10)" },
+  extracting:{ color: "var(--color-brand)", background: "var(--color-brand-subtle)" },
+  embedding: { color: "var(--color-brand)", background: "var(--color-brand-subtle)" },
+  done:      { color: "var(--color-success)",  background: "rgba(34,197,94,0.10)"  },
+  error:     { color: "var(--color-danger)",    background: "rgba(239,68,68,0.10)"  },
 };
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
@@ -56,20 +56,20 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
   label: string; value: string; sub: string; icon: React.ElementType; accent?: boolean;
 }) {
   return (
-    <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
+    <div className="bg-app-surface border border-app rounded-lg p-4" style={{ boxShadow: "var(--shadow-surface)" }}>
       <div className="flex items-start justify-between mb-3">
-        <p className="text-[10px] text-muted uppercase tracking-wider font-medium">{label}</p>
+        <p className="text-[10px] text-app-muted uppercase tracking-wider font-medium">{label}</p>
         <div
           className="w-7 h-7 rounded flex items-center justify-center"
           style={accent
-            ? { background: "var(--ats-indigo-sub)", color: "var(--ats-indigo)" }
-            : { background: "var(--ats-surface-r)", color: "var(--ats-muted)" }}
+            ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)" }
+            : { background: "var(--color-surface-raised)", color: "var(--color-text-app-muted)" }}
         >
           <Icon size={14} />
         </div>
       </div>
-      <p className="text-2xl font-semibold text-app-primary tracking-tight">{value}</p>
-      <p className="text-[10px] text-3 mt-1">{sub}</p>
+      <p className="text-app-secondaryxl font-semibold text-app-primary tracking-tight">{value}</p>
+      <p className="text-[10px] text-app-faint mt-1">{sub}</p>
     </div>
   );
 }
@@ -81,7 +81,7 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-app-primary font-semibold text-app-primary">{t("dash_title")}</h1>
-        <p className="text-xs text-muted mt-0.5">This internal tool helps XLENT compare client assignments with existing consultants and understand why a consultant matches or does not match.</p>
+        <p className="text-xs text-app-muted mt-0.5">This internal tool helps XLENT compare client assignments with existing consultants and understand why a consultant matches or does not match.</p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
@@ -93,20 +93,20 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-3 gap-4">
         {/* Queue */}
-        <div className="col-span-1 bg-surface border border-base rounded-lg" style={{ boxShadow: "var(--ats-shadow)" }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-base">
+        <div className="col-span-1 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <span className="text-xs font-medium text-app-primary">{t("dash_queue_panel")}</span>
-            <Link to="/upload" className="text-[10px] text-indigo hover:opacity-70 flex items-center gap-1">
+            <Link to="/upload" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">
               {t("dash_view_all")} <ArrowUpRight size={10} />
             </Link>
           </div>
-          <div className="divide-y" style={{ borderColor: "var(--ats-border-s)" }}>
+          <div className="divide-y" style={{ borderColor: "var(--color-border-app-subtletle)" }}>
             {QUEUE.map((item) => (
               <div key={item.name} className="flex items-center gap-3 px-4 py-2.5">
-                <FileText size={12} className="text-3 flex-none" />
+                <FileText size={12} className="text-app-faint flex-none" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-app-primary truncate font-mono">{item.name}</p>
-                  <p className="text-[10px] text-3">{item.added}</p>
+                  <p className="text-[10px] text-app-faint">{item.added}</p>
                 </div>
                 <span
                   className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
@@ -121,8 +121,8 @@ export default function Dashboard() {
         </div>
 
         {/* AI Cost Chart */}
-        <div className="col-span-2 bg-surface border border-base rounded-lg" style={{ boxShadow: "var(--ats-shadow)" }}>
-          <div className="px-4 py-3 border-b border-base">
+        <div className="col-span-2 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+          <div className="px-4 py-3 border-b border-app">
             <span className="text-xs font-medium text-app-primary">{t("dash_cost_chart")}</span>
           </div>
           <div className="p-4">
@@ -130,17 +130,17 @@ export default function Dashboard() {
               <AreaChart data={costData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--ats-indigo)" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="var(--ats-indigo)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--color-brand)" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="var(--color-brand)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="day" tick={{ fill: "var(--ats-text-3)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "var(--ats-text-3)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                <XAxis dataKey="day" tick={{ fill: "var(--color-text-faint)", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "var(--color-text-faint)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "var(--ats-surface-r)", border: "1px solid var(--ats-border)", borderRadius: 6, fontSize: 11, color: "var(--ats-text)" }}
+                  contentStyle={{ backgroundColor: "var(--color-surface-raised)", border: "1px solid var(--color-border)", borderRadius: 6, fontSize: 11, color: "var(--color-text-primary)" }}
                   formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, "Cost"]}
                 />
-                <Area type="monotone" dataKey="cost" stroke="var(--ats-indigo)" strokeWidth={1.5} fill="url(#costGrad)" />
+                <Area type="monotone" dataKey="cost" stroke="var(--color-brand)" strokeWidth={1.5} fill="url(#costGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -148,37 +148,37 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Matches */}
-      <div className="bg-surface border border-base rounded-lg" style={{ boxShadow: "var(--ats-shadow)" }}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-base">
+      <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-app">
           <span className="text-xs font-medium text-app-primary">{t("dash_recent")}</span>
-          <Link to="/matching" className="text-[10px] text-indigo hover:opacity-70 flex items-center gap-1">
+          <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">
             {t("dash_view_all")} <ArrowUpRight size={10} />
           </Link>
         </div>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-sub">
+            <tr className="border-b border-app-subtle">
               {[t("dash_candidate"), t("dash_job"), t("dash_score"), t("dash_date"), ""].map((h, i) => (
-                <th key={i} className="text-[10px] font-medium text-3 uppercase tracking-wider text-left px-4 py-2">{h}</th>
+                <th key={i} className="text-[10px] font-medium text-app-faint uppercase tracking-wider text-left px-4 py-2">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {RECENT_MATCHES.map((m) => (
-              <tr key={m.consultant + m.assignment} className="border-b border-sub hover:bg-raised transition-colors">
+              <tr key={m.consultant + m.assignment} className="border-b border-app-subtle hover:bg-app-raised transition-colors">
                 <td className="px-4 py-2.5 text-xs text-app-primary font-medium">{m.consultant}</td>
-                <td className="px-4 py-2.5 text-xs text-2">{m.assignment}</td>
+                <td className="px-4 py-2.5 text-xs text-app-secondary">{m.assignment}</td>
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2">
-                    <div className="w-20 h-1.5 rounded-full bg-raised">
-                      <div className="h-full rounded-full" style={{ width: `${m.score}%`, backgroundColor: "var(--ats-indigo)" }} />
+                    <div className="w-20 h-1.5 rounded-full bg-app-raised">
+                      <div className="h-full rounded-full" style={{ width: `${m.score}%`, backgroundColor: "var(--color-brand)" }} />
                     </div>
                     <span className="text-xs font-mono text-app-primary">{m.score}</span>
                   </div>
                 </td>
-                <td className="px-4 py-2.5 text-xs text-3">{m.date}</td>
+                <td className="px-4 py-2.5 text-xs text-app-faint">{m.date}</td>
                 <td className="px-4 py-2.5">
-                  <Link to="/matching" className="text-[10px] text-indigo hover:opacity-70">{t("view")}</Link>
+                  <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70">{t("view")}</Link>
                 </td>
               </tr>
             ))}
