@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Archive, CheckCircle, Edit3, GitMerge, MoreHorizontal, Plus, X } from "lucide-react";
+import { ArrowLeft, Archive, CheckCircle, Edit3, GitMerge, MoreHorizontal, Plus, X } from "../design-system/icons";
 import { ASSIGNMENTS } from "./Jobs";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
