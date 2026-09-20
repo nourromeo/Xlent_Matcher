@@ -3,49 +3,6 @@
 @import './design-system/tokens.css';
 @import 'tailwindcss';
 
-/* ── Dark mode (default) ─────────────────────────────── */
-:root,
-html.dark {
-  --ats-bg:            #09090b;
-  --ats-surface:       #111113;
-  --ats-surface-r:     #18181b;
-  --ats-border:        #27272a;
-  --ats-border-s:      #1c1c1f;
-  --ats-muted:         #71717a;
-  --ats-text:          #fafafa;
-  --ats-text-2:        #a1a1aa;
-  --ats-text-3:        #52525b;
-  --ats-indigo:        #6366f1;
-  --ats-indigo-dim:    #4f46e5;
-  --ats-indigo-sub:    rgba(99,102,241,0.12);
-  --ats-indigo-sub2:   rgba(99,102,241,0.08);
-  --ats-green:         #22c55e;
-  --ats-amber:         #f59e0b;
-  --ats-red:           #ef4444;
-  --ats-shadow:        0 0 0 1px rgba(255,255,255,0.04);
-}
-
-/* ── Light mode ──────────────────────────────────────── */
-html.light {
-  --ats-bg:            #f4f4f5;
-  --ats-surface:       #ffffff;
-  --ats-surface-r:     #f9f9f9;
-  --ats-border:        #e4e4e7;
-  --ats-border-s:      #ececec;
-  --ats-muted:         #71717a;
-  --ats-text:          #09090b;
-  --ats-text-2:        #3f3f46;
-  --ats-text-3:        #a1a1aa;
-  --ats-indigo:        #4f46e5;
-  --ats-indigo-dim:    #4338ca;
-  --ats-indigo-sub:    rgba(79,70,229,0.10);
-  --ats-indigo-sub2:   rgba(79,70,229,0.06);
-  --ats-green:         #16a34a;
-  --ats-amber:         #d97706;
-  --ats-red:           #dc2626;
-  --ats-shadow:        0 1px 3px rgba(0,0,0,0.08);
-}
-
 @theme inline {
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -53,42 +10,23 @@ html.light {
 
 html, body, #root {
   height: 100%;
-  background-color: var(--ats-bg);
-  color: var(--ats-text);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 /* Scrollbars */
-* { scrollbar-width: thin; scrollbar-color: var(--ats-border) transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--color-border) transparent; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--ats-border); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: var(--ats-muted); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 
-/* ── Semantic utility classes ────────────────────────── */
-.bg-base      { background-color: var(--ats-bg); }
-.bg-surface   { background-color: var(--ats-surface); }
-.bg-raised    { background-color: var(--ats-surface-r); }
-.border-base  { border-color: var(--ats-border); }
-.border-sub   { border-color: var(--ats-border-s); }
-.text-base    { color: var(--ats-text); }
-.text-2       { color: var(--ats-text-2); }
-.text-3       { color: var(--ats-text-3); }
-.text-muted   { color: var(--ats-muted); }
-.text-indigo  { color: var(--ats-indigo); }
-.bg-indigo-sub  { background-color: var(--ats-indigo-sub); }
-.bg-indigo-sub2 { background-color: var(--ats-indigo-sub2); }
-.border-indigo  { border-color: var(--ats-indigo); }
-
-
-/* Keep buttons and navigation at a stable size on hover. */
-button, a, nav a {
-  transform: none !important;
-  zoom: 1 !important;
-}
-button:hover, a:hover, nav a:hover {
-  transform: none !important;
-  zoom: 1 !important;
+/* Controls never change their physical size on hover. */
+button, a { transform: none; }
+.ds-button, .ds-icon-button {
+  transform: none;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
 }
