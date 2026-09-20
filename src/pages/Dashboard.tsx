@@ -1,6 +1,8 @@
 import { FileText, Briefcase, GitMerge, Users, Clock, CheckCircle, AlertCircle, ArrowUpRight } from "../design-system/icons";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
+import { QUEUE, RECENT_MATCHES } from "../data/mock";
+import { DataTable } from "../components/ui/DataTable";
 
 const QUEUE = [
   { name: "anna_kovacs_consultant_cv.pdf", status: "parsing", added: "2m ago" },
@@ -110,35 +112,17 @@ export default function Dashboard() {
             {t("dash_view_all")} <ArrowUpRight size={10} />
           </Link>
         </div>
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-app-subtle">
-              {[t("dash_candidate"), t("dash_job"), t("dash_score"), t("dash_date"), ""].map((h, i) => (
-                <th key={i} className="text-[10px] font-medium text-app-faint uppercase tracking-wider text-left px-4 py-2">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {RECENT_MATCHES.map((m) => (
-              <tr key={m.consultant + m.assignment} className="border-b border-app-subtle hover:bg-app-raised transition-colors">
-                <td className="px-4 py-2.5 text-xs text-app-primary font-medium">{m.consultant}</td>
-                <td className="px-4 py-2.5 text-xs text-app-secondary">{m.assignment}</td>
-                <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-1.5 rounded-full bg-app-raised">
-                      <div className="h-full rounded-full" style={{ width: `${m.score}%`, backgroundColor: "var(--color-brand)" }} />
-                    </div>
-                    <span className="text-xs font-mono text-app-primary">{m.score}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-2.5 text-xs text-app-faint">{m.date}</td>
-                <td className="px-4 py-2.5">
-                  <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70">{t("view")}</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          columns={[
+            { key: "consultant", header: t("dash_candidate"), render: (match) => <span className="font-medium text-app-primary">{match.consultant}</span> },
+            { key: "assignment", header: t("dash_job") },
+            { key: "score", header: t("dash_score"), render: (match) => <div className="flex items-center gap-2"><div className="w-20 h-1.5 rounded-full bg-app-raised"><div className="h-full rounded-full" style={{ width: match.score + "%", backgroundColor: "var(--color-brand)" }} /></div><span className="font-mono text-app-primary">{match.score}</span></div> },
+            { key: "date", header: t("dash_date"), render: (match) => <span className="text-app-faint">{match.date}</span> },
+            { key: "view", header: "", render: () => <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70">{t("view")}</Link> },
+          ]}
+          rows={RECENT_MATCHES}
+          rowKey={(match) => match.consultant + match.assignment}
+        /></table>
       </div>
     </div>
   );
