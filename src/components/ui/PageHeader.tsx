@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "../../design-system/icons";
+import { useI18n } from "../../i18n";
 
 type PageHeaderProps = {
   title: string;
@@ -12,13 +13,15 @@ type PageHeaderProps = {
   actions?: ReactNode;
 };
 
-export function PageHeader({ title, description, eyebrow, meta, backTo, backLabel = "Back", actions }: PageHeaderProps) {
+export function PageHeader({ title, description, eyebrow, meta, backTo, backLabel, actions }: PageHeaderProps) {
+  const { t } = useI18n();
+  const resolvedBackLabel = backLabel ?? t("common_back");
   return (
     <header className="flex items-start justify-between gap-4 pb-4 border-b border-app">
       <div className="min-w-0">
         {backTo && (
           <Link to={backTo} className="inline-flex items-center gap-1.5 text-xs text-app-muted hover:text-app-secondary mb-3">
-            <ArrowLeft size={13} />{backLabel}
+            <ArrowLeft size={13} />{resolvedBackLabel}
           </Link>
         )}
         {eyebrow && <p className="text-[10px] uppercase tracking-wider text-app-muted mb-1">{eyebrow}</p>}
