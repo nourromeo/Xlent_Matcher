@@ -37,15 +37,11 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort 
     if (!sort) return [...rows];
 
     const column = columns.find((item) => item.key === sort.key);
-    if (!column?.sortable) return [...rows];
+    if (!column?.sortable || !column.sortValue) return [...rows];
 
     return [...rows].sort((a, b) => {
-      const aValue = normalizeSortValue(
-        column.sortValue ? column.sortValue(a) : ((a as any)[column.key] as SortValue),
-      );
-      const bValue = normalizeSortValue(
-        column.sortValue ? column.sortValue(b) : ((b as any)[column.key] as SortValue),
-      );
+      const aValue = normalizeSortValue(column.sortValue(a));
+      const bValue = normalizeSortValue(column.sortValue(b));
 
       let result = 0;
       if (typeof aValue === "number" && typeof bValue === "number") {
@@ -118,7 +114,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort 
               <tr key={rowKey(row)} className="border-b border-app-subtle hover:bg-app-raised transition-colors">
                 {columns.map((column) => (
                   <td key={column.key} className="px-4 py-2.5 text-xs text-app-secondary">
-                    {column.render ? column.render(row) : String((row as any)[column.key] ?? "")}
+                    {column.render ? column.render(row) : String((row as unknown as Record<string, unknown>)[column.key] ?? "")}
                   </td>
                 ))}
               </tr>
