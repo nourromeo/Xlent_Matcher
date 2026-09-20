@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Save, Plus, Trash2, RefreshCw } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Button } from "../components/ui/Button";
+import { Tabs } from "../components/ui/Tabs";
 
 const SKILLS = [
   { id: "s1", canonical: "Go", aliases: ["Golang", "Go lang"], category: "Language" },
@@ -28,7 +29,12 @@ const FLAGS_DATA = [
 export default function Admin() {
   const { t } = useI18n();
 
-  const TABS = [t("tab_taxonomy"), t("tab_weights"), t("tab_prompts"), t("tab_flags")] as const;
+  const TABS = [
+    { id: "taxonomy", label: t("tab_taxonomy") },
+    { id: "weights", label: t("tab_weights") },
+    { id: "prompts", label: t("tab_prompts") },
+    { id: "flags", label: t("tab_flags") },
+  ];
 
   const WEIGHTS_DEF = [
     { key: "mustHaveCoverage", label: t("score_mustHave"), value: 40, desc: "Strong penalty if a required skill is missing" },
@@ -39,7 +45,7 @@ export default function Admin() {
     { key: "availability", label: t("score_availability"), value: 10, desc: "Practical fit factors" },
   ];
 
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState("taxonomy");
   const [weights, setWeights] = useState<Record<string, number>>(Object.fromEntries(WEIGHTS_DEF.map((w) => [w.key, w.value])));
   const [flags, setFlags] = useState<Record<string, boolean>>(Object.fromEntries(FLAGS_DATA.map((f) => [f.key, f.enabled])));
 
@@ -53,18 +59,10 @@ export default function Admin() {
         <p className="text-xs text-app-muted mt-0.5">{t("admin_sub")}</p>
       </div>
 
-      <div className="flex border-b border-app gap-0">
-        {TABS.map((tb, index) => (
-          <button key={tb} onClick={() => setTab(index)}
-            className="text-xs px-4 py-2 border-b-2 transition-colors"
-            style={tab === index ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 } : { borderColor: "transparent", color: "var(--color-text-muted)" }}>
-            {tb}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
       {/* Taxonomy */}
-      {tab === 0 && (
+      {tab === "taxonomy" && (
         <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <span className="text-xs font-medium text-app-primary">{t("tab_taxonomy")}</span>
@@ -99,7 +97,7 @@ export default function Admin() {
       )}
 
       {/* Weights */}
-      {tab === 1 && (
+      {tab === "weights" && (
         <div className="space-y-3">
           <div className="text-xs px-3 py-2 rounded flex items-center gap-2"
             style={{ background: ok ? "var(--color-success-soft)" : "var(--color-warning-soft)", border: `1px solid ${ok ? "var(--color-success-border)" : "var(--color-warning-border)"}`, color: ok ? "var(--color-success)" : "var(--color-warning)" }}>
@@ -130,7 +128,7 @@ export default function Admin() {
       )}
 
       {/* Prompts */}
-      {tab === 2 && (
+      {tab === "prompts" && (
         <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
           <table className="w-full">
             <thead>
@@ -162,7 +160,7 @@ export default function Admin() {
       )}
 
       {/* Feature Flags */}
-      {tab === 4 && (
+      {tab === "flags" && (
         <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
           {FLAGS_DATA.map((f, i) => (
             <div key={f.key} className="flex items-center justify-between px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
