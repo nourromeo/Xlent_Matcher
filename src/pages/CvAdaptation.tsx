@@ -141,7 +141,7 @@ function SourceCard({
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const isCv = kind === "cv";
-  const title = isCv ? t("upload_title").replace("Upload ", "") : t("matching_client_assignment");
+  const title = isCv ? t("cv_label") : t("assignment_label");
   const description = isCv ? t("cv_source_help") : t("assignment_source_help");
   const Icon = isCv ? Users : Briefcase;
 
@@ -545,8 +545,8 @@ export default function CvAdaptation() {
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <SourceSummary label={t("upload_title").replace("Upload ", "")} source={cvSource} selectedLabel={cvLabel} onChange={() => setEditingInputs(true)} />
-            <SourceSummary label={t("matching_client_assignment")} source={assignmentSource} selectedLabel={assignmentLabel} onChange={() => setEditingInputs(true)} />
+            <SourceSummary label={t("cv_label")} source={cvSource} selectedLabel={cvLabel} onChange={() => setEditingInputs(true)} />
+            <SourceSummary label={t("assignment_label")} source={assignmentSource} selectedLabel={assignmentLabel} onChange={() => setEditingInputs(true)} />
           </div>
         </div>
       )}
