@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, GitMerge, Clock, CheckCircle, Zap, Eye, Archive } from "../design-system/icons";
 import { useI18n } from "../i18n";
-import { ASSIGNMENTS } from "../features/assignments";
+import { ASSIGNMENTS, ASSIGNMENT_STATUS_CONFIG } from "../features/assignments";
 export { ASSIGNMENTS };
 import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
@@ -49,9 +49,9 @@ export default function ClientAssignments() {
   const [showModal, setShowModal] = useState(false);
   const [archived, setArchived] = useState<string[]>([]);
   const STATUS_CFG = {
-    matching: { label: t("status_matching"), tone: "warning" as const, icon: <Zap size={9} /> },
-    done: { label: t("status_match_complete"), tone: "success" as const, icon: <CheckCircle size={9} /> },
-    draft: { label: "Draft", tone: "neutral" as const, icon: <Clock size={9} /> },
+    matching: { label: t("status_matching"), ...ASSIGNMENT_STATUS_CONFIG.matching, icon: <Zap size={9} /> },
+    done: { label: t("status_match_complete"), ...ASSIGNMENT_STATUS_CONFIG.done, icon: <CheckCircle size={9} /> },
+    draft: { label: "Draft", ...ASSIGNMENT_STATUS_CONFIG.draft, icon: <Clock size={9} /> },
   };
   const active = ASSIGNMENTS.filter((assignment) => !archived.includes(assignment.id));
 
