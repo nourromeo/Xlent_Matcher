@@ -16,11 +16,11 @@ import type { Skill } from "../features/admin";
 
 
 
-const FLAG_LABELS: Record<string, string> = {
-  SkillsFirstAnalysis: "Skills-first analysis",
-  UseReranker: "Semantic reranking",
-  UseCloudOcr: "Cloud OCR",
-  UseStubAi: "Stub AI responses",
+const FLAG_LABEL_KEYS: Record<string, string> = {
+  SkillsFirstAnalysis: "flag_skills_first",
+  UseReranker: "flag_reranker",
+  UseCloudOcr: "flag_cloud_ocr",
+  UseStubAi: "flag_stub_ai",
 };
 
 type SkillDraft = { id?: string; canonical: string; category: string; aliases: string };
@@ -94,20 +94,20 @@ export default function Admin() {
 
   const toggleFlag = (key: string) => {
     const sensitive = key === "UseReranker" || key === "UseCloudOcr";
-    const label = FLAG_LABELS[key] ?? key;
-    if (sensitive && !window.confirm("Change " + label + "? This affects matching or document-processing behaviour.")) return;
+    const label = FLAG_LABEL_KEYS[key] ? t(FLAG_LABEL_KEYS[key] as any) : key;
+    if (sensitive && !window.confirm(label + ": " + t("admin_confirm_change"))) return;
     setFlags((previous) => ({ ...previous, [key]: !previous[key] }));
   };
 
   return (
     <div className="h-full overflow-auto"><div className="p-6 space-y-5 max-w-6xl mx-auto">
-      <PageHeader title="Admin" description="Manage skill taxonomy, matching weights, and controlled system features." />
+      <PageHeader title={t("admin_title")} description={t("admin_description")} />
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Skills", value: skills.length },
-          { label: "Matching factors", value: WEIGHTS_DEF.length },
-          { label: "Feature flags", value: FLAGS_DATA.length },
+          { label: t("admin_skills_count"), value: skills.length },
+          { label: t("admin_matching_factors"), value: WEIGHTS_DEF.length },
+          { label: t("admin_feature_flags"), value: FLAGS_DATA.length },
         ].map((item) => (
           <div key={item.label} className="bg-app-surface border border-app rounded-lg px-4 py-3" style={{ boxShadow: "var(--shadow-surface)" }}>
             <p className="text-[10px] uppercase tracking-wide text-app-faint">{item.label}</p>
@@ -125,13 +125,13 @@ export default function Admin() {
             <div className="flex items-end gap-2 flex-1">
               <div className="relative w-full max-w-sm">
                 <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search skills or aliases..." className="w-full bg-app border border-app rounded-md pl-8 pr-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("admin_search_skills")} className="w-full bg-app border border-app rounded-md pl-8 pr-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" />
               </div>
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-app border border-app rounded-md px-3 py-2 text-xs text-app-secondary outline-none">
-                {categories.map((item) => <option key={item} value={item}>{item}</option>)}
+                {categories.map((item) => <option key={item} value={item}>{item === "All" ? t("common_all") : item}</option>)}
               </select>
             </div>
-            <Button variant="primary" icon={<Plus size={12} />} onClick={openAddSkill}>Add Skill</Button>
+            <Button variant="primary" icon={<Plus size={12} />} onClick={openAddSkill}>{t("admin_add_skill_title")}</Button>
           </div>
 
           <DataTable
@@ -139,11 +139,11 @@ export default function Admin() {
               { key: "canonical", header: t("admin_canonical"), render: (skill) => <span className="font-mono font-medium text-app-primary">{skill.canonical}</span> },
               { key: "category", header: t("admin_category"), render: (skill) => <span className="text-[11px] text-app-secondary px-2 py-1 rounded bg-app-raised">{skill.category}</span> },
               { key: "aliases", header: t("admin_aliases"), render: (skill) => <div className="flex flex-wrap gap-1">{skill.aliases.map((alias) => <span key={alias} className="text-[10px] font-mono text-app-secondary px-1.5 py-0.5 rounded bg-app-raised border border-app">{alias}</span>)}</div> },
-              { key: "actions", header: "Actions", render: (skill) => <div className="flex items-center gap-1"><Button variant="ghost" icon={<Edit3 size={11} />} onClick={() => openEditSkill(skill)}>Edit</Button><button onClick={() => setSkills((current) => current.filter((item) => item.id !== skill.id))} className="p-2 text-app-faint hover:text-red-500" aria-label={"Delete " + skill.canonical}><Trash2 size={12} /></button></div> },
+              { key: "actions", header: t("admin_actions"), render: (skill) => <div className="flex items-center gap-1"><Button variant="ghost" icon={<Edit3 size={11} />} onClick={() => openEditSkill(skill)}>{t("admin_edit")}</Button><button onClick={() => setSkills((current) => current.filter((item) => item.id !== skill.id))} className="p-2 text-app-faint hover:text-red-500" aria-label={t("common_delete") + " " + skill.canonical}><Trash2 size={12} /></button></div> },
             ]}
             rows={filteredSkills}
             rowKey={(skill) => skill.id}
-            emptyMessage="No skills match the current search or category."
+            emptyMessage={t("admin_empty_skills")}
           />
         </div>
       )}
@@ -154,8 +154,8 @@ export default function Admin() {
         <div className="space-y-3">
           <div className="text-xs px-4 py-3 rounded-lg flex items-center justify-between gap-3"
             style={{ background: ok ? "var(--color-success-soft)" : "var(--color-warning-soft)", border: "1px solid " + (ok ? "var(--color-success-border)" : "var(--color-warning-border)"), color: ok ? "var(--color-success)" : "var(--color-warning)" }}>
-            <span>Total weight: <strong>{total}%</strong> {ok ? "✓ Ready to save" : "— total must equal 100%"}</span>
-            {weightsDirty && <span className="font-medium">Unsaved changes</span>}
+            <span>Total weight: <strong>{total}%</strong> {ok ? t("admin_ready_save") : t("admin_must_eq")}</span>
+            {weightsDirty && <span className="font-medium">{t("admin_unsaved")}</span>}
           </div>
 
           <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
@@ -176,8 +176,8 @@ export default function Admin() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Button variant="ghost" icon={<RefreshCw size={11} />} onClick={resetWeights}>Reset to default</Button>
-            <Button variant="primary" icon={<Save size={11} />} onClick={saveWeights} disabled={!ok || !weightsDirty} className={!ok || !weightsDirty ? "opacity-40 cursor-not-allowed" : ""}>Save Weights</Button>
+            <Button variant="ghost" icon={<RefreshCw size={11} />} onClick={resetWeights}>{t("admin_reset")}</Button>
+            <Button variant="primary" icon={<Save size={11} />} onClick={saveWeights} disabled={!ok || !weightsDirty} className={!ok || !weightsDirty ? "opacity-40 cursor-not-allowed" : ""}>{t("admin_save_w")}</Button>
           </div>
         </div>
       )}
@@ -188,20 +188,20 @@ export default function Admin() {
       {tab === "flags" && (
         <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="px-5 py-3 border-b border-app">
-            <p className="text-xs font-medium text-app-primary">Feature Flags</p>
-            <p className="text-[11px] text-app-muted mt-0.5">Enable or disable controlled matching and AI-related behaviour without changing the main workflow.</p>
+            <p className="text-xs font-medium text-app-primary">{t("tab_flags")}</p>
+            <p className="text-[11px] text-app-muted mt-0.5">{t("admin_feature_help")}</p>
           </div>
           {FLAGS_DATA.map((f, i) => (
             <div key={f.key} className="flex items-center justify-between gap-5 px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-medium text-app-primary">{FLAG_LABELS[f.key] ?? f.key}</p>
-                  <StatusBadge tone={flags[f.key] ? "success" : "neutral"}>{flags[f.key] ? "Enabled" : "Disabled"}</StatusBadge>
+                  <p className="text-xs font-medium text-app-primary">{FLAG_LABEL_KEYS[f.key] ? t(FLAG_LABEL_KEYS[f.key] as any) : f.key}</p>
+                  <StatusBadge tone={flags[f.key] ? "success" : "neutral"}>{flags[f.key] ? t("common_enabled") : t("common_disabled")}</StatusBadge>
                 </div>
                 <p className="text-[11px] text-app-muted mt-1">{f.desc}</p>
                 <p className="text-[10px] text-app-faint font-mono mt-1">{f.key}</p>
               </div>
-              <button onClick={() => toggleFlag(f.key)} className="relative w-10 h-5 rounded-full transition-colors flex-none" style={{ background: flags[f.key] ? "var(--color-brand)" : "var(--color-border)" }} aria-label={(flags[f.key] ? "Disable " : "Enable ") + (FLAG_LABELS[f.key] ?? f.key)}>
+              <button onClick={() => toggleFlag(f.key)} className="relative w-10 h-5 rounded-full transition-colors flex-none" style={{ background: flags[f.key] ? "var(--color-brand)" : "var(--color-border)" }} aria-label={(flags[f.key] ? t("common_disabled") + " " : t("common_enabled") + " ") + (FLAG_LABEL_KEYS[f.key] ? t(FLAG_LABEL_KEYS[f.key] as any) : f.key)}>
                 <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform" style={{ transform: flags[f.key] ? "translateX(20px)" : "translateX(0)" }} />
               </button>
             </div>
@@ -211,24 +211,24 @@ export default function Admin() {
 
       <EditFormModal
         open={skillModalOpen}
-        title={skillDraft.id ? "Edit Skill" : "Add Skill"}
-        description="Maintain the canonical skill name, category, and aliases used by matching."
+        title={skillDraft.id ? t("admin_edit_skill") : t("admin_add_skill_title")}
+        description={t("admin_skill_help")}
         onClose={() => setSkillModalOpen(false)}
         onSubmit={saveSkill}
       >
         <div className="space-y-4">
           <label className="block">
-            <span className="text-[11px] text-app-muted uppercase tracking-wide">Canonical name</span>
+            <span className="text-[11px] text-app-muted uppercase tracking-wide">{t("admin_canonical_name")}</span>
             <input value={skillDraft.canonical} onChange={(e) => setSkillDraft((current) => ({ ...current, canonical: e.target.value }))} className="mt-1.5 w-full bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" placeholder="e.g. PostgreSQL" />
           </label>
           <label className="block">
-            <span className="text-[11px] text-app-muted uppercase tracking-wide">Category</span>
+            <span className="text-[11px] text-app-muted uppercase tracking-wide">{t("admin_category")}</span>
             <input value={skillDraft.category} onChange={(e) => setSkillDraft((current) => ({ ...current, category: e.target.value }))} className="mt-1.5 w-full bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" placeholder="e.g. Database" />
           </label>
           <label className="block">
-            <span className="text-[11px] text-app-muted uppercase tracking-wide">Aliases</span>
+            <span className="text-[11px] text-app-muted uppercase tracking-wide">{t("admin_aliases")}</span>
             <input value={skillDraft.aliases} onChange={(e) => setSkillDraft((current) => ({ ...current, aliases: e.target.value }))} className="mt-1.5 w-full bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" placeholder="Postgres, pg" />
-            <span className="text-[10px] text-app-faint mt-1 block">Separate aliases with commas.</span>
+            <span className="text-[10px] text-app-faint mt-1 block">{t("admin_alias_help")}</span>
           </label>
         </div>
       </EditFormModal>
