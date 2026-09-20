@@ -193,7 +193,8 @@ export default function CvAdaptation() {
     setResult(null);
     // Simulate async AI call
     setTimeout(() => {
-      setResult(MOCK_RESULT);
+      const mockResult = MOCK_RESULT as AnalysisResult;
+      setResult(mockResult);
       setLoading(false);
     }, 1800);
   }
