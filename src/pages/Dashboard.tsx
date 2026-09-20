@@ -39,11 +39,11 @@ const RECENT_MATCHES = [
 ];
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
-  parsing:   { color: "var(--color-warning)",  background: "rgba(245,158,11,0.10)" },
+  parsing:   { color: "var(--color-warning)",  background: "var(--color-warning-subtle)" },
   extracting:{ color: "var(--color-brand)", background: "var(--color-brand-subtle)" },
   embedding: { color: "var(--color-brand)", background: "var(--color-brand-subtle)" },
-  done:      { color: "var(--color-success)",  background: "rgba(34,197,94,0.10)"  },
-  error:     { color: "var(--color-danger)",    background: "rgba(239,68,68,0.10)"  },
+  done:      { color: "var(--color-success)",  background: "var(--color-success-subtle)"  },
+  error:     { color: "var(--color-danger)",    background: "var(--color-danger-subtle)"  },
 };
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
@@ -63,7 +63,7 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
           className="w-7 h-7 rounded flex items-center justify-center"
           style={accent
             ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)" }
-            : { background: "var(--color-surface-raised)", color: "var(--color-text-app-muted)" }}
+            : { background: "var(--color-surface-raised)", color: "var(--color-text-muted)" }}
         >
           <Icon size={14} />
         </div>
