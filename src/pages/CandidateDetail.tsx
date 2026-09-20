@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3, Save, RefreshCw } from "lucide-react";
+import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3, Save, RefreshCw } from "../design-system/icons";
 import { useI18n } from "../i18n";
 
 const PROFILE = {
