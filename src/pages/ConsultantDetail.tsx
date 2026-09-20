@@ -45,7 +45,7 @@ export default function ConsultantDetail() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-6 py-4 border-b border-app bg-app-surface flex items-start gap-4 flex-none">
-        <Link to="/talent" className="text-app-faint hover:text-app-secondary transition-colors mt-0.5"><ChevronLeft size={16} /></Link>
+        <Link to="/consultants" className="text-app-faint hover:text-app-secondary transition-colors mt-0.5"><ChevronLeft size={16} /></Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand">{profile.initials}</div>
