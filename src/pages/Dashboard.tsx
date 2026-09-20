@@ -90,19 +90,25 @@ export default function Dashboard() {
             <p className="text-xs font-medium text-app-primary">Operational Overview</p>
             <p className="text-[10px] text-app-muted mt-0.5">Current platform activity and next actions</p>
           </div>
-          <div className="grid md:grid-cols-2 gap-4 p-4">
-            <div className="rounded-lg p-4" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border-subtle)" }}>
-              <div className="flex items-center gap-2 mb-3"><GitMerge size={13} className="text-app-brand" /><p className="text-xs font-medium text-app-primary">Matching activity</p></div>
-              <p className="text-2xl font-semibold font-mono text-app-primary">3</p>
-              <p className="text-[10px] text-app-muted mt-1">Assignments currently being compared</p>
-              <Link to="/matching" className="inline-flex items-center gap-1 text-[10px] text-app-brand mt-4 hover:opacity-70">Open matching <ArrowUpRight size={10} /></Link>
-            </div>
-            <div className="rounded-lg p-4" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border-subtle)" }}>
-              <div className="flex items-center gap-2 mb-3"><Users size={13} className="text-app-brand" /><p className="text-xs font-medium text-app-primary">Consultant coverage</p></div>
-              <p className="text-2xl font-semibold font-mono text-app-primary">124</p>
-              <p className="text-[10px] text-app-muted mt-1">Consultants available in the pool</p>
-              <Link to="/talent" className="inline-flex items-center gap-1 text-[10px] text-app-brand mt-4 hover:opacity-70">View consultant pool <ArrowUpRight size={10} /></Link>
-            </div>
+          <div className="grid md:grid-cols-3 gap-3 p-4">
+            <Link to="/upload" className="rounded-lg p-4 transition-colors hover:bg-app-raised" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border-subtle)" }}>
+              <FileText size={14} className="text-app-brand mb-3" />
+              <p className="text-xs font-medium text-app-primary">Review CV queue</p>
+              <p className="text-[10px] text-app-muted mt-1">Check parsing and extraction status</p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-app-brand mt-4">Open queue <ArrowUpRight size={10} /></span>
+            </Link>
+            <Link to="/jobs" className="rounded-lg p-4 transition-colors hover:bg-app-raised" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border-subtle)" }}>
+              <Briefcase size={14} className="text-app-brand mb-3" />
+              <p className="text-xs font-medium text-app-primary">Manage assignments</p>
+              <p className="text-[10px] text-app-muted mt-1">Create or review client requirements</p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-app-brand mt-4">Open assignments <ArrowUpRight size={10} /></span>
+            </Link>
+            <Link to="/matching" className="rounded-lg p-4 transition-colors hover:bg-app-raised" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border-subtle)" }}>
+              <GitMerge size={14} className="text-app-brand mb-3" />
+              <p className="text-xs font-medium text-app-primary">Continue matching</p>
+              <p className="text-[10px] text-app-muted mt-1">Review ranked consultant matches</p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-app-brand mt-4">Open matching <ArrowUpRight size={10} /></span>
+            </Link>
           </div>
         </div>
       </div>
