@@ -16,7 +16,7 @@ export default function ConsultantPool() {
   const [query, setQuery] = useState("");
   const [seniority, setSeniority] = useState("All");
   const [avail, setAvail] = useState("All");
-  const [starred, setStarred] = useState<Record<string, boolean>>(Object.fromEntries(CONSULTANTS.map((consultant) => [consultant.id, consultant.starred])));
+  const [starred, setStarred] = useState<Record<string, boolean>>(Object.fromEntries(CONSULTANTS.map((consultant) => [consultant.id, consultant.starred ?? false])));
 
   const filtered = CONSULTANTS.filter((consultant) => {
     if (seniority !== "All" && consultant.seniority !== seniority) return false;
