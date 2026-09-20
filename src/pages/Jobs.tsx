@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, GitMerge, Clock, CheckCircle, Zap, Eye, Archive, MoreHorizontal, ArrowLeft } from "lucide-react";
+import { Plus, GitMerge, Clock, CheckCircle, Zap, Eye, Archive, MoreHorizontal, ArrowLeft } from "../design-system/icons";
 import { useI18n } from "../i18n";
 
 export const ASSIGNMENTS = [
