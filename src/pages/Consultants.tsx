@@ -26,7 +26,7 @@ export default function Consultants() {
 
   return (
     <div className="p-6 space-y-4">
-      <PageHeader title={t("talent_title")} meta={String(CONSULTANTS.length) + " " + t("talent_sub")} actions={<LinkButton to="/upload" variant="primary">{t("talent_upload")}</LinkButton>} />
+      <PageHeader title={t("talent_title")} meta={String(CONSULTANTS.length) + " " + t("talent_sub")} actions={<LinkButton to="/cv-upload" variant="primary">{t("talent_upload")}</LinkButton>} />
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex-1 relative max-w-xs"><Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" /><Input type="search" placeholder={t("talent_search")} value={query} onChange={(event) => setQuery(event.target.value)} className="pl-8 py-1.5" /></div>
         <div className="flex items-center gap-1.5 text-[10px] text-app-faint"><Filter size={10} /><span>{t("talent_seniority")}</span></div>
@@ -42,7 +42,7 @@ export default function Consultants() {
             { key: "experience", header: t("col_experience"), render: (consultant) => <span className="font-mono">{consultant.experience}</span> },
             { key: "skills", header: t("col_skills"), render: (consultant) => <div className="flex flex-wrap gap-1">{consultant.skills.slice(0, 4).map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}{consultant.skills.length > 4 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 4}</span>}</div> },
             { key: "availability", header: t("col_avail"), render: (consultant) => <span style={{ color: consultant.availability === "Immediate" ? "var(--color-success)" : "var(--color-text-secondary)" }}>{consultant.availability === "Immediate" ? t("immediate") : consultant.availability}</span> },
-            { key: "actions", header: "Actions", render: (consultant) => <div className="flex items-center"><LinkButton to={`/talent/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>View Consultant</LinkButton></div> },
+            { key: "actions", header: "Actions", render: (consultant) => <div className="flex items-center"><LinkButton to={`/consultants/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>View Consultant</LinkButton></div> },
           ]}
           rows={filtered}
           rowKey={(consultant) => consultant.id}
