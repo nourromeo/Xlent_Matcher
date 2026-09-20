@@ -2,6 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3, Save, RefreshCw } from "../design-system/icons";
 import { useI18n } from "../i18n";
+import { Input } from "../components/ui/Input";
+import { Textarea } from "../components/ui/Textarea";
+import { EditFormModal } from "../components/ui/EditFormModal";
+import { FormSection } from "../components/ui/FormSection";
+import { FormField } from "../components/ui/FormField";
 
 const PROFILE = {
   id: "1", initials: "AK", name: "Anna Kovacs", role: "Senior Backend Consultant", office: "XLENT Stockholm", headline: "Backend architecture and distributed systems",
@@ -213,31 +218,34 @@ export default function ConsultantProfile() {
         )}
       </div>
 
-      {editMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "var(--color-overlay)" }}>
-          <div className="w-full max-w-4xl max-h-[92vh] overflow-auto bg-app-surface border border-app rounded-lg p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
-            <div className="flex items-center justify-between mb-5">
-              <div><h2 className="text-sm font-semibold text-app-primary">Edit Extracted Consultant Profile</h2><p className="text-[11px] text-app-muted mt-1">Correct the structured information extracted from the consultant CV.</p></div>
-              <button onClick={() => setEditMode(false)} className="text-xs text-app-muted">Close</button>
-            </div>
-            <div className="space-y-5">
-              <section><h3 className="text-xs font-medium text-app-primary mb-3">Basic Information</h3><div className="grid grid-cols-2 gap-3">
-                {[["Full name","name"],["Headline","headline"],["Role","role"],["Seniority","seniority"],["Availability","availability"],["Office / Location","office"]].map(([label,key]) => <label key={key} className="space-y-1"><span className="text-[10px] text-app-muted">{label}</span><input value={draft[key as keyof typeof draft] as string} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} className="w-full bg-app border border-app rounded px-2.5 py-2 text-xs text-app-primary outline-none" /></label>)}
-                <label className="space-y-1"><span className="text-[10px] text-app-muted">Years of experience</span><input type="number" value={draft.totalYearsExperience} onChange={(e) => setDraft({ ...draft, totalYearsExperience: Number(e.target.value) })} className="w-full bg-app border border-app rounded px-2.5 py-2 text-xs text-app-primary outline-none" /></label>
-              </div></section>
-              <section><h3 className="text-xs font-medium text-app-primary mb-1">Skills & Evidence</h3><p className="text-[10px] text-app-muted mb-2">One skill per line: Name | Category | Years | Level | Evidence</p><textarea value={draftLists.skills} onChange={(e) => setDraftLists({ ...draftLists, skills: e.target.value })} rows={6} className="w-full bg-app border border-app rounded px-2.5 py-2 text-[11px] text-app-primary font-mono outline-none" /></section>
-              <section><h3 className="text-xs font-medium text-app-primary mb-1">Previous Projects</h3><p className="text-[10px] text-app-muted mb-2">One project per line: Role | Company | Start | End | Technologies | Achievement</p><textarea value={draftLists.experience} onChange={(e) => setDraftLists({ ...draftLists, experience: e.target.value })} rows={5} className="w-full bg-app border border-app rounded px-2.5 py-2 text-[11px] text-app-primary font-mono outline-none" /></section>
-              <div className="grid grid-cols-2 gap-4">
-                <section><h3 className="text-xs font-medium text-app-primary mb-1">Education</h3><p className="text-[10px] text-app-muted mb-2">Degree | Institution | Year</p><textarea value={draftLists.education} onChange={(e) => setDraftLists({ ...draftLists, education: e.target.value })} rows={3} className="w-full bg-app border border-app rounded px-2.5 py-2 text-[11px] text-app-primary font-mono outline-none" /></section>
-                <section><h3 className="text-xs font-medium text-app-primary mb-1">Languages</h3><p className="text-[10px] text-app-muted mb-2">One language per line</p><textarea value={draftLists.languages} onChange={(e) => setDraftLists({ ...draftLists, languages: e.target.value })} rows={3} className="w-full bg-app border border-app rounded px-2.5 py-2 text-[11px] text-app-primary outline-none" /></section>
-                <section><h3 className="text-xs font-medium text-app-primary mb-1">Industries</h3><p className="text-[10px] text-app-muted mb-2">One industry per line</p><textarea value={draftLists.industries} onChange={(e) => setDraftLists({ ...draftLists, industries: e.target.value })} rows={3} className="w-full bg-app border border-app rounded px-2.5 py-2 text-[11px] text-app-primary outline-none" /></section>
-                <section><h3 className="text-xs font-medium text-app-primary mb-1">Certifications</h3><p className="text-[10px] text-app-muted mb-2">One certification per line</p><textarea value={draftLists.certifications} onChange={(e) => setDraftLists({ ...draftLists, certifications: e.target.value })} rows={3} className="w-full bg-app border border-app rounded px-2.5 py-2 text-[11px] text-app-primary outline-none" /></section>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6"><button onClick={() => setEditMode(false)} className="text-xs px-3 py-1.5 rounded border border-app text-app-muted">Cancel</button><button onClick={() => { setProfile({ ...draft, skills: parseSkills(draftLists.skills), experience: parseExperience(draftLists.experience), education: parseEducation(draftLists.education), languages: lines(draftLists.languages), industries: lines(draftLists.industries), certifications: lines(draftLists.certifications) }); setEditMode(false); }} className="text-xs px-3 py-1.5 rounded text-white" style={{ background: "var(--color-brand)" }}>Save Changes</button></div>
+      <EditFormModal
+        open={editMode}
+        title="Edit Extracted Consultant Profile"
+        description="Correct the structured information extracted from the consultant CV."
+        onClose={() => setEditMode(false)}
+        onSubmit={() => { setProfile({ ...draft, skills: parseSkills(draftLists.skills), experience: parseExperience(draftLists.experience), education: parseEducation(draftLists.education), languages: lines(draftLists.languages), industries: lines(draftLists.industries), certifications: lines(draftLists.certifications) }); setEditMode(false); }}
+      >
+        <FormSection title="Basic Information">
+          <div className="grid grid-cols-2 gap-3">
+            {[["Full name", "name"], ["Headline", "headline"], ["Role", "role"], ["Seniority", "seniority"], ["Availability", "availability"], ["Office / Location", "office"]].map(([label, key]) => (
+              <FormField key={key} label={label}><Input value={draft[key as keyof typeof draft] as string} onChange={(event) => setDraft({ ...draft, [key]: event.target.value })} /></FormField>
+            ))}
+            <FormField label="Years of experience"><Input type="number" value={draft.totalYearsExperience} onChange={(event) => setDraft({ ...draft, totalYearsExperience: Number(event.target.value) })} /></FormField>
           </div>
+        </FormSection>
+        <FormSection title="Skills & Evidence" description="One skill per line: Name | Category | Years | Level | Evidence">
+          <Textarea value={draftLists.skills} onChange={(event) => setDraftLists({ ...draftLists, skills: event.target.value })} rows={6} className="font-mono" />
+        </FormSection>
+        <FormSection title="Previous Projects" description="One project per line: Role | Company | Start | End | Technologies | Achievement">
+          <Textarea value={draftLists.experience} onChange={(event) => setDraftLists({ ...draftLists, experience: event.target.value })} rows={5} className="font-mono" />
+        </FormSection>
+        <div className="grid grid-cols-2 gap-4">
+          <FormSection title="Education" description="Degree | Institution | Year"><Textarea value={draftLists.education} onChange={(event) => setDraftLists({ ...draftLists, education: event.target.value })} rows={3} className="font-mono" /></FormSection>
+          <FormSection title="Languages" description="One language per line"><Textarea value={draftLists.languages} onChange={(event) => setDraftLists({ ...draftLists, languages: event.target.value })} rows={3} /></FormSection>
+          <FormSection title="Industries" description="One industry per line"><Textarea value={draftLists.industries} onChange={(event) => setDraftLists({ ...draftLists, industries: event.target.value })} rows={3} /></FormSection>
+          <FormSection title="Certifications" description="One certification per line"><Textarea value={draftLists.certifications} onChange={(event) => setDraftLists({ ...draftLists, certifications: event.target.value })} rows={3} /></FormSection>
         </div>
-      )}
+      </EditFormModal>
 
     </div>
   );
