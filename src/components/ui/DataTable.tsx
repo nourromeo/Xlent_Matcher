@@ -41,10 +41,10 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort 
 
     return [...rows].sort((a, b) => {
       const aValue = normalizeSortValue(
-        column.sortValue ? column.sortValue(a) : ((a as Record<string, unknown>)[column.key] as SortValue),
+        column.sortValue ? column.sortValue(a) : ((a as any)[column.key] as SortValue),
       );
       const bValue = normalizeSortValue(
-        column.sortValue ? column.sortValue(b) : ((b as Record<string, unknown>)[column.key] as SortValue),
+        column.sortValue ? column.sortValue(b) : ((b as any)[column.key] as SortValue),
       );
 
       let result = 0;
@@ -118,7 +118,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort 
               <tr key={rowKey(row)} className="border-b border-app-subtle hover:bg-app-raised transition-colors">
                 {columns.map((column) => (
                   <td key={column.key} className="px-4 py-2.5 text-xs text-app-secondary">
-                    {column.render ? column.render(row) : String((row as Record<string, unknown>)[column.key] ?? "")}
+                    {column.render ? column.render(row) : String((row as any)[column.key] ?? "")}
                   </td>
                 ))}
               </tr>
