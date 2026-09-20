@@ -1,4 +1,4 @@
-export const ADMIN_TABS = ["taxonomy", "weights", "prompts", "flags"] as const;
+export const ADMIN_TABS = ["taxonomy", "weights", "flags"] as const;
 export type AdminTab = typeof ADMIN_TABS[number];
 
 export const WEIGHTS_CONFIG = [
