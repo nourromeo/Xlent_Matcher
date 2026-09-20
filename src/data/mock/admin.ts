@@ -8,10 +8,29 @@ export const SKILLS: Skill[] = [
   { id: "s5", canonical: "PyTorch", aliases: ["torch", "pytorch"], category: "ML Framework" },
 ];
 
-
 export const FLAGS_DATA: FeatureFlag[] = [
-  { key: "SkillsFirstAnalysis", desc: "Base matching on assignment evidence and exclude personal attributes from scoring", enabled: true },
-  { key: "UseReranker", desc: "Enable Cohere reranking pass before hybrid scoring", enabled: true },
-  { key: "UseCloudOcr", desc: "Use Azure Document Intelligence for scanned PDFs", enabled: false },
-  { key: "UseStubAi", desc: "Use fake AI responses (no API keys required)", enabled: false },
+  {
+    key: "SkillsFirstAnalysis",
+    labelKey: "flag_skills_first",
+    descriptionKey: "flag_skills_first_desc",
+    enabled: true,
+  },
+  {
+    key: "UseReranker",
+    labelKey: "flag_reranker",
+    descriptionKey: "flag_reranker_desc",
+    enabled: false,
+  },
+  {
+    key: "UseCloudOcr",
+    labelKey: "flag_cloud_ocr",
+    descriptionKey: "flag_cloud_ocr_desc",
+    enabled: false,
+  },
+  {
+    key: "UseStubAi",
+    labelKey: "flag_stub_ai",
+    descriptionKey: "flag_stub_ai_desc",
+    enabled: true,
+  },
 ];
