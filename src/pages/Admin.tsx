@@ -79,7 +79,7 @@ export default function Admin() {
             ]}
             rows={SKILLS}
             rowKey={(skill) => skill.id}
-          />  </table>
+          />
         </div>
       )}
 
@@ -129,7 +129,7 @@ export default function Admin() {
             ]}
             rows={PROMPTS}
             rowKey={(prompt) => prompt.id}
-          />  </table>
+          />
         </div>
       )}
 
