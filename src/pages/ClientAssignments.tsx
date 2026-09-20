@@ -20,7 +20,7 @@ function NewAssignmentModal({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState("");
   const [client, setClient] = useState("");
   const [brief, setBrief] = useState("");
-  const parsed = { title: title || "Design System Delivery", client: client || "Client to be confirmed", seniority: "Mid", availability: "Immediate", requiredSkills: ["React", "TypeScript", "CSS"], preferredSkills: ["Figma", "Storybook"] };
+  const parsed = { title: title || "Design System Delivery", client: client || t("client_tbd"), seniority: "Mid", availability: "Immediate", requiredSkills: ["React", "TypeScript", "CSS"], preferredSkills: ["Figma", "Storybook"] };
 
   return (
     <Modal open title={t("job_modal_title")} onClose={onClose}>
@@ -34,7 +34,7 @@ function NewAssignmentModal({ onClose }: { onClose: () => void }) {
       ) : (
         <div className="p-5 space-y-4">
           <div className="rounded px-3 py-2.5" style={{ background: "var(--color-success-soft)", border: "1px solid var(--color-success-border)" }}><p className="text-[11px]" style={{ color: "var(--color-success)" }}>{t("job_modal_review")}</p></div>
-          <div className="grid grid-cols-2 gap-3">{[["Assignment Title", parsed.title], ["Client", parsed.client], ["Seniority", parsed.seniority], ["Availability", parsed.availability]].map(([label, value]) => <div key={label}><label className="text-[11px] text-app-muted block mb-1.5">{label}</label><p className="text-xs text-app-primary">{value}</p></div>)}</div>
+          <div className="grid grid-cols-2 gap-3">{[[t("assignment_title"), parsed.title], [t("assignment_client"), parsed.client], [t("assignment_seniority"), t("seniority_mid")], [t("assignment_availability"), t("immediate")]].map(([label, value]) => <div key={label}><label className="text-[11px] text-app-muted block mb-1.5">{label}</label><p className="text-xs text-app-primary">{value}</p></div>)}</div>
           <div><label className="text-[11px] text-app-muted block mb-1.5">{t("job_modal_must")}</label><div className="flex flex-wrap gap-1.5">{parsed.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}</div></div>
           <div><label className="text-[11px] text-app-muted block mb-1.5">{t("job_modal_nice")}</label><div className="flex flex-wrap gap-1.5">{parsed.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div></div>
           <div className="flex justify-end gap-2"><Button onClick={() => setStep("input")} variant="ghost">{t("job_modal_back")}</Button><Button onClick={onClose} variant="primary">{t("job_modal_confirm")}</Button></div>
@@ -52,8 +52,14 @@ export default function ClientAssignments() {
   const STATUS_CFG = {
     matching: { label: t("status_matching"), ...ASSIGNMENT_STATUS_CONFIG.matching, icon: <Zap size={9} /> },
     done: { label: t("status_match_complete"), ...ASSIGNMENT_STATUS_CONFIG.done, icon: <CheckCircle size={9} /> },
-    draft: { label: "Draft", ...ASSIGNMENT_STATUS_CONFIG.draft, icon: <Clock size={9} /> },
+    draft: { label: t("assignment_draft"), ...ASSIGNMENT_STATUS_CONFIG.draft, icon: <Clock size={9} /> },
   };
+  const displaySeniority = (value: string) =>
+    value === "Junior" ? t("seniority_junior") :
+    value === "Mid" ? t("seniority_mid") :
+    value === "Senior" ? t("seniority_senior") :
+    value === "Staff" ? t("seniority_staff") : value;
+
   const active = ASSIGNMENTS.filter((assignment) => !archived.includes(assignment.id));
   const filtered = active.filter((assignment) => {
     const search = query.trim().toLowerCase();
@@ -87,13 +93,13 @@ export default function ClientAssignments() {
         {filtered.map((assignment) => {
           const status = STATUS_CFG[assignment.status as keyof typeof STATUS_CFG];
           return <div key={assignment.id} className="bg-app-surface border border-app rounded-lg px-5 py-4 shadow-app-surface">
-            <div className="flex items-start gap-4"><div className="flex-1"><div className="flex items-center gap-3 mb-2"><h2 className="text-sm font-medium text-app-primary">{assignment.title}</h2><StatusBadge tone={status.tone} icon={status.icon}>{status.label}</StatusBadge></div><p className="text-xs text-app-muted">{assignment.client} · {assignment.seniority} · {assignment.created}</p><p className="text-[11px] text-app-secondary mt-1 mb-3 max-w-3xl">{assignment.description}</p><div className="flex flex-wrap gap-1.5">{assignment.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}{assignment.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div></div>
-              <div className="flex items-center gap-2"><LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view")}</LinkButton><IconButton label="Archive assignment" icon={<Archive size={13} />} onClick={() => setArchived((current) => [...current, assignment.id])} /></div>
+            <div className="flex items-start gap-4"><div className="flex-1"><div className="flex items-center gap-3 mb-2"><h2 className="text-sm font-medium text-app-primary">{assignment.title}</h2><StatusBadge tone={status.tone} icon={status.icon}>{status.label}</StatusBadge></div><p className="text-xs text-app-muted">{assignment.client} · {displaySeniority(assignment.seniority)} · {assignment.created}</p><p className="text-[11px] text-app-secondary mt-1 mb-3 max-w-3xl">{assignment.description}</p><div className="flex flex-wrap gap-1.5">{assignment.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}{assignment.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div></div>
+              <div className="flex items-center gap-2"><LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view")}</LinkButton><IconButton label={t("jobs_archive")} icon={<Archive size={13} />} onClick={() => setArchived((current) => [...current, assignment.id])} /></div>
             </div>
           </div>;
         })}
       </div>
-      {filtered.length === 0 && <EmptyState title={query ? "No assignments match your search." : "No active client assignments."} />}
+      {filtered.length === 0 && <EmptyState title={query ? t("jobs_empty_search") : t("jobs_empty")} />}
       {showModal && <NewAssignmentModal onClose={() => setShowModal(false)} />}
     </div>
   );
