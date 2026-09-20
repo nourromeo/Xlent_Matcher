@@ -6,6 +6,7 @@ import { LinkButton } from "../components/ui/LinkButton";
 import { Input } from "../components/ui/Input";
 import { DataTable } from "../components/ui/DataTable";
 import { SkillTag } from "../components/ui/SkillTag";
+import { PageHeader } from "../components/ui/PageHeader";
 import { CONSULTANTS } from "../features/consultants";
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
@@ -27,7 +28,7 @@ export default function ConsultantPool() {
 
   return (
     <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between"><div><h1 className="text-app-primary font-semibold">{t("talent_title")}</h1><p className="text-xs text-app-muted mt-0.5">{CONSULTANTS.length} {t("talent_sub")}</p></div><LinkButton to="/upload" variant="primary">{t("talent_upload")}</LinkButton></div>
+      <PageHeader title={t("talent_title")} meta={String(CONSULTANTS.length) + " " + t("talent_sub")} actions={<LinkButton to="/upload" variant="primary">{t("talent_upload")}</LinkButton>} />
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex-1 relative max-w-xs"><Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" /><Input type="search" placeholder={t("talent_search")} value={query} onChange={(event) => setQuery(event.target.value)} className="pl-8 py-1.5" /></div>
         <div className="flex items-center gap-1.5 text-[10px] text-app-faint"><Filter size={10} /><span>{t("talent_seniority")}</span></div>
