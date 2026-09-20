@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { CheckCircle, AlertTriangle, ChevronDown, Send, Info } from "lucide-react";
+import { CheckCircle, AlertTriangle, ChevronDown, Send, Info } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "../design-system/icons";
 
 const MATCHES = [
   { id: "m1", initials: "AK", name: "Anna Kovacs", headline: "Senior Backend Consultant · 8 yrs", score: 91,
