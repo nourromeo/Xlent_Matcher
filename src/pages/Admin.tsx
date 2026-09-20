@@ -154,7 +154,7 @@ export default function Admin() {
         <div className="space-y-3">
           <div className="text-xs px-4 py-3 rounded-lg flex items-center justify-between gap-3"
             style={{ background: ok ? "var(--color-success-soft)" : "var(--color-warning-soft)", border: "1px solid " + (ok ? "var(--color-success-border)" : "var(--color-warning-border)"), color: ok ? "var(--color-success)" : "var(--color-warning)" }}>
-            <span>Total weight: <strong>{total}%</strong> {ok ? t("admin_ready_save") : t("admin_must_eq")}</span>
+            <span>{t("admin_total_label")} <strong>{total}%</strong> {ok ? t("admin_ready_save") : t("admin_must_eq")}</span>
             {weightsDirty && <span className="font-medium">{t("admin_unsaved")}</span>}
           </div>
 
