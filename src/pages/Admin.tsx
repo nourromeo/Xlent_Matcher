@@ -7,22 +7,8 @@ import { DataTable } from "../components/ui/DataTable";
 import { EditFormModal } from "../components/ui/EditFormModal";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { SKILLS, FLAGS_DATA, ADMIN_TABS, WEIGHTS_CONFIG } from "../features/admin";
+import { SKILLS, FLAGS_DATA, ADMIN_TABS, MATCHING_FACTORS } from "../features/admin";
 import type { Skill } from "../features/admin";
-
-
-
-
-
-
-
-const FLAG_LABEL_KEYS: Record<string, string> = {
-  SkillsFirstAnalysis: "flag_skills_first",
-  UseReranker: "flag_reranker",
-  UseCloudOcr: "flag_cloud_ocr",
-  UseStubAi: "flag_stub_ai",
-};
-
 type SkillDraft = { id?: string; canonical: string; category: string; aliases: string };
 const EMPTY_SKILL: SkillDraft = { canonical: "", category: "", aliases: "" };
 
@@ -31,7 +17,11 @@ export default function Admin() {
 
   const TABS = ADMIN_TABS.map((id) => ({ id, label: t(`tab_${id}` as any) }));
 
-  const WEIGHTS_DEF = WEIGHTS_CONFIG.map((weight) => ({ ...weight, label: t(`score_${weight.key === "mustHaveCoverage" ? "mustHave" : weight.key === "semanticSimilarity" ? "semantic" : weight.key === "experienceRecency" ? "experience" : weight.key === "niceToHave" ? "niceToHave" : weight.key}` as any) }));
+  const WEIGHTS_DEF = MATCHING_FACTORS.map((weight) => ({
+    ...weight,
+    label: t(`score_${weight.key}` as any),
+    description: t(weight.descriptionKey as any),
+  }));
 
   const defaultWeights = Object.fromEntries(WEIGHTS_DEF.map((w) => [w.key, w.value])) as Record<string, number>;
 
@@ -94,7 +84,8 @@ export default function Admin() {
 
   const toggleFlag = (key: string) => {
     const sensitive = key === "UseReranker" || key === "UseCloudOcr";
-    const label = FLAG_LABEL_KEYS[key] ? t(FLAG_LABEL_KEYS[key] as any) : key;
+    const flag = FLAGS_DATA.find((item) => item.key === key);
+    const label = flag ? t(flag.labelKey as any) : key;
     if (sensitive && !window.confirm(label + ": " + t("admin_confirm_change"))) return;
     setFlags((previous) => ({ ...previous, [key]: !previous[key] }));
   };
@@ -167,7 +158,7 @@ export default function Admin() {
                       <p className="text-xs font-medium text-app-primary">{w.label}</p>
                       <span className="text-xs font-mono font-semibold text-app-brand">{weights[w.key]}%</span>
                     </div>
-                    <p className="text-xs text-app-muted mt-1">{w.desc}</p>
+                    <p className="text-xs text-app-muted mt-1">{w.description}</p>
                   </div>
                   <input type="range" min={0} max={60} value={weights[w.key]} onChange={(e) => setWeights((p) => ({ ...p, [w.key]: Number(e.target.value) }))} className="w-40 accent-indigo-500" />
                 </div>
@@ -195,13 +186,13 @@ export default function Admin() {
             <div key={f.key} className="flex items-center justify-between gap-5 px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-medium text-app-primary">{FLAG_LABEL_KEYS[f.key] ? t(FLAG_LABEL_KEYS[f.key] as any) : f.key}</p>
+                  <p className="text-xs font-medium text-app-primary">{t(f.labelKey as any)}</p>
                   <StatusBadge tone={flags[f.key] ? "success" : "neutral"}>{flags[f.key] ? t("common_enabled") : t("common_disabled")}</StatusBadge>
                 </div>
-                <p className="text-[11px] text-app-muted mt-1">{f.desc}</p>
+                <p className="text-[11px] text-app-muted mt-1">{t(f.descriptionKey as any)}</p>
                 <p className="text-[10px] text-app-faint font-mono mt-1">{f.key}</p>
               </div>
-              <button onClick={() => toggleFlag(f.key)} className="relative w-10 h-5 rounded-full transition-colors flex-none" style={{ background: flags[f.key] ? "var(--color-brand)" : "var(--color-border)" }} aria-label={(flags[f.key] ? t("common_disabled") + " " : t("common_enabled") + " ") + (FLAG_LABEL_KEYS[f.key] ? t(FLAG_LABEL_KEYS[f.key] as any) : f.key)}>
+              <button onClick={() => toggleFlag(f.key)} className="relative w-10 h-5 rounded-full transition-colors flex-none" style={{ background: flags[f.key] ? "var(--color-brand)" : "var(--color-border)" }} aria-label={(flags[f.key] ? t("common_disabled") + " " : t("common_enabled") + " ") + t(f.labelKey as any)}>
                 <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform" style={{ transform: flags[f.key] ? "translateX(20px)" : "translateX(0)" }} />
               </button>
             </div>
