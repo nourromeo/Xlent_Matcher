@@ -534,9 +534,16 @@ export default function CvAdaptation() {
           </div>
         </>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <SourceSummary label="Consultant CV" source={cvSource} selectedLabel={cvLabel} onChange={() => setEditingInputs(true)} />
-          <SourceSummary label="Client Assignment" source={assignmentSource} selectedLabel={assignmentLabel} onChange={() => setEditingInputs(true)} />
+        <div className="space-y-3">
+          <div className="flex justify-start">
+            <Button variant="secondary" onClick={() => setEditingInputs(true)}>
+              ← Change Inputs
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <SourceSummary label="Consultant CV" source={cvSource} selectedLabel={cvLabel} onChange={() => setEditingInputs(true)} />
+            <SourceSummary label="Client Assignment" source={assignmentSource} selectedLabel={assignmentLabel} onChange={() => setEditingInputs(true)} />
+          </div>
         </div>
       )}
 
