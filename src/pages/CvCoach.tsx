@@ -98,7 +98,6 @@ function ScoreGauge({ before, after }: { before: number; after: number }) {
     </div>
   );
 }
-}
 
 function SuggestionCard({ s }: { s: Suggestion }) {
   const [open, setOpen] = useState(false);
