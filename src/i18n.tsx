@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export type Locale = "en" | "es" | "sv";
 
@@ -1034,7 +1034,15 @@ type I18nContextType = {
 const I18nContext = createContext<I18nContextType | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useState<Locale>(() => {
+    const stored = localStorage.getItem("xlent-match-locale");
+    return stored === "es" || stored === "sv" ? stored : "en";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("xlent-match-locale", locale);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const t = (key: TranslationKey): string =>
     (translations[locale] as Record<string, string>)[key] ??
