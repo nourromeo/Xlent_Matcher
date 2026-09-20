@@ -1,4 +1,6 @@
-export const MOCK_RESULT = {
+import type { CvAnalysisResult } from "../../types";
+
+export const MOCK_RESULT: CvAnalysisResult = {
   estimatedScore: 54,
   projectedScore: 82,
   summary:
