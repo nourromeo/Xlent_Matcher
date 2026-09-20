@@ -104,6 +104,9 @@ export default function AssignmentDetail() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-sm font-semibold text-app-primary">{assignment.title}</h1>
             <StatusBadge tone={ASSIGNMENT_STATUS_CONFIG[assignment.status].tone}>{statusLabel}</StatusBadge>
+            <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>
+              {assignment.availability}
+            </StatusBadge>
           </div>
           <p className="text-xs text-app-muted mt-1">
             {assignment.client} · {assignment.seniority} · Created {assignment.created}
@@ -128,13 +131,6 @@ export default function AssignmentDetail() {
       <section className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
         <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-medium text-app-primary">Assignment Overview</h2><span className="text-[10px] text-app-muted">Client brief</span></div>
         <p className="text-sm text-app-secondary leading-7 max-w-4xl">{assignment.description}</p>
-      </section>
-
-      <section className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
-        <h2 className="text-sm font-medium text-app-primary mb-4">Key Requirements</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[["Seniority", assignment.seniority], ["Availability", assignment.availability], ["Created", assignment.created], ["Status", statusLabel]].map(([label, value]) => <div key={label}><p className="text-[10px] uppercase tracking-wide text-app-muted mb-1">{label}</p><p className="text-xs font-medium text-app-primary">{value}</p></div>)}
-        </div>
       </section>
 
       <section className="grid md:grid-cols-2 gap-5">
