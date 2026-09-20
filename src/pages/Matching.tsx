@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle, ChevronDown, Eye, Info } from "../design-system/icons";
+import { AlertTriangle, CheckCircle, ChevronDown, Eye, Info, Loader, Zap } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { PageHeader } from "../components/ui/PageHeader";
 import { LinkButton } from "../components/ui/LinkButton";
@@ -13,6 +13,8 @@ export default function Matching() {
   const location = useLocation();
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [matchingStarted, setMatchingStarted] = useState(false);
+  const [matching, setMatching] = useState(false);
 
   const assignmentId = searchParams.get("assignment");
   const assignment = ASSIGNMENTS.find((item) => item.id === assignmentId);
@@ -25,12 +27,30 @@ export default function Matching() {
         .slice(0, 5)
     : [];
 
-  const selected = assignmentMatches.find((match) => match.id === selectedMatchId) ?? assignmentMatches[0];
+  const selected = matchingStarted
+    ? assignmentMatches.find((match) => match.id === selectedMatchId) ?? assignmentMatches[0]
+    : undefined;
 
   const selectAssignment = (id: string) => {
     setSelectedMatchId("");
     setExpanded(false);
+    setMatchingStarted(false);
+    setMatching(false);
     setSearchParams(id ? { assignment: id } : {});
+  };
+
+  const runMatching = () => {
+    if (!assignment || matching) return;
+
+    setMatching(true);
+    setMatchingStarted(false);
+    setSelectedMatchId("");
+    setExpanded(false);
+
+    window.setTimeout(() => {
+      setMatching(false);
+      setMatchingStarted(true);
+    }, 900);
   };
 
   const SCORE_LABELS: Record<string, string> = {
@@ -54,38 +74,50 @@ export default function Matching() {
           title="Match Consultants"
           description={
             fromAssignment && assignment
-              ? assignment.title + " · " + assignment.client + " · Top " + assignmentMatches.length + " matches"
+              ? assignment.title + " · " + assignment.client
               : assignment
-                ? "Top " + assignmentMatches.length + " matches for the selected client assignment."
-                : "Select a client assignment to view its top consultant matches."
+                ? "Review the selected client assignment, then run matching."
+                : "Select a client assignment, then run matching to rank the top consultants."
           }
           backTo={fromAssignment && assignment ? "/jobs/" + assignment.id : undefined}
           backLabel="Back to Assignment"
         />
 
-        {!fromAssignment && (
+        {!fromAssignment ? (
           <div className="mt-4 flex items-end justify-between gap-4">
-            <div className="w-full max-w-sm">
-              <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
-                Client Assignment
-              </label>
-              <select
-                value={assignment?.id ?? ""}
-                onChange={(event) => selectAssignment(event.target.value)}
-                className="w-full text-xs rounded px-3 py-2 focus:outline-none"
-                style={{
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-text-primary)",
-                }}
+            <div className="flex items-end gap-2">
+              <div className="w-96">
+                <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
+                  Client Assignment
+                </label>
+                <select
+                  value={assignment?.id ?? ""}
+                  onChange={(event) => selectAssignment(event.target.value)}
+                  className="w-full text-xs rounded px-3 py-2 focus:outline-none"
+                  style={{
+                    background: "var(--color-surface)",
+                    border: "1px solid var(--color-border)",
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  <option value="">Select an assignment...</option>
+                  {ASSIGNMENTS.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.title} · {item.client}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={runMatching}
+                disabled={!assignment || matching}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-white px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: "var(--color-brand)" }}
               >
-                <option value="">Select an assignment...</option>
-                {ASSIGNMENTS.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.title} · {item.client}
-                  </option>
-                ))}
-              </select>
+                {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
+                {matching ? "Matching..." : matchingStarted ? "Re-run Matching" : "Run Matching"}
+              </button>
             </div>
 
             {assignment && (
@@ -94,7 +126,19 @@ export default function Matching() {
               </LinkButton>
             )}
           </div>
-        )}
+        ) : assignment ? (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={runMatching}
+              disabled={matching}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-white px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "var(--color-brand)" }}
+            >
+              {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
+              {matching ? "Matching..." : matchingStarted ? "Re-run Matching" : "Run Matching"}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {!assignment ? (
@@ -105,7 +149,30 @@ export default function Matching() {
           >
             <h2 className="text-sm font-medium text-app-primary">Choose a client assignment</h2>
             <p className="text-xs text-app-muted mt-2 leading-relaxed">
-              Select an assignment above to view the five highest-ranked consultant matches and their match details.
+              Select an assignment above, review it if needed, and run matching when you are ready.
+            </p>
+          </div>
+        </div>
+      ) : matching ? (
+        <div className="flex-1 flex items-center justify-center bg-app p-6">
+          <div className="text-center">
+            <Loader size={26} className="animate-spin text-app-brand mx-auto mb-3" />
+            <h2 className="text-sm font-medium text-app-primary">Matching consultants...</h2>
+            <p className="text-xs text-app-muted mt-2">
+              Comparing assignment requirements with consultant profiles and calculating match scores.
+            </p>
+          </div>
+        </div>
+      ) : !matchingStarted ? (
+        <div className="flex-1 flex items-center justify-center bg-app p-6">
+          <div
+            className="bg-app-surface border border-app rounded-xl p-8 text-center max-w-md"
+            style={{ boxShadow: "var(--shadow-surface)" }}
+          >
+            <Zap size={24} className="text-app-faint mx-auto mb-3" />
+            <h2 className="text-sm font-medium text-app-primary">Ready to run matching</h2>
+            <p className="text-xs text-app-muted mt-2 leading-relaxed">
+              Run matching to calculate scores and rank the top consultants for this assignment.
             </p>
           </div>
         </div>
