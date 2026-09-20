@@ -18,14 +18,6 @@ const PROMPTS = [
   { id: "p4", name: "CV Parser", model: "gpt-4o-mini", version: "v2.2", tokens: "~4.6k", cost: "$0.006", active: false },
 ];
 
-const AI_COSTS = [
-  { date: "Sep 9", model: "gpt-4o", operation: "cv_parse", runs: 5, cost: 0.16 },
-  { date: "Sep 9", model: "text-embedding-3-large", operation: "embed_cv", runs: 12, cost: 0.04 },
-  { date: "Sep 9", model: "gpt-4o", operation: "match_explanation", runs: 3, cost: 0.042 },
-  { date: "Sep 8", model: "gpt-4o", operation: "cv_parse", runs: 18, cost: 0.576 },
-  { date: "Sep 8", model: "cohere-rerank-v3", operation: "rerank", runs: 8, cost: 0.016 },
-];
-
 const FLAGS_DATA = [
   { key: "SkillsFirstAnalysis", desc: "Base matching on assignment evidence and exclude personal attributes from scoring", enabled: true },
   { key: "UseReranker", desc: "Enable Cohere reranking pass before hybrid scoring", enabled: true },
@@ -36,7 +28,7 @@ const FLAGS_DATA = [
 export default function Admin() {
   const { t } = useI18n();
 
-  const TABS = [t("tab_taxonomy"), t("tab_weights"), t("tab_prompts"), t("tab_costs"), t("tab_flags")] as const;
+  const TABS = [t("tab_taxonomy"), t("tab_weights"), t("tab_prompts"), t("tab_flags")] as const;
 
   const WEIGHTS_DEF = [
     { key: "mustHaveCoverage", label: t("score_mustHave"), value: 40, desc: "Strong penalty if a required skill is missing" },
@@ -166,42 +158,6 @@ export default function Admin() {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* AI Costs */}
-      {tab === 3 && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            {[{ label: "Sep total", value: "$38.40" }, { label: "Avg per CV", value: "$0.048" }, { label: "Avg per match", value: "$0.022" }].map((s) => (
-              <div key={s.label} className="bg-app-surface border border-app rounded-lg px-4 py-3" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <p className="text-xl font-semibold font-mono text-app-primary">{s.value}</p>
-                <p className="text-[10px] text-app-faint mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
-          <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-app">
-                  {["Date", "Model", "Operation", "Runs", "Total Cost"].map((h) => (
-                    <th key={h} className="text-[10px] font-medium text-app-faint uppercase tracking-wider text-left px-4 py-2">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {AI_COSTS.map((row, i) => (
-                  <tr key={i} className="border-b border-app-subtle hover:bg-app-raised transition-colors">
-                    <td className="px-4 py-2.5 text-[11px] text-app-muted">{row.date}</td>
-                    <td className="px-4 py-2.5 text-[11px] font-mono text-app-secondary">{row.model}</td>
-                    <td className="px-4 py-2.5 text-[11px] font-mono text-app-brand">{row.operation}</td>
-                    <td className="px-4 py-2.5 text-[11px] font-mono text-app-muted">{row.runs}</td>
-                    <td className="px-4 py-2.5 text-[11px] font-mono text-app-primary">${row.cost.toFixed(3)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
