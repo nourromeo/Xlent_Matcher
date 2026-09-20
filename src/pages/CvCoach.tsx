@@ -129,17 +129,17 @@ const MOCK_RESULT: AnalysisResult = {
 
 // ── Category config ──────────────────────────────────────
 const CATEGORY_CFG = {
-  keyword:    { label: "Missing keyword",   icon: Tag,       color: "var(--ats-indigo)" },
-  credential: { label: "Credential gap",    icon: BookOpen,  color: "var(--ats-amber)"  },
-  clarity:    { label: "Clarity",           icon: Info,      color: "var(--ats-text-2)" },
-  structure:  { label: "Structure",         icon: FileText,  color: "var(--ats-muted)"  },
-  evidence:   { label: "Experience evidence", icon: TrendingUp, color: "var(--ats-green)" },
+  keyword:    { label: "Missing keyword",   icon: Tag,       color: "var(--color-brand)" },
+  credential: { label: "Credential gap",    icon: BookOpen,  color: "var(--color-warning)"  },
+  clarity:    { label: "Clarity",           icon: Info,      color: "var(--color-text-secondary)" },
+  structure:  { label: "Structure",         icon: FileText,  color: "var(--color-text-app-muted)"  },
+  evidence:   { label: "Experience evidence", icon: TrendingUp, color: "var(--color-success)" },
 } as const;
 
 const SEVERITY_CFG: Record<Severity, { label: string; color: string; bg: string }> = {
-  high:   { label: "High",   color: "var(--ats-red)",    bg: "rgba(239,68,68,0.10)"    },
-  medium: { label: "Medium", color: "var(--ats-amber)",  bg: "rgba(245,158,11,0.10)"   },
-  low:    { label: "Low",    color: "var(--ats-muted)",  bg: "var(--ats-surface-r)"    },
+  high:   { label: "High",   color: "var(--color-danger)",    bg: "rgba(239,68,68,0.10)"    },
+  medium: { label: "Medium", color: "var(--color-warning)",  bg: "rgba(245,158,11,0.10)"   },
+  low:    { label: "Low",    color: "var(--color-text-app-muted)",  bg: "var(--color-surface-raised)"    },
 };
 
 // ── Sub-components ───────────────────────────────────────
@@ -150,17 +150,17 @@ function TextArea({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-medium text-muted uppercase tracking-wider">{label}</label>
+      <label className="text-[11px] font-medium text-app-muted uppercase tracking-wider">{label}</label>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full rounded-lg text-xs text-app-primary placeholder-text-3 px-3 py-2.5 focus:outline-none resize-none font-mono leading-relaxed transition-colors"
+        className="w-full rounded-lg text-xs text-app-primary placeholder-text-app-faint px-3 py-2.5 focus:outline-none resize-none font-mono leading-relaxed transition-colors"
         style={{
-          background: "var(--ats-surface-r)",
-          border: "1px solid var(--ats-border)",
-          caretColor: "var(--ats-indigo)",
+          background: "var(--color-surface-raised)",
+          border: "1px solid var(--color-border)",
+          caretColor: "var(--color-brand)",
         }}
       />
     </div>
@@ -188,20 +188,20 @@ function ScoreGauge({ before, after }: { before: number; after: number }) {
     <div className="flex flex-col items-center">
       <svg viewBox="0 0 100 58" className="w-40">
         {/* track */}
-        <path d="M 10 54 A 40 40 0 0 1 90 54" fill="none" stroke="var(--ats-border)" strokeWidth={5} strokeLinecap="round" />
+        <path d="M 10 54 A 40 40 0 0 1 90 54" fill="none" stroke="var(--color-border)" strokeWidth={5} strokeLinecap="round" />
         {/* before */}
-        {arc(before, 40, "var(--ats-muted)")}
+        {arc(before, 40, "var(--color-text-app-muted)")}
         {/* after */}
-        {arc(after, 40, "var(--ats-indigo)")}
+        {arc(after, 40, "var(--color-brand)")}
       </svg>
       <div className="flex items-center gap-6 -mt-1">
         <div className="text-center">
-          <p className="text-lg font-semibold font-mono" style={{ color: "var(--ats-muted)" }}>{before}</p>
-          <p className="text-[10px] text-3">Current</p>
+          <p className="text-lg font-semibold font-mono" style={{ color: "var(--color-text-app-muted)" }}>{before}</p>
+          <p className="text-[10px] text-app-faint">Current</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold font-mono text-indigo">~{after}</p>
-          <p className="text-[10px] text-3">Projected</p>
+          <p className="text-lg font-semibold font-mono text-app-brand">~{after}</p>
+          <p className="text-[10px] text-app-faint">Projected</p>
         </div>
       </div>
     </div>
@@ -217,10 +217,10 @@ function SuggestionCard({ s }: { s: Suggestion }) {
   return (
     <div
       className="rounded-lg overflow-hidden transition-colors"
-      style={{ background: "var(--ats-surface)", border: "1px solid var(--ats-border)", boxShadow: "var(--ats-shadow)" }}
+      style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", boxShadow: "var(--shadow-surface)" }}
     >
       <button
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-raised transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-app-raised transition-colors"
         onClick={() => setOpen((o) => !o)}
       >
         {/* Category icon */}
@@ -240,23 +240,23 @@ function SuggestionCard({ s }: { s: Suggestion }) {
         {/* Score delta */}
         <span
           className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded flex-none"
-          style={{ color: "var(--ats-green)", background: "rgba(34,197,94,0.10)" }}
+          style={{ color: "var(--color-success)", background: "rgba(34,197,94,0.10)" }}
         >
           +{s.scoreDelta} pts
         </span>
 
-        {open ? <ChevronUp size={12} className="text-3 flex-none" /> : <ChevronDown size={12} className="text-3 flex-none" />}
+        {open ? <ChevronUp size={12} className="text-app-faint flex-none" /> : <ChevronDown size={12} className="text-app-faint flex-none" />}
       </button>
 
       {open && (
-        <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid var(--ats-border-s)" }}>
-          <p className="text-[11px] text-2 leading-relaxed pt-3">{s.detail}</p>
+        <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid var(--color-border-app-subtletle)" }}>
+          <p className="text-[11px] text-app-secondary leading-relaxed pt-3">{s.detail}</p>
           {s.example && (
             <div
               className="rounded p-3"
-              style={{ background: "var(--ats-surface-r)", border: "1px solid var(--ats-border)" }}
+              style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
             >
-              <p className="text-[10px] text-muted uppercase tracking-wider font-medium mb-1.5">
+              <p className="text-[10px] text-app-muted uppercase tracking-wider font-medium mb-1.5">
                 Suggested wording
               </p>
               <p className="text-[11px] text-app-primary font-mono leading-relaxed italic">
@@ -302,19 +302,19 @@ export default function CvAdaptation() {
   return (
     <div className="flex flex-col h-full">
       {/* Page header */}
-      <div className="px-6 py-4 border-b border-base bg-surface flex-none">
+      <div className="px-6 py-4 border-b border-app bg-app-surface flex-none">
         <div className="flex items-center gap-2.5">
-          <Sparkles size={15} style={{ color: "var(--ats-indigo)" }} />
+          <Sparkles size={15} style={{ color: "var(--color-brand)" }} />
           <div>
             <h1 className="text-sm font-semibold text-app-primary">CV Adaptation Assistant</h1>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="text-xs text-app-muted mt-0.5">
               Paste a consultant CV and assignment requirements to identify gaps and improve the CV for the assignment
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-base">
+      <div className="flex-1 overflow-auto bg-app">
         <div className="p-6">
           {/* Input grid */}
           <div className="grid grid-cols-2 gap-4 mb-5">
@@ -340,7 +340,7 @@ export default function CvAdaptation() {
               onClick={analyse}
               disabled={!canAnalyse || loading}
               className="flex items-center gap-2 text-sm font-medium text-white px-4 py-2 rounded-lg transition-opacity disabled:opacity-40"
-              style={{ background: "var(--ats-indigo)" }}
+              style={{ background: "var(--color-brand)" }}
             >
               {loading ? (
                 <>
@@ -363,10 +363,10 @@ export default function CvAdaptation() {
               <div className="grid grid-cols-4 gap-3">
                 {/* Gauge */}
                 <div
-                  className="bg-surface border border-base rounded-lg p-4 flex flex-col items-center justify-center"
-                  style={{ boxShadow: "var(--ats-shadow)" }}
+                  className="bg-app-surface border border-app rounded-lg p-4 flex flex-col items-center justify-center"
+                  style={{ boxShadow: "var(--shadow-surface)" }}
                 >
-                  <p className="text-[10px] text-3 uppercase tracking-wider font-medium mb-3">
+                  <p className="text-[10px] text-app-faint uppercase tracking-wider font-medium mb-3">
                     Match Score Estimate
                   </p>
                   <ScoreGauge before={result.estimatedScore} after={result.projectedScore} />
@@ -374,17 +374,17 @@ export default function CvAdaptation() {
 
                 {/* Severity counts */}
                 <div
-                  className="bg-surface border border-base rounded-lg p-4 flex flex-col justify-center gap-3"
-                  style={{ boxShadow: "var(--ats-shadow)" }}
+                  className="bg-app-surface border border-app rounded-lg p-4 flex flex-col justify-center gap-3"
+                  style={{ boxShadow: "var(--shadow-surface)" }}
                 >
-                  <p className="text-[10px] text-3 uppercase tracking-wider font-medium">Issues found</p>
+                  <p className="text-[10px] text-app-faint uppercase tracking-wider font-medium">Issues found</p>
                   {[
-                    { label: "High priority",   count: highCount,   color: "var(--ats-red)"   },
-                    { label: "Medium priority",  count: mediumCount, color: "var(--ats-amber)" },
-                    { label: "Low priority",     count: lowCount,    color: "var(--ats-muted)" },
+                    { label: "High priority",   count: highCount,   color: "var(--color-danger)"   },
+                    { label: "Medium priority",  count: mediumCount, color: "var(--color-warning)" },
+                    { label: "Low priority",     count: lowCount,    color: "var(--color-text-app-muted)" },
                   ].map((row) => (
                     <div key={row.label} className="flex items-center gap-2.5">
-                      <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--ats-border)" }}>
+                      <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--color-border)" }}>
                         <div
                           className="h-full rounded-full"
                           style={{
@@ -394,23 +394,23 @@ export default function CvAdaptation() {
                         />
                       </div>
                       <span className="text-xs font-mono text-app-primary w-4 text-right">{row.count}</span>
-                      <span className="text-[10px] text-muted w-28">{row.label}</span>
+                      <span className="text-[10px] text-app-muted w-28">{row.label}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Summary */}
                 <div
-                  className="col-span-2 bg-surface border border-base rounded-lg p-4"
-                  style={{ boxShadow: "var(--ats-shadow)" }}
+                  className="col-span-2 bg-app-surface border border-app rounded-lg p-4"
+                  style={{ boxShadow: "var(--shadow-surface)" }}
                 >
                   <div className="flex items-start gap-2.5">
-                    <Info size={13} style={{ color: "var(--ats-indigo)", flexShrink: 0 }} className="mt-0.5" />
+                    <Info size={13} style={{ color: "var(--color-brand)", flexShrink: 0 }} className="mt-0.5" />
                     <div>
-                      <p className="text-[11px] text-3 font-mono uppercase tracking-wider mb-2">
+                      <p className="text-[11px] text-app-faint font-mono uppercase tracking-wider mb-2">
                         AI Summary
                       </p>
-                      <p className="text-xs text-2 leading-relaxed">{result.summary}</p>
+                      <p className="text-xs text-app-secondary leading-relaxed">{result.summary}</p>
                     </div>
                   </div>
                 </div>
@@ -423,8 +423,8 @@ export default function CvAdaptation() {
                   className="text-[11px] px-2.5 py-1 rounded transition-colors"
                   style={
                     activeFilter === "all"
-                      ? { background: "var(--ats-indigo-sub)", color: "var(--ats-indigo)", fontWeight: 500 }
-                      : { color: "var(--ats-muted)" }
+                      ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)", fontWeight: 500 }
+                      : { color: "var(--color-text-app-muted)" }
                   }
                 >
                   All ({result.suggestions.length})
@@ -441,8 +441,8 @@ export default function CvAdaptation() {
                       className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded transition-colors"
                       style={
                         activeFilter === cat
-                          ? { background: "var(--ats-indigo-sub)", color: "var(--ats-indigo)", fontWeight: 500 }
-                          : { color: "var(--ats-muted)" }
+                          ? { background: "var(--color-brand-subtle)", color: "var(--color-brand)", fontWeight: 500 }
+                          : { color: "var(--color-text-app-muted)" }
                       }
                     >
                       <CatIcon size={10} />
@@ -464,17 +464,17 @@ export default function CvAdaptation() {
               {/* Total potential */}
               <div
                 className="rounded-lg px-4 py-3 flex items-center gap-3"
-                style={{ background: "var(--ats-indigo-sub)", border: "1px solid var(--ats-indigo-sub)" }}
+                style={{ background: "var(--color-brand-subtle)", border: "1px solid var(--color-brand-subtle)" }}
               >
-                <CheckCircle size={14} style={{ color: "var(--ats-indigo)", flexShrink: 0 }} />
-                <p className="text-xs text-2">
+                <CheckCircle size={14} style={{ color: "var(--color-brand)", flexShrink: 0 }} />
+                <p className="text-xs text-app-secondary">
                   Applying the highest-impact suggestions adds an estimated{" "}
-                  <span className="font-semibold text-indigo font-mono">
+                  <span className="font-semibold text-app-brand font-mono">
                     +{result.projectedScore - result.estimatedScore} points
                   </span>{" "}
                   — improving the estimated assignment match from{" "}
                   <span className="font-mono text-app-primary">{result.estimatedScore}</span> to{" "}
-                  <span className="font-mono text-indigo">{result.projectedScore}</span>.
+                  <span className="font-mono text-app-brand">{result.projectedScore}</span>.
                 </p>
               </div>
             </div>
@@ -483,9 +483,9 @@ export default function CvAdaptation() {
           {/* Empty state before analysis */}
           {!result && !loading && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Sparkles size={32} className="text-3 mb-4" />
-              <p className="text-sm text-3">Paste a consultant CV and assignment requirements above, then click Analyse</p>
-              <p className="text-xs text-3 mt-1">
+              <Sparkles size={32} className="text-app-faint mb-4" />
+              <p className="text-sm text-app-faint">Paste a consultant CV and assignment requirements above, then click Analyse</p>
+              <p className="text-xs text-app-faint mt-1">
                 The assistant will identify missing requirements, unclear skills, project evidence, seniority signals, and availability information
               </p>
             </div>
