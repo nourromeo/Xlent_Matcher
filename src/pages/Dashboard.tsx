@@ -4,22 +4,6 @@ import { useI18n } from "../i18n";
 import { QUEUE, RECENT_MATCHES } from "../data/mock";
 import { DataTable } from "../components/ui/DataTable";
 
-const QUEUE = [
-  { name: "anna_kovacs_consultant_cv.pdf", status: "parsing", added: "2m ago" },
-  { name: "marcus_lee_consultant_cv.docx", status: "extracting", added: "4m ago" },
-  { name: "priya_sharma_cv.pdf", status: "embedding", added: "7m ago" },
-  { name: "tobias_renz_cv.pdf", status: "done", added: "12m ago" },
-  { name: "seo_yun_resume.pdf", status: "error", added: "15m ago" },
-];
-
-const RECENT_MATCHES = [
-  { consultant: "Anna Kovacs", assignment: "Payments Platform Modernisation", score: 91, date: "Today" },
-  { consultant: "Marcus Lee", assignment: "Applied AI Enablement", score: 84, date: "Today" },
-  { consultant: "Priya Sharma", assignment: "Cloud Reliability Programme", score: 78, date: "Yesterday" },
-  { consultant: "Tobias Renz", assignment: "Azure Commerce Platform", score: 73, date: "Yesterday" },
-  { consultant: "Sofia Yun", assignment: "Design System Delivery", score: 67, date: "Sep 7" },
-];
-
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
   parsing:   { color: "var(--color-warning)",  background: "var(--color-warning-subtle)" },
   extracting:{ color: "var(--color-brand)", background: "var(--color-brand-subtle)" },
@@ -50,7 +34,7 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
           <Icon size={14} />
         </div>
       </div>
-      <p className="text-app-secondaryxl font-semibold text-app-primary tracking-tight">{value}</p>
+      <p className="text-xl font-semibold text-app-primary tracking-tight">{value}</p>
       <p className="text-[10px] text-app-faint mt-1">{sub}</p>
     </div>
   );
@@ -82,7 +66,7 @@ export default function Dashboard() {
               {t("dash_view_all")} <ArrowUpRight size={10} />
             </Link>
           </div>
-          <div className="divide-y" style={{ borderColor: "var(--color-border-app-subtletle)" }}>
+          <div className="divide-y" style={{ borderColor: "var(--color-border-subtle)" }}>
             {QUEUE.map((item) => (
               <div key={item.name} className="flex items-center gap-3 px-4 py-2.5">
                 <FileText size={12} className="text-app-faint flex-none" />
@@ -122,7 +106,7 @@ export default function Dashboard() {
           ]}
           rows={RECENT_MATCHES}
           rowKey={(match) => match.consultant + match.assignment}
-        /></table>
+        />
       </div>
     </div>
   );
