@@ -56,7 +56,7 @@ export default function ConsultantDetail() {
               <p className="text-xs text-app-muted">{profile.role} · {profile.office} · {profile.totalYearsExperience} {t("cand_exp")}</p>
             </div>
             <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}>{profile.availability === "Immediate" ? t("immediate") : profile.availability}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: reviewStatus === "Verified" ? "var(--color-success)" : "var(--color-warning)", background: reviewStatus === "Verified" ? "var(--color-success-subtle)" : "var(--color-warning-subtle)" }}>{reviewStatus}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: reviewStatus === "Verified" ? "var(--color-success)" : "var(--color-warning)", background: reviewStatus === "Verified" ? "var(--color-success-subtle)" : "var(--color-warning-subtle)" }}>{reviewStatus === "Verified" ? t("common_verified") : t("common_needs_review")}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -85,8 +85,8 @@ export default function ConsultantDetail() {
           <div className="p-6 grid grid-cols-3 gap-5">
             <div className="col-span-2 space-y-4">
               <div className="flex items-center justify-between">
-                <div><p className="text-xs font-semibold text-app-primary">Consultant CV Extraction</p><p className="text-[11px] text-app-muted mt-1">Structured information extracted from the consultant CV for XLENT review.</p></div>
-                <span className="text-[10px] text-app-faint">Human review required</span>
+                <div><p className="text-xs font-semibold text-app-primary">{t("cand_extraction_title")}</p><p className="text-[11px] text-app-muted mt-1">{t("cand_extraction_sub")}</p></div>
+                <span className="text-[10px] text-app-faint">{t("cand_human_review")}</span>
               </div>
 
               {/* Skills */}
@@ -167,17 +167,17 @@ export default function ConsultantDetail() {
                 <div className="space-y-1.5">{profile.certifications.map((certification) => <p key={certification} className="text-[11px] text-app-secondary">{certification}</p>)}</div>
               </div>
               <div className="bg-app-surface border border-app rounded-lg p-4" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <details className="group"><summary className="cursor-pointer list-none text-[10px] text-app-faint uppercase tracking-wider font-medium flex items-center justify-between"><span>Extraction Details</span><span className="text-[10px] text-app-muted group-open:rotate-180 transition-transform">⌄</span></summary><div className="space-y-2 text-[11px] mt-3">
-                  {[["Parser model", "gpt-4o"], ["Prompt version", "v2.3"], ["Embedding", "text-embedding-3-large"], ["Parse cost", "$0.032"], ["Tokens", "4,821"]].map(([k, v]) => (
+                <details className="group"><summary className="cursor-pointer list-none text-[10px] text-app-faint uppercase tracking-wider font-medium flex items-center justify-between"><span>{t("cand_extraction_details")}</span><span className="text-[10px] text-app-muted group-open:rotate-180 transition-transform">⌄</span></summary><div className="space-y-2 text-[11px] mt-3">
+                  {[[t("cand_parser_model"), "gpt-4o"], [t("cand_prompt_version"), "v2.3"], [t("cand_embedding"), "text-embedding-3-large"], [t("cand_parse_cost"), "$0.032"], [t("cand_tokens"), "4,821"]].map(([k, v]) => (
                     <div key={k} className="flex justify-between"><span className="text-app-muted">{k}</span><span className="font-mono text-app-secondary">{v}</span></div>
                   ))}
                 </div></details>
               </div>
               <div className="bg-app-surface border border-app rounded-lg p-4" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <p className="text-xs font-medium text-app-primary mb-2">Extraction Review</p>
-                <p className="text-[11px] text-app-muted mb-3">Review extracted fields before using this consultant in matching.</p>
-                <div className="flex items-center justify-between text-[11px] mb-3"><span className="text-app-muted">Status</span><span className="text-app-secondary">{reviewStatus}</span></div>
-                <button onClick={() => setReviewStatus("Verified")} className="w-full text-xs px-3 py-1.5 rounded border transition-colors" style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>{reviewStatus === "Verified" ? "Verified" : "Mark as Reviewed"}</button>
+                <p className="text-xs font-medium text-app-primary mb-2">{t("cand_extraction_review")}</p>
+                <p className="text-[11px] text-app-muted mb-3">{t("cand_review_help")}</p>
+                <div className="flex items-center justify-between text-[11px] mb-3"><span className="text-app-muted">{t("common_status")}</span><span className="text-app-secondary">{reviewStatus === "Verified" ? t("common_verified") : t("common_needs_review")}</span></div>
+                <button onClick={() => setReviewStatus("Verified")} className="w-full text-xs px-3 py-1.5 rounded border transition-colors" style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>{reviewStatus === "Verified" ? t("common_verified") : t("common_mark_reviewed")}</button>
               </div>
             </div>
           </div>
@@ -186,8 +186,8 @@ export default function ConsultantDetail() {
             <div className="bg-app-surface border border-app rounded-lg h-[600px] flex items-center justify-center" style={{ boxShadow: "var(--shadow-surface)" }}>
               <div className="text-center">
                 <FileText size={32} className="text-app-faint mx-auto mb-3" />
-                <p className="text-sm text-app-faint">Original consultant CV</p>
-                <p className="text-xs text-app-faint mt-1">PDF/DOCX preview for the XLENT consultant profile</p>
+                <p className="text-sm text-app-faint">{t("cand_original_title")}</p>
+                <p className="text-xs text-app-faint mt-1">{t("cand_original_sub")}</p>
               </div>
             </div>
           </div>
@@ -196,30 +196,30 @@ export default function ConsultantDetail() {
 
       <EditFormModal
         open={editMode}
-        title="Edit Extracted Consultant Profile"
-        description="Correct the structured information extracted from the consultant CV."
+        title={t("cand_edit_title")}
+        description={t("cand_edit_sub")}
         onClose={() => setEditMode(false)}
         onSubmit={() => { setProfile({ ...draft, skills: parseSkills(draftLists.skills), experience: parseExperience(draftLists.experience), education: parseEducation(draftLists.education), languages: lines(draftLists.languages), industries: lines(draftLists.industries), certifications: lines(draftLists.certifications) }); setEditMode(false); }}
       >
-        <FormSection title="Basic Information">
+        <FormSection title={t("cand_basic_info")}>
           <div className="grid grid-cols-2 gap-3">
-            {[["Full name", "name"], ["Headline", "headline"], ["Role", "role"], ["Seniority", "seniority"], ["Availability", "availability"], ["Office / Location", "office"]].map(([label, key]) => (
+            {[[t("cand_full_name"), "name"], [t("cand_headline"), "headline"], [t("cand_role"), "role"], [t("cand_seniority"), "seniority"], [t("cand_availability"), "availability"], [t("cand_office"), "office"]].map(([label, key]) => (
               <FormField key={key} label={label}><Input value={draft[key as keyof typeof draft] as string} onChange={(event) => setDraft({ ...draft, [key]: event.target.value })} /></FormField>
             ))}
-            <FormField label="Years of experience"><Input type="number" value={draft.totalYearsExperience} onChange={(event) => setDraft({ ...draft, totalYearsExperience: Number(event.target.value) })} /></FormField>
+            <FormField label={t("cand_years")}><Input type="number" value={draft.totalYearsExperience} onChange={(event) => setDraft({ ...draft, totalYearsExperience: Number(event.target.value) })} /></FormField>
           </div>
         </FormSection>
-        <FormSection title="Skills & Evidence" description="One skill per line: Name | Category | Years | Level | Evidence">
+        <FormSection title={t("cand_skills")} description={t("cand_skill_format")}>
           <Textarea value={draftLists.skills} onChange={(event) => setDraftLists({ ...draftLists, skills: event.target.value })} rows={6} className="font-mono" />
         </FormSection>
-        <FormSection title="Previous Projects" description="One project per line: Role | Company | Start | End | Technologies | Achievement">
+        <FormSection title={t("cand_experience")} description={t("cand_project_format")}>
           <Textarea value={draftLists.experience} onChange={(event) => setDraftLists({ ...draftLists, experience: event.target.value })} rows={5} className="font-mono" />
         </FormSection>
         <div className="grid grid-cols-2 gap-4">
-          <FormSection title="Education" description="Degree | Institution | Year"><Textarea value={draftLists.education} onChange={(event) => setDraftLists({ ...draftLists, education: event.target.value })} rows={3} className="font-mono" /></FormSection>
-          <FormSection title="Languages" description="One language per line"><Textarea value={draftLists.languages} onChange={(event) => setDraftLists({ ...draftLists, languages: event.target.value })} rows={3} /></FormSection>
-          <FormSection title="Industries" description="One industry per line"><Textarea value={draftLists.industries} onChange={(event) => setDraftLists({ ...draftLists, industries: event.target.value })} rows={3} /></FormSection>
-          <FormSection title="Certifications" description="One certification per line"><Textarea value={draftLists.certifications} onChange={(event) => setDraftLists({ ...draftLists, certifications: event.target.value })} rows={3} /></FormSection>
+          <FormSection title={t("cand_education")} description={t("cand_education_format")}><Textarea value={draftLists.education} onChange={(event) => setDraftLists({ ...draftLists, education: event.target.value })} rows={3} className="font-mono" /></FormSection>
+          <FormSection title={t("cand_languages")} description={t("cand_language_format")}><Textarea value={draftLists.languages} onChange={(event) => setDraftLists({ ...draftLists, languages: event.target.value })} rows={3} /></FormSection>
+          <FormSection title={t("cand_industries")} description={t("cand_industry_format")}><Textarea value={draftLists.industries} onChange={(event) => setDraftLists({ ...draftLists, industries: event.target.value })} rows={3} /></FormSection>
+          <FormSection title={t("cand_certifications")} description={t("cand_cert_format")}><Textarea value={draftLists.certifications} onChange={(event) => setDraftLists({ ...draftLists, certifications: event.target.value })} rows={3} /></FormSection>
         </div>
       </EditFormModal>
 
