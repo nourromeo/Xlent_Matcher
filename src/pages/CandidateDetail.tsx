@@ -64,7 +64,7 @@ export default function ConsultantProfile() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-indigo-sub flex items-center justify-center text-sm font-semibold text-indigo">{profile.initials}</div>
             <div>
-              <h1 className="text-sm font-semibold text-base">
+              <h1 className="text-sm font-semibold text-app-primary">
                 {profile.name} — {t("cand_blind")}
               </h1>
               <p className="text-xs text-muted">{profile.role} · {profile.office} · {profile.totalYearsExperience} {t("cand_exp")}</p>
@@ -104,7 +104,7 @@ export default function ConsultantProfile() {
           <div className="p-6 grid grid-cols-3 gap-5">
             <div className="col-span-2 space-y-4">
               <div className="flex items-center justify-between">
-                <div><p className="text-xs font-semibold text-base">Consultant CV Extraction</p><p className="text-[11px] text-muted mt-1">Structured information extracted from the consultant CV for XLENT review.</p></div>
+                <div><p className="text-xs font-semibold text-app-primary">Consultant CV Extraction</p><p className="text-[11px] text-muted mt-1">Structured information extracted from the consultant CV for XLENT review.</p></div>
                 <span className="text-[10px] text-3">Human review required</span>
               </div>
 
@@ -112,14 +112,14 @@ export default function ConsultantProfile() {
               <div className="bg-surface border border-base rounded-lg overflow-hidden" style={{ boxShadow: "var(--ats-shadow)" }}>
                 <div className="px-4 py-3 border-b border-base flex items-center gap-2">
                   <Code size={12} className="text-3" />
-                  <span className="text-xs font-medium text-base">{t("cand_skills")}</span>
+                  <span className="text-xs font-medium text-app-primary">{t("cand_skills")}</span>
                 </div>
                 <div>
                   {profile.skills.map((s, i) => (
                     <div key={s.name} className="px-4 py-3" style={{ borderBottom: i < profile.skills.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>
                       <div className="flex items-start gap-3">
                         <div className="flex-none w-28">
-                          <p className="text-xs font-medium text-base font-mono">{s.name}</p>
+                          <p className="text-xs font-medium text-app-primary font-mono">{s.name}</p>
                           <p className="text-[10px] text-3 mt-0.5">{s.category}</p>
                         </div>
                         <div className="flex-none flex items-center gap-3">
@@ -137,13 +137,13 @@ export default function ConsultantProfile() {
               <div className="bg-surface border border-base rounded-lg overflow-hidden" style={{ boxShadow: "var(--ats-shadow)" }}>
                 <div className="px-4 py-3 border-b border-base flex items-center gap-2">
                   <Briefcase size={12} className="text-3" />
-                  <span className="text-xs font-medium text-base">{t("cand_experience")}</span>
+                  <span className="text-xs font-medium text-app-primary">{t("cand_experience")}</span>
                 </div>
                 {profile.experience.map((e, i) => (
                   <div key={i} className="px-4 py-3 space-y-2" style={{ borderBottom: i < profile.experience.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-xs font-medium text-base">{e.role}</p>
+                        <p className="text-xs font-medium text-app-primary">{e.role}</p>
                         <p className="text-[11px] text-muted">{e.company}</p>
                       </div>
                       <span className="text-[10px] font-mono text-3">{e.start} – {e.end}</span>
@@ -168,21 +168,21 @@ export default function ConsultantProfile() {
             {/* Sidebar */}
             <div className="space-y-4">
               <div className="bg-surface border border-base rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--ats-shadow)" }}>
-                <div className="flex items-center gap-2 mb-1"><GraduationCap size={12} className="text-3" /><span className="text-xs font-medium text-base">{t("cand_education")}</span></div>
+                <div className="flex items-center gap-2 mb-1"><GraduationCap size={12} className="text-3" /><span className="text-xs font-medium text-app-primary">{t("cand_education")}</span></div>
                 {profile.education.map((e, i) => (
-                  <div key={i}><p className="text-xs text-base">{e.degree}</p><p className="text-[11px] text-muted">{e.school} · {e.year}</p></div>
+                  <div key={i}><p className="text-xs text-app-primary">{e.degree}</p><p className="text-[11px] text-muted">{e.school} · {e.year}</p></div>
                 ))}
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
-                <div className="flex items-center gap-2 mb-3"><Globe size={12} className="text-3" /><span className="text-xs font-medium text-base">{t("cand_languages")}</span></div>
+                <div className="flex items-center gap-2 mb-3"><Globe size={12} className="text-3" /><span className="text-xs font-medium text-app-primary">{t("cand_languages")}</span></div>
                 <div className="space-y-1.5">{profile.languages.map((l) => <p key={l} className="text-[11px] text-2">{l}</p>)}</div>
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
-                <p className="text-xs font-medium text-base mb-3">{t("cand_industries")}</p>
+                <p className="text-xs font-medium text-app-primary mb-3">{t("cand_industries")}</p>
                 <div className="flex flex-wrap gap-1.5">{profile.industries.map((industry) => <span key={industry} className="text-[10px] text-2 px-1.5 py-0.5 rounded" style={{ background: "var(--ats-surface-r)", border: "1px solid var(--ats-border)" }}>{industry}</span>)}</div>
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
-                <p className="text-xs font-medium text-base mb-3">{t("cand_certifications")}</p>
+                <p className="text-xs font-medium text-app-primary mb-3">{t("cand_certifications")}</p>
                 <div className="space-y-1.5">{profile.certifications.map((certification) => <p key={certification} className="text-[11px] text-2">{certification}</p>)}</div>
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
@@ -193,7 +193,7 @@ export default function ConsultantProfile() {
                 </div></details>
               </div>
               <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
-                <p className="text-xs font-medium text-base mb-2">Extraction Review</p>
+                <p className="text-xs font-medium text-app-primary mb-2">Extraction Review</p>
                 <p className="text-[11px] text-muted mb-3">Review extracted fields before using this consultant in matching.</p>
                 <div className="flex items-center justify-between text-[11px] mb-3"><span className="text-muted">Status</span><span className="text-2">{reviewStatus}</span></div>
                 <button onClick={() => setReviewStatus("Verified")} className="w-full text-xs px-3 py-1.5 rounded border transition-colors" style={{ borderColor: "var(--ats-border)", color: "var(--ats-text-2)" }}>{reviewStatus === "Verified" ? "Verified" : "Mark as Reviewed"}</button>
@@ -217,21 +217,21 @@ export default function ConsultantProfile() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.65)" }}>
           <div className="w-full max-w-4xl max-h-[92vh] overflow-auto bg-surface border border-base rounded-lg p-5" style={{ boxShadow: "var(--ats-shadow)" }}>
             <div className="flex items-center justify-between mb-5">
-              <div><h2 className="text-sm font-semibold text-base">Edit Extracted Consultant Profile</h2><p className="text-[11px] text-muted mt-1">Correct the structured information extracted from the consultant CV.</p></div>
+              <div><h2 className="text-sm font-semibold text-app-primary">Edit Extracted Consultant Profile</h2><p className="text-[11px] text-muted mt-1">Correct the structured information extracted from the consultant CV.</p></div>
               <button onClick={() => setEditMode(false)} className="text-xs text-muted">Close</button>
             </div>
             <div className="space-y-5">
-              <section><h3 className="text-xs font-medium text-base mb-3">Basic Information</h3><div className="grid grid-cols-2 gap-3">
-                {[["Full name","name"],["Headline","headline"],["Role","role"],["Seniority","seniority"],["Availability","availability"],["Office / Location","office"]].map(([label,key]) => <label key={key} className="space-y-1"><span className="text-[10px] text-muted">{label}</span><input value={draft[key as keyof typeof draft] as string} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>)}
-                <label className="space-y-1"><span className="text-[10px] text-muted">Years of experience</span><input type="number" value={draft.totalYearsExperience} onChange={(e) => setDraft({ ...draft, totalYearsExperience: Number(e.target.value) })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-base outline-none" /></label>
+              <section><h3 className="text-xs font-medium text-app-primary mb-3">Basic Information</h3><div className="grid grid-cols-2 gap-3">
+                {[["Full name","name"],["Headline","headline"],["Role","role"],["Seniority","seniority"],["Availability","availability"],["Office / Location","office"]].map(([label,key]) => <label key={key} className="space-y-1"><span className="text-[10px] text-muted">{label}</span><input value={draft[key as keyof typeof draft] as string} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-app-primary outline-none" /></label>)}
+                <label className="space-y-1"><span className="text-[10px] text-muted">Years of experience</span><input type="number" value={draft.totalYearsExperience} onChange={(e) => setDraft({ ...draft, totalYearsExperience: Number(e.target.value) })} className="w-full bg-base border border-base rounded px-2.5 py-2 text-xs text-app-primary outline-none" /></label>
               </div></section>
-              <section><h3 className="text-xs font-medium text-base mb-1">Skills & Evidence</h3><p className="text-[10px] text-muted mb-2">One skill per line: Name | Category | Years | Level | Evidence</p><textarea value={draftLists.skills} onChange={(e) => setDraftLists({ ...draftLists, skills: e.target.value })} rows={6} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base font-mono outline-none" /></section>
-              <section><h3 className="text-xs font-medium text-base mb-1">Previous Projects</h3><p className="text-[10px] text-muted mb-2">One project per line: Role | Company | Start | End | Technologies | Achievement</p><textarea value={draftLists.experience} onChange={(e) => setDraftLists({ ...draftLists, experience: e.target.value })} rows={5} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base font-mono outline-none" /></section>
+              <section><h3 className="text-xs font-medium text-app-primary mb-1">Skills & Evidence</h3><p className="text-[10px] text-muted mb-2">One skill per line: Name | Category | Years | Level | Evidence</p><textarea value={draftLists.skills} onChange={(e) => setDraftLists({ ...draftLists, skills: e.target.value })} rows={6} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-app-primary font-mono outline-none" /></section>
+              <section><h3 className="text-xs font-medium text-app-primary mb-1">Previous Projects</h3><p className="text-[10px] text-muted mb-2">One project per line: Role | Company | Start | End | Technologies | Achievement</p><textarea value={draftLists.experience} onChange={(e) => setDraftLists({ ...draftLists, experience: e.target.value })} rows={5} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-app-primary font-mono outline-none" /></section>
               <div className="grid grid-cols-2 gap-4">
-                <section><h3 className="text-xs font-medium text-base mb-1">Education</h3><p className="text-[10px] text-muted mb-2">Degree | Institution | Year</p><textarea value={draftLists.education} onChange={(e) => setDraftLists({ ...draftLists, education: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base font-mono outline-none" /></section>
-                <section><h3 className="text-xs font-medium text-base mb-1">Languages</h3><p className="text-[10px] text-muted mb-2">One language per line</p><textarea value={draftLists.languages} onChange={(e) => setDraftLists({ ...draftLists, languages: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base outline-none" /></section>
-                <section><h3 className="text-xs font-medium text-base mb-1">Industries</h3><p className="text-[10px] text-muted mb-2">One industry per line</p><textarea value={draftLists.industries} onChange={(e) => setDraftLists({ ...draftLists, industries: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base outline-none" /></section>
-                <section><h3 className="text-xs font-medium text-base mb-1">Certifications</h3><p className="text-[10px] text-muted mb-2">One certification per line</p><textarea value={draftLists.certifications} onChange={(e) => setDraftLists({ ...draftLists, certifications: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-base outline-none" /></section>
+                <section><h3 className="text-xs font-medium text-app-primary mb-1">Education</h3><p className="text-[10px] text-muted mb-2">Degree | Institution | Year</p><textarea value={draftLists.education} onChange={(e) => setDraftLists({ ...draftLists, education: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-app-primary font-mono outline-none" /></section>
+                <section><h3 className="text-xs font-medium text-app-primary mb-1">Languages</h3><p className="text-[10px] text-muted mb-2">One language per line</p><textarea value={draftLists.languages} onChange={(e) => setDraftLists({ ...draftLists, languages: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-app-primary outline-none" /></section>
+                <section><h3 className="text-xs font-medium text-app-primary mb-1">Industries</h3><p className="text-[10px] text-muted mb-2">One industry per line</p><textarea value={draftLists.industries} onChange={(e) => setDraftLists({ ...draftLists, industries: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-app-primary outline-none" /></section>
+                <section><h3 className="text-xs font-medium text-app-primary mb-1">Certifications</h3><p className="text-[10px] text-muted mb-2">One certification per line</p><textarea value={draftLists.certifications} onChange={(e) => setDraftLists({ ...draftLists, certifications: e.target.value })} rows={3} className="w-full bg-base border border-base rounded px-2.5 py-2 text-[11px] text-app-primary outline-none" /></section>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6"><button onClick={() => setEditMode(false)} className="text-xs px-3 py-1.5 rounded border border-base text-muted">Cancel</button><button onClick={() => { setProfile({ ...draft, skills: parseSkills(draftLists.skills), experience: parseExperience(draftLists.experience), education: parseEducation(draftLists.education), languages: lines(draftLists.languages), industries: lines(draftLists.industries), certifications: lines(draftLists.certifications) }); setEditMode(false); }} className="text-xs px-3 py-1.5 rounded text-white" style={{ background: "var(--ats-indigo)" }}>Save Changes</button></div>
