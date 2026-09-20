@@ -5,6 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Tabs } from "../components/ui/Tabs";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { PageHeader } from "../components/ui/PageHeader";
 import { SKILLS, PROMPTS, FLAGS_DATA, ADMIN_TABS, WEIGHTS_CONFIG } from "../features/admin";
 
 
@@ -29,10 +30,7 @@ export default function Admin() {
 
   return (
     <div className="p-6 space-y-4">
-      <div>
-        <h1 className="text-app-primary font-semibold text-app-primary">{t("admin_title")}</h1>
-        <p className="text-xs text-app-muted mt-0.5">{t("admin_sub")}</p>
-      </div>
+      <PageHeader title={t("admin_title")} description={t("admin_sub")} />
 
       <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
