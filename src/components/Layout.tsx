@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +14,8 @@ import {
 } from "../design-system/icons";
 import { useTheme } from "../theme";
 import { useI18n, type Locale } from "../i18n";
+import { CONSULTANTS } from "../features/consultants";
+import { ASSIGNMENTS } from "../features/assignments";
 
 const LOCALE_LABELS: Record<Locale, string> = { en: "EN", es: "ES", sv: "SV" };
 const LOCALES: Locale[] = ["en", "es", "sv"];
@@ -33,9 +35,33 @@ export default function Layout() {
     { to: "/admin", icon: Settings, label: t("nav_admin") },
   ];
 
-  const crumb = NAV.find((n) =>
+  const section = NAV.find((n) =>
     n.to === "/" ? location.pathname === "/" : location.pathname.startsWith(n.to)
   );
+
+  const consultantId = location.pathname.match(/^\/consultants\/([^/]+)$/)?.[1];
+  const assignmentId = location.pathname.match(/^\/client-assignments\/([^/]+)$/)?.[1];
+  const consultant = consultantId ? CONSULTANTS.find((item) => item.id === consultantId) : undefined;
+  const assignment = assignmentId ? ASSIGNMENTS.find((item) => item.id === assignmentId) : undefined;
+
+  const breadcrumbs = location.pathname === "/"
+    ? [{ label: "XLENT Match" }]
+    : consultant
+      ? [
+          { label: "XLENT Match", to: "/" },
+          { label: t("nav_talent"), to: "/consultants" },
+          { label: consultant.name },
+        ]
+      : assignment
+        ? [
+            { label: "XLENT Match", to: "/" },
+            { label: t("nav_jobs"), to: "/client-assignments" },
+            { label: assignment.title },
+          ]
+        : [
+            { label: "XLENT Match", to: "/" },
+            { label: section?.label ?? location.pathname.replace(/^\//, "") },
+          ];
 
   return (
     <div className="flex h-full bg-app">
@@ -46,12 +72,16 @@ export default function Layout() {
       >
         {/* Logo */}
         <div className="h-12 flex items-center px-4 border-b border-app">
-          <div className="flex items-center gap-2">
+          <Link
+            to="/"
+            className="flex items-center gap-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand"
+            aria-label={t("nav_dashboard")}
+          >
             <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: "var(--color-brand)" }}>
               <Zap size={12} className="text-white" />
             </div>
             <span className="text-sm font-semibold tracking-tight text-app-primary">XLENT Match</span>
-          </div>
+          </Link>
           <span className="ml-auto text-[10px] font-mono text-app-faint bg-app-raised px-1.5 py-0.5 rounded">
             v1.0
           </span>
@@ -96,15 +126,25 @@ export default function Layout() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-app">
         {/* Topbar */}
         <header className="h-12 flex items-center px-5 border-b border-app bg-app-surface flex-none">
-          <div className="flex items-center gap-1.5 text-sm text-app-faint">
-            <span>XLENT Match</span>
-            {crumb && crumb.to !== "/" && (
-              <>
-                <ChevronRight size={12} />
-                <span className="text-app-secondary">{crumb.label}</span>
-              </>
-            )}
-          </div>
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-app-faint min-w-0">
+            {breadcrumbs.map((item, index) => (
+              <div key={item.label + index} className="flex items-center gap-1.5 min-w-0">
+                {index > 0 && <ChevronRight size={12} className="flex-none" />}
+                {item.to ? (
+                  <Link
+                    to={item.to}
+                    className="truncate hover:text-app-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand rounded-sm"
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <span className={index === breadcrumbs.length - 1 ? "text-app-secondary truncate" : "truncate"}>
+                    {item.label}
+                  </span>
+                )}
+              </div>
+            ))}
+          </nav>
 
           <div className="ml-auto flex items-center gap-3">
             {/* AI status */}
