@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useI18n } from "../../i18n";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
 
@@ -19,6 +20,7 @@ export function EditFormModal({
   onSubmit: () => void;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   const cancel = onCancel ?? onClose;
 
   return (
@@ -26,8 +28,8 @@ export function EditFormModal({
       <div className="p-5 space-y-5">
         {children}
         <div className="flex justify-end gap-2 pt-4 border-t border-app">
-          <Button onClick={cancel} variant="ghost">Cancel</Button>
-          <Button onClick={onSubmit} variant="primary">Save Changes</Button>
+          <Button onClick={cancel} variant="ghost">{t("common_cancel")}</Button>
+          <Button onClick={onSubmit} variant="primary">{t("common_save_changes")}</Button>
         </div>
       </div>
     </Modal>
