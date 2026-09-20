@@ -2,6 +2,8 @@ import { FileText, Briefcase, GitMerge, Users, Clock, CheckCircle, AlertCircle, 
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { QUEUE, RECENT_MATCHES } from "../data/mock";
+import { CONSULTANTS } from "../features/consultants";
+import { ASSIGNMENTS } from "../features/assignments";
 import { DataTable } from "../components/ui/DataTable";
 import { PageHeader } from "../components/ui/PageHeader";
 
@@ -35,16 +37,18 @@ function StatCard({ label, value, sub, icon: Icon, accent }: { label: string; va
 
 export default function Dashboard() {
   const { t } = useI18n();
+  const processingCount = QUEUE.filter((item) => ["extracting", "parsing", "embedding"].includes(item.status)).length;
+  const matchingAssignmentCount = ASSIGNMENTS.filter((assignment) => assignment.status === "matching").length;
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader title={t("dash_title")} description={t("dash_description")} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatCard label={t("dash_consultants")} value="124" sub={`18 ${t("dash_consultants_sub")}`} icon={Users} accent />
-        <StatCard label={t("dash_assignments")} value="7" sub={`3 ${t("dash_assignments_sub")}`} icon={Briefcase} />
-        <StatCard label={t("dash_queue")} value="18" sub={`5 ${t("dash_queue_sub")}`} icon={FileText} />
-        <StatCard label={t("dash_active_matching")} value="3" sub={t("dash_active_matching_sub")} icon={GitMerge} />
+        <StatCard label={t("dash_consultants")} value={String(CONSULTANTS.length)} sub={t("dash_consultants_sub")} icon={Users} accent />
+        <StatCard label={t("dash_assignments")} value={String(ASSIGNMENTS.length)} sub={`${matchingAssignmentCount} ${t("dash_assignments_sub")}`} icon={Briefcase} />
+        <StatCard label={t("dash_queue")} value={String(QUEUE.length)} sub={`${processingCount} ${t("dash_queue_sub")}`} icon={FileText} />
+        <StatCard label={t("dash_active_matching")} value={String(matchingAssignmentCount)} sub={t("dash_active_matching_sub")} icon={GitMerge} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
