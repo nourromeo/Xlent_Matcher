@@ -1,17 +1,30 @@
-import { useState } from "react";
-import { Save, Plus, Trash2 } from "../design-system/icons";
+import { useMemo, useState } from "react";
+import { Edit3, Plus, RefreshCw, Save, Search, Trash2 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Button } from "../components/ui/Button";
 import { Tabs } from "../components/ui/Tabs";
 import { DataTable } from "../components/ui/DataTable";
+import { EditFormModal } from "../components/ui/EditFormModal";
 import { PageHeader } from "../components/ui/PageHeader";
+import { StatusBadge } from "../components/ui/StatusBadge";
 import { SKILLS, FLAGS_DATA, ADMIN_TABS, WEIGHTS_CONFIG } from "../features/admin";
+import type { Skill } from "../features/admin";
 
 
 
 
 
 
+
+const FLAG_LABELS: Record<string, string> = {
+  SkillsFirstAnalysis: "Skills-first analysis",
+  UseReranker: "Semantic reranking",
+  UseCloudOcr: "Cloud OCR",
+  UseStubAi: "Stub AI responses",
+};
+
+type SkillDraft = { id?: string; canonical: string; category: string; aliases: string };
+const EMPTY_SKILL: SkillDraft = { canonical: "", category: "", aliases: "" };
 
 export default function Admin() {
   const { t } = useI18n();
@@ -20,108 +33,206 @@ export default function Admin() {
 
   const WEIGHTS_DEF = WEIGHTS_CONFIG.map((weight) => ({ ...weight, label: t(`score_${weight.key === "mustHaveCoverage" ? "mustHave" : weight.key === "semanticSimilarity" ? "semantic" : weight.key === "experienceRecency" ? "experience" : weight.key === "niceToHave" ? "niceToHave" : weight.key}` as any) }));
 
+  const defaultWeights = Object.fromEntries(WEIGHTS_DEF.map((w) => [w.key, w.value])) as Record<string, number>;
+
   const [tab, setTab] = useState("taxonomy");
-  const [weights, setWeights] = useState<Record<string, number>>(Object.fromEntries(WEIGHTS_DEF.map((w) => [w.key, w.value])));
+  const [skills, setSkills] = useState<Skill[]>([...SKILLS]);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [skillModalOpen, setSkillModalOpen] = useState(false);
+  const [skillDraft, setSkillDraft] = useState<SkillDraft>(EMPTY_SKILL);
+  const [weights, setWeights] = useState<Record<string, number>>(defaultWeights);
+  const [savedWeights, setSavedWeights] = useState<Record<string, number>>(defaultWeights);
   const [flags, setFlags] = useState<Record<string, boolean>>(Object.fromEntries(FLAGS_DATA.map((f) => [f.key, f.enabled])));
+
+  const categories = useMemo(() => ["All", ...Array.from(new Set(skills.map((skill) => skill.category))).sort()], [skills]);
+  const filteredSkills = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return skills.filter((skill) => {
+      const matchesCategory = category === "All" || skill.category === category;
+      const matchesSearch = !query || skill.canonical.toLowerCase().includes(query) || skill.category.toLowerCase().includes(query) || skill.aliases.some((alias) => alias.toLowerCase().includes(query));
+      return matchesCategory && matchesSearch;
+    });
+  }, [skills, search, category]);
 
   const total = Object.values(weights).reduce((a, b) => a + b, 0);
   const ok = total === 100;
+  const weightsDirty = JSON.stringify(weights) !== JSON.stringify(savedWeights);
+
+  const openAddSkill = () => {
+    setSkillDraft(EMPTY_SKILL);
+    setSkillModalOpen(true);
+  };
+
+  const openEditSkill = (skill: Skill) => {
+    setSkillDraft({ id: skill.id, canonical: skill.canonical, category: skill.category, aliases: skill.aliases.join(", ") });
+    setSkillModalOpen(true);
+  };
+
+  const saveSkill = () => {
+    const canonical = skillDraft.canonical.trim();
+    const skillCategory = skillDraft.category.trim();
+    if (!canonical || !skillCategory) return;
+    const aliases = skillDraft.aliases.split(",").map((alias) => alias.trim()).filter(Boolean);
+
+    if (skillDraft.id) {
+      setSkills((current) => current.map((skill) => skill.id === skillDraft.id ? { ...skill, canonical, category: skillCategory, aliases } : skill));
+    } else {
+      const nextId = Math.max(0, ...skills.map((skill) => Number(String(skill.id).replace(/\\D/g, "")) || 0)) + 1;
+      setSkills((current) => [...current, { id: "s" + nextId, canonical, category: skillCategory, aliases }]);
+    }
+
+    setSkillModalOpen(false);
+    setSkillDraft(EMPTY_SKILL);
+  };
+
+  const saveWeights = () => {
+    if (ok) setSavedWeights({ ...weights });
+  };
+
+  const resetWeights = () => setWeights({ ...defaultWeights });
+
+  const toggleFlag = (key: string) => {
+    const sensitive = key === "UseReranker" || key === "UseCloudOcr";
+    const label = FLAG_LABELS[key] ?? key;
+    if (sensitive && !window.confirm("Change " + label + "? This affects matching or document-processing behaviour.")) return;
+    setFlags((previous) => ({ ...previous, [key]: !previous[key] }));
+  };
 
   return (
-    <div className="p-6 space-y-4">
-      <PageHeader title={t("admin_title")} description={t("admin_sub")} />
+    <div className="h-full overflow-auto"><div className="p-6 space-y-5 max-w-6xl mx-auto">
+      <PageHeader title="Admin" description="Manage skill taxonomy, matching weights, and controlled system features." />
+
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "Skills", value: skills.length },
+          { label: "Matching factors", value: WEIGHTS_DEF.length },
+          { label: "Feature flags", value: FLAGS_DATA.length },
+        ].map((item) => (
+          <div key={item.label} className="bg-app-surface border border-app rounded-lg px-4 py-3" style={{ boxShadow: "var(--shadow-surface)" }}>
+            <p className="text-[10px] uppercase tracking-wide text-app-faint">{item.label}</p>
+            <p className="text-lg font-semibold font-mono text-app-primary mt-1">{item.value}</p>
+          </div>
+        ))}
+      </div>
 
       <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
       {/* Taxonomy */}
       {tab === "taxonomy" && (
         <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-app">
-            <span className="text-xs font-medium text-app-primary">{t("tab_taxonomy")}</span>
-            <Button variant="ghost" icon={<Plus size={11} />}>{t("admin_add_skill")}</Button>
+          <div className="flex items-end justify-between gap-4 px-4 py-3 border-b border-app">
+            <div className="flex items-end gap-2 flex-1">
+              <div className="relative w-full max-w-sm">
+                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search skills or aliases..." className="w-full bg-app border border-app rounded-md pl-8 pr-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" />
+              </div>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-app border border-app rounded-md px-3 py-2 text-xs text-app-secondary outline-none">
+                {categories.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </div>
+            <Button variant="primary" icon={<Plus size={12} />} onClick={openAddSkill}>Add Skill</Button>
           </div>
+
           <DataTable
             columns={[
               { key: "canonical", header: t("admin_canonical"), render: (skill) => <span className="font-mono font-medium text-app-primary">{skill.canonical}</span> },
-              { key: "category", header: t("admin_category"), render: (skill) => <span className="text-[11px] text-app-secondary px-2 py-0.5 rounded bg-app-raised">{skill.category}</span> },
+              { key: "category", header: t("admin_category"), render: (skill) => <span className="text-[11px] text-app-secondary px-2 py-1 rounded bg-app-raised">{skill.category}</span> },
               { key: "aliases", header: t("admin_aliases"), render: (skill) => <div className="flex flex-wrap gap-1">{skill.aliases.map((alias) => <span key={alias} className="text-[10px] font-mono text-app-secondary px-1.5 py-0.5 rounded bg-app-raised border border-app">{alias}</span>)}</div> },
-              { key: "actions", header: "", render: () => <button className="text-app-faint hover:text-red-500" aria-label="Delete skill"><Trash2 size={12} /></button> },
+              { key: "actions", header: "Actions", render: (skill) => <div className="flex items-center gap-1"><Button variant="ghost" icon={<Edit3 size={11} />} onClick={() => openEditSkill(skill)}>Edit</Button><button onClick={() => setSkills((current) => current.filter((item) => item.id !== skill.id))} className="p-2 text-app-faint hover:text-red-500" aria-label={"Delete " + skill.canonical}><Trash2 size={12} /></button></div> },
             ]}
-            rows={SKILLS}
+            rows={filteredSkills}
             rowKey={(skill) => skill.id}
+            emptyMessage="No skills match the current search or category."
           />
         </div>
       )}
+
 
       {/* Weights */}
       {tab === "weights" && (
         <div className="space-y-3">
-          <div className="text-xs px-3 py-2 rounded flex items-center gap-2"
-            style={{ background: ok ? "var(--color-success-soft)" : "var(--color-warning-soft)", border: `1px solid ${ok ? "var(--color-success-border)" : "var(--color-warning-border)"}`, color: ok ? "var(--color-success)" : "var(--color-warning)" }}>
-            {t("admin_total_w")} {total}% {!ok && t("admin_must_eq")} {ok && "✓"}
+          <div className="text-xs px-4 py-3 rounded-lg flex items-center justify-between gap-3"
+            style={{ background: ok ? "var(--color-success-soft)" : "var(--color-warning-soft)", border: "1px solid " + (ok ? "var(--color-success-border)" : "var(--color-warning-border)"), color: ok ? "var(--color-success)" : "var(--color-warning)" }}>
+            <span>Total weight: <strong>{total}%</strong> {ok ? "✓ Ready to save" : "— total must equal 100%"}</span>
+            {weightsDirty && <span className="font-medium">Unsaved changes</span>}
           </div>
+
           <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
             {WEIGHTS_DEF.map((w, i) => (
-              <div key={w.key} className="px-4 py-3" style={{ borderBottom: i < WEIGHTS_DEF.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
-                <div className="flex items-center gap-4">
+              <div key={w.key} className="px-5 py-4" style={{ borderBottom: i < WEIGHTS_DEF.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
+                <div className="flex items-center gap-5">
                   <div className="flex-1">
-                    <p className="text-xs font-medium text-app-primary">{w.label}</p>
-                    <p className="text-[11px] text-app-faint mt-0.5">{w.desc}</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-xs font-medium text-app-primary">{w.label}</p>
+                      <span className="text-xs font-mono font-semibold text-app-brand">{weights[w.key]}%</span>
+                    </div>
+                    <p className="text-xs text-app-muted mt-1">{w.desc}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input type="range" min={0} max={60} value={weights[w.key]} onChange={(e) => setWeights((p) => ({ ...p, [w.key]: Number(e.target.value) }))} className="w-24 accent-indigo-500" />
-                    <span className="text-sm font-mono text-app-primary w-10 text-right">{weights[w.key]}%</span>
-                  </div>
+                  <input type="range" min={0} max={60} value={weights[w.key]} onChange={(e) => setWeights((p) => ({ ...p, [w.key]: Number(e.target.value) }))} className="w-40 accent-indigo-500" />
                 </div>
               </div>
             ))}
           </div>
-          <div className="flex justify-end">
-            <button className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded hover:opacity-80 transition-opacity" style={{ background: "var(--color-brand)" }}>
-              <Save size={11} />{t("admin_save_w")}
-            </button>
+
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" icon={<RefreshCw size={11} />} onClick={resetWeights}>Reset to default</Button>
+            <Button variant="primary" icon={<Save size={11} />} onClick={saveWeights} disabled={!ok || !weightsDirty} className={!ok || !weightsDirty ? "opacity-40 cursor-not-allowed" : ""}>Save Weights</Button>
           </div>
         </div>
       )}
 
-      {/* Prompts */}
-      {tab === "prompts" && (
-        <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
-          <DataTable
-            columns={[
-              { key: "name", header: "Prompt", render: (prompt) => <span className="font-medium text-app-primary">{prompt.name}</span> },
-              { key: "model", header: "Model", render: (prompt) => <span className="font-mono">{prompt.model}</span> },
-              { key: "version", header: "Version", render: (prompt) => <span className="font-mono text-app-brand">{prompt.version}</span> },
-              { key: "tokens", header: "Avg Tokens", render: (prompt) => <span className="font-mono">{prompt.tokens}</span> },
-              { key: "cost", header: "Avg Cost", render: (prompt) => <span className="font-mono">{prompt.cost}</span> },
-              { key: "status", header: "Status", render: (prompt) => <StatusBadge tone={prompt.active ? "success" : "neutral"}>{prompt.active ? "Active" : "Inactive"}</StatusBadge> },
-              { key: "actions", header: "", render: () => <button className="text-app-brand hover:opacity-70" aria-label="Refresh prompt"><RefreshCw size={11} /></button> },
-            ]}
-            rows={PROMPTS}
-            rowKey={(prompt) => prompt.id}
-          />
-        </div>
-      )}
+
 
       {/* Feature Flags */}
       {tab === "flags" && (
         <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+          <div className="px-5 py-3 border-b border-app">
+            <p className="text-xs font-medium text-app-primary">Feature Flags</p>
+            <p className="text-[11px] text-app-muted mt-0.5">Enable or disable controlled matching and AI-related behaviour without changing the main workflow.</p>
+          </div>
           {FLAGS_DATA.map((f, i) => (
-            <div key={f.key} className="flex items-center justify-between px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
+            <div key={f.key} className="flex items-center justify-between gap-5 px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
               <div>
-                <p className="text-xs font-medium text-app-primary font-mono">{f.key}</p>
-                <p className="text-[11px] text-app-muted mt-0.5">{f.desc}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-medium text-app-primary">{FLAG_LABELS[f.key] ?? f.key}</p>
+                  <StatusBadge tone={flags[f.key] ? "success" : "neutral"}>{flags[f.key] ? "Enabled" : "Disabled"}</StatusBadge>
+                </div>
+                <p className="text-[11px] text-app-muted mt-1">{f.desc}</p>
+                <p className="text-[10px] text-app-faint font-mono mt-1">{f.key}</p>
               </div>
-              <button onClick={() => setFlags((p) => ({ ...p, [f.key]: !p[f.key] }))}
-                className="relative w-9 h-5 rounded-full transition-colors flex-none"
-                style={{ background: flags[f.key] ? "var(--color-brand)" : "var(--color-border)" }}>
-                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform"
-                  style={{ transform: flags[f.key] ? "translateX(16px)" : "translateX(0)" }} />
+              <button onClick={() => toggleFlag(f.key)} className="relative w-10 h-5 rounded-full transition-colors flex-none" style={{ background: flags[f.key] ? "var(--color-brand)" : "var(--color-border)" }} aria-label={(flags[f.key] ? "Disable " : "Enable ") + (FLAG_LABELS[f.key] ?? f.key)}>
+                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform" style={{ transform: flags[f.key] ? "translateX(20px)" : "translateX(0)" }} />
               </button>
             </div>
           ))}
         </div>
       )}
+
+      <EditFormModal
+        open={skillModalOpen}
+        title={skillDraft.id ? "Edit Skill" : "Add Skill"}
+        description="Maintain the canonical skill name, category, and aliases used by matching."
+        onClose={() => setSkillModalOpen(false)}
+        onSubmit={saveSkill}
+      >
+        <div className="space-y-4">
+          <label className="block">
+            <span className="text-[11px] text-app-muted uppercase tracking-wide">Canonical name</span>
+            <input value={skillDraft.canonical} onChange={(e) => setSkillDraft((current) => ({ ...current, canonical: e.target.value }))} className="mt-1.5 w-full bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" placeholder="e.g. PostgreSQL" />
+          </label>
+          <label className="block">
+            <span className="text-[11px] text-app-muted uppercase tracking-wide">Category</span>
+            <input value={skillDraft.category} onChange={(e) => setSkillDraft((current) => ({ ...current, category: e.target.value }))} className="mt-1.5 w-full bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" placeholder="e.g. Database" />
+          </label>
+          <label className="block">
+            <span className="text-[11px] text-app-muted uppercase tracking-wide">Aliases</span>
+            <input value={skillDraft.aliases} onChange={(e) => setSkillDraft((current) => ({ ...current, aliases: e.target.value }))} className="mt-1.5 w-full bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" placeholder="Postgres, pg" />
+            <span className="text-[10px] text-app-faint mt-1 block">Separate aliases with commas.</span>
+          </label>
+        </div>
+      </EditFormModal>
+      </div>
     </div>
   );
 }
