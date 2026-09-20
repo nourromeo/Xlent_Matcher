@@ -11,7 +11,7 @@ export const MATCHES: Match[] = [
       { skill: "Kafka", cite: "Architected an event-streaming backbone for high-volume transactional workloads." },
       { skill: "Kubernetes", cite: "Managed production clusters across multiple regions and introduced autoscaling policies." }
     ],
-    llmVerdict: "Strong match. The consultant covers all required skills with senior-level evidence and has directly relevant event-driven backend experience."
+    motivation: "Strong match. The consultant covers all required skills with senior-level evidence and has directly relevant event-driven backend experience."
   },
   {
     id: "a1-m2", assignmentId: "a1", consultantId: "3", initials: "PS", name: "Priya Sharma",
@@ -19,7 +19,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 78, semantic: 84, experience: 92, seniority: 95, niceToHave: 55, availability: 60 },
     mustHaveCoverage: ["Go", "PostgreSQL", "Kubernetes"], gaps: ["Kafka"], niceToHave: [],
     evidence: [{ skill: "Kubernetes", cite: "Managed production Kubernetes platforms and infrastructure automation for enterprise workloads." }],
-    llmVerdict: "Good platform match with strong seniority and Kubernetes evidence. Kafka is the main missing requirement."
+    motivation: "Good platform match with strong seniority and Kubernetes evidence. Kafka is the main missing requirement."
   },
   {
     id: "a1-m3", assignmentId: "a1", consultantId: "4", initials: "TR", name: "Tobias Renz",
@@ -27,7 +27,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 58, semantic: 72, experience: 70, seniority: 68, niceToHave: 40, availability: 100 },
     mustHaveCoverage: ["PostgreSQL", "Kubernetes"], gaps: ["Go", "Kafka"], niceToHave: [],
     evidence: [{ skill: "Kubernetes", cite: "Deployed containerised .NET services to Azure Kubernetes environments." }],
-    llmVerdict: "Available immediately and has relevant cloud delivery experience, but lacks evidence for Go and Kafka."
+    motivation: "Available immediately and has relevant cloud delivery experience, but lacks evidence for Go and Kafka."
   },
   {
     id: "a1-m4", assignmentId: "a1", consultantId: "6", initials: "RO", name: "Ravi Okonkwo",
@@ -35,7 +35,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 52, semantic: 66, experience: 78, seniority: 82, niceToHave: 35, availability: 100 },
     mustHaveCoverage: ["PostgreSQL", "Kafka"], gaps: ["Go", "Kubernetes"], niceToHave: [],
     evidence: [{ skill: "Kafka", cite: "Built streaming data pipelines integrating Kafka with analytics workloads." }],
-    llmVerdict: "Strong data background and Kafka exposure, but the assignment needs more backend and Kubernetes evidence."
+    motivation: "Strong data background and Kafka exposure, but the assignment needs more backend and Kubernetes evidence."
   },
   {
     id: "a1-m5", assignmentId: "a1", consultantId: "7", initials: "FM", name: "Fatima Martinez",
@@ -43,7 +43,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 42, semantic: 56, experience: 40, seniority: 35, niceToHave: 30, availability: 90 },
     mustHaveCoverage: ["Kubernetes"], gaps: ["Go", "PostgreSQL", "Kafka"], niceToHave: [],
     evidence: [{ skill: "Kubernetes", cite: "Supported container deployment workflows and cloud infrastructure automation." }],
-    llmVerdict: "Some relevant cloud exposure, but the current profile is below the assignment's required backend depth and seniority."
+    motivation: "Some relevant cloud exposure, but the current profile is below the assignment's required backend depth and seniority."
   },
 
   {
@@ -55,7 +55,7 @@ export const MATCHES: Match[] = [
       { skill: "PyTorch", cite: "Delivered production NLP services using PyTorch and transformer-based models." },
       { skill: "Azure ML", cite: "Operationalised model training and deployment workflows in Azure ML." }
     ],
-    llmVerdict: "Excellent match. The consultant covers the full required AI stack and has directly relevant model operationalisation experience."
+    motivation: "Excellent match. The consultant covers the full required AI stack and has directly relevant model operationalisation experience."
   },
   {
     id: "a2-m2", assignmentId: "a2", consultantId: "6", initials: "RO", name: "Ravi Okonkwo",
@@ -63,7 +63,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 72, semantic: 80, experience: 86, seniority: 84, niceToHave: 65, availability: 100 },
     mustHaveCoverage: ["Python", "Azure ML"], gaps: ["PyTorch", "NLP"], niceToHave: ["MLflow"],
     evidence: [{ skill: "Python", cite: "Built production data and ML pipelines in Python across analytics engagements." }],
-    llmVerdict: "Strong data engineering profile with useful ML operations exposure, but weaker evidence in NLP and PyTorch."
+    motivation: "Strong data engineering profile with useful ML operations exposure, but weaker evidence in NLP and PyTorch."
   },
   {
     id: "a2-m3", assignmentId: "a2", consultantId: "3", initials: "PS", name: "Priya Sharma",
@@ -71,7 +71,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 60, semantic: 68, experience: 92, seniority: 95, niceToHave: 55, availability: 60 },
     mustHaveCoverage: ["Python", "Azure ML"], gaps: ["PyTorch", "NLP"], niceToHave: [],
     evidence: [{ skill: "Azure ML", cite: "Supported cloud platforms used for data and machine-learning workloads." }],
-    llmVerdict: "Strong platform experience, but the core modelling requirements are not sufficiently covered."
+    motivation: "Strong platform experience, but the core modelling requirements are not sufficiently covered."
   },
   {
     id: "a2-m4", assignmentId: "a2", consultantId: "7", initials: "FM", name: "Fatima Martinez",
@@ -79,7 +79,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 55, semantic: 64, experience: 45, seniority: 42, niceToHave: 50, availability: 90 },
     mustHaveCoverage: ["Python"], gaps: ["PyTorch", "NLP", "Azure ML"], niceToHave: ["FastAPI"],
     evidence: [{ skill: "Python", cite: "Uses Python for automation and cloud tooling in delivery work." }],
-    llmVerdict: "Relevant Python and cloud foundations, but missing most of the assignment's applied AI requirements."
+    motivation: "Relevant Python and cloud foundations, but missing most of the assignment's applied AI requirements."
   },
   {
     id: "a2-m5", assignmentId: "a2", consultantId: "4", initials: "TR", name: "Tobias Renz",
@@ -87,7 +87,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 45, semantic: 58, experience: 72, seniority: 70, niceToHave: 35, availability: 100 },
     mustHaveCoverage: ["Azure ML"], gaps: ["Python", "PyTorch", "NLP"], niceToHave: [],
     evidence: [{ skill: "Azure ML", cite: "Has Azure delivery experience and familiarity with managed cloud services." }],
-    llmVerdict: "Good general Azure delivery profile, but not a strong fit for the assignment's core AI requirements."
+    motivation: "Good general Azure delivery profile, but not a strong fit for the assignment's core AI requirements."
   },
 
   {
@@ -99,7 +99,7 @@ export const MATCHES: Match[] = [
       { skill: "Terraform", cite: "Implemented infrastructure-as-code standards across multi-environment cloud platforms." },
       { skill: "Prometheus", cite: "Designed observability and alerting for production Kubernetes workloads." }
     ],
-    llmVerdict: "Excellent match. The consultant covers every required platform skill and has the seniority expected for the reliability programme."
+    motivation: "Excellent match. The consultant covers every required platform skill and has the seniority expected for the reliability programme."
   },
   {
     id: "a3-m2", assignmentId: "a3", consultantId: "7", initials: "FM", name: "Fatima Martinez",
@@ -107,7 +107,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 72, semantic: 78, experience: 48, seniority: 40, niceToHave: 60, availability: 90 },
     mustHaveCoverage: ["Kubernetes", "Terraform"], gaps: ["Prometheus"], niceToHave: [],
     evidence: [{ skill: "Terraform", cite: "Uses Terraform for repeatable cloud infrastructure provisioning." }],
-    llmVerdict: "Relevant cloud foundations and good availability, but limited seniority and no strong Prometheus evidence."
+    motivation: "Relevant cloud foundations and good availability, but limited seniority and no strong Prometheus evidence."
   },
   {
     id: "a3-m3", assignmentId: "a3", consultantId: "1", initials: "AK", name: "Anna Kovacs",
@@ -115,7 +115,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 68, semantic: 76, experience: 88, seniority: 90, niceToHave: 70, availability: 100 },
     mustHaveCoverage: ["Kubernetes", "Prometheus"], gaps: ["Terraform"], niceToHave: ["Go"],
     evidence: [{ skill: "Kubernetes", cite: "Managed production Kubernetes clusters supporting distributed backend services." }],
-    llmVerdict: "Strong production and Kubernetes background with immediate availability, but Terraform evidence is missing."
+    motivation: "Strong production and Kubernetes background with immediate availability, but Terraform evidence is missing."
   },
   {
     id: "a3-m4", assignmentId: "a3", consultantId: "4", initials: "TR", name: "Tobias Renz",
@@ -123,7 +123,7 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 62, semantic: 70, experience: 74, seniority: 70, niceToHave: 55, availability: 100 },
     mustHaveCoverage: ["Kubernetes", "Terraform"], gaps: ["Prometheus"], niceToHave: [],
     evidence: [{ skill: "Kubernetes", cite: "Delivered applications on Azure Kubernetes environments." }],
-    llmVerdict: "Useful Azure and Kubernetes experience, but the observability requirement is only partially covered."
+    motivation: "Useful Azure and Kubernetes experience, but the observability requirement is only partially covered."
   },
   {
     id: "a3-m5", assignmentId: "a3", consultantId: "6", initials: "RO", name: "Ravi Okonkwo",
@@ -131,6 +131,6 @@ export const MATCHES: Match[] = [
     breakdown: { mustHave: 50, semantic: 64, experience: 82, seniority: 84, niceToHave: 45, availability: 100 },
     mustHaveCoverage: ["Terraform"], gaps: ["Kubernetes", "Prometheus"], niceToHave: [],
     evidence: [{ skill: "Terraform", cite: "Uses infrastructure-as-code for repeatable analytics platform environments." }],
-    llmVerdict: "Good senior delivery experience, but the reliability and observability skill coverage is incomplete."
+    motivation: "Good senior delivery experience, but the reliability and observability skill coverage is incomplete."
   }
 ];
