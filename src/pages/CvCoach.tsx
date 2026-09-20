@@ -13,25 +13,7 @@ import {
 } from "../design-system/icons";
 import { MOCK_RESULT } from "../features/cvCoach";
 
-// ── Types ────────────────────────────────────────────────
-type Severity = "high" | "medium" | "low";
-
-interface Suggestion {
-  id: string;
-  category: "keyword" | "credential" | "clarity" | "structure" | "evidence";
-  severity: Severity;
-  title: string;
-  detail: string;
-  example?: string;
-  scoreDelta: number;
-}
-
-interface AnalysisResult {
-  estimatedScore: number;
-  projectedScore: number;
-  summary: string;
-  suggestions: Suggestion[];
-}
+import type { CvSeverity, CvSuggestion, CvAnalysisResult } from "../features/cvCoach/types";
 
 // ── Mock AI result ───────────────────────────────────────
 
