@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { CheckCircle, AlertTriangle, ChevronDown, Send, Info } from "lucide-react";
 import { useI18n } from "../i18n";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const MATCHES = [
   { id: "m1", initials: "AK", name: "Anna Kovacs", headline: "Senior Backend Consultant · 8 yrs", score: 91,
@@ -41,7 +43,13 @@ export default function Matching() {
   const barColor = (v: number) => v >= 85 ? "var(--color-success)" : v >= 65 ? "var(--color-brand)" : "var(--color-warning)";
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col">
+      <div className="flex-none px-5 py-3 border-b border-app bg-app-surface">
+        <Link to="/jobs" className="inline-flex items-center gap-1.5 text-xs text-app-muted hover:text-app-secondary">
+          <ArrowLeft size={13} />Back to Client Assignments
+        </Link>
+      </div>
+      <div className="flex-1 flex min-h-0">
       {/* Left */}
       <div className="w-72 flex-none border-r border-app bg-app-surface flex flex-col">
         <div className="px-4 py-3 border-b border-app">
@@ -176,6 +184,7 @@ export default function Matching() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
