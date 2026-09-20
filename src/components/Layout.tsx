@@ -25,11 +25,11 @@ export default function Layout() {
 
   const NAV = [
     { to: "/", icon: LayoutDashboard, label: t("nav_dashboard") },
-    { to: "/talent", icon: Users, label: t("nav_talent") },
-    { to: "/jobs", icon: Briefcase, label: t("nav_jobs") },
+    { to: "/consultants", icon: Users, label: t("nav_talent") },
+    { to: "/client-assignments", icon: Briefcase, label: t("nav_jobs") },
     { to: "/matching", icon: GitMerge, label: t("nav_matching") },
-    { to: "/upload", icon: Upload, label: t("nav_upload") },
-    { to: "/coach", icon: Sparkles, label: t("nav_coach") },
+    { to: "/cv-upload", icon: Upload, label: t("nav_upload") },
+    { to: "/cv-adaptation", icon: Sparkles, label: t("nav_coach") },
     { to: "/admin", icon: Settings, label: t("nav_admin") },
   ];
 
