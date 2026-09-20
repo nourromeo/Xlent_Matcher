@@ -68,7 +68,7 @@ function StatCard({ label, value, sub, icon: Icon, accent }: {
           <Icon size={14} />
         </div>
       </div>
-      <p className="text-2xl font-semibold text-base tracking-tight">{value}</p>
+      <p className="text-2xl font-semibold text-app-primary tracking-tight">{value}</p>
       <p className="text-[10px] text-3 mt-1">{sub}</p>
     </div>
   );
@@ -80,7 +80,7 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-base font-semibold text-base">{t("dash_title")}</h1>
+        <h1 className="text-app-primary font-semibold text-app-primary">{t("dash_title")}</h1>
         <p className="text-xs text-muted mt-0.5">This internal tool helps XLENT compare client assignments with existing consultants and understand why a consultant matches or does not match.</p>
       </div>
 
@@ -95,7 +95,7 @@ export default function Dashboard() {
         {/* Queue */}
         <div className="col-span-1 bg-surface border border-base rounded-lg" style={{ boxShadow: "var(--ats-shadow)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-base">
-            <span className="text-xs font-medium text-base">{t("dash_queue_panel")}</span>
+            <span className="text-xs font-medium text-app-primary">{t("dash_queue_panel")}</span>
             <Link to="/upload" className="text-[10px] text-indigo hover:opacity-70 flex items-center gap-1">
               {t("dash_view_all")} <ArrowUpRight size={10} />
             </Link>
@@ -105,7 +105,7 @@ export default function Dashboard() {
               <div key={item.name} className="flex items-center gap-3 px-4 py-2.5">
                 <FileText size={12} className="text-3 flex-none" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-base truncate font-mono">{item.name}</p>
+                  <p className="text-xs text-app-primary truncate font-mono">{item.name}</p>
                   <p className="text-[10px] text-3">{item.added}</p>
                 </div>
                 <span
@@ -123,7 +123,7 @@ export default function Dashboard() {
         {/* AI Cost Chart */}
         <div className="col-span-2 bg-surface border border-base rounded-lg" style={{ boxShadow: "var(--ats-shadow)" }}>
           <div className="px-4 py-3 border-b border-base">
-            <span className="text-xs font-medium text-base">{t("dash_cost_chart")}</span>
+            <span className="text-xs font-medium text-app-primary">{t("dash_cost_chart")}</span>
           </div>
           <div className="p-4">
             <ResponsiveContainer width="100%" height={140}>
@@ -150,7 +150,7 @@ export default function Dashboard() {
       {/* Recent Matches */}
       <div className="bg-surface border border-base rounded-lg" style={{ boxShadow: "var(--ats-shadow)" }}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-base">
-          <span className="text-xs font-medium text-base">{t("dash_recent")}</span>
+          <span className="text-xs font-medium text-app-primary">{t("dash_recent")}</span>
           <Link to="/matching" className="text-[10px] text-indigo hover:opacity-70 flex items-center gap-1">
             {t("dash_view_all")} <ArrowUpRight size={10} />
           </Link>
@@ -166,14 +166,14 @@ export default function Dashboard() {
           <tbody>
             {RECENT_MATCHES.map((m) => (
               <tr key={m.consultant + m.assignment} className="border-b border-sub hover:bg-raised transition-colors">
-                <td className="px-4 py-2.5 text-xs text-base font-medium">{m.consultant}</td>
+                <td className="px-4 py-2.5 text-xs text-app-primary font-medium">{m.consultant}</td>
                 <td className="px-4 py-2.5 text-xs text-2">{m.assignment}</td>
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="w-20 h-1.5 rounded-full bg-raised">
                       <div className="h-full rounded-full" style={{ width: `${m.score}%`, backgroundColor: "var(--ats-indigo)" }} />
                     </div>
-                    <span className="text-xs font-mono text-base">{m.score}</span>
+                    <span className="text-xs font-mono text-app-primary">{m.score}</span>
                   </div>
                 </td>
                 <td className="px-4 py-2.5 text-xs text-3">{m.date}</td>
