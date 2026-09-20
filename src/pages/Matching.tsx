@@ -1,19 +1,22 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { CheckCircle, AlertTriangle, ChevronDown, Send, Info } from "../design-system/icons";
+import { useLocation, useSearchParams } from "react-router-dom";
+import { CheckCircle, AlertTriangle, ChevronDown, Eye, Info } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { PageHeader } from "../components/ui/PageHeader";
+import { LinkButton } from "../components/ui/LinkButton";
 import { MATCHES, MATCH_WEIGHTS } from "../features/matching";
 import { ASSIGNMENTS } from "../features/assignments";
 
 export default function Matching() {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [expanded, setExpanded] = useState(false);
 
   const assignmentId = searchParams.get("assignment");
   const assignment = ASSIGNMENTS.find((item) => item.id === assignmentId);
+  const fromAssignment = Boolean((location.state as { fromAssignment?: boolean } | null)?.fromAssignment);
 
   const assignmentMatches = assignment
     ? MATCHES
@@ -55,36 +58,37 @@ export default function Matching() {
           title="Match Consultants"
           description={
             assignment
-              ? assignment.title + " · " + assignment.client
+              ? assignment.title + " · " + assignment.client + " · Top " + assignmentMatches.length + " matches"
               : "Select a client assignment to view its top consultant matches."
           }
-          meta={assignment ? assignmentMatches.length + " top matches" : undefined}
-          backTo="/jobs"
-          backLabel="Back to Client Assignments"
+          backTo={fromAssignment && assignment ? "/jobs/" + assignment.id : undefined}
+          backLabel="Back to Assignment"
         />
 
-        <div className="mt-4 max-w-sm">
-          <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
-            Client Assignment
-          </label>
-          <select
-            value={assignment?.id ?? ""}
-            onChange={(event) => selectAssignment(event.target.value)}
-            className="w-full text-xs rounded px-3 py-2 focus:outline-none"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
-              color: "var(--color-text-primary)",
-            }}
-          >
-            <option value="">Select an assignment...</option>
-            {ASSIGNMENTS.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title} · {item.client}
-              </option>
-            ))}
-          </select>
-        </div>
+        {!fromAssignment && (
+          <div className="mt-4 max-w-sm">
+            <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
+              Client Assignment
+            </label>
+            <select
+              value={assignment?.id ?? ""}
+              onChange={(event) => selectAssignment(event.target.value)}
+              className="w-full text-xs rounded px-3 py-2 focus:outline-none"
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-text-primary)",
+              }}
+            >
+              <option value="">Select an assignment...</option>
+              {ASSIGNMENTS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title} · {item.client}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {!assignment ? (
@@ -177,13 +181,13 @@ export default function Matching() {
                     <p className="text-xl font-semibold font-mono text-app-primary">{selected.score}%</p>
                     <p className="text-[10px] text-app-faint">{t("match_composite")}</p>
                   </div>
-                  <button
-                    className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded hover:opacity-80 transition-opacity"
-                    style={{ background: "var(--color-brand)" }}
+                  <LinkButton
+                    to={"/talent/" + selected.consultantId}
+                    variant="secondary"
+                    icon={<Eye size={12} />}
                   >
-                    <Send size={11} />
-                    {t("match_propose")}
-                  </button>
+                    View Consultant
+                  </LinkButton>
                 </div>
               </div>
 
