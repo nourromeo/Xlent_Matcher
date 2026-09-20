@@ -28,7 +28,7 @@ function NewAssignmentModal({ onClose }: { onClose: () => void }) {
         <div className="p-5 space-y-4">
           <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_name")}</span><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Payments Platform Modernisation" /></label>
           <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_client")}</span><Input value={client} onChange={(e) => setClient(e.target.value)} placeholder="e.g. Nordic Financial Services" /></label>
-          <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_brief")} <span className="text-app-brand ml-1">{t("job_modal_ai")}</span></span><Textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={6} placeholder="Paste the client assignment brief here. AI will extract the requirements for your review." /></label>
+          <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_brief")} <span className="text-app-brand ml-1">{t("job_modal_ai")}</span></span><Textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={6} placeholder={t("job_modal_brief_placeholder")} /></label>
           <div className="flex justify-end gap-2"><Button onClick={onClose} variant="ghost">{t("job_modal_cancel")}</Button><Button onClick={() => setStep("review")} variant="primary" icon={<Zap size={11} />}>{t("job_modal_extract")}</Button></div>
         </div>
       ) : (
@@ -76,7 +76,7 @@ export default function ClientAssignments() {
           <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" />
           <Input
             type="search"
-            placeholder="Search by assignment, client, skill, or seniority..."
+            placeholder={t("jobs_search")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className="pl-8 py-1.5"
