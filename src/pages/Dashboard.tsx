@@ -1,4 +1,4 @@
-import { FileText, Briefcase, GitMerge, Users, Clock, CheckCircle, AlertCircle, ArrowUpRight } from "lucide-react";
+import { FileText, Briefcase, GitMerge, Users, Clock, CheckCircle, AlertCircle, ArrowUpRight } from "../design-system/icons";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
 
