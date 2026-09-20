@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, ArrowUpRight, Star } from "../design-system/icons";
-import { Link } from "react-router-dom";
+import { Search, Filter, Eye, Star } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Input } from "../components/ui/Input";
@@ -44,7 +43,7 @@ export default function ConsultantPool() {
             { key: "experience", header: t("col_experience"), render: (consultant) => <span className="font-mono">{consultant.experience}</span> },
             { key: "skills", header: t("col_skills"), render: (consultant) => <div className="flex flex-wrap gap-1">{consultant.skills.slice(0, 4).map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}{consultant.skills.length > 4 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 4}</span>}</div> },
             { key: "availability", header: t("col_avail"), render: (consultant) => <span style={{ color: consultant.availability === "Immediate" ? "var(--color-success)" : "var(--color-text-secondary)" }}>{consultant.availability === "Immediate" ? t("immediate") : consultant.availability}</span> },
-            { key: "actions", header: "Actions", render: (consultant) => <div className="flex items-center gap-3"><button onClick={() => setStarred((current) => ({ ...current, [consultant.id]: !current[consultant.id] }))} aria-label={`Star ${consultant.name}`} style={{ color: starred[consultant.id] ? "var(--color-warning)" : "var(--color-border)" }}><Star size={12} fill={starred[consultant.id] ? "currentColor" : "none"} /></button><Link to={`/talent/${consultant.id}`} className="flex items-center gap-1 text-[10px] text-app-brand hover:opacity-70">{t("view")} <ArrowUpRight size={10} /></Link></div> },
+            { key: "actions", header: "Actions", render: (consultant) => <div className="flex items-center gap-3"><button onClick={() => setStarred((current) => ({ ...current, [consultant.id]: !current[consultant.id] }))} aria-label={`Star ${consultant.name}`} style={{ color: starred[consultant.id] ? "var(--color-warning)" : "var(--color-border)" }}><Star size={12} fill={starred[consultant.id] ? "currentColor" : "none"} /></button><LinkButton to={`/talent/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>View Consultant</LinkButton></div> },
           ]}
           rows={filtered}
           rowKey={(consultant) => consultant.id}
