@@ -79,7 +79,7 @@ export default function Matching() {
                 ? "Review the selected client assignment, then run matching."
                 : "Select a client assignment, then run matching to rank the top consultants."
           }
-          backTo={fromAssignment && assignment ? "/jobs/" + assignment.id : undefined}
+          backTo={fromAssignment && assignment ? "/client-assignments/" + assignment.id : undefined}
           backLabel="Back to Assignment"
         />
 
@@ -121,7 +121,7 @@ export default function Matching() {
             </div>
 
             {assignment && (
-              <LinkButton to={"/jobs/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
+              <LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
                 View Assignment
               </LinkButton>
             )}
@@ -275,7 +275,7 @@ export default function Matching() {
                   </div>
 
                   <LinkButton
-                    to={"/talent/" + selected.consultantId}
+                    to={"/consultants/" + selected.consultantId}
                     variant="secondary"
                     icon={<Eye size={12} />}
                   >
