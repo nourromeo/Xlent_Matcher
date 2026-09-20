@@ -1,26 +1,6 @@
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { FileText, Briefcase, GitMerge, Users, Clock, CheckCircle, AlertCircle, ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
-
-const costData = [
-  { day: "Sep 1", cost: 1.2 },
-  { day: "Sep 2", cost: 2.8 },
-  { day: "Sep 3", cost: 1.9 },
-  { day: "Sep 4", cost: 4.1 },
-  { day: "Sep 5", cost: 3.3 },
-  { day: "Sep 6", cost: 5.0 },
-  { day: "Sep 7", cost: 4.6 },
-  { day: "Sep 8", cost: 6.2 },
-  { day: "Sep 9", cost: 5.8 },
-];
 
 const QUEUE = [
   { name: "anna_kovacs_consultant_cv.pdf", status: "parsing", added: "2m ago" },
@@ -120,31 +100,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* AI Cost Chart */}
-        <div className="col-span-2 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
-          <div className="px-4 py-3 border-b border-app">
-            <span className="text-xs font-medium text-app-primary">{t("dash_cost_chart")}</span>
-          </div>
-          <div className="p-4">
-            <ResponsiveContainer width="100%" height={140}>
-              <AreaChart data={costData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-brand)" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="var(--color-brand)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="day" tick={{ fill: "var(--color-text-faint)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "var(--color-text-faint)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "var(--color-surface-raised)", border: "1px solid var(--color-border)", borderRadius: 6, fontSize: 11, color: "var(--color-text-primary)" }}
-                  formatter={(value) => [`$${Number(value ?? 0).toFixed(2)}`, "Cost"]}
-                />
-                <Area type="monotone" dataKey="cost" stroke="var(--color-brand)" strokeWidth={1.5} fill="url(#costGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
 
       {/* Recent Matches */}
