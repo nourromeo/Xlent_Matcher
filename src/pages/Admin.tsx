@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Tabs } from "../components/ui/Tabs";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { SKILLS, PROMPTS, FLAGS_DATA } from "../features/admin";
+import { SKILLS, PROMPTS, FLAGS_DATA, ADMIN_TABS, WEIGHTS_CONFIG } from "../features/admin";
 
 
 
@@ -16,21 +16,9 @@ import { SKILLS, PROMPTS, FLAGS_DATA } from "../features/admin";
 export default function Admin() {
   const { t } = useI18n();
 
-  const TABS = [
-    { id: "taxonomy", label: t("tab_taxonomy") },
-    { id: "weights", label: t("tab_weights") },
-    { id: "prompts", label: t("tab_prompts") },
-    { id: "flags", label: t("tab_flags") },
-  ];
+  const TABS = ADMIN_TABS.map((id) => ({ id, label: t(`tab_${id}` as any) }));
 
-  const WEIGHTS_DEF = [
-    { key: "mustHaveCoverage", label: t("score_mustHave"), value: 40, desc: "Strong penalty if a required skill is missing" },
-    { key: "semanticSimilarity", label: t("score_semantic"), value: 20, desc: "Post-rerank cosine similarity score" },
-    { key: "experienceRecency", label: t("score_experience"), value: 15, desc: "Weighted by 0.85^(yearNow - lastUsedYear)" },
-    { key: "seniority", label: t("score_seniority"), value: 10, desc: "How well consultant seniority matches the assignment level" },
-    { key: "niceToHave", label: t("score_niceToHave"), value: 5, desc: "Optional skills coverage" },
-    { key: "availability", label: t("score_availability"), value: 10, desc: "Practical fit factors" },
-  ];
+  const WEIGHTS_DEF = WEIGHTS_CONFIG.map((weight) => ({ ...weight, label: t(`score_${weight.key === "mustHaveCoverage" ? "mustHave" : weight.key === "semanticSimilarity" ? "semantic" : weight.key === "experienceRecency" ? "experience" : weight.key === "niceToHave" ? "niceToHave" : weight.key}` as any) }));
 
   const [tab, setTab] = useState("taxonomy");
   const [weights, setWeights] = useState<Record<string, number>>(Object.fromEntries(WEIGHTS_DEF.map((w) => [w.key, w.value])));
