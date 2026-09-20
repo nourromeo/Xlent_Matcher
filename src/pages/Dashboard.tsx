@@ -51,7 +51,7 @@ export default function Dashboard() {
         <section className="xl:col-span-1 bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <div><p className="text-xs font-medium text-app-primary">{t("dash_queue_panel")}</p><p className="text-[10px] text-app-muted mt-0.5">Latest consultant CV processing</p></div>
-            <Link to="/upload" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">{t("dash_view_all")} <ArrowUpRight size={10} /></Link>
+            <Link to="/cv-upload" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">{t("dash_view_all")} <ArrowUpRight size={10} /></Link>
           </div>
           <div className="divide-y" style={{ borderColor: "var(--color-border-subtle)" }}>
             {QUEUE.map((item) => (
