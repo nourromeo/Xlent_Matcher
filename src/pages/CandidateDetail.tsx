@@ -97,7 +97,7 @@ export default function ConsultantProfile() {
                 </div>
                 <div>
                   {profile.skills.map((s, i) => (
-                    <div key={s.name} className="px-4 py-3" style={{ borderBottom: i < profile.skills.length - 1 ? "1px solid var(--color-border-app-subtletle)" : "none" }}>
+                    <div key={s.name} className="px-4 py-3" style={{ borderBottom: i < profile.skills.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
                       <div className="flex items-start gap-3">
                         <div className="flex-none w-28">
                           <p className="text-xs font-medium text-app-primary font-mono">{s.name}</p>
@@ -121,7 +121,7 @@ export default function ConsultantProfile() {
                   <span className="text-xs font-medium text-app-primary">{t("cand_experience")}</span>
                 </div>
                 {profile.experience.map((e, i) => (
-                  <div key={i} className="px-4 py-3 space-y-2" style={{ borderBottom: i < profile.experience.length - 1 ? "1px solid var(--color-border-app-subtletle)" : "none" }}>
+                  <div key={i} className="px-4 py-3 space-y-2" style={{ borderBottom: i < profile.experience.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-xs font-medium text-app-primary">{e.role}</p>
