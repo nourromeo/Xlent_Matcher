@@ -11,7 +11,7 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem("ats-theme");
+    const stored = localStorage.getItem("xlent-match-theme") ?? localStorage.getItem("ats-theme");
     return stored === "light" ? "light" : "dark";
   });
 
@@ -24,7 +24,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.add("dark");
       root.classList.remove("light");
     }
-    localStorage.setItem("ats-theme", theme);
+    localStorage.setItem("xlent-match-theme", theme);
+    localStorage.removeItem("ats-theme");
   }, [theme]);
 
   const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
