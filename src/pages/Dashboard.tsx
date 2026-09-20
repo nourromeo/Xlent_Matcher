@@ -82,6 +82,74 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+        <div className="xl:col-span-2 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-app">
+            <div>
+              <p className="text-xs font-medium text-app-primary">{t("dash_recent")}</p>
+              <p className="text-[10px] text-app-muted mt-0.5">Latest consultant matches and ranking results</p>
+            </div>
+            <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">
+              {t("dash_view_all")} <ArrowUpRight size={10} />
+            </Link>
+          </div>
+          <DataTable
+            columns={[
+              { key: "consultant", header: t("dash_candidate"), render: (match) => <span className="font-medium text-app-primary">{match.consultant}</span> },
+              { key: "assignment", header: t("dash_job") },
+              { key: "score", header: t("dash_score"), render: (match) => <div className="flex items-center gap-2"><div className="w-20 h-1.5 rounded-full bg-app-raised"><div className="h-full rounded-full" style={{ width: match.score + "%", backgroundColor: "var(--color-brand)" }} /></div><span className="font-mono text-app-primary">{match.score}</span></div> },
+              { key: "date", header: t("dash_date"), render: (match) => <span className="text-app-faint">{match.date}</span> },
+              { key: "view", header: "", render: () => <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70">{t("view")}</Link> },
+            ]}
+            rows={RECENT_MATCHES}
+            rowKey={(match) => match.consultant + match.assignment}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Dashboard() {
+  const { t } = useI18n();
+
+  return (
+    <div className="p-6 space-y-6">
+      <PageHeader title={t("dash_title")} description="This internal tool helps XLENT compare client assignments with existing consultants and understand why a consultant matches or does not match." />
+
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard label={t("dash_consultants")} value="124" sub={`18 ${t("dash_consultants_sub")}`} icon={Users} accent />
+        <StatCard label={t("dash_active_jobs")} value="7" sub={`3 ${t("dash_active_jobs_sub")}`} icon={Briefcase} />
+        <StatCard label={t("dash_queue")} value="18" sub={`5 ${t("dash_queue_sub")}`} icon={FileText} />
+        <StatCard label={t("dash_active_matching")} value="3" sub={t("dash_active_matching_sub")} icon={GitMerge} />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {/* CV processing queue */}
+        <div className="xl:col-span-1 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-app">
+            <div>
+              <p className="text-xs font-medium text-app-primary">{t("dash_queue_panel")}</p>
+              <p className="text-[10px] text-app-muted mt-0.5">Latest consultant CV processing</p>
+            </div>
+            <Link to="/upload" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">
+              {t("dash_view_all")} <ArrowUpRight size={10} />
+            </Link>
+          </div>
+          <div className="divide-y" style={{ borderColor: "var(--color-border-subtle)" }}>
+            {QUEUE.map((item) => (
+              <div key={item.name} className="flex items-center gap-3 px-4 py-2.5">
+                <FileText size={12} className="text-app-faint flex-none" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-app-primary truncate font-mono">{item.name}</p>
+                  <p className="text-[10px] text-app-faint">{item.added}</p>
+                </div>
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={STATUS_STYLE[item.status]}>
+                  {STATUS_ICON[item.status]}
+                  {t(`status_${item.status}` as any)}
+                </span>
+              </div>
+            ))}
+          </div>
           {/* Operational overview */}
         <div className="xl:col-span-2 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="px-4 py-3 border-b border-app">
