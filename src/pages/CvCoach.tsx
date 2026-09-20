@@ -372,7 +372,6 @@ export default function CvAdaptation() {
               </p>
             </div>
           )}
-        </div>
       </div>
     </div>
   );
