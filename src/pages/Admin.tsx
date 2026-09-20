@@ -3,6 +3,8 @@ import { Save, Plus, Trash2, RefreshCw } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Button } from "../components/ui/Button";
 import { Tabs } from "../components/ui/Tabs";
+import { DataTable } from "../components/ui/DataTable";
+import { StatusBadge } from "../components/ui/StatusBadge";
 
 const SKILLS = [
   { id: "s1", canonical: "Go", aliases: ["Golang", "Go lang"], category: "Language" },
@@ -68,31 +70,16 @@ export default function Admin() {
             <span className="text-xs font-medium text-app-primary">{t("tab_taxonomy")}</span>
             <Button variant="ghost" icon={<Plus size={11} />}>{t("admin_add_skill")}</Button>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-app">
-                {[t("admin_canonical"), t("admin_category"), t("admin_aliases"), ""].map((h) => (
-                  <th key={h} className="text-[10px] font-medium text-app-faint uppercase tracking-wider text-left px-4 py-2">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {SKILLS.map((s, i) => (
-                <tr key={s.id} className="group border-b border-app-subtle hover:bg-app-raised transition-colors">
-                  <td className="px-4 py-2.5"><span className="text-xs font-mono font-medium text-app-primary">{s.canonical}</span></td>
-                  <td className="px-4 py-2.5"><span className="text-[11px] text-app-secondary px-2 py-0.5 rounded" style={{ background: "var(--color-surface-raised)" }}>{s.category}</span></td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex flex-wrap gap-1">
-                      {s.aliases.map((a) => <span key={a} className="text-[10px] font-mono text-app-secondary px-1.5 py-0.5 rounded" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>{a}</span>)}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <button className="opacity-0 group-hover:opacity-100 text-app-faint hover:text-red-500 transition-all"><Trash2 size={12} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            columns={[
+              { key: "canonical", header: t("admin_canonical"), render: (skill) => <span className="font-mono font-medium text-app-primary">{skill.canonical}</span> },
+              { key: "category", header: t("admin_category"), render: (skill) => <span className="text-[11px] text-app-secondary px-2 py-0.5 rounded bg-app-raised">{skill.category}</span> },
+              { key: "aliases", header: t("admin_aliases"), render: (skill) => <div className="flex flex-wrap gap-1">{skill.aliases.map((alias) => <span key={alias} className="text-[10px] font-mono text-app-secondary px-1.5 py-0.5 rounded bg-app-raised border border-app">{alias}</span>)}</div> },
+              { key: "actions", header: "", render: () => <button className="text-app-faint hover:text-red-500" aria-label="Delete skill"><Trash2 size={12} /></button> },
+            ]}
+            rows={SKILLS}
+            rowKey={(skill) => skill.id}
+          />  </table>
         </div>
       )}
 
@@ -130,32 +117,19 @@ export default function Admin() {
       {/* Prompts */}
       {tab === "prompts" && (
         <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-app">
-                {["Prompt", "Model", "Version", "Avg Tokens", "Avg Cost", "Status", ""].map((h) => (
-                  <th key={h} className="text-[10px] font-medium text-app-faint uppercase tracking-wider text-left px-4 py-2">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {PROMPTS.map((p, i) => (
-                <tr key={p.id} className="border-b border-app-subtle hover:bg-app-raised transition-colors">
-                  <td className="px-4 py-2.5 text-xs text-app-primary font-medium">{p.name}</td>
-                  <td className="px-4 py-2.5 text-[11px] font-mono text-app-secondary">{p.model}</td>
-                  <td className="px-4 py-2.5 text-[11px] font-mono text-app-brand">{p.version}</td>
-                  <td className="px-4 py-2.5 text-[11px] font-mono text-app-muted">{p.tokens}</td>
-                  <td className="px-4 py-2.5 text-[11px] font-mono text-app-muted">{p.cost}</td>
-                  <td className="px-4 py-2.5">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={p.active ? { color: "var(--color-success)", background: "var(--color-success-subtle)" } : { color: "var(--color-text-muted)", background: "var(--color-surface-raised)" }}>
-                      {p.active ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5"><button className="text-app-brand hover:opacity-70"><RefreshCw size={11} /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            columns={[
+              { key: "name", header: "Prompt", render: (prompt) => <span className="font-medium text-app-primary">{prompt.name}</span> },
+              { key: "model", header: "Model", render: (prompt) => <span className="font-mono">{prompt.model}</span> },
+              { key: "version", header: "Version", render: (prompt) => <span className="font-mono text-app-brand">{prompt.version}</span> },
+              { key: "tokens", header: "Avg Tokens", render: (prompt) => <span className="font-mono">{prompt.tokens}</span> },
+              { key: "cost", header: "Avg Cost", render: (prompt) => <span className="font-mono">{prompt.cost}</span> },
+              { key: "status", header: "Status", render: (prompt) => <StatusBadge tone={prompt.active ? "success" : "neutral"}>{prompt.active ? "Active" : "Inactive"}</StatusBadge> },
+              { key: "actions", header: "", render: () => <button className="text-app-brand hover:opacity-70" aria-label="Refresh prompt"><RefreshCw size={11} /></button> },
+            ]}
+            rows={PROMPTS}
+            rowKey={(prompt) => prompt.id}
+          />  </table>
         </div>
       )}
 
