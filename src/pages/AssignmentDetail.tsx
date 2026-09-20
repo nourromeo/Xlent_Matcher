@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Briefcase, ChevronLeft, Edit3, Eye, Plus, X } from "../design-system/icons";
 import { ASSIGNMENTS } from "../features/assignments";
+import { useI18n } from "../i18n";
 import type { Assignment } from "../features/assignments";
 import { ASSIGNMENT_STATUS_CONFIG } from "../features/assignments";
 import { StatusBadge } from "../components/ui/StatusBadge";
@@ -28,6 +29,7 @@ function toDraftAssignment(assignment: Assignment): DraftAssignment {
 }
 
 function SkillEditor({ label, hint, skills, onChange, accent }: { label: string; hint: string; skills: string[]; onChange: (skills: string[]) => void; accent: "indigo" | "neutral" }) {
+  const { t } = useI18n();
   const [value, setValue] = useState("");
 
   const addSkill = () => {
@@ -41,19 +43,19 @@ function SkillEditor({ label, hint, skills, onChange, accent }: { label: string;
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <label className="text-[11px] font-medium text-app-primary">{label}</label>
-        <span className="text-[10px] text-app-muted">{skills.length} skills</span>
+        <span className="text-[10px] text-app-muted">{skills.length} {t("common_skills")}</span>
       </div>
       <p className="text-[10px] text-app-muted mb-2">{hint}</p>
       <div className="flex flex-wrap gap-1.5 mb-2 min-h-7">
         {skills.map((skill) => (
           <span key={skill} className={`inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded ${accent === "indigo" ? "text-app-brand bg-app-brand-soft" : "text-app-secondary"}`} style={accent === "neutral" ? { background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" } : { border: "1px solid var(--color-brand-subtle)" }}>
             {skill}
-            <button type="button" onClick={() => onChange(skills.filter((item) => item !== skill))} className="opacity-60 hover:opacity-100" aria-label={`Remove ${skill}`}><X size={10} /></button>
+            <button type="button" onClick={() => onChange(skills.filter((item) => item !== skill))} className="opacity-60 hover:opacity-100" aria-label={`${t("common_remove")} ${skill}`}><X size={10} /></button>
           </span>
         ))}
       </div>
       <div className="flex gap-2">
-        <Input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSkill(); } }} placeholder="{t("assignment_add_skill")}" className="flex-1" />
+        <Input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSkill(); } }} placeholder={t("assignment_add_skill")} className="flex-1" />
         <button type="button" onClick={addSkill} className="inline-flex items-center gap-1 text-xs text-app-secondary border border-app rounded px-2.5 py-2 hover:text-app-secondary"><Plus size={12} />{t("common_add")}</button>
       </div>
     </div>
@@ -61,6 +63,7 @@ function SkillEditor({ label, hint, skills, onChange, accent }: { label: string;
 }
 
 export default function AssignmentDetail() {
+  const { t } = useI18n();
   const { id } = useParams();
   const selectedAssignment = ASSIGNMENTS.find((item) => item.id === id) ?? ASSIGNMENTS[0];
   const baseAssignment: Assignment = {
