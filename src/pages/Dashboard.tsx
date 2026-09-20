@@ -55,11 +55,14 @@ export default function Dashboard() {
         <StatCard label={t("dash_active_matching")} value="3" sub={t("dash_active_matching_sub")} icon={GitMerge} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {/* Queue */}
-        <div className="col-span-1 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {/* CV processing queue */}
+        <div className="xl:col-span-1 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
-            <span className="text-xs font-medium text-app-primary">{t("dash_queue_panel")}</span>
+            <div>
+              <p className="text-xs font-medium text-app-primary">{t("dash_queue_panel")}</p>
+              <p className="text-[10px] text-app-muted mt-0.5">Latest consultant CV processing</p>
+            </div>
             <Link to="/upload" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">
               {t("dash_view_all")} <ArrowUpRight size={10} />
             </Link>
@@ -72,10 +75,7 @@ export default function Dashboard() {
                   <p className="text-xs text-app-primary truncate font-mono">{item.name}</p>
                   <p className="text-[10px] text-app-faint">{item.added}</p>
                 </div>
-                <span
-                  className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                  style={STATUS_STYLE[item.status]}
-                >
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={STATUS_STYLE[item.status]}>
                   {STATUS_ICON[item.status]}
                   {t(`status_${item.status}` as any)}
                 </span>
@@ -84,6 +84,27 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Operational overview */}
+        <div className="xl:col-span-2 bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+          <div className="px-4 py-3 border-b border-app">
+            <p className="text-xs font-medium text-app-primary">Operational Overview</p>
+            <p className="text-[10px] text-app-muted mt-0.5">Current platform activity and next actions</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4 p-4">
+            <div className="rounded-lg p-4" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border-subtle)" }}>
+              <div className="flex items-center gap-2 mb-3"><GitMerge size={13} className="text-app-brand" /><p className="text-xs font-medium text-app-primary">Matching activity</p></div>
+              <p className="text-2xl font-semibold font-mono text-app-primary">3</p>
+              <p className="text-[10px] text-app-muted mt-1">Assignments currently being compared</p>
+              <Link to="/matching" className="inline-flex items-center gap-1 text-[10px] text-app-brand mt-4 hover:opacity-70">Open matching <ArrowUpRight size={10} /></Link>
+            </div>
+            <div className="rounded-lg p-4" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border-subtle)" }}>
+              <div className="flex items-center gap-2 mb-3"><Users size={13} className="text-app-brand" /><p className="text-xs font-medium text-app-primary">Consultant coverage</p></div>
+              <p className="text-2xl font-semibold font-mono text-app-primary">124</p>
+              <p className="text-[10px] text-app-muted mt-1">Consultants available in the pool</p>
+              <Link to="/talent" className="inline-flex items-center gap-1 text-[10px] text-app-brand mt-4 hover:opacity-70">View consultant pool <ArrowUpRight size={10} /></Link>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Recent Matches */}
