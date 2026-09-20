@@ -89,7 +89,7 @@ export default function AssignmentDetail() {
     <div className="flex flex-col h-full">
       <header className="px-6 py-4 border-b border-app bg-app-surface flex items-start gap-4 flex-none">
         <Link
-          to="/jobs"
+          to="/client-assignments"
           aria-label="Back to Client Assignments"
           className="text-app-faint hover:text-app-secondary transition-colors mt-1"
         >
