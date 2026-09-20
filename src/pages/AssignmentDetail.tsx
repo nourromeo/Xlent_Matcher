@@ -76,7 +76,7 @@ export default function AssignmentDetail() {
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span className="text-[10px] uppercase tracking-wider text-app-muted">Client Assignment</span>
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full" style={{ color: "var(--color-success)", background: "rgba(34,197,94,0.10)" }}><CheckCircle size={9} />{statusLabel}</span>
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}><CheckCircle size={9} />{statusLabel}</span>
               </div>
               <h1 className="text-lg font-semibold text-app-primary">{assignment.title}</h1>
               <p className="text-xs text-app-muted mt-1">{assignment.client} · Created {assignment.created}</p>
@@ -118,8 +118,8 @@ export default function AssignmentDetail() {
         </div>
       </section>
 
-      {editMode && <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}>
-        <div className="w-full max-w-3xl max-h-[92vh] overflow-auto bg-app-surface border border-app rounded-xl" style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
+      {editMode && <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "var(--color-overlay)", backdropFilter: "blur(4px)" }}>
+        <div className="w-full max-w-3xl max-h-[92vh] overflow-auto bg-app-surface border border-app rounded-xl" style={{ boxShadow: "var(--shadow-modal)" }}>
           <div className="sticky top-0 z-10 bg-app-surface flex items-center justify-between px-6 py-5 border-b border-app"><div><h2 className="text-app-primary font-semibold text-app-primary">Edit Client Assignment</h2><p className="text-xs text-app-muted mt-1">Update the assignment details and matching criteria.</p></div><button onClick={() => setEditMode(false)} className="p-1 text-app-muted hover:text-app-secondary" aria-label="Close"><X size={16} /></button></div>
           <div className="p-6 space-y-7">
             <section><h3 className="text-xs font-semibold uppercase tracking-wide text-app-primary mb-3">1. Basic Information</h3><div className="grid md:grid-cols-2 gap-4">{[["Assignment Title", "title"], ["Client", "client"], ["Seniority", "seniority"], ["Availability", "availability"]].map(([label, key]) => <label key={key} className="space-y-1.5"><span className="text-[11px] text-app-muted">{label}</span><input value={String(draft[key as keyof DraftAssignment])} onChange={(event) => setDraftField(key as keyof DraftAssignment, event.target.value as never)} className="w-full bg-app border border-app rounded-lg px-3 py-2.5 text-xs text-app-primary outline-none" /></label>)}</div></section>
