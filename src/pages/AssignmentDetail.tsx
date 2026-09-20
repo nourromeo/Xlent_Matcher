@@ -86,8 +86,8 @@ export default function AssignmentDetail() {
   const setDraftField = <K extends keyof DraftAssignment>(key: K, value: DraftAssignment[K]) => setDraft((current) => ({ ...current, [key]: value }));
 
   return (
-    <div className="p-6 space-y-5 max-w-6xl mx-auto">
-      <header className="flex items-start gap-4 border-b border-app pb-4">
+    <div className="flex flex-col h-full">
+      <header className="px-6 py-4 border-b border-app bg-app-surface flex items-start gap-4 flex-none">
         <Link
           to="/jobs"
           aria-label="Back to Client Assignments"
@@ -128,6 +128,8 @@ export default function AssignmentDetail() {
         </div>
       </header>
 
+      <div className="flex-1 overflow-auto bg-app">
+        <div className="p-6 space-y-5 max-w-6xl mx-auto">
       <section className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
         <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-medium text-app-primary">Assignment Overview</h2><span className="text-[10px] text-app-muted">Client brief</span></div>
         <p className="text-sm text-app-secondary leading-7 max-w-4xl">{assignment.description}</p>
@@ -167,6 +169,8 @@ export default function AssignmentDetail() {
           <div className="grid md:grid-cols-2 gap-5"><SkillEditor label="Required Skills" hint="Must-have skills" skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label="Preferred Skills" hint="Nice-to-have skills" skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div>
         </FormSection>
       </EditFormModal>
+        </div>
+      </div>
     </div>
   );
 }
