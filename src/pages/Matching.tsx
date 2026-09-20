@@ -45,7 +45,7 @@ export default function Matching() {
       {/* Left */}
       <div className="w-72 flex-none border-r border-base bg-surface flex flex-col">
         <div className="px-4 py-3 border-b border-base">
-          <p className="text-xs font-medium text-base">Payments Platform Modernisation</p>
+          <p className="text-xs font-medium text-app-primary">Payments Platform Modernisation</p>
           <p className="text-[10px] text-muted mt-0.5">Nordic Financial Services · {MATCHES.length} {t("match_matches")}</p>
         </div>
         <div className="flex-1 overflow-auto">
@@ -57,7 +57,7 @@ export default function Matching() {
                 <span className="text-[10px] font-mono text-3 w-4">{i + 1}.</span>
                 <div className="w-7 h-7 rounded-full bg-indigo-sub flex items-center justify-center text-[10px] font-semibold text-indigo">{m.initials}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-base">{m.name}</p>
+                  <p className="text-xs font-medium text-app-primary">{m.name}</p>
                   <p className="text-[10px] text-muted truncate">{m.headline}</p>
                 </div>
               </div>
@@ -65,7 +65,7 @@ export default function Matching() {
                 <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--ats-border)" }}>
                   <div className="h-full rounded-full" style={{ width: `${m.score}%`, backgroundColor: "var(--ats-indigo)" }} />
                 </div>
-                <span className="text-[11px] font-mono text-base w-6 text-right">{m.score}</span>
+                <span className="text-[11px] font-mono text-app-primary w-6 text-right">{m.score}</span>
               </div>
               {m.gaps.length > 0 && (
                 <div className="ml-6 mt-1.5 flex items-center gap-1 text-[10px]" style={{ color: "var(--ats-amber)" }}>
@@ -84,13 +84,13 @@ export default function Matching() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-indigo-sub flex items-center justify-center text-sm font-semibold text-indigo">{selected.initials}</div>
               <div>
-                <h2 className="text-sm font-semibold text-base">{selected.name}</h2>
+                <h2 className="text-sm font-semibold text-app-primary">{selected.name}</h2>
                 <p className="text-xs text-muted">{selected.headline}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-2xl font-semibold font-mono text-base">{selected.score}</p>
+                <p className="text-2xl font-semibold font-mono text-app-primary">{selected.score}</p>
                 <p className="text-[10px] text-3">{t("match_composite")}</p>
               </div>
               <button className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded hover:opacity-80 transition-opacity" style={{ background: "var(--ats-indigo)" }}>
@@ -101,7 +101,7 @@ export default function Matching() {
 
           {/* Score breakdown */}
           <div className="bg-surface border border-base rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--ats-shadow)" }}>
-            <p className="text-xs font-medium text-base mb-4">{t("match_breakdown")}</p>
+            <p className="text-xs font-medium text-app-primary mb-4">{t("match_breakdown")}</p>
             {Object.entries(selected.breakdown).map(([k, v]) => (
               <div key={k} className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -109,7 +109,7 @@ export default function Matching() {
                     <span className="text-[11px] text-2">{SCORE_LABELS[k] ?? k}</span>
                     <span className="text-[10px] text-3 font-mono">×{WEIGHTS[k] ?? 0}%</span>
                   </div>
-                  <span className="text-[11px] font-mono text-base">{v}</span>
+                  <span className="text-[11px] font-mono text-app-primary">{v}</span>
                 </div>
                 <div className="h-1.5 rounded-full" style={{ background: "var(--ats-border)" }}>
                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${v}%`, backgroundColor: barColor(v) }} />
@@ -121,12 +121,12 @@ export default function Matching() {
           {/* Coverage */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
-              <p className="text-xs font-medium text-base mb-3">{t("match_must")}</p>
+              <p className="text-xs font-medium text-app-primary mb-3">{t("match_must")}</p>
               <div className="space-y-2">
                 {selected.mustHaveCoverage.map((s) => (
                   <div key={s} className="flex items-center gap-2">
                     <CheckCircle size={11} style={{ color: "var(--ats-green)" }} />
-                    <span className="text-xs font-mono text-base">{s}</span>
+                    <span className="text-xs font-mono text-app-primary">{s}</span>
                   </div>
                 ))}
                 <p className="text-[10px] text-3 uppercase tracking-wider pt-2">{t("match_missing")}</p>
@@ -139,7 +139,7 @@ export default function Matching() {
               </div>
             </div>
             <div className="bg-surface border border-base rounded-lg p-4" style={{ boxShadow: "var(--ats-shadow)" }}>
-              <p className="text-xs font-medium text-base mb-3">{t("match_nice")}</p>
+              <p className="text-xs font-medium text-app-primary mb-3">{t("match_nice")}</p>
               {selected.niceToHave.length > 0
                 ? <div className="space-y-2">{selected.niceToHave.map((s) => (<div key={s} className="flex items-center gap-2"><CheckCircle size={11} style={{ color: "var(--ats-indigo)" }} /><span className="text-xs font-mono text-2">{s}</span></div>))}</div>
                 : <p className="text-xs text-3">{t("match_none_strengths")}</p>}
@@ -161,7 +161,7 @@ export default function Matching() {
           {/* Evidence */}
           <div className="bg-surface border border-base rounded-lg" style={{ boxShadow: "var(--ats-shadow)" }}>
             <button onClick={() => setExpanded((e) => !e)} className="w-full flex items-center justify-between px-4 py-3">
-              <span className="text-xs font-medium text-base">{t("match_evidence")}</span>
+              <span className="text-xs font-medium text-app-primary">{t("match_evidence")}</span>
               <ChevronDown size={13} className="text-3 transition-transform" style={{ transform: expanded ? "rotate(180deg)" : "none" }} />
             </button>
             {expanded && (
