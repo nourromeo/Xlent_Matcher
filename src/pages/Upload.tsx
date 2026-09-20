@@ -2,8 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Upload as UploadIcon, FileText, X, CheckCircle, AlertCircle, Loader } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import type { FileStatus, UploadFile } from "../types";
-import { DEMO_FILES } from "../features/uploads";
+import { DEMO_FILES, type FileStatus, type UploadFile } from "../features/uploads";
 import { PageHeader } from "../components/ui/PageHeader";
 
 function fmt(bytes: number) {
