@@ -3,7 +3,7 @@ import { CheckCircle, AlertTriangle, ChevronDown, Send, Info } from "../design-s
 import { useI18n } from "../i18n";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "../design-system/icons";
-import { MATCHES } from "../data/mock";
+import { MATCHES } from "../features/matching";
 
 
 
