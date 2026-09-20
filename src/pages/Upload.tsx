@@ -3,7 +3,7 @@ import { Upload as UploadIcon, FileText, X, CheckCircle, AlertCircle, Loader } f
 import { useI18n } from "../i18n";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import type { FileStatus, UploadFile } from "../types";
-import { DEMO_FILES } from "../data/mock";
+import { DEMO_FILES } from "../features/uploads";
 
 function fmt(bytes: number) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
