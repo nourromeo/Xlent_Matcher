@@ -5,6 +5,12 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { DEMO_FILES, type FileStatus, type UploadFile } from "../features/uploads";
 import { PageHeader } from "../components/ui/PageHeader";
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+function isSupportedCv(file: File) {
+  return /\.(pdf|docx)$/i.test(file.name) && file.size <= MAX_FILE_SIZE;
+}
+
 function fmt(bytes: number) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
@@ -19,7 +25,7 @@ export default function CvUpload() {
   const addFiles = useCallback((incoming: File[]) => {
     setFiles((prev) => [
       ...prev,
-      ...incoming.map((f) => ({ id: Math.random().toString(36).slice(2), name: f.name, size: f.size, status: "queued" as FileStatus, progress: 0 })),
+      ...incoming.filter(isSupportedCv).map((f) => ({ id: crypto.randomUUID(), name: f.name, size: f.size, status: "queued" as FileStatus, progress: 0 })),
     ]);
   }, []);
 
@@ -69,10 +75,19 @@ export default function CvUpload() {
         style={{ borderColor: dragging ? "var(--color-brand)" : "var(--color-border)", background: dragging ? "var(--color-brand-subtle)" : "transparent" }}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
-        onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(Array.from(e.dataTransfer.files).filter((f) => f.name.match(/\.(pdf|docx)$/))); }}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(Array.from(e.dataTransfer.files)); }}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={t("upload_title")}
       >
-        <input ref={inputRef} type="file" multiple accept=".pdf,.docx" className="hidden" onChange={(e) => addFiles(Array.from(e.target.files ?? []))} />
+        <input ref={inputRef} type="file" multiple accept=".pdf,.docx" className="hidden" onChange={(e) => { addFiles(Array.from(e.target.files ?? [])); e.currentTarget.value = ""; }} />
         <UploadIcon size={28} className="mx-auto mb-3" style={{ color: dragging ? "var(--color-brand)" : "var(--color-text-muted)" }} />
         <p className="text-sm text-app-secondary">{t("upload_drop")} <span className="text-app-brand">{t("upload_browse")}</span></p>
         <p className="text-xs text-app-faint mt-1">{t("upload_types")}</p>
@@ -87,7 +102,7 @@ export default function CvUpload() {
           </div>
           <div>
             {files.map((f, i) => (
-              <div key={f.id} className="flex items-center gap-3 px-4 py-2.5 group" style={{ borderBottom: i < files.length - 1 ? "1px solid var(--color-border-app-subtletle)" : "none" }}>
+              <div key={f.id} className="flex items-center gap-3 px-4 py-2.5 group" style={{ borderBottom: i < files.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
                 <FileText size={13} className="text-app-faint flex-none" />
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-3">
@@ -104,7 +119,12 @@ export default function CvUpload() {
                   </div>
                   {f.error && <p className="text-[10px] font-mono" style={{ color: "var(--color-danger)" }}>{f.error}</p>}
                 </div>
-                <button onClick={() => setFiles((p) => p.filter((x) => x.id !== f.id))} className="opacity-0 group-hover:opacity-100 text-app-faint hover:text-app-secondary transition-all">
+                <button
+                  type="button"
+                  onClick={() => setFiles((p) => p.filter((x) => x.id !== f.id))}
+                  className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-app-faint hover:text-app-secondary transition-all"
+                  aria-label={`${t("upload_remove_file")}: ${f.name}`}
+                >
                   <X size={12} />
                 </button>
               </div>
