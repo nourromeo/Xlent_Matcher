@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Edit3, MoreHorizontal, Plus, X } from "../design-system/icons";
+import { Edit3, Eye, MoreHorizontal, Plus, X } from "../design-system/icons";
 import { ASSIGNMENTS } from "../features/assignments";
 import type { Assignment } from "../features/assignments";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
+import { LinkButton } from "../components/ui/LinkButton";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
@@ -95,7 +96,7 @@ export default function AssignmentDetail() {
         eyebrow={"Client Assignment · " + statusLabel}
         title={assignment.title}
         description={assignment.client + " · Created " + assignment.created}
-        actions={<><Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>Edit Assignment</Button><IconButton onClick={() => setMenuOpen(!menuOpen)} icon={<MoreHorizontal size={14} />} label="More actions" /></>}
+        actions={<><LinkButton to={"/matching?assignment=" + assignment.id} variant="secondary" icon={<Eye size={12} />}>View Matches</LinkButton><Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>Edit Assignment</Button><IconButton onClick={() => setMenuOpen(!menuOpen)} icon={<MoreHorizontal size={14} />} label="More actions" /></>}
       />
 
       <section className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
