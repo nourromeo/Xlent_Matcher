@@ -8,3 +8,4 @@ export { ADMIN_TABS, WEIGHTS_CONFIG } from "./adminConfig";
 export { MATCH_WEIGHTS } from "./matchingConfig";
 export { ASSIGNMENT_STATUS_CONFIG } from "./jobsConfig";
 export { PROFILE } from "./candidate";
+export { MOCK_RESULT } from "./cvCoach";
