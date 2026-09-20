@@ -13,6 +13,7 @@ import { IconButton } from "../components/ui/IconButton";
 import { SkillTag } from "../components/ui/SkillTag";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { EmptyState } from "../components/ui/EmptyState";
+import { PageHeader } from "../components/ui/PageHeader";
 
 function NewAssignmentModal({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
@@ -57,7 +58,7 @@ export default function ClientAssignments() {
 
   return (
     <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between"><div><h1 className="text-app-primary font-semibold">{t("jobs_title")}</h1><p className="text-xs text-app-muted mt-0.5">{active.length} {t("jobs_sub")}</p></div><Button onClick={() => setShowModal(true)} variant="primary" icon={<Plus size={12} />}>{t("jobs_new")}</Button></div>
+      <PageHeader title={t("jobs_title")} meta={String(active.length) + " " + t("jobs_sub")} actions={<Button onClick={() => setShowModal(true)} variant="primary" icon={<Plus size={12} />}>{t("jobs_new")}</Button>} />
       <div className="space-y-2">
         {active.map((assignment) => {
           const status = STATUS_CFG[assignment.status as keyof typeof STATUS_CFG];
