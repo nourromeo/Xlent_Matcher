@@ -107,7 +107,7 @@ export default function Admin() {
           </div>
           <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
             {WEIGHTS_DEF.map((w, i) => (
-              <div key={w.key} className="px-4 py-3" style={{ borderBottom: i < WEIGHTS_DEF.length - 1 ? "1px solid var(--color-border-app-subtletle)" : "none" }}>
+              <div key={w.key} className="px-4 py-3" style={{ borderBottom: i < WEIGHTS_DEF.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <p className="text-xs font-medium text-app-primary">{w.label}</p>
@@ -165,7 +165,7 @@ export default function Admin() {
       {tab === 4 && (
         <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
           {FLAGS_DATA.map((f, i) => (
-            <div key={f.key} className="flex items-center justify-between px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--color-border-app-subtletle)" : "none" }}>
+            <div key={f.key} className="flex items-center justify-between px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
               <div>
                 <p className="text-xs font-medium text-app-primary font-mono">{f.key}</p>
                 <p className="text-[11px] text-app-muted mt-0.5">{f.desc}</p>
