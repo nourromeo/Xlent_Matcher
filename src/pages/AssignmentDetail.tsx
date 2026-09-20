@@ -53,8 +53,8 @@ function SkillEditor({ label, hint, skills, onChange, accent }: { label: string;
         ))}
       </div>
       <div className="flex gap-2">
-        <Input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSkill(); } }} placeholder="Add a skill" className="flex-1" />
-        <button type="button" onClick={addSkill} className="inline-flex items-center gap-1 text-xs text-app-secondary border border-app rounded px-2.5 py-2 hover:text-app-secondary"><Plus size={12} />Add</button>
+        <Input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSkill(); } }} placeholder="{t("assignment_add_skill")}" className="flex-1" />
+        <button type="button" onClick={addSkill} className="inline-flex items-center gap-1 text-xs text-app-secondary border border-app rounded px-2.5 py-2 hover:text-app-secondary"><Plus size={12} />{t("common_add")}</button>
       </div>
     </div>
   );
@@ -131,19 +131,19 @@ export default function AssignmentDetail() {
       <div className="flex-1 overflow-auto bg-app">
         <div className="p-6 space-y-5 max-w-6xl mx-auto">
       <section className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
-        <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-medium text-app-primary">Assignment Overview</h2><span className="text-[10px] text-app-muted">Client brief</span></div>
+        <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-medium text-app-primary">{t("assignment_overview")}</h2><span className="text-[10px] text-app-muted">{t("assignment_client_brief")}</span></div>
         <p className="text-sm text-app-secondary leading-7 max-w-4xl">{assignment.description}</p>
       </section>
 
       <section className="grid md:grid-cols-2 gap-5">
         <div className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
-          <div className="flex items-center justify-between mb-1"><h2 className="text-sm font-medium text-app-primary">Required Skills</h2><span className="text-[10px] text-app-muted">Must-have</span></div>
-          <p className="text-[11px] text-app-muted mb-3">Essential skills used to calculate the match score.</p>
+          <div className="flex items-center justify-between mb-1"><h2 className="text-sm font-medium text-app-primary">{t("assignment_required_skills")}</h2><span className="text-[10px] text-app-muted">{t("assignment_must_have")}</span></div>
+          <p className="text-[11px] text-app-muted mb-3">{t("assignment_required_help")}</p>
           <div className="flex flex-wrap gap-2">{assignment.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}</div>
         </div>
         <div className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
-          <div className="flex items-center justify-between mb-1"><h2 className="text-sm font-medium text-app-primary">Preferred Skills</h2><span className="text-[10px] text-app-muted">Nice-to-have</span></div>
-          <p className="text-[11px] text-app-muted mb-3">Additional skills that can improve the ranking.</p>
+          <div className="flex items-center justify-between mb-1"><h2 className="text-sm font-medium text-app-primary">{t("assignment_preferred_skills")}</h2><span className="text-[10px] text-app-muted">{t("assignment_nice_have")}</span></div>
+          <p className="text-[11px] text-app-muted mb-3">{t("assignment_preferred_help")}</p>
           <div className="flex flex-wrap gap-2">{assignment.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div>
         </div>
       </section>
@@ -162,11 +162,11 @@ export default function AssignmentDetail() {
             ))}
           </div>
         </FormSection>
-        <FormSection title="Assignment Description">
+        <FormSection title="{t("assignment_description")}">
           <Textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} placeholder={t("assignment_description_placeholder")} />
         </FormSection>
         <FormSection title={t("assignment_requirements")} description={t("assignment_requirements_help")}>
-          <div className="grid md:grid-cols-2 gap-5"><SkillEditor label={t("assignment_required_skills")} hint="Must-have skills" skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label={t("assignment_preferred_skills")} hint="Nice-to-have skills" skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div>
+          <div className="grid md:grid-cols-2 gap-5"><SkillEditor label={t("assignment_required_skills")} hint="{t("assignment_must_have")} skills" skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label={t("assignment_preferred_skills")} hint="{t("assignment_nice_have")} skills" skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div>
         </FormSection>
       </EditFormModal>
         </div>
