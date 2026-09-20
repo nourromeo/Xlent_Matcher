@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3, Save, RefreshCw } from "../design-system/icons";
+import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
@@ -64,11 +64,6 @@ export default function ConsultantProfile() {
             style={editMode ? { border: "1px solid var(--color-brand)", color: "var(--color-brand)", background: "var(--color-brand-subtle)" } : { border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}>
             <Edit3 size={12} /> {t("cand_edit")}
           </button>
-          {false && (
-            <button className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded hover:opacity-80 transition-opacity" style={{ background: "var(--color-brand)" }}>
-              <Save size={12} /> {t("cand_save")} <RefreshCw size={10} className="ml-0.5 opacity-70" />
-            </button>
-          )}
         </div>
       </div>
 
