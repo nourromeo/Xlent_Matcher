@@ -427,7 +427,7 @@ export default function Matching() {
                     <p className="text-[11px] text-app-faint mb-1 font-mono uppercase tracking-wider">
                       {t("match_judge")}
                     </p>
-                    <p className="text-xs text-app-secondary leading-relaxed">{selected.llmVerdict}</p>
+                    <p className="text-xs text-app-secondary leading-relaxed">{selected.motivation}</p>
                     <p className="text-[10px] text-app-faint leading-relaxed mt-2">{t("match_decision")}</p>
                   </div>
                 </div>
