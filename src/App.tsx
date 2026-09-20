@@ -16,13 +16,13 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="talent" element={<Consultants />} />
-          <Route path="talent/:id" element={<ConsultantDetail />} />
-          <Route path="jobs" element={<ClientAssignments />} />
-          <Route path="jobs/:id" element={<AssignmentDetail />} />
+          <Route path="consultants" element={<Consultants />} />
+          <Route path="consultants/:id" element={<ConsultantDetail />} />
+          <Route path="client-assignments" element={<ClientAssignments />} />
+          <Route path="client-assignments/:id" element={<AssignmentDetail />} />
           <Route path="matching" element={<Matching />} />
-          <Route path="upload" element={<CvUpload />} />
-          <Route path="coach" element={<CvAdaptation />} />
+          <Route path="cv-upload" element={<CvUpload />} />
+          <Route path="cv-adaptation" element={<CvAdaptation />} />
           <Route path="admin" element={<Admin />} />
         </Route>
       </Routes>
