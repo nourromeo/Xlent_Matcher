@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Archive, CheckCircle, Edit3, GitMerge, MoreHorizontal, Plus, X } from "../design-system/icons";
 import { ASSIGNMENTS } from "../features/assignments";
+import type { Assignment } from "../features/assignments";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { LinkButton } from "../components/ui/LinkButton";
@@ -13,9 +14,7 @@ import { EditFormModal } from "../components/ui/EditFormModal";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
 
-type Assignment = (typeof ASSIGNMENTS)[number];
-
-type DraftAssignment = Assignment & {
+type DraftAssignment = Omit<Assignment, "requiredSkills" | "preferredSkills"> & {
   requiredSkills: string[];
   preferredSkills: string[];
 };
