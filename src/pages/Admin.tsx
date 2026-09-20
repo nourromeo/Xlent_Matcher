@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Save, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Save, Plus, Trash2, RefreshCw } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Button } from "../components/ui/Button";
 
