@@ -71,14 +71,15 @@ export default function Dashboard() {
           </div>
           <DataTable
             columns={[
-              { key: "consultant", header: t("dash_candidate"), render: (match) => <span className="font-medium text-app-primary">{match.consultant}</span> },
-              { key: "assignment", header: t("dash_job") },
-              { key: "score", header: t("dash_score"), render: (match) => <div className="flex items-center gap-2"><div className="w-20 h-1.5 rounded-full bg-app-raised"><div className="h-full rounded-full" style={{ width: match.score + "%", backgroundColor: "var(--color-brand)" }} /></div><span className="font-mono text-app-primary">{match.score}</span></div> },
-              { key: "date", header: t("dash_date"), render: (match) => <span className="text-app-faint">{match.date}</span> },
+              { key: "consultant", header: t("dash_candidate"), sortable: true, sortValue: (match) => match.consultant, render: (match) => <span className="font-medium text-app-primary">{match.consultant}</span> },
+              { key: "assignment", header: t("dash_job"), sortable: true, sortValue: (match) => match.assignment },
+              { key: "score", header: t("dash_score"), sortable: true, sortValue: (match) => match.score, render: (match) => <div className="flex items-center gap-2"><div className="w-20 h-1.5 rounded-full bg-app-raised"><div className="h-full rounded-full" style={{ width: match.score + "%", backgroundColor: "var(--color-brand)" }} /></div><span className="font-mono text-app-primary">{match.score}</span></div> },
+              { key: "date", header: t("dash_date"), sortable: true, sortValue: (match) => match.date === "Today" ? 3 : match.date === "Yesterday" ? 2 : 1, render: (match) => <span className="text-app-faint">{match.date}</span> },
               { key: "view", header: "", render: () => <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70">{t("view")}</Link> },
             ]}
             rows={RECENT_MATCHES}
             rowKey={(match) => match.consultant + match.assignment}
+            defaultSort={{ key: "score", direction: "desc" }}
           />
         </section>
       </div>
