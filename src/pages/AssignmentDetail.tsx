@@ -6,6 +6,9 @@ import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Card } from "../components/ui/Card";
+import { Input } from "../components/ui/Input";
+import { Textarea } from "../components/ui/Textarea";
+import { SkillTag } from "../components/ui/SkillTag";
 
 type Assignment = (typeof ASSIGNMENTS)[number];
 
@@ -40,7 +43,7 @@ function SkillEditor({ label, hint, skills, onChange, accent }: { label: string;
         ))}
       </div>
       <div className="flex gap-2">
-        <input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSkill(); } }} placeholder="Add a skill" className="flex-1 bg-app border border-app rounded px-2.5 py-2 text-xs text-app-primary outline-none" />
+        <Input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSkill(); } }} placeholder="Add a skill" className="flex-1" />
         <button type="button" onClick={addSkill} className="inline-flex items-center gap-1 text-xs text-app-secondary border border-app rounded px-2.5 py-2 hover:text-app-secondary"><Plus size={12} />Add</button>
       </div>
     </div>
@@ -113,12 +116,12 @@ export default function AssignmentDetail() {
         <div className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="flex items-center justify-between mb-1"><h2 className="text-sm font-medium text-app-primary">Required Skills</h2><span className="text-[10px] text-app-muted">Must-have</span></div>
           <p className="text-[11px] text-app-muted mb-3">Essential skills used to calculate the match score.</p>
-          <div className="flex flex-wrap gap-2">{assignment.requiredSkills.map((skill) => <span key={skill} className="text-xs text-app-brand px-2.5 py-1.5 rounded bg-app-brand-soft" style={{ border: "1px solid var(--color-brand-subtle)" }}>{skill}</span>)}</div>
+          <div className="flex flex-wrap gap-2">{assignment.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}</div>
         </div>
         <div className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="flex items-center justify-between mb-1"><h2 className="text-sm font-medium text-app-primary">Preferred Skills</h2><span className="text-[10px] text-app-muted">Nice-to-have</span></div>
           <p className="text-[11px] text-app-muted mb-3">Additional skills that can improve the ranking.</p>
-          <div className="flex flex-wrap gap-2">{assignment.preferredSkills.map((skill) => <span key={skill} className="text-xs text-app-secondary px-2.5 py-1.5 rounded" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>{skill}</span>)}</div>
+          <div className="flex flex-wrap gap-2">{assignment.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div>
         </div>
       </section>
 
@@ -126,8 +129,8 @@ export default function AssignmentDetail() {
         <div className="w-full max-w-3xl max-h-[92vh] overflow-auto bg-app-surface border border-app rounded-xl" style={{ boxShadow: "var(--shadow-modal)" }}>
           <div className="sticky top-0 z-10 bg-app-surface flex items-center justify-between px-6 py-5 border-b border-app"><div><h2 className="text-app-primary font-semibold text-app-primary">Edit Client Assignment</h2><p className="text-xs text-app-muted mt-1">Update the assignment details and matching criteria.</p></div><button onClick={() => setEditMode(false)} className="p-1 text-app-muted hover:text-app-secondary" aria-label="Close"><X size={16} /></button></div>
           <div className="p-6 space-y-7">
-            <section><h3 className="text-xs font-semibold uppercase tracking-wide text-app-primary mb-3">1. Basic Information</h3><div className="grid md:grid-cols-2 gap-4">{[["Assignment Title", "title"], ["Client", "client"], ["Seniority", "seniority"], ["Availability", "availability"]].map(([label, key]) => <label key={key} className="space-y-1.5"><span className="text-[11px] text-app-muted">{label}</span><input value={String(draft[key as keyof DraftAssignment])} onChange={(event) => setDraftField(key as keyof DraftAssignment, event.target.value as never)} className="w-full bg-app border border-app rounded-lg px-3 py-2.5 text-xs text-app-primary outline-none" /></label>)}</div></section>
-            <section><h3 className="text-xs font-semibold uppercase tracking-wide text-app-primary mb-3">2. Assignment Description</h3><textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} className="w-full bg-app border border-app rounded-lg px-3 py-2.5 text-xs text-app-primary outline-none resize-none" placeholder="Describe the client assignment..." /></section>
+            <section><h3 className="text-xs font-semibold uppercase tracking-wide text-app-primary mb-3">1. Basic Information</h3><div className="grid md:grid-cols-2 gap-4">{[["Assignment Title", "title"], ["Client", "client"], ["Seniority", "seniority"], ["Availability", "availability"]].map(([label, key]) => <label key={key} className="space-y-1.5"><span className="text-[11px] text-app-muted">{label}</span><Input value={String(draft[key as keyof DraftAssignment])} onChange={(event) => setDraftField(key as keyof DraftAssignment, event.target.value as never)} className="rounded-lg px-3 py-2.5" /></label>)}</div></section>
+            <section><h3 className="text-xs font-semibold uppercase tracking-wide text-app-primary mb-3">2. Assignment Description</h3><Textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} className="rounded-lg px-3 py-2.5" placeholder="Describe the client assignment..." /></section>
             <section><h3 className="text-xs font-semibold uppercase tracking-wide text-app-primary mb-1">3. Matching Requirements</h3><p className="text-[11px] text-app-muted mb-4">Use required skills for essential criteria and preferred skills for criteria that improve the ranking.</p><div className="grid md:grid-cols-2 gap-5"><SkillEditor label="Required Skills" hint="Must-have skills" skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label="Preferred Skills" hint="Nice-to-have skills" skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div></section>
           </div>
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-app"><Button onClick={() => setEditMode(false)} variant="ghost">Cancel</Button><Button onClick={saveEdit} variant="primary">Save Changes</Button></div>
