@@ -42,7 +42,7 @@ export default function ConsultantPool() {
         </div>
         <LinkButton to="/upload" variant="primary">
           {t("talent_upload")}
-        </Link>
+        </LinkButton>
       </div>
 
       {/* Filters */}
