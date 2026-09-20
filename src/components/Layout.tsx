@@ -27,8 +27,8 @@ export default function Layout() {
 
   const NAV = [
     { to: "/", icon: LayoutDashboard, label: t("nav_dashboard") },
-    { to: "/consultants", icon: Users, label: t("nav_talent") },
-    { to: "/client-assignments", icon: Briefcase, label: t("nav_jobs") },
+    { to: "/consultants", icon: Users, label: t("nav_consultants") },
+    { to: "/client-assignments", icon: Briefcase, label: t("nav_assignments") },
     { to: "/matching", icon: GitMerge, label: t("nav_matching") },
     { to: "/cv-upload", icon: Upload, label: t("nav_upload") },
     { to: "/cv-adaptation", icon: Sparkles, label: t("nav_coach") },
@@ -49,13 +49,13 @@ export default function Layout() {
     : consultant
       ? [
           { label: "XLENT Match", to: "/" },
-          { label: t("nav_talent"), to: "/consultants" },
+          { label: t("nav_consultants"), to: "/consultants" },
           { label: consultant.name },
         ]
       : assignment
         ? [
             { label: "XLENT Match", to: "/" },
-            { label: t("nav_jobs"), to: "/client-assignments" },
+            { label: t("nav_assignments"), to: "/client-assignments" },
             { label: assignment.title },
           ]
         : [
