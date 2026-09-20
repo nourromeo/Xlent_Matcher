@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Search, Filter, ChevronDown, ArrowUpRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
+import { LinkButton } from "../components/ui/LinkButton";
 
 const CONSULTANTS = [
   { id: "1", initials: "AK", name: "Anna Kovacs", headline: "Senior Backend Consultant · Go, Rust, PostgreSQL", seniority: "Senior", experience: "8 yrs", skills: ["Go", "Rust", "PostgreSQL", "Kafka", "Kubernetes"], availability: "Immediate", starred: true },
@@ -39,7 +40,7 @@ export default function ConsultantPool() {
           <h1 className="text-app-primary font-semibold text-app-primary">{t("talent_title")}</h1>
           <p className="text-xs text-app-muted mt-0.5">{CONSULTANTS.length} {t("talent_sub")}</p>
         </div>
-        <Link to="/upload" className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded transition-opacity hover:opacity-80" style={{ backgroundColor: "var(--color-brand)" }}>
+        <LinkButton to="/upload" variant="primary">
           {t("talent_upload")}
         </Link>
       </div>
