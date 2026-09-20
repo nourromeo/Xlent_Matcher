@@ -17,8 +17,8 @@ function NewAssignmentModal({ onClose }: { onClose: () => void }) {
   const [brief, setBrief] = useState("");
   const parsed = { title: title || "Design System Delivery", client: client || "Client to be confirmed", seniority: "Mid", availability: "Immediate", requiredSkills: ["React", "TypeScript", "CSS"], preferredSkills: ["Figma", "Storybook"] };
 
-  return <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-    <div className="bg-app-surface border border-app rounded-xl w-full max-w-lg max-h-[90vh] overflow-auto" style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
+  return <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "var(--color-overlay-soft)", backdropFilter: "blur(4px)" }}>
+    <div className="bg-app-surface border border-app rounded-xl w-full max-w-lg max-h-[90vh] overflow-auto" style={{ boxShadow: "var(--shadow-modal)" }}>
       <div className="flex items-center justify-between px-5 py-4 border-b border-app"><h2 className="text-sm font-semibold text-app-primary">{t("job_modal_title")}</h2><button onClick={onClose} className="text-app-faint hover:text-app-secondary text-xs">✕</button></div>
       {step === "input" ? <div className="p-5 space-y-4">
         <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_name")}</span><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Payments Platform Modernisation" className="w-full rounded text-xs text-app-primary px-3 py-2 focus:outline-none" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }} /></label>
@@ -26,7 +26,7 @@ function NewAssignmentModal({ onClose }: { onClose: () => void }) {
         <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_brief")} <span className="text-app-brand ml-1">{t("job_modal_ai")}</span></span><textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={6} placeholder="Paste the client assignment brief here. AI will extract the requirements for your review." className="w-full rounded text-xs text-app-primary px-3 py-2 focus:outline-none resize-none leading-relaxed" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }} /></label>
         <div className="flex justify-end gap-2"><button onClick={onClose} className="text-xs text-app-muted px-3 py-1.5">{t("job_modal_cancel")}</button><button onClick={() => setStep("review")} className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded" style={{ background: "var(--color-brand)" }}><Zap size={11} />{t("job_modal_extract")}</button></div>
       </div> : <div className="p-5 space-y-4">
-        <div className="rounded px-3 py-2.5" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)" }}><p className="text-[11px]" style={{ color: "var(--color-success)" }}>{t("job_modal_review")}</p></div>
+        <div className="rounded px-3 py-2.5" style={{ background: "var(--color-success-soft)", border: "1px solid var(--color-success-border)" }}><p className="text-[11px]" style={{ color: "var(--color-success)" }}>{t("job_modal_review")}</p></div>
         <div className="grid grid-cols-2 gap-3"><div><label className="text-[11px] text-app-muted block mb-1.5">Assignment Title</label><p className="text-xs text-app-primary">{parsed.title}</p></div><div><label className="text-[11px] text-app-muted block mb-1.5">Client</label><p className="text-xs text-app-primary">{parsed.client}</p></div><div><label className="text-[11px] text-app-muted block mb-1.5">Seniority</label><p className="text-xs text-app-primary">{parsed.seniority}</p></div><div><label className="text-[11px] text-app-muted block mb-1.5">Availability</label><p className="text-xs text-app-primary">{parsed.availability}</p></div></div>
         <div><label className="text-[11px] text-app-muted block mb-1.5">{t("job_modal_must")}</label><div className="flex flex-wrap gap-1.5">{parsed.requiredSkills.map((s) => <span key={s} className="text-[11px] font-mono px-2 py-0.5 rounded text-app-brand bg-app-brand-subtle">{s}</span>)}</div></div>
         <div><label className="text-[11px] text-app-muted block mb-1.5">{t("job_modal_nice")}</label><div className="flex flex-wrap gap-1.5">{parsed.preferredSkills.map((s) => <span key={s} className="text-[11px] font-mono px-2 py-0.5 rounded text-app-secondary" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>{s}</span>)}</div></div>
@@ -41,9 +41,9 @@ export default function ClientAssignments() {
   const [showModal, setShowModal] = useState(false);
   const [archived, setArchived] = useState<string[]>([]);
   const STATUS_CFG = {
-    matching: { label: t("status_matching"), color: "var(--color-warning)", bg: "rgba(245,158,11,0.10)", icon: <Zap size={9} /> },
-    done: { label: t("status_match_complete"), color: "var(--color-success)", bg: "rgba(34,197,94,0.10)", icon: <CheckCircle size={9} /> },
-    draft: { label: "Draft", color: "var(--color-text-app-muted)", bg: "var(--color-surface-raised)", icon: <Clock size={9} /> },
+    matching: { label: t("status_matching"), color: "var(--color-warning)", bg: "var(--color-warning-subtle)", icon: <Zap size={9} /> },
+    done: { label: t("status_match_complete"), color: "var(--color-success)", bg: "var(--color-success-subtle)", icon: <CheckCircle size={9} /> },
+    draft: { label: "Draft", color: "var(--color-text-muted)", bg: "var(--color-surface-raised)", icon: <Clock size={9} /> },
   } as const;
   const active = ASSIGNMENTS.filter((a) => !archived.includes(a.id));
 
