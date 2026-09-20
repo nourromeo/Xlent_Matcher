@@ -165,7 +165,7 @@ export default function AssignmentDetail() {
             ))}
           </div>
         </FormSection>
-        <FormSection title="{t("assignment_description")}">
+        <FormSection title={t("assignment_description")}>
           <Textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} placeholder={t("assignment_description_placeholder")} />
         </FormSection>
         <FormSection title={t("assignment_requirements")} description={t("assignment_requirements_help")}>
