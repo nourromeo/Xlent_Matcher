@@ -36,7 +36,7 @@ export default function ConsultantPool() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-base font-semibold text-base">{t("talent_title")}</h1>
+          <h1 className="text-app-primary font-semibold text-app-primary">{t("talent_title")}</h1>
           <p className="text-xs text-muted mt-0.5">{CONSULTANTS.length} {t("talent_sub")}</p>
         </div>
         <Link to="/upload" className="flex items-center gap-1.5 text-xs text-white px-3 py-1.5 rounded transition-opacity hover:opacity-80" style={{ backgroundColor: "var(--ats-indigo)" }}>
@@ -53,7 +53,7 @@ export default function ConsultantPool() {
             placeholder={t("talent_search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-surface border border-base rounded text-xs text-base placeholder-text-3 pl-8 pr-3 py-1.5 focus:outline-none transition-colors"
+            className="w-full bg-surface border border-base rounded text-xs text-app-primary placeholder-text-3 pl-8 pr-3 py-1.5 focus:outline-none transition-colors"
             style={{ caretColor: "var(--ats-indigo)" }}
           />
         </div>
@@ -102,7 +102,7 @@ export default function ConsultantPool() {
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-full bg-indigo-sub flex items-center justify-center text-[10px] font-semibold text-indigo flex-none">{c.initials}</div>
                     <div>
-                      <p className="text-xs font-medium text-base">{c.name}</p>
+                      <p className="text-xs font-medium text-app-primary">{c.name}</p>
                       <p className="text-[10px] text-muted max-w-xs truncate">{c.headline}</p>
                     </div>
                   </div>
