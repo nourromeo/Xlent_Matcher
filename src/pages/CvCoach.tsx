@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from "../design-system/icons";
 import { MOCK_RESULT } from "../features/cvCoach";
+import { PageHeader } from "../components/ui/PageHeader";
 
 import type { CvSeverity as Severity, CvSuggestion as Suggestion, CvAnalysisResult as AnalysisResult } from "../features/cvCoach/types";
 
@@ -92,9 +93,7 @@ function ScoreGauge({ before, after }: { before: number; after: number }) {
         <div className="text-center">
           <p className="text-lg font-semibold font-mono text-app-brand">~{after}</p>
           <p className="text-[10px] text-app-faint">Projected</p>
-        </div>
       </div>
-    </div>
   );
 }
 
@@ -191,22 +190,12 @@ export default function CvAdaptation() {
   const lowCount    = result?.suggestions.filter((s) => s.severity === "low").length ?? 0;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Page header */}
-      <div className="px-6 py-4 border-b border-app bg-app-surface flex-none">
-        <div className="flex items-center gap-2.5">
-          <Sparkles size={15} style={{ color: "var(--color-brand)" }} />
-          <div>
-            <h1 className="text-sm font-semibold text-app-primary">CV Adaptation Assistant</h1>
-            <p className="text-xs text-app-muted mt-0.5">
-              Paste a consultant CV and assignment requirements to identify gaps and improve the CV for the assignment
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto bg-app">
-        <div className="p-6">
+    <div className="p-6 space-y-5 overflow-auto h-full">
+      <PageHeader
+        title="CV Adaptation Assistant"
+        description="Paste a consultant CV and assignment requirements to identify gaps and improve the CV for the assignment"
+      />
+      <div>
           {/* Input grid */}
           <div className="grid grid-cols-2 gap-4 mb-5">
             <TextArea
