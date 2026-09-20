@@ -72,13 +72,7 @@ export default function Matching() {
       <div className="flex-none px-6 py-4 bg-app-surface border-b border-app">
         <PageHeader
           title={t("matching_title")}
-          description={
-            fromAssignment && assignment
-              ? assignment.title + " · " + assignment.client
-              : assignment
-                ? t("matching_review_selected")
-                : t("matching_select_then_run")
-          }
+          description={assignment ? t("matching_review_selected") : t("matching_select_then_run")}
           backTo={fromAssignment && assignment ? "/client-assignments/" + assignment.id : undefined}
           backLabel={t("matching_back_assignment")}
         />
@@ -127,11 +121,25 @@ export default function Matching() {
             )}
           </div>
         ) : assignment ? (
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-app bg-app px-4 py-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-semibold text-app-primary truncate">{assignment.title}</p>
+                <span className="text-[10px] text-app-faint">·</span>
+                <p className="text-xs text-app-secondary truncate">{assignment.client}</p>
+              </div>
+              <div className="mt-1.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[10px] text-app-muted">
+                <span>{t("assignment_seniority")}: <strong className="font-medium text-app-secondary">{assignment.seniority}</strong></span>
+                <span>{t("assignment_availability")}: <strong className="font-medium text-app-secondary">{assignment.availability}</strong></span>
+                <span>{t("assignment_required_skills")}: <strong className="font-medium text-app-secondary">{assignment.requiredSkills.length}</strong></span>
+                <span className="truncate max-w-xl">{assignment.requiredSkills.slice(0, 4).join(" · ")}{assignment.requiredSkills.length > 4 ? " +" + (assignment.requiredSkills.length - 4) : ""}</span>
+              </div>
+            </div>
+
             <button
               onClick={runMatching}
               disabled={matching}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-white px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-white px-3 py-2 rounded-md shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: "var(--color-brand)" }}
             >
               {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
