@@ -86,7 +86,7 @@ export default function Layout() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-app-primary truncate">Johan Lind</p>
-              <p className="text-[10px] text-app-muted">Consultant Manager</p>
+              <p className="text-[10px] text-app-muted">{t("role_consultant_manager")}</p>
             </div>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function Layout() {
             <button
               onClick={toggle}
               className="w-7 h-7 rounded flex items-center justify-center text-app-muted hover:text-app-secondary hover:bg-app-raised border border-app transition-colors"
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? t("theme_light") : t("theme_dark")}
             >
               {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
             </button>
