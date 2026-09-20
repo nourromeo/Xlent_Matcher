@@ -64,7 +64,7 @@ export default function Admin() {
         {TABS.map((tb, index) => (
           <button key={tb} onClick={() => setTab(index)}
             className="text-xs px-4 py-2 border-b-2 transition-colors"
-            style={tab === index ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 } : { borderColor: "transparent", color: "var(--color-text-app-muted)" }}>
+            style={tab === index ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 } : { borderColor: "transparent", color: "var(--color-text-muted)" }}>
             {tb}
           </button>
         ))}
@@ -109,7 +109,7 @@ export default function Admin() {
       {tab === 1 && (
         <div className="space-y-3">
           <div className="text-xs px-3 py-2 rounded flex items-center gap-2"
-            style={{ background: ok ? "rgba(34,197,94,0.06)" : "rgba(245,158,11,0.06)", border: `1px solid ${ok ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`, color: ok ? "var(--color-success)" : "var(--color-warning)" }}>
+            style={{ background: ok ? "var(--color-success-soft)" : "var(--color-warning-soft)", border: `1px solid ${ok ? "var(--color-success-border)" : "var(--color-warning-border)"}`, color: ok ? "var(--color-success)" : "var(--color-warning)" }}>
             {t("admin_total_w")} {total}% {!ok && t("admin_must_eq")} {ok && "✓"}
           </div>
           <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
@@ -156,7 +156,7 @@ export default function Admin() {
                   <td className="px-4 py-2.5 text-[11px] font-mono text-app-muted">{p.tokens}</td>
                   <td className="px-4 py-2.5 text-[11px] font-mono text-app-muted">{p.cost}</td>
                   <td className="px-4 py-2.5">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={p.active ? { color: "var(--color-success)", background: "rgba(34,197,94,0.10)" } : { color: "var(--color-text-app-muted)", background: "var(--color-surface-raised)" }}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded" style={p.active ? { color: "var(--color-success)", background: "var(--color-success-subtle)" } : { color: "var(--color-text-muted)", background: "var(--color-surface-raised)" }}>
                       {p.active ? "Active" : "Inactive"}
                     </span>
                   </td>
