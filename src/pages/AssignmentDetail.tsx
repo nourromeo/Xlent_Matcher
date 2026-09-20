@@ -19,6 +19,14 @@ type DraftAssignment = Omit<Assignment, "requiredSkills" | "preferredSkills"> & 
   preferredSkills: string[];
 };
 
+function toDraftAssignment(assignment: Assignment): DraftAssignment {
+  return {
+    ...assignment,
+    requiredSkills: [...assignment.requiredSkills],
+    preferredSkills: [...assignment.preferredSkills],
+  };
+}
+
 function SkillEditor({ label, hint, skills, onChange, accent }: { label: string; hint: string; skills: string[]; onChange: (skills: string[]) => void; accent: "indigo" | "neutral" }) {
   const [value, setValue] = useState("");
 
@@ -54,14 +62,19 @@ function SkillEditor({ label, hint, skills, onChange, accent }: { label: string;
 
 export default function AssignmentDetail() {
   const { id } = useParams();
-  const baseAssignment = ASSIGNMENTS.find((item) => item.id === id) ?? ASSIGNMENTS[0];
+  const selectedAssignment = ASSIGNMENTS.find((item) => item.id === id) ?? ASSIGNMENTS[0];
+  const baseAssignment: Assignment = {
+    ...selectedAssignment,
+    requiredSkills: [...selectedAssignment.requiredSkills],
+    preferredSkills: [...selectedAssignment.preferredSkills],
+  };
   const [assignment, setAssignment] = useState<Assignment>(baseAssignment);
   const [editMode, setEditMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [draft, setDraft] = useState<DraftAssignment>({ ...baseAssignment });
+  const [draft, setDraft] = useState<DraftAssignment>(toDraftAssignment(baseAssignment));
 
   const openEdit = () => {
-    setDraft({ ...assignment });
+    setDraft(toDraftAssignment(assignment));
     setEditMode(true);
     setMenuOpen(false);
   };
