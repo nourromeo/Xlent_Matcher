@@ -78,16 +78,17 @@ export default function Matching() {
         />
 
         {!fromAssignment ? (
-          <div className="mt-4 flex items-end justify-between gap-4">
-            <div className="flex items-end gap-2">
-              <div className="w-96">
+          <div className="mt-4 rounded-lg border border-app bg-app px-4 py-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
                 <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
                   {t("matching_client_assignment")}
                 </label>
+
                 <select
                   value={assignment?.id ?? ""}
                   onChange={(event) => selectAssignment(event.target.value)}
-                  className="w-full text-xs rounded px-3 py-2 focus:outline-none"
+                  className="w-full max-w-xl text-xs font-medium rounded px-3 py-2 focus:outline-none"
                   style={{
                     background: "var(--color-surface)",
                     border: "1px solid var(--color-border)",
@@ -101,24 +102,35 @@ export default function Matching() {
                     </option>
                   ))}
                 </select>
+
+                {assignment && (
+                  <div className="mt-2 flex items-center gap-x-3 gap-y-1 flex-wrap text-[10px] text-app-muted">
+                    <span>{t("assignment_seniority")}: <strong className="font-medium text-app-secondary">{assignment.seniority}</strong></span>
+                    <span>{t("assignment_availability")}: <strong className="font-medium text-app-secondary">{assignment.availability}</strong></span>
+                    <span>{t("assignment_required_skills")}: <strong className="font-medium text-app-secondary">{assignment.requiredSkills.length}</strong></span>
+                    <span className="truncate max-w-xl">{assignment.requiredSkills.slice(0, 4).join(" · ")}{assignment.requiredSkills.length > 4 ? " +" + (assignment.requiredSkills.length - 4) : ""}</span>
+                  </div>
+                )}
               </div>
 
-              <button
-                onClick={runMatching}
-                disabled={!assignment || matching}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-white px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ background: "var(--color-brand)" }}
-              >
-                {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
-                {matching ? t("matching_running") : matchingStarted ? t("matching_rerun") : t("matching_run")}
-              </button>
-            </div>
+              <div className="flex items-center gap-2 shrink-0 self-end">
+                {assignment && (
+                  <LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
+                    {t("matching_view_assignment")}
+                  </LinkButton>
+                )}
 
-            {assignment && (
-              <LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
-                {t("matching_view_assignment")}
-              </LinkButton>
-            )}
+                <button
+                  onClick={runMatching}
+                  disabled={!assignment || matching}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-white px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: "var(--color-brand)" }}
+                >
+                  {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
+                  {matching ? t("matching_running") : matchingStarted ? t("matching_rerun") : t("matching_run")}
+                </button>
+              </div>
+            </div>
           </div>
         ) : assignment ? (
           <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-app bg-app px-4 py-3">
