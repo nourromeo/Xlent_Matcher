@@ -71,16 +71,16 @@ export default function Matching() {
     <div className="flex h-full flex-col">
       <div className="flex-none px-6 py-4 bg-app-surface border-b border-app">
         <PageHeader
-          title="Match Consultants"
+          title={t("matching_title")}
           description={
             fromAssignment && assignment
               ? assignment.title + " · " + assignment.client
               : assignment
-                ? "Review the selected client assignment, then run matching."
-                : "Select a client assignment, then run matching to rank the top consultants."
+                ? t("matching_review_selected")
+                : t("matching_select_then_run")
           }
           backTo={fromAssignment && assignment ? "/client-assignments/" + assignment.id : undefined}
-          backLabel="Back to Assignment"
+          backLabel={t("matching_back_assignment")}
         />
 
         {!fromAssignment ? (
@@ -88,7 +88,7 @@ export default function Matching() {
             <div className="flex items-end gap-2">
               <div className="w-96">
                 <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
-                  Client Assignment
+                  {t("matching_client_assignment")}
                 </label>
                 <select
                   value={assignment?.id ?? ""}
@@ -100,7 +100,7 @@ export default function Matching() {
                     color: "var(--color-text-primary)",
                   }}
                 >
-                  <option value="">Select an assignment...</option>
+                  <option value="">{t("matching_select_assignment")}</option>
                   {ASSIGNMENTS.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.title} · {item.client}
@@ -116,7 +116,7 @@ export default function Matching() {
                 style={{ background: "var(--color-brand)" }}
               >
                 {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
-                {matching ? "Matching..." : matchingStarted ? "Re-run Matching" : "Run Matching"}
+                {matching ? t("matching_running") : matchingStarted ? t("matching_rerun") : t("matching_run")}
               </button>
             </div>
 
@@ -135,7 +135,7 @@ export default function Matching() {
               style={{ background: "var(--color-brand)" }}
             >
               {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
-              {matching ? "Matching..." : matchingStarted ? "Re-run Matching" : "Run Matching"}
+              {matching ? t("matching_running") : matchingStarted ? t("matching_rerun") : t("matching_run")}
             </button>
           </div>
         ) : null}
@@ -147,9 +147,9 @@ export default function Matching() {
             className="bg-app-surface border border-app rounded-xl p-8 text-center max-w-md"
             style={{ boxShadow: "var(--shadow-surface)" }}
           >
-            <h2 className="text-sm font-medium text-app-primary">Choose a client assignment</h2>
+            <h2 className="text-sm font-medium text-app-primary">{t("matching_choose_title")}</h2>
             <p className="text-xs text-app-muted mt-2 leading-relaxed">
-              Select an assignment above, review it if needed, and run matching when you are ready.
+              {t("matching_choose_help")}
             </p>
           </div>
         </div>
@@ -157,9 +157,9 @@ export default function Matching() {
         <div className="flex-1 flex items-center justify-center bg-app p-6">
           <div className="text-center">
             <Loader size={26} className="animate-spin text-app-brand mx-auto mb-3" />
-            <h2 className="text-sm font-medium text-app-primary">Matching consultants...</h2>
+            <h2 className="text-sm font-medium text-app-primary">{t("matching_running_title")}</h2>
             <p className="text-xs text-app-muted mt-2">
-              Comparing assignment requirements with consultant profiles and calculating match scores.
+              {t("matching_running_help")}
             </p>
           </div>
         </div>
@@ -170,9 +170,9 @@ export default function Matching() {
             style={{ boxShadow: "var(--shadow-surface)" }}
           >
             <Zap size={24} className="text-app-faint mx-auto mb-3" />
-            <h2 className="text-sm font-medium text-app-primary">Ready to run matching</h2>
+            <h2 className="text-sm font-medium text-app-primary">{t("matching_ready_title")}</h2>
             <p className="text-xs text-app-muted mt-2 leading-relaxed">
-              Run matching to calculate scores and rank the top consultants for this assignment.
+              {t("matching_ready_help")}
             </p>
           </div>
         </div>
@@ -182,9 +182,9 @@ export default function Matching() {
             className="bg-app-surface border border-app rounded-xl p-8 text-center max-w-md"
             style={{ boxShadow: "var(--shadow-surface)" }}
           >
-            <h2 className="text-sm font-medium text-app-primary">No match results yet</h2>
+            <h2 className="text-sm font-medium text-app-primary">{t("matching_no_results")}</h2>
             <p className="text-xs text-app-muted mt-2">
-              There are currently no consultant match results for this assignment.
+              {t("matching_no_results_help")}
             </p>
           </div>
         </div>
@@ -192,9 +192,9 @@ export default function Matching() {
         <div className="flex-1 flex min-h-0">
           <aside className="w-80 flex-none border-r border-app bg-app-surface flex flex-col">
             <div className="px-4 py-3 border-b border-app">
-              <p className="text-xs font-semibold text-app-primary">Top {assignmentMatches.length} Matches</p>
+              <p className="text-xs font-semibold text-app-primary">{t("matching_top")} {assignmentMatches.length} {t("match_matches")}</p>
               <p className="text-[10px] text-app-muted mt-0.5">
-                Ranked by overall match score
+                {t("matching_ranked")}
               </p>
             </div>
 
@@ -235,7 +235,7 @@ export default function Matching() {
                           {match.gaps.length === 0 ? (
                             <div className="flex items-center gap-1 text-[10px]" style={{ color: "var(--color-success)" }}>
                               <CheckCircle size={9} />
-                              {match.mustHaveCoverage.length}/{requiredTotal} required matched
+                              {match.mustHaveCoverage.length}/{requiredTotal} {t("matching_matched")}
                             </div>
                           ) : (
                             <div className="flex items-center gap-1 text-[10px]" style={{ color: "var(--color-warning)" }}>
@@ -292,7 +292,7 @@ export default function Matching() {
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-medium text-app-primary">{t("match_must")}</p>
                     <span className="text-[10px] text-app-muted">
-                      {selected.mustHaveCoverage.length}/{totalRequired} required
+                      {selected.mustHaveCoverage.length}/{totalRequired} {t("common_required")}
                     </span>
                   </div>
                   <div className="space-y-2">
@@ -319,7 +319,7 @@ export default function Matching() {
                 >
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-medium text-app-primary">{t("match_missing")}</p>
-                    <span className="text-[10px] text-app-muted">{selected.gaps.length} missing</span>
+                    <span className="text-[10px] text-app-muted">{selected.gaps.length} {t("common_missing")}</span>
                   </div>
                   {selected.gaps.length > 0 ? (
                     <div className="space-y-2">
@@ -361,7 +361,7 @@ export default function Matching() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-[11px] text-app-secondary truncate">{SCORE_LABELS[key] ?? key}</span>
                           <span className="text-[10px] text-app-faint">
-                            {MATCH_WEIGHTS[key as keyof typeof MATCH_WEIGHTS] ?? 0}% weight
+                            {MATCH_WEIGHTS[key as keyof typeof MATCH_WEIGHTS] ?? 0}% {t("common_weight")}
                           </span>
                         </div>
                         <span className="text-[11px] font-mono text-app-primary">{value}</span>
@@ -382,7 +382,7 @@ export default function Matching() {
                   className="bg-app-surface border border-app rounded-lg p-4"
                   style={{ boxShadow: "var(--shadow-surface)" }}
                 >
-                  <p className="text-xs font-medium text-app-primary mb-3">Relevant Experience</p>
+                  <p className="text-xs font-medium text-app-primary mb-3">{t("matching_relevant_exp")}</p>
                   {selected.evidence.length > 0 ? (
                     <div className="space-y-3">
                       {selected.evidence.slice(0, 3).map((item) => (
@@ -393,7 +393,7 @@ export default function Matching() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-app-faint">No directly relevant project evidence identified.</p>
+                    <p className="text-xs text-app-faint">{t("matching_no_exp")}</p>
                   )}
                 </div>
 
