@@ -60,7 +60,7 @@ export default function Upload() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-base font-semibold text-base">{t("upload_title")}</h1>
+        <h1 className="text-app-primary font-semibold text-app-primary">{t("upload_title")}</h1>
         <p className="text-xs text-muted mt-0.5">{t("upload_sub")}</p>
       </div>
 
@@ -97,7 +97,7 @@ export default function Upload() {
       {files.length > 0 && (
         <div className="bg-surface border border-base rounded-lg overflow-hidden" style={{ boxShadow: "var(--ats-shadow)" }}>
           <div className="px-4 py-2.5 border-b border-base flex items-center justify-between">
-            <span className="text-xs font-medium text-base">{t("upload_batch")}</span>
+            <span className="text-xs font-medium text-app-primary">{t("upload_batch")}</span>
             <span className="text-[10px] text-3 font-mono">{t("upload_sse")}</span>
           </div>
           <div>
@@ -106,7 +106,7 @@ export default function Upload() {
                 <FileText size={13} className="text-3 flex-none" />
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-base font-mono truncate">{f.name}</span>
+                    <span className="text-xs text-app-primary font-mono truncate">{f.name}</span>
                     <span className="text-[10px] text-3 flex-none">{fmt(f.size)}</span>
                   </div>
                   <div className="flex items-center gap-2">
