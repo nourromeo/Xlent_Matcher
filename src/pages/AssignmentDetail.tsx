@@ -13,6 +13,7 @@ import { SkillTag } from "../components/ui/SkillTag";
 import { EditFormModal } from "../components/ui/EditFormModal";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
+import { PageHeader } from "../components/ui/PageHeader";
 
 type DraftAssignment = Omit<Assignment, "requiredSkills" | "preferredSkills"> & {
   requiredSkills: string[];
@@ -89,31 +90,14 @@ export default function AssignmentDetail() {
 
   return (
     <div className="p-6 space-y-5 max-w-6xl mx-auto">
-      <Link to="/jobs" className="inline-flex items-center gap-1.5 text-xs text-app-muted hover:text-app-secondary"><ArrowLeft size={13} />Back to Client Assignments</Link>
-
-      <header className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-semibold text-app-brand bg-app-brand-subtle">{assignment.client.slice(0, 2).toUpperCase()}</div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                <span className="text-[10px] uppercase tracking-wider text-app-muted">Client Assignment</span>
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}><CheckCircle size={9} />{statusLabel}</span>
-              </div>
-              <h1 className="text-lg font-semibold text-app-primary">{assignment.title}</h1>
-              <p className="text-xs text-app-muted mt-1">{assignment.client} · Created {assignment.created}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <LinkButton to={"/matching?assignment=" + assignment.id} variant="primary" icon={<GitMerge size={12} />}>Match Consultants</LinkButton>
-            <Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>Edit Assignment</Button>
-            <div className="relative">
-              <IconButton onClick={() => setMenuOpen(!menuOpen)} icon={<MoreHorizontal size={14} />} label="More actions" />
-              {menuOpen && <div className="absolute right-0 top-10 z-10 w-44 bg-app-surface border border-app rounded-lg p-1 shadow-lg"><button className="w-full flex items-center gap-2 text-xs text-app-muted px-2.5 py-2 rounded hover:bg-app-raised hover:text-app-secondary"><Archive size={13} />Archive Assignment</button></div>}
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        backTo="/jobs"
+        backLabel="Back to Client Assignments"
+        eyebrow={"Client Assignment · " + statusLabel}
+        title={assignment.title}
+        description={assignment.client + " · Created " + assignment.created}
+        actions={<><LinkButton to={"/matching?assignment=" + assignment.id} variant="primary" icon={<GitMerge size={12} />}>Match Consultants</LinkButton><Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>Edit Assignment</Button><IconButton onClick={() => setMenuOpen(!menuOpen)} icon={<MoreHorizontal size={14} />} label="More actions" /></>}
+      />
 
       <section className="bg-app-surface border border-app rounded-xl p-5" style={{ boxShadow: "var(--shadow-surface)" }}>
         <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-medium text-app-primary">Assignment Overview</h2><span className="text-[10px] text-app-muted">Client brief</span></div>
