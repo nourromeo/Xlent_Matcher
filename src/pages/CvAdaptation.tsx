@@ -647,7 +647,7 @@ export default function CvAdaptation() {
                   }
                 >
                   <CategoryIcon size={10} />
-                  {config.label} ({count})
+                  {t(config.labelKey as any)} ({count})
                 </button>
               );
             })}
