@@ -16,6 +16,7 @@ import {
   Zap,
 } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
+import { useI18n } from "../i18n";
 import { Button } from "../components/ui/Button";
 import { ASSIGNMENTS } from "../features/assignments";
 import { CONSULTANTS, PROFILE } from "../features/consultants";
@@ -39,17 +40,17 @@ type SourceState = {
 };
 
 const CATEGORY_CFG = {
-  keyword: { label: "Missing keyword", icon: Tag, color: "var(--color-brand)" },
-  credential: { label: "Credential gap", icon: BookOpen, color: "var(--color-warning)" },
-  clarity: { label: "Clarity", icon: Info, color: "var(--color-text-secondary)" },
-  structure: { label: "Structure", icon: FileText, color: "var(--color-text-muted)" },
-  evidence: { label: "Experience evidence", icon: TrendingUp, color: "var(--color-success)" },
+  keyword: { labelKey: "cv_category_keyword", icon: Tag, color: "var(--color-brand)" },
+  credential: { labelKey: "cv_category_credential", icon: BookOpen, color: "var(--color-warning)" },
+  clarity: { labelKey: "cv_category_clarity", icon: Info, color: "var(--color-text-secondary)" },
+  structure: { labelKey: "cv_category_structure", icon: FileText, color: "var(--color-text-muted)" },
+  evidence: { labelKey: "cv_category_evidence", icon: TrendingUp, color: "var(--color-success)" },
 } as const;
 
 const SEVERITY_CFG: Record<Severity, { label: string; color: string; bg: string }> = {
-  high: { label: "High", color: "var(--color-danger)", bg: "var(--color-danger-subtle)" },
-  medium: { label: "Medium", color: "var(--color-warning)", bg: "var(--color-warning-subtle)" },
-  low: { label: "Low", color: "var(--color-text-muted)", bg: "var(--color-surface-raised)" },
+  high: { labelKey: "cv_severity_high", color: "var(--color-danger)", bg: "var(--color-danger-subtle)" },
+  medium: { labelKey: "cv_severity_medium", color: "var(--color-warning)", bg: "var(--color-warning-subtle)" },
+  low: { labelKey: "cv_severity_low", color: "var(--color-text-muted)", bg: "var(--color-surface-raised)" },
 };
 
 const EMPTY_SOURCE: SourceState = {
@@ -137,12 +138,11 @@ function SourceCard({
   source: SourceState;
   onChange: (next: SourceState) => void;
 }) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const isCv = kind === "cv";
-  const title = isCv ? "Consultant CV" : "Client Assignment";
-  const description = isCv
-    ? "Use an existing consultant, upload a CV, or paste the CV text."
-    : "Use an existing assignment, upload requirements, or paste the client brief.";
+  const title = isCv ? t("upload_title").replace("Upload ", "") : t("matching_client_assignment");
+  const description = isCv ? t("cv_source_help") : t("assignment_source_help");
   const Icon = isCv ? Users : Briefcase;
 
   const changeMode = (mode: InputMode) => {
@@ -172,10 +172,10 @@ function SourceCard({
 
     if (isTextFile) {
       text = await file.text();
-      extractionNote = "Text extracted from the selected file.";
+      extractionNote = t("source_text_extracted");
     } else {
       text = prototypeExtraction(kind);
-      extractionNote = "Prototype extraction preview — PDF/DOCX extraction will be connected to the backend.";
+      extractionNote = t("source_prototype_extract");
     }
 
     onChange({
@@ -220,7 +220,7 @@ function SourceCard({
                 : { color: "var(--color-text-muted)" }
             }
           >
-            {mode === "select" ? "Select existing" : mode === "upload" ? "Upload file" : "Paste text"}
+            {mode === "select" ? t("source_select") : mode === "upload" ? t("source_upload") : t("source_paste")}
           </button>
         ))}
       </div>
@@ -237,7 +237,7 @@ function SourceCard({
               color: "var(--color-text-primary)",
             }}
           >
-            <option value="">{isCv ? "Select a consultant..." : "Select a client assignment..."}</option>
+            <option value="">{isCv ? t("source_select_consultant") : t("source_select_assignment")}</option>
             {(isCv ? CONSULTANTS : ASSIGNMENTS).map((item) => (
               <option key={item.id} value={item.id}>
                 {"name" in item ? `${item.name} · ${item.headline}` : `${item.title} · ${item.client}`}
@@ -248,7 +248,7 @@ function SourceCard({
           {source.selectedId && (
             <div className="flex items-center gap-2 text-[11px]" style={{ color: "var(--color-success)" }}>
               <CheckCircle size={11} />
-              Structured data loaded from the current system.
+              {t("source_loaded")}
             </div>
           )}
         </div>
@@ -272,9 +272,9 @@ function SourceCard({
             >
               <UploadIcon size={18} className="text-app-faint" />
               <span className="text-xs text-app-secondary">
-                Upload {isCv ? "consultant CV" : "assignment requirements"}
+                {isCv ? t("source_upload_cv") : t("source_upload_assignment")}
               </span>
-              <span className="text-[10px] text-app-faint">PDF · DOCX · TXT · up to 10 MB</span>
+              <span className="text-[10px] text-app-faint">{t("source_file_types")}</span>
             </button>
           ) : (
             <div className="border border-app rounded-lg p-3 bg-app-raised">
@@ -284,7 +284,7 @@ function SourceCard({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-app-primary truncate">{source.fileName}</p>
-                  <p className="text-[10px] text-app-muted">{formatBytes(source.fileSize)} · Ready for review</p>
+                  <p className="text-[10px] text-app-muted">{formatBytes(source.fileSize)} · {t("source_ready_review")}</p>
                 </div>
                 <button
                   type="button"
@@ -297,7 +297,7 @@ function SourceCard({
                   type="button"
                   onClick={() => onChange({ ...EMPTY_SOURCE, mode: "upload" })}
                   className="text-app-faint hover:text-app-secondary"
-                  aria-label="Remove uploaded file"
+                  aria-label={t("common_remove")}
                 >
                   <X size={13} />
                 </button>
@@ -314,7 +314,7 @@ function SourceCard({
         <textarea
           value={source.text}
           onChange={(event) => onChange({ ...source, text: event.target.value })}
-          placeholder={isCv ? "Paste the consultant CV here..." : "Paste the client assignment requirements here..."}
+          placeholder={isCv ? t("source_paste_cv") : t("source_paste_assignment")}
           rows={10}
           className="w-full rounded-lg text-xs text-app-primary px-3 py-2.5 focus:outline-none resize-none font-mono leading-relaxed"
           style={{
@@ -328,7 +328,7 @@ function SourceCard({
       {source.mode !== "paste" && source.text && (
         <details className="mt-4 group">
           <summary className="cursor-pointer text-[11px] text-app-secondary hover:text-app-primary">
-            Review extracted content
+            {t("source_review")}
           </summary>
           <textarea
             value={source.text}
@@ -358,6 +358,7 @@ function SourceSummary({
   selectedLabel: string;
   onChange: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-3 rounded-lg border border-app bg-app-surface px-4 py-3">
       <CheckCircle size={13} style={{ color: "var(--color-success)" }} />
@@ -365,12 +366,13 @@ function SourceSummary({
         <p className="text-[10px] uppercase tracking-wide text-app-faint">{label}</p>
         <p className="text-xs text-app-primary truncate">{selectedLabel}</p>
       </div>
-      <Button variant="ghost" onClick={onChange}>Change</Button>
+      <Button variant="ghost" onClick={onChange}>{t("common_change")}</Button>
     </div>
   );
 }
 
 function ScoreGauge({ before, after }: { before: number; after: number }) {
+  const { t } = useI18n();
   const arc = (pct: number, r: number, color: string) => {
     const x = 50 + r * Math.cos(Math.PI - (pct / 100) * Math.PI);
     const y = 54 + r * Math.sin(Math.PI - (pct / 100) * Math.PI);
@@ -396,11 +398,11 @@ function ScoreGauge({ before, after }: { before: number; after: number }) {
       <div className="flex items-center gap-6 -mt-1">
         <div className="text-center">
           <p className="text-lg font-semibold font-mono" style={{ color: "var(--color-text-muted)" }}>{before}</p>
-          <p className="text-[10px] text-app-faint">Current</p>
+          <p className="text-[10px] text-app-faint">{t("cv_current")}</p>
         </div>
         <div className="text-center">
           <p className="text-lg font-semibold font-mono text-app-brand">~{after}</p>
-          <p className="text-[10px] text-app-faint">Projected</p>
+          <p className="text-[10px] text-app-faint">{t("cv_projected")}</p>
         </div>
       </div>
     </div>
@@ -408,6 +410,7 @@ function ScoreGauge({ before, after }: { before: number; after: number }) {
 }
 
 function SuggestionCard({ s }: { s: Suggestion }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const cat = CATEGORY_CFG[s.category];
   const sev = SEVERITY_CFG[s.severity];
@@ -428,7 +431,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
           className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-none"
           style={{ color: sev.color, background: sev.bg }}
         >
-          {sev.label}
+          {t(sev.labelKey as any)}
         </span>
         <span
           className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded flex-none"
@@ -444,7 +447,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
           <p className="text-[11px] text-app-secondary leading-relaxed pt-3">{s.detail}</p>
           {s.example && (
             <div className="rounded p-3 bg-app-raised border border-app">
-              <p className="text-[10px] text-app-muted uppercase tracking-wider font-medium mb-1.5">Suggested wording</p>
+              <p className="text-[10px] text-app-muted uppercase tracking-wider font-medium mb-1.5">{t("cv_suggested_wording")}</p>
               <p className="text-[11px] text-app-primary font-mono leading-relaxed italic">{s.example}</p>
             </div>
           )}
@@ -455,6 +458,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
 }
 
 export default function CvAdaptation() {
+  const { t } = useI18n();
   const [cvSource, setCvSource] = useState<SourceState>({ ...EMPTY_SOURCE });
   const [assignmentSource, setAssignmentSource] = useState<SourceState>({ ...EMPTY_SOURCE });
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -466,17 +470,17 @@ export default function CvAdaptation() {
 
   const cvLabel =
     cvSource.mode === "select"
-      ? CONSULTANTS.find((item) => item.id === cvSource.selectedId)?.name ?? "Consultant selected"
+      ? CONSULTANTS.find((item) => item.id === cvSource.selectedId)?.name ?? t("source_selected_consultant")
       : cvSource.mode === "upload"
         ? cvSource.fileName
-        : "Pasted consultant CV";
+         : t("source_pasted_cv");
 
   const assignmentLabel =
     assignmentSource.mode === "select"
-      ? ASSIGNMENTS.find((item) => item.id === assignmentSource.selectedId)?.title ?? "Assignment selected"
+      ? ASSIGNMENTS.find((item) => item.id === assignmentSource.selectedId)?.title ?? t("source_selected_assignment")
       : assignmentSource.mode === "upload"
         ? assignmentSource.fileName
-        : "Pasted assignment requirements";
+         : t("source_pasted_assignment");
 
   function analyse() {
     setLoading(true);
@@ -498,8 +502,8 @@ export default function CvAdaptation() {
   return (
     <div className="p-6 space-y-5 overflow-auto h-full">
       <PageHeader
-        title="CV Adaptation Assistant"
-        description="Compare a consultant CV with a client assignment and identify concrete improvements before the CV is shared."
+        title={t("cv_adapt_title")}
+        description={t("cv_adapt_sub")}
       />
 
       {editingInputs || !result ? (
@@ -511,7 +515,7 @@ export default function CvAdaptation() {
 
           <div className="flex items-center justify-between gap-4">
             <p className="text-[10px] text-app-faint max-w-2xl">
-              Only the reviewed text is used for analysis. CV and assignment content can be minimized before it is sent to an AI service.
+              {t("cv_privacy_note")}
             </p>
             <button
               onClick={analyse}
@@ -522,12 +526,12 @@ export default function CvAdaptation() {
               {loading ? (
                 <>
                   <Zap size={13} className="animate-pulse" />
-                  Analysing…
+                  {t("cv_analysing")}
                 </>
               ) : (
                 <>
                   <Sparkles size={13} />
-                  Analyse CV
+                  {t("cv_analyse")}
                 </>
               )}
             </button>
@@ -537,12 +541,12 @@ export default function CvAdaptation() {
         <div className="space-y-3">
           <div className="flex justify-start">
             <Button variant="secondary" onClick={() => setEditingInputs(true)}>
-              ← Change Inputs
+              {t("cv_change_inputs")}
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <SourceSummary label="Consultant CV" source={cvSource} selectedLabel={cvLabel} onChange={() => setEditingInputs(true)} />
-            <SourceSummary label="Client Assignment" source={assignmentSource} selectedLabel={assignmentLabel} onChange={() => setEditingInputs(true)} />
+            <SourceSummary label={t("upload_title").replace("Upload ", "")} source={cvSource} selectedLabel={cvLabel} onChange={() => setEditingInputs(true)} />
+            <SourceSummary label={t("matching_client_assignment")} source={assignmentSource} selectedLabel={assignmentLabel} onChange={() => setEditingInputs(true)} />
           </div>
         </div>
       )}
@@ -554,7 +558,7 @@ export default function CvAdaptation() {
               className="bg-app-surface border border-app rounded-lg p-4 flex flex-col items-center justify-center"
               style={{ boxShadow: "var(--shadow-surface)" }}
             >
-              <p className="text-[10px] text-app-faint uppercase tracking-wider font-medium mb-3">Match Score Estimate</p>
+              <p className="text-[10px] text-app-faint uppercase tracking-wider font-medium mb-3">{t("cv_match_estimate")}</p>
               <ScoreGauge before={result.estimatedScore} after={result.projectedScore} />
             </div>
 
@@ -562,11 +566,11 @@ export default function CvAdaptation() {
               className="bg-app-surface border border-app rounded-lg p-4 flex flex-col justify-center gap-3"
               style={{ boxShadow: "var(--shadow-surface)" }}
             >
-              <p className="text-[10px] text-app-faint uppercase tracking-wider font-medium">Issues found</p>
+              <p className="text-[10px] text-app-faint uppercase tracking-wider font-medium">{t("cv_issues")}</p>
               {[
-                { label: "High priority", count: highCount, color: "var(--color-danger)" },
-                { label: "Medium priority", count: mediumCount, color: "var(--color-warning)" },
-                { label: "Low priority", count: lowCount, color: "var(--color-text-muted)" },
+                { label: t("cv_high"), count: highCount, color: "var(--color-danger)" },
+                { label: t("cv_medium"), count: mediumCount, color: "var(--color-warning)" },
+                { label: t("cv_low"), count: lowCount, color: "var(--color-text-muted)" },
               ].map((row) => (
                 <div key={row.label} className="flex items-center gap-2.5">
                   <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--color-border)" }}>
@@ -591,7 +595,7 @@ export default function CvAdaptation() {
               <div className="flex items-start gap-2.5">
                 <Info size={13} className="text-app-brand flex-none mt-0.5" />
                 <div>
-                  <p className="text-[11px] text-app-faint font-mono uppercase tracking-wider mb-2">AI Summary</p>
+                  <p className="text-[11px] text-app-faint font-mono uppercase tracking-wider mb-2">{t("cv_ai_summary")}</p>
                   <p className="text-xs text-app-secondary leading-relaxed">{result.summary}</p>
                 </div>
               </div>
@@ -608,7 +612,7 @@ export default function CvAdaptation() {
                   : { color: "var(--color-text-muted)" }
               }
             >
-              All ({result.suggestions.length})
+              {t("cv_all")} ({result.suggestions.length})
             </button>
             {categories.map((category) => {
               const config = CATEGORY_CFG[category];
@@ -663,9 +667,9 @@ export default function CvAdaptation() {
       {!result && !loading && (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <Sparkles size={28} className="text-app-faint mb-3" />
-          <p className="text-sm text-app-faint">Choose how you want to provide the CV and assignment.</p>
+          <p className="text-sm text-app-faint">{t("cv_empty_title")}</p>
           <p className="text-xs text-app-faint mt-1">
-            Select existing data, upload PDF/DOCX files, or paste text directly.
+            {t("cv_empty_sub")}
           </p>
         </div>
       )}
