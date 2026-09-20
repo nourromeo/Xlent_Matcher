@@ -136,8 +136,8 @@ export default function Admin() {
 
           <DataTable
             columns={[
-              { key: "canonical", header: t("admin_canonical"), render: (skill) => <span className="font-mono font-medium text-app-primary">{skill.canonical}</span> },
-              { key: "category", header: t("admin_category"), render: (skill) => <span className="text-[11px] text-app-secondary px-2 py-1 rounded bg-app-raised">{skill.category}</span> },
+              { key: "canonical", header: t("admin_canonical"), sortable: true, sortValue: (skill) => skill.canonical, render: (skill) => <span className="font-mono font-medium text-app-primary">{skill.canonical}</span> },
+              { key: "category", header: t("admin_category"), sortable: true, sortValue: (skill) => skill.category, render: (skill) => <span className="text-[11px] text-app-secondary px-2 py-1 rounded bg-app-raised">{skill.category}</span> },
               { key: "aliases", header: t("admin_aliases"), render: (skill) => <div className="flex flex-wrap gap-1">{skill.aliases.map((alias) => <span key={alias} className="text-[10px] font-mono text-app-secondary px-1.5 py-0.5 rounded bg-app-raised border border-app">{alias}</span>)}</div> },
               { key: "actions", header: t("admin_actions"), render: (skill) => <div className="flex items-center gap-1"><Button variant="ghost" icon={<Edit3 size={11} />} onClick={() => openEditSkill(skill)}>{t("admin_edit")}</Button><button onClick={() => setSkills((current) => current.filter((item) => item.id !== skill.id))} className="p-2 text-app-faint hover:text-red-500" aria-label={t("common_delete") + " " + skill.canonical}><Trash2 size={12} /></button></div> },
             ]}
