@@ -13,7 +13,7 @@ import {
 } from "../design-system/icons";
 import { MOCK_RESULT } from "../features/cvCoach";
 
-import type { CvSeverity, CvSuggestion, CvAnalysisResult } from "../features/cvCoach/types";
+import type { CvSeverity as Severity, CvSuggestion as Suggestion, CvAnalysisResult as AnalysisResult } from "../features/cvCoach/types";
 
 // ── Mock AI result ───────────────────────────────────────
 
