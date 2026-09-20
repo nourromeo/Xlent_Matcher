@@ -487,7 +487,16 @@ export default function CvAdaptation() {
     setResult(null);
 
     setTimeout(() => {
-      setResult(MOCK_RESULT as AnalysisResult);
+      const localized = {
+        ...(MOCK_RESULT as AnalysisResult),
+        summary: t("cv_result_summary"),
+        suggestions: (MOCK_RESULT as AnalysisResult).suggestions.map((suggestion) => ({
+          ...suggestion,
+          title: t((`cv_${suggestion.id}_title`) as any),
+          detail: t((`cv_${suggestion.id}_detail`) as any),
+        })),
+      };
+      setResult(localized);
       setLoading(false);
       setEditingInputs(false);
     }, 1200);
