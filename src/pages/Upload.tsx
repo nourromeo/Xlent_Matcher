@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Upload as UploadIcon, FileText, X, CheckCircle, AlertCircle, Loader } from "lucide-react";
+import { Upload as UploadIcon, FileText, X, CheckCircle, AlertCircle, Loader } from "../design-system/icons";
 import { useI18n } from "../i18n";
 
 type FileStatus = "queued" | "extracting" | "parsing" | "embedding" | "done" | "error";
