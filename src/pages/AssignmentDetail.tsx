@@ -65,6 +65,17 @@ function SkillEditor({ label, hint, skills, onChange, accent }: { label: string;
 export default function AssignmentDetail() {
   const { t } = useI18n();
   const { id } = useParams();
+  const displaySeniority = (value: string) =>
+    value === "Junior" ? t("seniority_junior") :
+    value === "Mid" ? t("seniority_mid") :
+    value === "Senior" ? t("seniority_senior") :
+    value === "Staff" ? t("seniority_staff") : value;
+  const displayAvailability = (value: string) =>
+    value === "Immediate" ? t("immediate") :
+    value === "2 weeks" ? t("availability_2_weeks") :
+    value === "1 month" ? t("availability_1_month") :
+    value === "3 months" ? t("availability_3_months") : value;
+
   const selectedAssignment = ASSIGNMENTS.find((item) => item.id === id) ?? ASSIGNMENTS[0];
   const baseAssignment: Assignment = {
     ...selectedAssignment,
@@ -108,11 +119,11 @@ export default function AssignmentDetail() {
             <h1 className="text-sm font-semibold text-app-primary">{assignment.title}</h1>
             <StatusBadge tone={ASSIGNMENT_STATUS_CONFIG[assignment.status].tone}>{statusLabel}</StatusBadge>
             <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>
-              {assignment.availability}
+              {displayAvailability(assignment.availability)}
             </StatusBadge>
           </div>
           <p className="text-xs text-app-muted mt-1">
-            {assignment.client} · {assignment.seniority} · Created {assignment.created}
+            {assignment.client} · {displaySeniority(assignment.seniority)} · {t("common_created")} {assignment.created}
           </p>
         </div>
 
@@ -160,7 +171,7 @@ export default function AssignmentDetail() {
       >
         <FormSection title={t("assignment_basic_info")}>
           <div className="grid md:grid-cols-2 gap-4">
-            {[["Assignment Title", "title"], ["Client", "client"], ["Seniority", "seniority"], ["Availability", "availability"]].map(([label, key]) => (
+            {[[t("assignment_title"), "title"], [t("assignment_client"), "client"], [t("assignment_seniority"), "seniority"], [t("assignment_availability"), "availability"]].map(([label, key]) => (
               <FormField key={key} label={label}><Input value={String(draft[key as keyof DraftAssignment])} onChange={(event) => setDraftField(key as keyof DraftAssignment, event.target.value as never)} /></FormField>
             ))}
           </div>
