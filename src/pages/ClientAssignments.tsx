@@ -23,21 +23,21 @@ function NewAssignmentModal({ onClose }: { onClose: () => void }) {
   const parsed = { title: title || "Design System Delivery", client: client || t("client_tbd"), seniority: "Mid", availability: "Immediate", requiredSkills: ["React", "TypeScript", "CSS"], preferredSkills: ["Figma", "Storybook"] };
 
   return (
-    <Modal open title={t("job_modal_title")} onClose={onClose}>
+    <Modal open title={t("assignment_modal_title")} onClose={onClose}>
       {step === "input" ? (
         <div className="p-5 space-y-4">
-          <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_name")}</span><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Payments Platform Modernisation" /></label>
-          <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_client")}</span><Input value={client} onChange={(e) => setClient(e.target.value)} placeholder="e.g. Nordic Financial Services" /></label>
-          <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("job_modal_brief")} <span className="text-app-brand ml-1">{t("job_modal_ai")}</span></span><Textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={6} placeholder={t("job_modal_brief_placeholder")} /></label>
-          <div className="flex justify-end gap-2"><Button onClick={onClose} variant="ghost">{t("job_modal_cancel")}</Button><Button onClick={() => setStep("review")} variant="primary" icon={<Zap size={11} />}>{t("job_modal_extract")}</Button></div>
+          <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_name")}</span><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Payments Platform Modernisation" /></label>
+          <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_client")}</span><Input value={client} onChange={(e) => setClient(e.target.value)} placeholder="e.g. Nordic Financial Services" /></label>
+          <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_brief")} <span className="text-app-brand ml-1">{t("assignment_modal_ai")}</span></span><Textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={6} placeholder={t("assignment_modal_brief_placeholder")} /></label>
+          <div className="flex justify-end gap-2"><Button onClick={onClose} variant="ghost">{t("assignment_modal_cancel")}</Button><Button onClick={() => setStep("review")} variant="primary" icon={<Zap size={11} />}>{t("assignment_modal_extract")}</Button></div>
         </div>
       ) : (
         <div className="p-5 space-y-4">
-          <div className="rounded px-3 py-2.5" style={{ background: "var(--color-success-soft)", border: "1px solid var(--color-success-border)" }}><p className="text-[11px]" style={{ color: "var(--color-success)" }}>{t("job_modal_review")}</p></div>
+          <div className="rounded px-3 py-2.5" style={{ background: "var(--color-success-soft)", border: "1px solid var(--color-success-border)" }}><p className="text-[11px]" style={{ color: "var(--color-success)" }}>{t("assignment_modal_review")}</p></div>
           <div className="grid grid-cols-2 gap-3">{[[t("assignment_title"), parsed.title], [t("assignment_client"), parsed.client], [t("assignment_seniority"), t("seniority_mid")], [t("assignment_availability"), t("immediate")]].map(([label, value]) => <div key={label}><label className="text-[11px] text-app-muted block mb-1.5">{label}</label><p className="text-xs text-app-primary">{value}</p></div>)}</div>
-          <div><label className="text-[11px] text-app-muted block mb-1.5">{t("job_modal_must")}</label><div className="flex flex-wrap gap-1.5">{parsed.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}</div></div>
-          <div><label className="text-[11px] text-app-muted block mb-1.5">{t("job_modal_nice")}</label><div className="flex flex-wrap gap-1.5">{parsed.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div></div>
-          <div className="flex justify-end gap-2"><Button onClick={() => setStep("input")} variant="ghost">{t("job_modal_back")}</Button><Button onClick={onClose} variant="primary">{t("job_modal_confirm")}</Button></div>
+          <div><label className="text-[11px] text-app-muted block mb-1.5">{t("assignment_modal_required")}</label><div className="flex flex-wrap gap-1.5">{parsed.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}</div></div>
+          <div><label className="text-[11px] text-app-muted block mb-1.5">{t("assignment_modal_preferred")}</label><div className="flex flex-wrap gap-1.5">{parsed.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div></div>
+          <div className="flex justify-end gap-2"><Button onClick={() => setStep("input")} variant="ghost">{t("assignment_modal_back")}</Button><Button onClick={onClose} variant="primary">{t("assignment_modal_confirm")}</Button></div>
         </div>
       )}
     </Modal>
@@ -76,13 +76,13 @@ export default function ClientAssignments() {
 
   return (
     <div className="p-6 space-y-4">
-      <PageHeader title={t("jobs_title")} meta={String(active.length) + " " + t("jobs_sub")} actions={<Button onClick={() => setShowModal(true)} variant="primary" icon={<Plus size={12} />}>{t("jobs_new")}</Button>} />
+      <PageHeader title={t("assignments_title")} meta={String(active.length) + " " + t("assignments_sub")} actions={<Button onClick={() => setShowModal(true)} variant="primary" icon={<Plus size={12} />}>{t("assignments_new")}</Button>} />
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex-1 relative max-w-xs">
           <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" />
           <Input
             type="search"
-            placeholder={t("jobs_search")}
+            placeholder={t("assignments_search")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className="pl-8 py-1.5"
@@ -94,12 +94,12 @@ export default function ClientAssignments() {
           const status = STATUS_CFG[assignment.status as keyof typeof STATUS_CFG];
           return <div key={assignment.id} className="bg-app-surface border border-app rounded-lg px-5 py-4 shadow-app-surface">
             <div className="flex items-start gap-4"><div className="flex-1"><div className="flex items-center gap-3 mb-2"><h2 className="text-sm font-medium text-app-primary">{assignment.title}</h2><StatusBadge tone={status.tone} icon={status.icon}>{status.label}</StatusBadge></div><p className="text-xs text-app-muted">{assignment.client} · {displaySeniority(assignment.seniority)} · {assignment.created}</p><p className="text-[11px] text-app-secondary mt-1 mb-3 max-w-3xl">{assignment.description}</p><div className="flex flex-wrap gap-1.5">{assignment.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}{assignment.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div></div>
-              <div className="flex items-center gap-2"><LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view")}</LinkButton><IconButton label={t("jobs_archive")} icon={<Archive size={13} />} onClick={() => setArchived((current) => [...current, assignment.id])} /></div>
+              <div className="flex items-center gap-2"><LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view")}</LinkButton><IconButton label={t("assignments_archive")} icon={<Archive size={13} />} onClick={() => setArchived((current) => [...current, assignment.id])} /></div>
             </div>
           </div>;
         })}
       </div>
-      {filtered.length === 0 && <EmptyState title={query ? t("jobs_empty_search") : t("jobs_empty")} />}
+      {filtered.length === 0 && <EmptyState title={query ? t("assignments_empty_search") : t("assignments_empty")} />}
       {showModal && <NewAssignmentModal onClose={() => setShowModal(false)} />}
     </div>
   );
