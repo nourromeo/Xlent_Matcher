@@ -28,6 +28,9 @@ export default function Consultants() {
     value === "1 month" ? t("availability_1_month") :
     value === "3 months" ? t("availability_3_months") : value;
 
+  const seniorityRank: Record<string, number> = { Junior: 1, Mid: 2, Senior: 3, Staff: 4 };
+  const availabilityRank: Record<string, number> = { Immediate: 0, "2 weeks": 1, "1 month": 2, "3 months": 3 };
+
   const filtered = CONSULTANTS.filter((consultant) => {
     if (seniority !== "All" && consultant.seniority !== seniority) return false;
     if (avail !== "All" && consultant.availability !== avail) return false;
@@ -48,11 +51,11 @@ export default function Consultants() {
       <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
         <DataTable
           columns={[
-            { key: "consultant", header: t("col_candidate"), render: (consultant) => <div className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-full bg-app-brand-subtle flex items-center justify-center text-[10px] font-semibold text-app-brand flex-none">{consultant.initials}</div><div><p className="font-medium text-app-primary">{consultant.name}</p><p className="text-[10px] text-app-muted max-w-xs truncate">{consultant.headline}</p></div></div> },
-            { key: "seniority", header: t("col_seniority"), render: (consultant) => <span>{displaySeniority(consultant.seniority)}</span> },
-            { key: "experience", header: t("col_experience"), render: (consultant) => <span className="font-mono">{consultant.experience}</span> },
+            { key: "consultant", header: t("col_candidate"), sortable: true, sortValue: (consultant) => consultant.name, render: (consultant) => <div className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-full bg-app-brand-subtle flex items-center justify-center text-[10px] font-semibold text-app-brand flex-none">{consultant.initials}</div><div><p className="font-medium text-app-primary">{consultant.name}</p><p className="text-[10px] text-app-muted max-w-xs truncate">{consultant.headline}</p></div></div> },
+            { key: "seniority", header: t("col_seniority"), sortable: true, sortValue: (consultant) => seniorityRank[consultant.seniority] ?? 99, render: (consultant) => <span>{displaySeniority(consultant.seniority)}</span> },
+            { key: "experience", header: t("col_experience"), sortable: true, sortValue: (consultant) => Number.parseFloat(consultant.experience) || 0, render: (consultant) => <span className="font-mono">{consultant.experience}</span> },
             { key: "skills", header: t("col_skills"), render: (consultant) => <div className="flex flex-wrap gap-1">{consultant.skills.slice(0, 4).map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}{consultant.skills.length > 4 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 4}</span>}</div> },
-            { key: "availability", header: t("col_avail"), render: (consultant) => <span style={{ color: consultant.availability === "Immediate" ? "var(--color-success)" : "var(--color-text-secondary)" }}>{displayAvailability(consultant.availability)}</span> },
+            { key: "availability", header: t("col_avail"), sortable: true, sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99, render: (consultant) => <span style={{ color: consultant.availability === "Immediate" ? "var(--color-success)" : "var(--color-text-secondary)" }}>{displayAvailability(consultant.availability)}</span> },
             { key: "actions", header: t("common_actions"), render: (consultant) => <div className="flex items-center"><LinkButton to={`/consultants/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>{t("consultants_view")}</LinkButton></div> },
           ]}
           rows={filtered}
