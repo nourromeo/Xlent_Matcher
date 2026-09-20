@@ -88,7 +88,7 @@ export default function ClientAssignments() {
           const status = STATUS_CFG[assignment.status as keyof typeof STATUS_CFG];
           return <div key={assignment.id} className="bg-app-surface border border-app rounded-lg px-5 py-4 shadow-app-surface">
             <div className="flex items-start gap-4"><div className="flex-1"><div className="flex items-center gap-3 mb-2"><h2 className="text-sm font-medium text-app-primary">{assignment.title}</h2><StatusBadge tone={status.tone} icon={status.icon}>{status.label}</StatusBadge></div><p className="text-xs text-app-muted">{assignment.client} · {assignment.seniority} · {assignment.created}</p><p className="text-[11px] text-app-secondary mt-1 mb-3 max-w-3xl">{assignment.description}</p><div className="flex flex-wrap gap-1.5">{assignment.requiredSkills.map((skill) => <SkillTag key={skill} variant="required">{skill}</SkillTag>)}{assignment.preferredSkills.map((skill) => <SkillTag key={skill}>{skill}</SkillTag>)}</div></div>
-              <div className="flex items-center gap-2"><LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>View Assignment</LinkButton><IconButton label="Archive assignment" icon={<Archive size={13} />} onClick={() => setArchived((current) => [...current, assignment.id])} /></div>
+              <div className="flex items-center gap-2"><LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view")}</LinkButton><IconButton label="Archive assignment" icon={<Archive size={13} />} onClick={() => setArchived((current) => [...current, assignment.id])} /></div>
             </div>
           </div>;
         })}
