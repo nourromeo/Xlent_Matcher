@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BookOpen,
   Briefcase,
@@ -458,7 +458,7 @@ function SuggestionCard({ s }: { s: Suggestion }) {
 }
 
 export default function CvAdaptation() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [cvSource, setCvSource] = useState<SourceState>({ ...EMPTY_SOURCE });
   const [assignmentSource, setAssignmentSource] = useState<SourceState>({ ...EMPTY_SOURCE });
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -467,6 +467,21 @@ export default function CvAdaptation() {
   const [activeFilter, setActiveFilter] = useState<Suggestion["category"] | "all">("all");
 
   const canAnalyse = cvSource.text.trim().length > 40 && assignmentSource.text.trim().length > 40;
+
+  const localizedMockResult = (): AnalysisResult => ({
+    ...(MOCK_RESULT as AnalysisResult),
+    summary: t("cv_result_summary"),
+    suggestions: (MOCK_RESULT as AnalysisResult).suggestions.map((suggestion) => ({
+      ...suggestion,
+      title: t((`cv_${suggestion.id}_title`) as any),
+      detail: t((`cv_${suggestion.id}_detail`) as any),
+    })),
+  });
+
+  useEffect(() => {
+    if (result) setResult(localizedMockResult());
+  }, [locale]);
+
 
   const cvLabel =
     cvSource.mode === "select"
@@ -487,16 +502,7 @@ export default function CvAdaptation() {
     setResult(null);
 
     setTimeout(() => {
-      const localized = {
-        ...(MOCK_RESULT as AnalysisResult),
-        summary: t("cv_result_summary"),
-        suggestions: (MOCK_RESULT as AnalysisResult).suggestions.map((suggestion) => ({
-          ...suggestion,
-          title: t((`cv_${suggestion.id}_title`) as any),
-          detail: t((`cv_${suggestion.id}_detail`) as any),
-        })),
-      };
-      setResult(localized);
+      setResult(localizedMockResult());
       setLoading(false);
       setEditingInputs(false);
     }, 1200);
