@@ -122,7 +122,7 @@ export default function Matching() {
 
             {assignment && (
               <LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
-                View Assignment
+                {t("matching_view_assignment")}
               </LinkButton>
             )}
           </div>
@@ -240,7 +240,7 @@ export default function Matching() {
                           ) : (
                             <div className="flex items-center gap-1 text-[10px]" style={{ color: "var(--color-warning)" }}>
                               <AlertTriangle size={9} />
-                              Missing {match.gaps.join(", ")}
+                              {t("matching_missing_prefix")} {match.gaps.join(", ")}
                             </div>
                           )}
                         </div>
@@ -279,7 +279,7 @@ export default function Matching() {
                     variant="secondary"
                     icon={<Eye size={12} />}
                   >
-                    View Consultant
+                    {t("matching_view_consultant")}
                   </LinkButton>
                 </div>
               </section>
@@ -307,7 +307,7 @@ export default function Matching() {
                         className="text-[10px] text-app-muted pl-5"
                         title={selected.mustHaveCoverage.slice(4).join(", ")}
                       >
-                        +{selected.mustHaveCoverage.length - 4} more
+                        +{selected.mustHaveCoverage.length - 4} {t("common_more")}
                       </p>
                     )}
                   </div>
@@ -336,7 +336,7 @@ export default function Matching() {
                           className="text-[10px] text-app-muted pl-5"
                           title={selected.gaps.slice(4).join(", ")}
                         >
-                          +{selected.gaps.length - 4} more
+                          +{selected.gaps.length - 4} {t("common_more")}
                         </p>
                       )}
                     </div>
