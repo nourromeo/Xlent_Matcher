@@ -38,7 +38,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageHeader title={t("dash_title")} description="This internal tool helps XLENT compare client assignments with existing consultants and understand why a consultant matches or does not match." />
+      <PageHeader title={t("dash_title")} description={t("dash_description")} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         <StatCard label={t("dash_consultants")} value="124" sub={`18 ${t("dash_consultants_sub")}`} icon={Users} accent />
@@ -50,7 +50,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <section className="xl:col-span-1 bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
-            <div><p className="text-xs font-medium text-app-primary">{t("dash_queue_panel")}</p><p className="text-[10px] text-app-muted mt-0.5">Latest consultant CV processing</p></div>
+            <div><p className="text-xs font-medium text-app-primary">{t("dash_queue_panel")}</p><p className="text-[10px] text-app-muted mt-0.5">{t("dash_queue_latest")}</p></div>
             <Link to="/cv-upload" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">{t("dash_view_all")} <ArrowUpRight size={10} /></Link>
           </div>
           <div className="divide-y" style={{ borderColor: "var(--color-border-subtle)" }}>
@@ -66,7 +66,7 @@ export default function Dashboard() {
 
         <section className="xl:col-span-2 bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
-            <div><p className="text-xs font-medium text-app-primary">{t("dash_recent")}</p><p className="text-[10px] text-app-muted mt-0.5">Latest consultant matches and ranking results</p></div>
+            <div><p className="text-xs font-medium text-app-primary">{t("dash_recent")}</p><p className="text-[10px] text-app-muted mt-0.5">{t("dash_matches_latest")}</p></div>
             <Link to="/matching" className="text-[10px] text-app-brand hover:opacity-70 flex items-center gap-1">{t("dash_view_all")} <ArrowUpRight size={10} /></Link>
           </div>
           <DataTable
