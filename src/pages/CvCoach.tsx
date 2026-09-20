@@ -10,7 +10,7 @@ import {
   Tag,
   BookOpen,
   TrendingUp,
-} from "lucide-react";
+} from "../design-system/icons";
 
 // ── Types ────────────────────────────────────────────────
 type Severity = "high" | "medium" | "low";
