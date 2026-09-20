@@ -56,7 +56,7 @@ export default function Admin() {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-base font-semibold text-base">{t("admin_title")}</h1>
+        <h1 className="text-app-primary font-semibold text-app-primary">{t("admin_title")}</h1>
         <p className="text-xs text-muted mt-0.5">{t("admin_sub")}</p>
       </div>
 
@@ -74,7 +74,7 @@ export default function Admin() {
       {tab === 0 && (
         <div className="bg-surface border border-base rounded-lg overflow-hidden" style={{ boxShadow: "var(--ats-shadow)" }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-base">
-            <span className="text-xs font-medium text-base">{t("tab_taxonomy")}</span>
+            <span className="text-xs font-medium text-app-primary">{t("tab_taxonomy")}</span>
             <button className="flex items-center gap-1.5 text-[11px] text-indigo hover:opacity-70"><Plus size={11} />{t("admin_add_skill")}</button>
           </div>
           <table className="w-full">
@@ -88,7 +88,7 @@ export default function Admin() {
             <tbody>
               {SKILLS.map((s, i) => (
                 <tr key={s.id} className="group border-b border-sub hover:bg-raised transition-colors">
-                  <td className="px-4 py-2.5"><span className="text-xs font-mono font-medium text-base">{s.canonical}</span></td>
+                  <td className="px-4 py-2.5"><span className="text-xs font-mono font-medium text-app-primary">{s.canonical}</span></td>
                   <td className="px-4 py-2.5"><span className="text-[11px] text-2 px-2 py-0.5 rounded" style={{ background: "var(--ats-surface-r)" }}>{s.category}</span></td>
                   <td className="px-4 py-2.5">
                     <div className="flex flex-wrap gap-1">
@@ -117,12 +117,12 @@ export default function Admin() {
               <div key={w.key} className="px-4 py-3" style={{ borderBottom: i < WEIGHTS_DEF.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <p className="text-xs font-medium text-base">{w.label}</p>
+                    <p className="text-xs font-medium text-app-primary">{w.label}</p>
                     <p className="text-[11px] text-3 mt-0.5">{w.desc}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <input type="range" min={0} max={60} value={weights[w.key]} onChange={(e) => setWeights((p) => ({ ...p, [w.key]: Number(e.target.value) }))} className="w-24 accent-indigo-500" />
-                    <span className="text-sm font-mono text-base w-10 text-right">{weights[w.key]}%</span>
+                    <span className="text-sm font-mono text-app-primary w-10 text-right">{weights[w.key]}%</span>
                   </div>
                 </div>
               </div>
@@ -150,7 +150,7 @@ export default function Admin() {
             <tbody>
               {PROMPTS.map((p, i) => (
                 <tr key={p.id} className="border-b border-sub hover:bg-raised transition-colors">
-                  <td className="px-4 py-2.5 text-xs text-base font-medium">{p.name}</td>
+                  <td className="px-4 py-2.5 text-xs text-app-primary font-medium">{p.name}</td>
                   <td className="px-4 py-2.5 text-[11px] font-mono text-2">{p.model}</td>
                   <td className="px-4 py-2.5 text-[11px] font-mono text-indigo">{p.version}</td>
                   <td className="px-4 py-2.5 text-[11px] font-mono text-muted">{p.tokens}</td>
@@ -174,7 +174,7 @@ export default function Admin() {
           <div className="grid grid-cols-3 gap-3">
             {[{ label: "Sep total", value: "$38.40" }, { label: "Avg per CV", value: "$0.048" }, { label: "Avg per match", value: "$0.022" }].map((s) => (
               <div key={s.label} className="bg-surface border border-base rounded-lg px-4 py-3" style={{ boxShadow: "var(--ats-shadow)" }}>
-                <p className="text-xl font-semibold font-mono text-base">{s.value}</p>
+                <p className="text-xl font-semibold font-mono text-app-primary">{s.value}</p>
                 <p className="text-[10px] text-3 mt-0.5">{s.label}</p>
               </div>
             ))}
@@ -195,7 +195,7 @@ export default function Admin() {
                     <td className="px-4 py-2.5 text-[11px] font-mono text-2">{row.model}</td>
                     <td className="px-4 py-2.5 text-[11px] font-mono text-indigo">{row.operation}</td>
                     <td className="px-4 py-2.5 text-[11px] font-mono text-muted">{row.runs}</td>
-                    <td className="px-4 py-2.5 text-[11px] font-mono text-base">${row.cost.toFixed(3)}</td>
+                    <td className="px-4 py-2.5 text-[11px] font-mono text-app-primary">${row.cost.toFixed(3)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -210,7 +210,7 @@ export default function Admin() {
           {FLAGS_DATA.map((f, i) => (
             <div key={f.key} className="flex items-center justify-between px-5 py-4" style={{ borderBottom: i < FLAGS_DATA.length - 1 ? "1px solid var(--ats-border-s)" : "none" }}>
               <div>
-                <p className="text-xs font-medium text-base font-mono">{f.key}</p>
+                <p className="text-xs font-medium text-app-primary font-mono">{f.key}</p>
                 <p className="text-[11px] text-muted mt-0.5">{f.desc}</p>
               </div>
               <button onClick={() => setFlags((p) => ({ ...p, [f.key]: !p[f.key] }))}
