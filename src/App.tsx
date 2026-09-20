@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Consultants from "./pages/Consultants";
@@ -24,6 +24,7 @@ export default function App() {
           <Route path="cv-upload" element={<CvUpload />} />
           <Route path="cv-adaptation" element={<CvAdaptation />} />
           <Route path="admin" element={<Admin />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
