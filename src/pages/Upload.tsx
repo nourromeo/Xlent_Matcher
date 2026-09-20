@@ -4,6 +4,7 @@ import { useI18n } from "../i18n";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import type { FileStatus, UploadFile } from "../types";
 import { DEMO_FILES } from "../features/uploads";
+import { PageHeader } from "../components/ui/PageHeader";
 
 function fmt(bytes: number) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
@@ -47,10 +48,7 @@ export default function Upload() {
 
   return (
     <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-app-primary font-semibold text-app-primary">{t("upload_title")}</h1>
-        <p className="text-xs text-app-muted mt-0.5">{t("upload_sub")}</p>
-      </div>
+      <PageHeader title={t("upload_title")} description={t("upload_sub")} />
 
       <div className="grid grid-cols-4 gap-3">
         {[
