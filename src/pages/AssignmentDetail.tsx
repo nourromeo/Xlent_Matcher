@@ -180,7 +180,7 @@ export default function AssignmentDetail() {
           <Textarea value={draft.description} onChange={(event) => setDraftField("description", event.target.value)} rows={6} placeholder={t("assignment_description_placeholder")} />
         </FormSection>
         <FormSection title={t("assignment_requirements")} description={t("assignment_requirements_help")}>
-          <div className="grid md:grid-cols-2 gap-5"><SkillEditor label={t("assignment_required_skills")} hint="{t("assignment_must_have")} skills" skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label={t("assignment_preferred_skills")} hint="{t("assignment_nice_have")} skills" skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div>
+          <div className="grid md:grid-cols-2 gap-5"><SkillEditor label={t("assignment_required_skills")} hint={t("assignment_required_hint")} skills={draft.requiredSkills} onChange={(skills) => setDraftField("requiredSkills", skills)} accent="indigo" /><SkillEditor label={t("assignment_preferred_skills")} hint={t("assignment_preferred_hint")} skills={draft.preferredSkills} onChange={(skills) => setDraftField("preferredSkills", skills)} accent="neutral" /></div>
         </FormSection>
       </EditFormModal>
         </div>
