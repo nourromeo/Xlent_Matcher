@@ -1,0 +1,33 @@
+using Microsoft.EntityFrameworkCore;
+using XlentMatch.Api.Domain;
+
+namespace XlentMatch.Api.Infrastructure;
+
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+{
+    public DbSet<Consultant> Consultants => Set<Consultant>();
+    public DbSet<ConsultantSkill> ConsultantSkills => Set<ConsultantSkill>();
+    public DbSet<Experience> Experiences => Set<Experience>();
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<Certification> Certifications => Set<Certification>();
+    public DbSet<Assignment> Assignments => Set<Assignment>();
+    public DbSet<AssignmentRequirement> AssignmentRequirements => Set<AssignmentRequirement>();
+    public DbSet<MatchResult> MatchResults => Set<MatchResult>();
+    public DbSet<MatchRequirementResult> MatchRequirementResults => Set<MatchRequirementResult>();
+    public DbSet<AdaptedCv> AdaptedCvs => Set<AdaptedCv>();
+
+    protected override void OnModelCreating(ModelBuilder mb)
+    {
+        mb.Entity<Consultant>().HasMany(c => c.Skills).WithOne().HasForeignKey(s => s.ConsultantId).OnDelete(DeleteBehavior.Cascade);
+        mb.Entity<Consultant>().HasMany(c => c.Experiences).WithOne().HasForeignKey(e => e.ConsultantId).OnDelete(DeleteBehavior.Cascade);
+        mb.Entity<Consultant>().HasMany(c => c.Projects).WithOne().HasForeignKey(p => p.ConsultantId).OnDelete(DeleteBehavior.Cascade);
+        mb.Entity<Consultant>().HasMany(c => c.Certifications).WithOne().HasForeignKey(x => x.ConsultantId).OnDelete(DeleteBehavior.Cascade);
+
+        mb.Entity<Assignment>().HasMany(a => a.Requirements).WithOne().HasForeignKey(r => r.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+
+        mb.Entity<MatchResult>().HasMany(m => m.Details).WithOne().HasForeignKey(d => d.MatchResultId).OnDelete(DeleteBehavior.Cascade);
+        mb.Entity<MatchResult>().HasIndex(m => new { m.AssignmentId, m.ConsultantId });
+
+        mb.Entity<AdaptedCv>().HasIndex(x => new { x.ConsultantId, x.AssignmentId });
+    }
+}
