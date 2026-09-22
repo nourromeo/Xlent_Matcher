@@ -2,10 +2,12 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
-using XlentMatch.Api.Application;
-using XlentMatch.Api.Domain;
+using XlentMatch.Api.DTOs.Assignments;
+using XlentMatch.Api.DTOs.Consultants;
+using XlentMatch.Api.DTOs.Cv;
+using XlentMatch.Api.Models;
 
-namespace XlentMatch.Api.Infrastructure;
+namespace XlentMatch.Api.Services;
 
 public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options) : IAiTextService
 {
@@ -19,7 +21,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
         "Never invent, assume or embellish skills, experiences, certifications, dates or numbers. " +
         "If something is unknown, use null, 0 or an empty list. Respond with valid JSON only.";
 
-    public Task<ConsultantDraft> ExtractConsultantProfileAsync(string text, CancellationToken ct)
+    public Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {
         var system = $$"""
             You extract structured consultant profiles from CV text.
@@ -27,25 +29,28 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             Return a JSON object with exactly this shape:
             {
               "firstName": string, "lastName": string, "email": string|null, "title": string|null,
-              "summary": string|null, "yearsOfExperience": int,
-              "skills": [{ "name": string, "level": int (1-5, 0 if unknown), "years": int }],
+              "summary": string|null, "seniority": string|null, "yearsOfExperience": int,
+              "availability": string|null, "office": string|null,
+              "skills": [{ "name": string, "category": string|null, "level": int, "years": int, "evidence": string|null }],
               "experiences": [{ "company": string, "role": string, "description": string|null,
                                  "startDate": "yyyy-MM"|null, "endDate": "yyyy-MM"|null }],
               "projects": [{ "name": string, "description": string|null, "technologies": "comma, separated"|null }],
+              "education": [{ "degree": string, "school": string|null, "year": string|null }],
+              "languages": [{ "name": string, "level": string|null }],
+              "industries": [string],
               "certifications": [{ "name": string, "issuer": string|null, "issuedDate": "yyyy-MM"|null }]
             }
             """;
 
-        return AskForJsonAsync<ConsultantDraft>(system, text, ct);
+        return AskForJsonAsync<ConsultantDraftDto>(system, text, ct);
     }
 
-    public async Task<List<RequirementDraft>> ExtractRequirementsAsync(string text, CancellationToken ct)
+    public async Task<List<RequirementDraftDto>> ExtractRequirementsAsync(string text, CancellationToken ct)
     {
         var system = $$"""
             You extract requirements from customer assignment / requirement specification text.
             {{NoInventionRule}}
-            Classify each requirement as "Mandatory" (must have, required, krav, ska) or "Desired"
-            (nice to have, meriterande, önskvärt, bör).
+            Classify each requirement as "Mandatory" or "Desired".
             Return a JSON object with exactly this shape:
             {
               "requirements": [
@@ -54,11 +59,11 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             }
             """;
 
-        var result = await AskForJsonAsync<RequirementExtractionResult>(system, text, ct);
+        var result = await AskForJsonAsync<RequirementExtractionResultDto>(system, text, ct);
         return result.Requirements;
     }
 
-    public Task<CvAdaptationSuggestion> SuggestCvAdaptationAsync(
+    public Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(
         Consultant consultant, Assignment assignment, MatchResult? match, CancellationToken ct)
     {
         var system = $$"""
@@ -80,17 +85,30 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
         {
             assignment = new
             {
-                assignment.CustomerName, assignment.Title, assignment.Description,
-                assignment.MinTotalYearsExperience,
+                assignment.CustomerName,
+                assignment.Title,
+                assignment.Description,
+                assignment.Seniority,
+                assignment.MinYearsExperience,
+                assignment.Availability,
                 requirements = assignment.Requirements.Select(r => new { r.Name, r.Type, r.MinYears, r.MinLevel })
             },
             consultant = new
             {
-                consultant.FirstName, consultant.LastName, consultant.Title, consultant.Summary,
+                consultant.FirstName,
+                consultant.LastName,
+                consultant.Title,
+                consultant.Summary,
+                consultant.Seniority,
                 consultant.YearsOfExperience,
-                skills = consultant.Skills.Select(s => new { s.Name, s.Level, s.Years }),
+                consultant.Availability,
+                consultant.Office,
+                skills = consultant.Skills.Select(s => new { s.Name, s.Category, s.Level, s.Years, s.Evidence }),
                 experiences = consultant.Experiences.Select(e => new { e.Company, e.Role, e.Description, e.StartDate, e.EndDate }),
                 projects = consultant.Projects.Select(p => new { p.Name, p.Description, p.Technologies }),
+                education = consultant.Education.Select(e => new { e.Degree, e.School, e.Year }),
+                languages = consultant.Languages.Select(l => new { l.Name, l.Level }),
+                industries = consultant.Industries.Select(i => i.Name),
                 certifications = consultant.Certifications.Select(c => new { c.Name, c.Issuer, c.IssuedDate }),
                 originalCvText = consultant.OriginalCvText
             },
@@ -101,7 +119,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             }
         }, Json);
 
-        return AskForJsonAsync<CvAdaptationSuggestion>(system, user, ct);
+        return AskForJsonAsync<CvAdaptationSuggestionDto>(system, user, ct);
     }
 
     private async Task<T> AskForJsonAsync<T>(string systemPrompt, string userContent, CancellationToken ct) where T : new()

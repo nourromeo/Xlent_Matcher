@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using XlentMatch.Api.Domain;
-using XlentMatch.Api.Infrastructure;
+using XlentMatch.Api.Data;
+using XlentMatch.Api.Models;
 
 namespace XlentMatch.Api.Controllers;
 
@@ -43,7 +43,10 @@ public class AssignmentsController(AppDbContext db) : ControllerBase
         existing.CustomerName = input.CustomerName;
         existing.Title = input.Title;
         existing.Description = input.Description;
-        existing.MinTotalYearsExperience = input.MinTotalYearsExperience;
+        existing.Seniority = input.Seniority;
+        existing.MinYearsExperience = input.MinYearsExperience;
+        existing.Availability = input.Availability;
+        existing.Status = input.Status;
 
         input.Requirements.ForEach(r => r.Id = 0);
         existing.Requirements = input.Requirements;
@@ -57,6 +60,7 @@ public class AssignmentsController(AppDbContext db) : ControllerBase
     {
         var assignment = await db.Assignments.FindAsync([id], ct);
         if (assignment is null) return NotFound();
+
         db.Assignments.Remove(assignment);
         await db.SaveChangesAsync(ct);
         return NoContent();

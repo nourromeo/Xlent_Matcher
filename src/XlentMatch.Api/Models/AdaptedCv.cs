@@ -1,6 +1,5 @@
-namespace XlentMatch.Api.Domain;
+namespace XlentMatch.Api.Models;
 
-// A CV version adapted for a specific assignment. Stored separately from the original.
 public class AdaptedCv
 {
     public int Id { get; set; }

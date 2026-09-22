@@ -1,4 +1,4 @@
-namespace XlentMatch.Api.Application;
+namespace XlentMatch.Api.Services;
 
 public class OpenAiOptions
 {

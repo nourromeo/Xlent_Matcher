@@ -1,32 +1,35 @@
 using Microsoft.AspNetCore.Mvc;
-using XlentMatch.Api.Application;
+using XlentMatch.Api.DTOs.Assignments;
+using XlentMatch.Api.DTOs.Consultants;
+using XlentMatch.Api.DTOs.Extraction;
+using XlentMatch.Api.Services;
 
 namespace XlentMatch.Api.Controllers;
 
-/// <summary>
-/// Hybrid flow: upload a PDF (or paste text) -> extract -> return a draft for the user to review.
-/// Nothing is saved here. The user saves via /api/consultants or /api/assignments after review.
-/// </summary>
 [ApiController]
 [Route("api/extraction")]
 public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : ControllerBase
 {
     [HttpPost("consultant")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<ConsultantDraft>> ExtractConsultant([FromForm] ExtractionRequest request, CancellationToken ct)
+    public async Task<ActionResult<ConsultantDraftDto>> ExtractConsultant(
+        [FromForm] ExtractionRequestDto request,
+        CancellationToken ct)
     {
         var text = await GetText(request, ct);
         if (string.IsNullOrWhiteSpace(text))
             return BadRequest("Provide a PDF/text file or raw text.");
 
         var draft = await ai.ExtractConsultantProfileAsync(text, ct);
-        draft.SourceText = text; // so the frontend can store it as OriginalCvText
+        draft.SourceText = text;
         return draft;
     }
 
     [HttpPost("requirements")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<List<RequirementDraft>>> ExtractRequirements([FromForm] ExtractionRequest request, CancellationToken ct)
+    public async Task<ActionResult<List<RequirementDraftDto>>> ExtractRequirements(
+        [FromForm] ExtractionRequestDto request,
+        CancellationToken ct)
     {
         var text = await GetText(request, ct);
         if (string.IsNullOrWhiteSpace(text))
@@ -35,7 +38,7 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
         return await ai.ExtractRequirementsAsync(text, ct);
     }
 
-    private async Task<string?> GetText(ExtractionRequest request, CancellationToken ct)
+    private async Task<string?> GetText(ExtractionRequestDto request, CancellationToken ct)
     {
         if (request.File is null || request.File.Length == 0)
             return request.Text;
