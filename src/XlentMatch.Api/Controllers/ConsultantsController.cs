@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using XlentMatch.Api.Domain;
-using XlentMatch.Api.Infrastructure;
+using XlentMatch.Api.Data;
+using XlentMatch.Api.Models;
 
 namespace XlentMatch.Api.Controllers;
 
@@ -43,17 +43,26 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
         existing.Email = input.Email;
         existing.Title = input.Title;
         existing.Summary = input.Summary;
+        existing.Seniority = input.Seniority;
         existing.YearsOfExperience = input.YearsOfExperience;
+        existing.Availability = input.Availability;
+        existing.Office = input.Office;
         existing.OriginalCvText = input.OriginalCvText;
 
-        // Replace child collections. Removed items are deleted by EF (required FK).
         input.Skills.ForEach(x => x.Id = 0);
         input.Experiences.ForEach(x => x.Id = 0);
         input.Projects.ForEach(x => x.Id = 0);
+        input.Education.ForEach(x => x.Id = 0);
+        input.Languages.ForEach(x => x.Id = 0);
+        input.Industries.ForEach(x => x.Id = 0);
         input.Certifications.ForEach(x => x.Id = 0);
+
         existing.Skills = input.Skills;
         existing.Experiences = input.Experiences;
         existing.Projects = input.Projects;
+        existing.Education = input.Education;
+        existing.Languages = input.Languages;
+        existing.Industries = input.Industries;
         existing.Certifications = input.Certifications;
 
         await db.SaveChangesAsync(ct);
@@ -65,6 +74,7 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
     {
         var consultant = await db.Consultants.FindAsync([id], ct);
         if (consultant is null) return NotFound();
+
         db.Consultants.Remove(consultant);
         await db.SaveChangesAsync(ct);
         return NoContent();
@@ -76,10 +86,12 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
             .Include(c => c.Skills)
             .Include(c => c.Experiences)
             .Include(c => c.Projects)
+            .Include(c => c.Education)
+            .Include(c => c.Languages)
+            .Include(c => c.Industries)
             .Include(c => c.Certifications);
 
         if (!track) query = query.AsNoTracking();
-
         return query.FirstOrDefaultAsync(c => c.Id == id, ct);
     }
 }

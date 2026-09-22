@@ -1,11 +1,8 @@
 using Microsoft.Extensions.Options;
-using XlentMatch.Api.Domain;
+using XlentMatch.Api.Models;
 
-namespace XlentMatch.Api.Application;
+namespace XlentMatch.Api.Services;
 
-/// <summary>
-/// Deterministic matching. Same input + same options = same result. No AI involved.
-/// </summary>
 public class MatchingService(IOptions<MatchingOptions> options)
 {
     private readonly MatchingOptions _o = options.Value;
@@ -34,9 +31,9 @@ public class MatchingService(IOptions<MatchingOptions> options)
 
         var mandatoryRatio = Ratio(mandatory);
         var desiredRatio = Ratio(desired);
-        var experienceRatio = assignment.MinTotalYearsExperience <= 0
+        var experienceRatio = assignment.MinYearsExperience <= 0
             ? 1.0
-            : Math.Min(1.0, (double)consultant.YearsOfExperience / assignment.MinTotalYearsExperience);
+            : Math.Min(1.0, (double)consultant.YearsOfExperience / assignment.MinYearsExperience);
 
         var score = mandatoryRatio * _o.MandatoryWeight
                   + desiredRatio * _o.DesiredWeight
@@ -45,18 +42,17 @@ public class MatchingService(IOptions<MatchingOptions> options)
         var missingMandatory = mandatory.Where(d => !d.IsMatched).ToList();
         score -= missingMandatory.Count * _o.MissingMandatoryPenalty;
 
-        var finalScore = (int)Math.Clamp(Math.Round(score), 0, 100);
-
         var result = new MatchResult
         {
             AssignmentId = assignment.Id,
             ConsultantId = consultant.Id,
             ConsultantName = consultant.FullName,
-            Score = finalScore,
+            Score = (int)Math.Clamp(Math.Round(score), 0, 100),
             MatchedMandatory = mandatory.Count(d => d.IsMatched),
             TotalMandatory = mandatory.Count,
             MatchedDesired = desired.Count(d => d.IsMatched),
             TotalDesired = desired.Count,
+            ExperienceScore = (int)Math.Round(experienceRatio * 100),
             Details = details
         };
 
@@ -80,6 +76,8 @@ public class MatchingService(IOptions<MatchingOptions> options)
             matched = yearsOk && levelOk;
 
             evidence.Add($"Skill '{skill.Name}': level {skill.Level}/5, {skill.Years} years");
+            if (!string.IsNullOrWhiteSpace(skill.Evidence))
+                evidence.Add(skill.Evidence);
             if (!yearsOk) evidence.Add($"Requires {req.MinYears} years, consultant has {skill.Years}");
             if (!levelOk) evidence.Add($"Requires level {req.MinLevel}, consultant has {skill.Level}");
         }
@@ -87,7 +85,6 @@ public class MatchingService(IOptions<MatchingOptions> options)
         var cert = c.Certifications.FirstOrDefault(x => SameName(x.Name, req.Name));
         if (cert is not null)
         {
-            // A certification satisfies the requirement when no years/level are demanded.
             if (req.MinYears is null && req.MinLevel is null) matched = true;
             evidence.Add($"Certification '{cert.Name}'" + (cert.Issuer is null ? "" : $" ({cert.Issuer})"));
         }
@@ -115,7 +112,6 @@ public class MatchingService(IOptions<MatchingOptions> options)
     private static bool SameName(string a, string b) =>
         string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
 
-    // Template-based explanation. No AI.
     private static string BuildExplanation(
         MatchResult r, Assignment a, Consultant c, List<MatchRequirementResult> missingMandatory)
     {
@@ -126,8 +122,8 @@ public class MatchingService(IOptions<MatchingOptions> options)
             $"Desired requirements: {r.MatchedDesired}/{r.TotalDesired}."
         };
 
-        if (a.MinTotalYearsExperience > 0)
-            parts.Add($"Experience: {c.YearsOfExperience} years (minimum {a.MinTotalYearsExperience}).");
+        if (a.MinYearsExperience > 0)
+            parts.Add($"Experience: {c.YearsOfExperience} years (minimum {a.MinYearsExperience}).");
 
         if (missingMandatory.Count > 0)
             parts.Add("Missing mandatory: " + string.Join(", ", missingMandatory.Select(m => m.RequirementName)) + ".");
