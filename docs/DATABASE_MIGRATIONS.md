@@ -1,60 +1,68 @@
 # Database migrations
 
-The API now uses EF Core migrations as the database lifecycle mechanism.
+API:t använder EF Core migrations som databasens lifecycle-mekanism.
 
-## Current migration
+## Aktuella migrations
 
-`20260923193000_AdoptEfMigrations`
+### 20260923193000_AdoptEfMigrations
 
-This migration is intentionally safe for the existing LocalDB used during development:
+Denna migration inför migrations på den befintliga utvecklingsdatabasen utan att radera existerande data.
 
-- Existing tables are kept.
-- Missing canonical skill tables are created.
-- `SkillId` links are added to consultant skills and assignment requirements when missing.
-- The obsolete `AdaptedCvs` table is removed if it still exists.
-- Fresh development databases can also create the current schema through the same migration.
+Den:
 
-After migrations run, `SkillNormalizationService`:
+- behåller befintliga tabeller,
+- skapar den centrala Skill Taxonomy när den saknas,
+- lägger till SkillId-länkar där de saknas,
+- tar bort den gamla AdaptedCvs-tabellen om den finns,
+- stödjer även en ny tom utvecklingsdatabas.
 
-1. ensures the canonical Skill Catalog exists,
-2. resolves aliases,
-3. links existing `ConsultantSkill` rows to `SkillId`,
-4. links existing `AssignmentRequirement` rows to `SkillId`.
+Efter denna migration säkerställer SkillNormalizationService att den centrala skill-katalogen finns och att data normaliseras mot canonical skills.
 
-## Temporary compatibility columns
+### 20260923230644_CanonicalSkillCleanup
 
-These columns remain for the moment:
+Denna migration slutför canonical skill-modellen.
 
-- `ConsultantSkill.Name`
-- `ConsultantSkill.Category`
-- `AssignmentRequirement.Name`
+Den:
 
-They are kept until the migrated data has been verified locally. They should only be removed in a later migration after confirming that every relevant row has a valid `SkillId`.
+- verifierar att ConsultantSkills.SkillId inte innehåller NULL,
+- verifierar att AssignmentRequirements.SkillId inte innehåller NULL,
+- hanterar beroende indexes och foreign keys säkert,
+- gör SkillId obligatoriskt,
+- tar bort de gamla redundanta Name/Category-kolumnerna,
+- återskapar rätt indexes och foreign keys.
+
+Det finns inte längre temporära compatibility-kolumner i den slutliga modellen.
 
 ## Startup
 
-The application now calls:
+Programmet använder:
 
 `Database.MigrateAsync()`
 
-The old `EnsureCreated()` and startup schema-creation SQL have been removed from `Program.cs`.
+Det gamla `EnsureCreated()`-flödet används inte längre.
 
-## Verification queries
+## Vanliga kommandon
 
-After running the API, verify:
+```powershell
+cd src/XlentMatch.Api
 
-```sql
-SELECT COUNT(*) AS SkillsWithoutCanonicalLink
-FROM ConsultantSkills
-WHERE SkillId IS NULL;
-
-SELECT COUNT(*) AS RequirementsWithoutCanonicalLink
-FROM AssignmentRequirements
-WHERE SkillId IS NULL;
-
-SELECT CanonicalName, Category
-FROM Skills
-ORDER BY CanonicalName;
+dotnet ef migrations list
+dotnet ef database update
+dotnet ef migrations has-pending-model-changes
 ```
 
-The first two counts should be 0 for non-empty skill/requirement names before removing the compatibility columns.
+Före leverans ska `has-pending-model-changes` inte rapportera någon osparad model change.
+
+## Ny utvecklingsdatabas
+
+En ny LocalDB kan verifieras genom att använda en ny databas och köra:
+
+```powershell
+dotnet ef database update
+```
+
+Därefter ska API:t kunna starta normalt utan `EnsureCreated()` eller manuell SQL.
+
+## Viktigt
+
+Ändra inte en migration som redan har distribuerats till en riktig produktionsmiljö. Under denna LIA-utveckling har migrations stabiliserats innan produktionssättning.
