@@ -32,6 +32,7 @@ export default function Matching() {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
+  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
   const assignmentId = Number(searchParams.get("assignment"));
@@ -114,6 +115,7 @@ export default function Matching() {
 
     setMatching(true);
     setError("");
+    setSuccess("");
     setExpanded(false);
 
     try {
@@ -124,6 +126,10 @@ export default function Matching() {
 
       setResults(data);
       setSelectedMatchId(data[0]?.id ?? null);
+      setAssignments((current) =>
+        current.map((item) => item.id === assignment.id ? { ...item, status: "Done" } : item),
+      );
+      setSuccess("Matching completed. This assignment is now marked as Matched.");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Matching failed.");
     } finally {
@@ -243,6 +249,13 @@ export default function Matching() {
             </button>
           </div>
         ) : null}
+
+        {success && (
+          <div className="mt-3 rounded-lg px-4 py-3 text-xs text-app-secondary" style={{ background: "var(--color-success-soft)", border: "1px solid var(--color-success-border)" }}>
+            <CheckCircle size={11} className="inline mr-1.5" style={{ color: "var(--color-success)" }} />
+            {success}
+          </div>
+        )}
 
         {error && (
           <div className="mt-3 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">

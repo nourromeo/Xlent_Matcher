@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Textarea } from "../components/ui/Textarea";
 import { consultantsApi } from "../services/consultantsApi";
 import { assignmentsApi } from "../services/assignmentsApi";
-import { aiApi, type CvAdaptationSuggestion } from "../services/aiApi";
+import { aiApi, type AdaptedCvRecord, type CvAdaptationSuggestion } from "../services/aiApi";
 import type { AssignmentApi, Consultant } from "../types";
 
 export default function CvAdaptation() {
@@ -19,6 +19,7 @@ export default function CvAdaptation() {
   const [analysing, setAnalysing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedVersions, setSavedVersions] = useState<AdaptedCvRecord[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -41,6 +42,30 @@ export default function CvAdaptation() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const cId = Number(consultantId);
+
+    if (!cId) {
+      setSavedVersions([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    aiApi
+      .getAdaptedCvsForConsultant(cId)
+      .then((records) => {
+        if (!cancelled) setSavedVersions(records);
+      })
+      .catch(() => {
+        if (!cancelled) setSavedVersions([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [consultantId]);
 
   const analyse = async () => {
     const cId = Number(consultantId);
@@ -71,7 +96,8 @@ export default function CvAdaptation() {
     setError("");
 
     try {
-      await aiApi.saveAdaptedCv(cId, aId, adaptedText);
+      const created = await aiApi.saveAdaptedCv(cId, aId, adaptedText);
+      setSavedVersions((current) => [created, ...current]);
       setSaved(true);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save adapted CV.");
@@ -150,6 +176,29 @@ export default function CvAdaptation() {
       </section>
 
       {error && <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">{error}</div>}
+
+      {consultantId && savedVersions.length > 0 && (
+        <section className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-app-primary">Saved adapted CVs</p>
+            <span className="text-[10px] text-app-faint">{savedVersions.length} saved</span>
+          </div>
+          <div className="space-y-2">
+            {savedVersions.slice(0, 5).map((item) => {
+              const assignment = assignments.find((assignmentItem) => assignmentItem.id === item.assignmentId);
+              return (
+                <div key={item.id} className="flex items-center justify-between gap-3 text-xs border-t border-app-subtle pt-2 first:border-t-0 first:pt-0">
+                  <div className="min-w-0">
+                    <p className="text-app-primary truncate">{assignment?.title || `Assignment #${item.assignmentId}`}</p>
+                    <p className="text-[10px] text-app-faint">{new Date(item.createdAt).toLocaleString()}</p>
+                  </div>
+                  <span className="text-[10px] font-mono text-app-muted">#{item.id}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {result && (
         <div className="space-y-4">

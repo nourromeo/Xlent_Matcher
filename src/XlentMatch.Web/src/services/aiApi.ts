@@ -41,6 +41,14 @@ export type CvAdaptationSuggestion = {
   notes: string[];
 };
 
+export type AdaptedCvRecord = {
+  id: number;
+  consultantId: number;
+  assignmentId: number;
+  content: string;
+  createdAt: string;
+};
+
 function extractionForm(file?: File, text?: string) {
   const form = new FormData();
   if (file) form.append("File", file);
@@ -74,8 +82,11 @@ export const aiApi = {
     }),
 
   saveAdaptedCv: (consultantId: number, assignmentId: number, content: string) =>
-    apiRequest<{ id: number }>("/cv/adapted", {
+    apiRequest<AdaptedCvRecord>("/cv/adapted", {
       method: "POST",
       body: JSON.stringify({ consultantId, assignmentId, content }),
     }),
+
+  getAdaptedCvsForConsultant: (consultantId: number) =>
+    apiRequest<AdaptedCvRecord[]>(`/cv/adapted/consultant/${consultantId}`),
 };

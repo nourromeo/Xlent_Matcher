@@ -132,6 +132,21 @@ export default function CvUpload() {
   const activeFile = files.find((file) => file.id === activeId) ?? null;
   const draft = activeFile?.draft ?? null;
 
+  useEffect(() => {
+    if (!activeFile || activeFile.status !== "Review" || !activeFile.draft) return;
+
+    const timer = window.setTimeout(() => {
+      void cvUploadsApi.update(activeFile.id, {
+        status: "Review",
+        consultantId: null,
+        errorMessage: null,
+        draftJson: JSON.stringify(activeFile.draft),
+      });
+    }, 600);
+
+    return () => window.clearTimeout(timer);
+  }, [activeFile?.id, activeFile?.draft, activeFile?.status]);
+
   const updateLocal = (id: number, patch: Partial<CvUploadView>) => {
     setFiles((current) => current.map((file) => file.id === id ? { ...file, ...patch } : file));
   };
