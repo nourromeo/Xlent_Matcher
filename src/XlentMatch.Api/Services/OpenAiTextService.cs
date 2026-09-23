@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
 using XlentMatch.Api.DTOs.Cv;
-using XlentMatch.Api.Models;
 
 namespace XlentMatch.Api.Services;
 
@@ -78,65 +77,6 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             """;
 
         return AskForJsonAsync<RequirementExtractionResultDto>(system, text, ct);
-    }
-
-    public Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(
-        Consultant consultant, Assignment assignment, MatchResult? match, CancellationToken ct)
-    {
-        var system = $$"""
-            You help a consultant tailor an existing CV to a customer assignment.
-            {{NoInventionRule}}
-            You may reorder, emphasize and rephrase EXISTING content so relevant experience is highlighted.
-            You must NOT add skills or experiences that are not in the profile, and you must NOT change
-            or comment on the numeric match score. The user reviews everything before use.
-            Return a JSON object with exactly this shape:
-            {
-              "summary": string,
-              "highlightedExperiences": [string],
-              "adaptedCvText": string,
-              "notes": [string]
-            }
-            """;
-
-        var user = JsonSerializer.Serialize(new
-        {
-            assignment = new
-            {
-                assignment.CustomerName,
-                assignment.Title,
-                assignment.Description,
-                assignment.Seniority,
-                assignment.MinYearsExperience,
-                assignment.Availability,
-                requirements = assignment.Requirements.Select(r => new { r.Name, r.Type, r.MinYears, r.MinLevel })
-            },
-            consultant = new
-            {
-                consultant.FirstName,
-                consultant.LastName,
-                consultant.Title,
-                consultant.Summary,
-                consultant.Seniority,
-                consultant.YearsOfExperience,
-                consultant.Availability,
-                consultant.Office,
-                skills = consultant.Skills.Select(s => new { s.Name, s.Category, s.Level, s.Years, s.Evidence }),
-                experiences = consultant.Experiences.Select(e => new { e.Company, e.Role, e.Description, e.StartDate, e.EndDate }),
-                projects = consultant.Projects.Select(p => new { p.Name, p.Description, p.Technologies }),
-                education = consultant.Education.Select(e => new { e.Degree, e.School, e.Year }),
-                languages = consultant.Languages.Select(l => new { l.Name, l.Level }),
-                industries = consultant.Industries.Select(i => i.Name),
-                certifications = consultant.Certifications.Select(c => new { c.Name, c.Issuer, c.IssuedDate }),
-                originalCvText = consultant.OriginalCvText
-            },
-            matchSummary = match is null ? null : new
-            {
-                matched = match.Details.Where(d => d.IsMatched).Select(d => d.RequirementName),
-                missing = match.Details.Where(d => !d.IsMatched).Select(d => d.RequirementName)
-            }
-        }, Json);
-
-        return AskForJsonAsync<CvAdaptationSuggestionDto>(system, user, ct);
     }
 
     public Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(

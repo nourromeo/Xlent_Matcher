@@ -3,12 +3,6 @@ using XlentMatch.Api.DTOs.Consultants;
 
 namespace XlentMatch.Api.DTOs.Cv;
 
-public class CvSuggestionRequestDto
-{
-    public int ConsultantId { get; set; }
-    public int AssignmentId { get; set; }
-}
-
 public class TemporaryCvSuggestionRequestDto
 {
     public ConsultantDraftDto Consultant { get; set; } = new();

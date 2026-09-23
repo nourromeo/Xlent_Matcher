@@ -148,12 +148,6 @@ export const aiApi = {
       body: extractionForm(undefined, text),
     }),
 
-  suggestCvAdaptation: (consultantId: number, assignmentId: number) =>
-    apiRequest<CvAdaptationSuggestion>("/cv/suggest", {
-      method: "POST",
-      body: JSON.stringify({ consultantId, assignmentId }),
-    }),
-
   suggestTemporaryCvAdaptation: (consultant: ConsultantDraft, assignment: TemporaryAssignmentDraft) =>
     apiRequest<CvAdaptationSuggestion>("/cv/suggest-temporary", {
       method: "POST",
