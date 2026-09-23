@@ -20,6 +20,8 @@ export default function Admin() {
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [skillPage, setSkillPage] = useState(1);
+  const skillsPerPage = 10;
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +68,17 @@ export default function Admin() {
       return matchesCategory && matchesSearch;
     });
   }, [skills, search, category]);
+
+  useEffect(() => {
+    setSkillPage(1);
+  }, [search, category]);
+
+  const skillPageCount = Math.max(1, Math.ceil(filteredSkills.length / skillsPerPage));
+  const currentSkillPage = Math.min(skillPage, skillPageCount);
+  const pagedSkills = filteredSkills.slice(
+    (currentSkillPage - 1) * skillsPerPage,
+    currentSkillPage * skillsPerPage,
+  );
 
   const total = factors.reduce((sum, factor) => sum + factor.value, 0);
   const ok = total === 100;
@@ -188,10 +201,36 @@ export default function Admin() {
                   ),
                 },
               ]}
-              rows={filteredSkills}
+              rows={pagedSkills}
               rowKey={(skill: AdminSkill) => skill.id}
               emptyMessage={loading ? "Loading skills..." : t("admin_empty_skills")}
             />
+
+            {!loading && filteredSkills.length > skillsPerPage && (
+              <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-app">
+                <p className="text-[10px] text-app-muted">
+                  Showing {(currentSkillPage - 1) * skillsPerPage + 1}–{Math.min(currentSkillPage * skillsPerPage, filteredSkills.length)} of {filteredSkills.length} skills
+                </p>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: skillPageCount }, (_, index) => index + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setSkillPage(page)}
+                      className={
+                        "min-w-7 h-7 px-2 rounded text-[11px] border " +
+                        (page === currentSkillPage
+                          ? "bg-app-brand text-white border-transparent"
+                          : "bg-app-surface text-app-secondary border-app")
+                      }
+                      aria-current={page === currentSkillPage ? "page" : undefined}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

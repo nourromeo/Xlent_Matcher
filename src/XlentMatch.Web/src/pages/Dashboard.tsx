@@ -54,6 +54,14 @@ export default function Dashboard() {
   const [matches, setMatches] = useState<MatchResultApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [dismissedMatchIds, setDismissedMatchIds] = useState<number[]>(() => {
+    try {
+      const stored = window.localStorage.getItem("dashboard.dismissedMatchIds");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -109,7 +117,15 @@ export default function Dashboard() {
   const matchedAssignments = assignments.filter((item) => item.status !== "Draft").length;
   const processingUploads = uploads.filter((item) => item.status === "Extracting" || item.status === "Review").length;
   const recentUploads = uploads.slice(0, 5);
-  const recentMatches = matches.slice(0, 6);
+  const recentMatches = matches
+    .filter((match) => !dismissedMatchIds.includes(match.id))
+    .slice(0, 6);
+
+  const clearRecentMatches = () => {
+    const idsToDismiss = matches.map((match) => match.id);
+    setDismissedMatchIds(idsToDismiss);
+    window.localStorage.setItem("dashboard.dismissedMatchIds", JSON.stringify(idsToDismiss));
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -170,9 +186,21 @@ export default function Dashboard() {
                 Latest saved consultant scores from completed matching runs
               </p>
             </div>
-            <Link to="/matching" className="text-[10px] text-app-brand flex items-center gap-1">
-              Open matching <ArrowUpRight size={10} />
-            </Link>
+            <div className="flex items-center gap-3">
+              {recentMatches.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearRecentMatches}
+                  className="text-[10px] text-app-muted hover:text-app-primary"
+                  title="Hide these items from the dashboard only. Saved matching results are not deleted."
+                >
+                  Clear
+                </button>
+              )}
+              <Link to="/matching" className="text-[10px] text-app-brand flex items-center gap-1">
+                Open matching <ArrowUpRight size={10} />
+              </Link>
+            </div>
           </div>
 
           <div className="grid grid-cols-[1fr_1fr_180px_90px] gap-3 px-4 py-2 border-b border-app text-[10px] uppercase tracking-wide text-app-faint">
@@ -183,7 +211,9 @@ export default function Dashboard() {
           </div>
 
           {recentMatches.length === 0 && !loading ? (
-            <p className="px-4 py-8 text-xs text-app-faint text-center">No matching results yet.</p>
+            <p className="px-4 py-8 text-xs text-app-faint text-center">
+              {matches.length > 0 ? "Recent matches cleared from this dashboard view." : "No matching results yet."}
+            </p>
           ) : (
             <div>
               {recentMatches.map((match) => (
