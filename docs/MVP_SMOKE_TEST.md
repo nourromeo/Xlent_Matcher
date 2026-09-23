@@ -1,75 +1,214 @@
 # MVP End-to-End Smoke Test
 
-Use this checklist after pulling the latest code. Run both the ASP.NET Core API and the React frontend.
+Kör denna checklista efter `git pull`. Starta både ASP.NET Core API och React frontend.
 
-## 1. CV Upload
+Målet är att verifiera hela MVP-flödet inför demo och leverans.
 
-- Upload a valid PDF/TXT under 10 MB.
-- Confirm the upload appears in **CV processing history**.
-- Confirm status changes from **Extracting** to **Review needed**.
-- Edit extracted data, wait briefly, refresh, and confirm the review draft remains.
-- Approve the consultant and confirm status changes to **Indexed**.
-- Open **View Consultant** and confirm the correct profile is shown.
-- Try an unsupported file type: the UI must reject it without adding a history row.
-- Try an empty file: the UI/API must reject it.
-- Try a PDF with no readable text: the API must return a clear message about scanned/image-only PDFs.
-- Upload the same filename + file size again: the API must return a duplicate warning and must not add a second history record.
+## 1. Consultant
 
-## 2. Client Assignment
+- [ ] Öppna Consultants och verifiera att befintliga konsulter visas.
+- [ ] Skapa eller godkänn en konsult via CV Upload-flödet.
+- [ ] Öppna Consultant Profile och verifiera namn, titel, erfarenhet och skills.
+- [ ] Redigera konsultprofilen och verifiera att ändringen visas korrekt.
 
-- Create an assignment using title, customer and description.
-- Run AI requirement extraction.
-- Review/edit the extracted requirements.
-- Confirm at least one non-empty requirement is required before save.
-- Save and verify the assignment is shown as **Draft**.
-- Open the assignment detail page and verify the saved data.
+## 2. CV Upload
 
-## 3. Matching
+- [ ] Ladda upp en giltig PDF/TXT under 10 MB.
+- [ ] Kontrollera att filen visas i CV processing history.
+- [ ] Kontrollera att status går från Extracting till Review needed.
+- [ ] Granska och redigera extraherad data.
+- [ ] Uppdatera sidan och kontrollera att review draft finns kvar.
+- [ ] Godkänn konsulten och verifiera status Indexed.
+- [ ] Öppna View Consultant och kontrollera rätt profil.
+- [ ] Försök ladda upp en filtyp som inte stöds.
+- [ ] Försök med en tom fil.
+- [ ] Testa en PDF utan läsbar text.
+- [ ] Ladda upp samma filnamn och filstorlek igen och kontrollera duplicate warning.
 
-- Open a Draft assignment with requirements.
-- Run matching.
-- Confirm ranked consultants, Match Score, matched requirements, missing requirements and evidence are shown.
-- Confirm the assignment becomes **Matched** only after a successful matching run.
-- Reload Matching and verify saved results are restored.
-- Confirm matching is rejected if the assignment has no requirements or no consultants are selected.
+Förväntat: felaktiga filer ska inte skapa en ny giltig historikpost.
 
-## 4. CV Adaptation
+## 3. Client Assignment
 
-Test source modes for both sides:
+- [ ] Skapa ett nytt kunduppdrag med title, customer och description.
+- [ ] Lägg till minst ett Mandatory requirement.
+- [ ] Lägg till ett Desired requirement.
+- [ ] Spara uppdraget.
+- [ ] Kontrollera att uppdraget visas som Draft.
+- [ ] Öppna Assignment Detail och verifiera sparade värden.
+- [ ] Försök spara ett uppdrag utan requirements.
 
-- Consultant: **Existing / Upload / Paste**
-- Assignment: **Existing / Upload / Paste**
+Förväntat: assignment utan requirements ska stoppas med ett tydligt fel.
 
-Verify several combinations:
-- Existing + Existing
+## 4. Matching
+
+- [ ] Öppna ett Draft assignment.
+- [ ] Kör Matching.
+- [ ] Kontrollera att konsulter rankas.
+- [ ] Kontrollera Match Score.
+- [ ] Kontrollera Mandatory matched/missing requirements.
+- [ ] Kontrollera Desired matches.
+- [ ] Kontrollera evidence.
+- [ ] Kontrollera motivering.
+- [ ] Kontrollera att assignment blir Matched efter lyckad körning.
+- [ ] Uppdatera sidan och kontrollera att sparade resultat laddas igen.
+- [ ] Kontrollera att matching utan valda konsulter stoppas.
+- [ ] Kontrollera att assignment utan requirements stoppas.
+
+## 5. Skill Taxonomy
+
+- [ ] Öppna Admin -> Skill Taxonomy.
+- [ ] Klicka Add Skill.
+- [ ] Lägg till canonical name, category och minst ett alias.
+- [ ] Kontrollera att den nya skillen syns i tabellen.
+- [ ] Försök lägga till samma canonical name igen.
+- [ ] Försök använda ett alias som redan används av en annan skill.
+- [ ] Klicka Edit på den nya skillen.
+- [ ] Ändra canonical name eller category.
+- [ ] Spara.
+- [ ] Uppdatera sidan och verifiera att ändringen finns kvar.
+
+Förväntat: duplicate canonical names och aliases ska stoppas av backend.
+
+## 6. Matching Weights
+
+Standard:
+
+- Mandatory = 60
+- Desired = 25
+- Experience = 15
+- Missing mandatory penalty = 10
+
+Test:
+
+- [ ] Öppna Admin -> Matching Weights.
+- [ ] Ändra vikterna men behåll totalen 100.
+- [ ] Klicka Save.
+- [ ] Kör om Matching för ett uppdrag.
+- [ ] Kontrollera att Matching-sidan visar de nya vikterna.
+- [ ] Kontrollera att Match Score kan förändras när vikterna förändras.
+- [ ] Starta om API:t.
+- [ ] Öppna Admin igen och kontrollera att vikterna finns kvar.
+- [ ] Klicka Reset och kontrollera att standardvärdena återställs.
+- [ ] Försök skapa en kombination som inte blir 100.
+
+Förväntat: Save ska vara blockerad när de tre positiva vikterna inte summerar till 100.
+
+## 7. CV Adaptation
+
+Testa flera kombinationer:
+
+- Existing Consultant + Existing Assignment
 - Upload CV + Existing Assignment
 - Paste CV + Paste Assignment
 - Existing Consultant + Upload Requirements
 
-For each:
-- Generate suggestions.
-- Verify summary, what to emphasize, gaps/notes and adapted CV draft.
-- Edit the result.
-- Use **Copy text**.
-- Use **Print** and verify only a clean A4 CV document appears in print preview.
-- Use **Close result** and verify the selected inputs remain.
-- Use **Start over** and verify the temporary inputs/result are cleared.
-- Refresh and confirm there is no adapted-CV history or saved result.
+För varje test:
 
-## 5. Failure handling
+- [ ] Generate suggestions.
+- [ ] Kontrollera summary.
+- [ ] Kontrollera vad som ska betonas.
+- [ ] Kontrollera gaps/notes.
+- [ ] Kontrollera adapted CV draft.
+- [ ] Redigera resultatet.
+- [ ] Använd Copy text.
+- [ ] Använd Print och kontrollera ren A4-layout.
+- [ ] Använd Close result och verifiera att inputs finns kvar.
+- [ ] Använd Start over och verifiera att temporära inputs/resultat rensas.
+- [ ] Uppdatera sidan och kontrollera att inget adapted result har sparats.
 
-- Stop the backend and perform an API action: the UI should say it cannot reach the backend.
-- Make Azure OpenAI unavailable/misconfigured: extraction/adaptation should show a friendly AI-service error instead of raw provider details.
-- Invalid files should be rejected.
-- Empty requirement sets should be rejected.
+## 8. Error handling
 
-## Expected MVP result
+### Backend unavailable
 
-The complete flow works as:
+- [ ] Stoppa API:t.
+- [ ] Utför en API-funktion från frontend.
 
-CV Upload -> Review -> Consultant
+Förväntat meddelande:
+
+`Cannot reach the backend API. Make sure the API is running and try again.`
+
+### Azure OpenAI unavailable
+
+- [ ] Testa extraction/adaptation med saknad eller ogiltig AI-konfiguration.
+
+Förväntat: användarvänligt `AI service unavailable`-fel. Provider response och API key ska inte visas för användaren.
+
+### Invalid file
+
+- [ ] Unsupported extension.
+- [ ] Empty file.
+- [ ] File > 10 MB.
+- [ ] Image-only/scanned PDF.
+
+Förväntat: tydligt fel utan krascher.
+
+### Duplicate Skill
+
+- [ ] Duplicate canonical name.
+- [ ] Alias som kolliderar med en canonical skill.
+- [ ] Alias som kolliderar med ett annat alias.
+
+Förväntat: HTTP 409 och begripligt meddelande.
+
+## 9. Restart / persistence
+
+- [ ] Skapa eller ändra en Consultant.
+- [ ] Skapa ett Assignment.
+- [ ] Lägg till/Edit en Skill.
+- [ ] Spara Matching Weights.
+- [ ] Stoppa API:t.
+- [ ] Starta API:t igen.
+- [ ] Verifiera att database-data finns kvar.
+- [ ] Verifiera att Matching Weights finns kvar.
+
+## 10. UI final check
+
+- [ ] Ingen ATS-terminologi.
+- [ ] Ingen Candidate/Hiring-terminologi.
+- [ ] Ingen gammal Job/Talent Pool-terminologi.
+- [ ] Inga test/mock-värden som ser ut som live-data.
+- [ ] Inga oavsiktligt disabled buttons.
+- [ ] Skill Delete får fortfarande vara disabled enligt nuvarande avgränsning.
+- [ ] Feature Flags lämnas oförändrade enligt nuvarande krav.
+- [ ] Inga onödigt duplicerade panels eller actions på samma sida.
+- [ ] Match breakdown visar samma weights som Admin.
+
+## 11. Build / technical checks
+
+Backend:
+
+```powershell
+cd src/XlentMatch.Api
+dotnet restore
+dotnet build
+dotnet ef migrations has-pending-model-changes
+```
+
+Frontend:
+
+```powershell
+cd src/XlentMatch.Web
+npm ci
+npm run typecheck
+npm run build
+```
+
+GitHub Actions ska också vara grön före leverans.
+
+## Expected MVP flow
+
+```text
+CV -> Review -> Consultant
+               |
 Client Assignment -> Requirements
-Consultant + Assignment -> Matching -> Ranking
-CV Adaptation -> Temporary AI suggestions -> Copy / Print
+               |
+               v
+         Deterministic Matching
+               |
+               v
+     Score -> Ranking -> Evidence
+```
 
-CV Adaptation does not write any result to the database.
+Admin påverkar Skill Taxonomy och Matching Weights. Feature Flags lämnas enligt nuvarande krav.
+
+Det slutliga valet av konsult görs alltid av användaren.
