@@ -6,8 +6,7 @@ import { Tabs } from "../components/ui/Tabs";
 import { DataTable } from "../components/ui/DataTable";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { Modal } from "../components/ui/Modal";
-import { Input } from "../components/ui/Input";
+import { SkillEditModal } from "../components/SkillEditModal";
 import { adminApi, type AdminOverview, type AdminSkill } from "../services/adminApi";
 
 const ADMIN_TABS = ["taxonomy", "weights", "flags"] as const;
