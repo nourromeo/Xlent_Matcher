@@ -166,11 +166,20 @@ export default function Dashboard() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <div>
               <p className="text-xs font-medium text-app-primary">Recent Consultant Matches</p>
-              <p className="text-[10px] text-app-muted mt-0.5">Saved deterministic matching results</p>
+              <p className="text-[10px] text-app-muted mt-0.5">
+                Latest saved consultant scores from completed matching runs
+              </p>
             </div>
             <Link to="/matching" className="text-[10px] text-app-brand flex items-center gap-1">
               Open matching <ArrowUpRight size={10} />
             </Link>
+          </div>
+
+          <div className="grid grid-cols-[1fr_1fr_180px_90px] gap-3 px-4 py-2 border-b border-app text-[10px] uppercase tracking-wide text-app-faint">
+            <span>Consultant</span>
+            <span>Assignment</span>
+            <span>Match Score</span>
+            <span className="text-right">Result</span>
           </div>
 
           {recentMatches.length === 0 && !loading ? (
@@ -178,14 +187,28 @@ export default function Dashboard() {
           ) : (
             <div>
               {recentMatches.map((match) => (
-                <div key={match.id} className="grid grid-cols-[1fr_1fr_80px_110px] gap-3 items-center px-4 py-3 border-b border-app-subtle last:border-b-0">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-app-primary truncate">{match.consultantName}</p>
-                  </div>
+                <div
+                  key={match.id}
+                  className="grid grid-cols-[1fr_1fr_180px_90px] gap-3 items-center px-4 py-3 border-b border-app-subtle last:border-b-0"
+                >
+                  <p className="text-xs font-medium text-app-primary truncate">{match.consultantName}</p>
+
                   <p className="text-xs text-app-secondary truncate">
                     {assignmentById.get(match.assignmentId)?.title || `Assignment #${match.assignmentId}`}
                   </p>
-                  <p className="text-xs font-mono font-semibold text-app-primary text-right">{match.score}%</p>
+
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 flex-1 rounded-full bg-app-raised overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: Math.max(0, Math.min(100, match.score)) + "%", backgroundColor: "var(--color-brand)" }}
+                      />
+                    </div>
+                    <span className="w-10 text-right text-xs font-mono font-semibold text-app-primary">
+                      {match.score}%
+                    </span>
+                  </div>
+
                   <Link
                     to={"/matching?assignment=" + match.assignmentId}
                     className="text-[10px] text-app-brand text-right"
