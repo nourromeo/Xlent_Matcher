@@ -17,15 +17,17 @@ public class MatchingController(AppDbContext db, MatchingService matching) : Con
         if (request.ConsultantIds.Count == 0)
             return BadRequest("Select at least one consultant before running matching.");
 
-        var assignment = await db.Assignments.Include(a => a.Requirements)
-            .AsNoTracking().FirstOrDefaultAsync(a => a.Id == request.AssignmentId, ct);
+        var assignment = await db.Assignments
+            .Include(a => a.Requirements).ThenInclude(r => r.Skill)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == request.AssignmentId, ct);
         if (assignment is null) return NotFound($"Assignment {request.AssignmentId} not found.");
 
         if (assignment.Requirements.Count == 0)
             return BadRequest("The assignment has no requirements to match.");
 
         var consultants = await db.Consultants
-            .Include(c => c.Skills)
+            .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .Include(c => c.Projects)
             .Include(c => c.Certifications)
             .Include(c => c.Experiences)
