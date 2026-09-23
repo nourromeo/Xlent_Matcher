@@ -1,3 +1,41 @@
 import type { Id } from "./common";
+
 export type AssignmentStatus = "matching" | "done" | "draft";
-export type Assignment = { id: Id; title: string; client: string; description: string; requiredSkills: string[]; preferredSkills: string[]; seniority: string; status: AssignmentStatus; created: string; availability: string };
+
+export type Assignment = {
+  id: Id;
+  title: string;
+  client: string;
+  description: string;
+  requiredSkills: string[];
+  preferredSkills: string[];
+  seniority: string;
+  status: AssignmentStatus;
+  created: string;
+  availability: string;
+};
+
+export type RequirementTypeApi = "Mandatory" | "Desired";
+export type AssignmentStatusApi = "Draft" | "Matching" | "Done" | "Closed";
+
+export type AssignmentRequirementApi = {
+  id: number;
+  assignmentId: number;
+  name: string;
+  type: RequirementTypeApi;
+  minYears: number | null;
+  minLevel: number | null;
+};
+
+export type AssignmentApi = {
+  id: number;
+  customerName: string;
+  title: string;
+  description: string | null;
+  seniority: string | null;
+  minYearsExperience: number;
+  availability: string | null;
+  status: AssignmentStatusApi;
+  createdAt: string;
+  requirements: AssignmentRequirementApi[];
+};

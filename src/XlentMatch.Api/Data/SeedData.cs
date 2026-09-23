@@ -7,11 +7,10 @@ public static class SeedData
 {
     public static async Task InitializeAsync(AppDbContext db, CancellationToken ct = default)
     {
-        if (await db.Consultants.AnyAsync(ct))
-            return;
-
-        var consultants = new List<Consultant>
+        if (!await db.Consultants.AnyAsync(ct))
         {
+            var consultants = new List<Consultant>
+            {
             new()
             {
                 FirstName = "Anna",
@@ -196,7 +195,77 @@ public static class SeedData
             }
         };
 
-        db.Consultants.AddRange(consultants);
-        await db.SaveChangesAsync(ct);
+            db.Consultants.AddRange(consultants);
+            await db.SaveChangesAsync(ct);
+        }
+
+        if (!await db.Assignments.AnyAsync(ct))
+        {
+            var assignments = new List<Assignment>
+            {
+                new()
+                {
+                    CustomerName = "Nordic Financial Services",
+                    Title = "Payments Platform Modernisation",
+                    Description = "Modernise an event-driven payments platform and strengthen its production reliability.",
+                    Seniority = "Senior",
+                    MinYearsExperience = 6,
+                    Availability = "Immediate",
+                    Status = AssignmentStatus.Matching,
+                    CreatedAt = DateTime.UtcNow.AddDays(-3),
+                    Requirements =
+                    [
+                        new() { Name = "Go", Type = RequirementType.Mandatory, MinYears = 3 },
+                        new() { Name = "PostgreSQL", Type = RequirementType.Mandatory, MinYears = 4 },
+                        new() { Name = "Kafka", Type = RequirementType.Mandatory, MinYears = 3 },
+                        new() { Name = "Kubernetes", Type = RequirementType.Mandatory, MinYears = 3 },
+                        new() { Name = "Rust", Type = RequirementType.Desired },
+                        new() { Name = "gRPC", Type = RequirementType.Desired }
+                    ]
+                },
+                new()
+                {
+                    CustomerName = "Industrial Analytics Group",
+                    Title = "Applied AI Enablement",
+                    Description = "Build and operationalise language-model services for internal knowledge workflows.",
+                    Seniority = "Mid",
+                    MinYearsExperience = 4,
+                    Availability = "2 weeks",
+                    Status = AssignmentStatus.Done,
+                    CreatedAt = DateTime.UtcNow.AddDays(-5),
+                    Requirements =
+                    [
+                        new() { Name = "Python", Type = RequirementType.Mandatory, MinYears = 4 },
+                        new() { Name = "PyTorch", Type = RequirementType.Mandatory, MinYears = 3 },
+                        new() { Name = "NLP", Type = RequirementType.Mandatory, MinYears = 3 },
+                        new() { Name = "Azure ML", Type = RequirementType.Mandatory, MinYears = 2 },
+                        new() { Name = "FastAPI", Type = RequirementType.Desired },
+                        new() { Name = "MLflow", Type = RequirementType.Desired }
+                    ]
+                },
+                new()
+                {
+                    CustomerName = "Public Services Organisation",
+                    Title = "Cloud Reliability Programme",
+                    Description = "Improve platform reliability, observability, and infrastructure automation across Azure workloads.",
+                    Seniority = "Staff",
+                    MinYearsExperience = 8,
+                    Availability = "To be agreed",
+                    Status = AssignmentStatus.Draft,
+                    CreatedAt = DateTime.UtcNow.AddDays(-2),
+                    Requirements =
+                    [
+                        new() { Name = "Kubernetes", Type = RequirementType.Mandatory, MinYears = 5 },
+                        new() { Name = "Terraform", Type = RequirementType.Mandatory, MinYears = 4 },
+                        new() { Name = "Prometheus", Type = RequirementType.Mandatory, MinYears = 3 },
+                        new() { Name = "Go", Type = RequirementType.Desired },
+                        new() { Name = "Datadog", Type = RequirementType.Desired }
+                    ]
+                }
+            };
+
+            db.Assignments.AddRange(assignments);
+            await db.SaveChangesAsync(ct);
+        }
     }
 }
