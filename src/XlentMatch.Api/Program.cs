@@ -35,6 +35,28 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+
+    await db.Database.ExecuteSqlRawAsync("""
+        IF OBJECT_ID(N'[CvUploads]', N'U') IS NULL
+        BEGIN
+            CREATE TABLE [CvUploads] (
+                [Id] int NOT NULL IDENTITY,
+                [FileName] nvarchar(512) NOT NULL,
+                [FileSize] bigint NOT NULL,
+                [Status] nvarchar(50) NOT NULL,
+                [UploadedAt] datetime2 NOT NULL,
+                [ErrorMessage] nvarchar(max) NULL,
+                [ConsultantId] int NULL,
+                [DraftJson] nvarchar(max) NULL,
+                CONSTRAINT [PK_CvUploads] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_CvUploads_Consultants_ConsultantId]
+                    FOREIGN KEY ([ConsultantId]) REFERENCES [Consultants] ([Id]) ON DELETE SET NULL
+            );
+
+            CREATE INDEX [IX_CvUploads_ConsultantId] ON [CvUploads] ([ConsultantId]);
+        END
+        """);
+
     await SeedData.InitializeAsync(db);
 }
 

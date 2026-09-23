@@ -378,19 +378,17 @@ export default function ConsultantDetail() {
         ) : (
           <div className="p-6 h-full">
             <div className="bg-app-surface border border-app rounded-lg min-h-[500px] p-5 shadow-app-surface">
-              {consultant.originalCvText ? (
-                <pre className="text-xs text-app-secondary whitespace-pre-wrap font-sans leading-relaxed">
-                  {consultant.originalCvText}
-                </pre>
-              ) : (
-                <div className="h-[450px] flex items-center justify-center text-center">
-                  <div>
-                    <FileText size={32} className="text-app-faint mx-auto mb-3" />
-                    <p className="text-sm text-app-faint">{t("consultant_original_cv_title")}</p>
-                    <p className="text-xs text-app-faint mt-1">{t("consultant_original_cv_sub")}</p>
-                  </div>
+              <div className="h-[450px] flex items-center justify-center text-center">
+                <div className="max-w-md">
+                  <FileText size={32} className="text-app-faint mx-auto mb-3" />
+                  <p className="text-sm font-medium text-app-primary">Original CV</p>
+                  <p className="text-xs text-app-muted mt-2 leading-relaxed">
+                    In a future version, this section will show the consultant's original CV file.
+                    The current MVP stores the CV upload record and links it to the consultant,
+                    while the extracted profile is shown in the profile tab.
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}

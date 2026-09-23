@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Upload as UploadIcon, FileText, CheckCircle, AlertCircle, Loader, Plus, X, Eye } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
@@ -7,24 +8,10 @@ import { Textarea } from "../components/ui/Textarea";
 import { Modal } from "../components/ui/Modal";
 import { aiApi, type ConsultantDraft } from "../services/aiApi";
 import { consultantsApi } from "../services/consultantsApi";
+import { cvUploadsApi, type CvUploadStatus, type CvUploadView } from "../services/cvUploadsApi";
 import type { Consultant } from "../types";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-type UploadStatus = "extracting" | "review" | "done" | "error";
-
-type UploadEntry = {
-  id: string;
-  name: string;
-  size: number;
-  status: UploadStatus;
-  progress: number;
-  error?: string;
-  draft?: ConsultantDraft;
-  consultantId?: number;
-};
-
-let uploadSession: UploadEntry[] = [];
 
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -48,7 +35,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     yearsOfExperience: draft.yearsOfExperience,
     availability: draft.availability?.trim() || null,
     office: draft.office?.trim() || null,
-    originalCvText: draft.sourceText,
+    originalCvText: null,
     fullName: undefined,
     skills: draft.skills.filter((skill) => skill.name.trim()).map((skill) => ({
       id: 0,
@@ -103,81 +90,121 @@ function toConsultant(draft: ConsultantDraft): Consultant {
   };
 }
 
+function parseUpload(record: Awaited<ReturnType<typeof cvUploadsApi.getAll>>[number]): CvUploadView {
+  if (!record.draftJson) return record;
+
+  try {
+    return { ...record, draft: JSON.parse(record.draftJson) as ConsultantDraft };
+  } catch {
+    return record;
+  }
+}
+
 export default function CvUpload() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<UploadEntry[]>(() => uploadSession);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [files, setFiles] = useState<CvUploadView[]>([]);
+  const [activeId, setActiveId] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    uploadSession = files;
-  }, [files]);
+    let cancelled = false;
+
+    cvUploadsApi
+      .getAll()
+      .then((records) => {
+        if (!cancelled) setFiles(records.map(parseUpload));
+      })
+      .catch((requestError: unknown) => {
+        if (!cancelled) setError(requestError instanceof Error ? requestError.message : "Could not load CV uploads.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activeFile = files.find((file) => file.id === activeId) ?? null;
   const draft = activeFile?.draft ?? null;
 
-  const updateFile = (id: string, patch: Partial<UploadEntry>) => {
+  const updateLocal = (id: number, patch: Partial<CvUploadView>) => {
     setFiles((current) => current.map((file) => file.id === id ? { ...file, ...patch } : file));
   };
 
   const updateDraft = (next: ConsultantDraft) => {
-    if (!activeId) return;
-    updateFile(activeId, { draft: next });
+    if (!activeFile) return;
+    updateLocal(activeFile.id, { draft: next, draftJson: JSON.stringify(next) });
+  };
+
+  const createErrorRecord = async (file: File, message: string) => {
+    try {
+      const created = await cvUploadsApi.create(file.name, file.size, "Error", message);
+      setFiles((current) => [created, ...current]);
+    } catch {
+      setError(message);
+    }
   };
 
   const handleFile = async (file?: File) => {
     if (!file) return;
 
-    const id = crypto.randomUUID();
-
     if (!/\.(pdf|txt)$/i.test(file.name)) {
-      setFiles((current) => [...current, {
-        id,
-        name: file.name,
-        size: file.size,
-        status: "error",
-        progress: 100,
-        error: "Unsupported file type. Use PDF or TXT.",
-      }]);
+      await createErrorRecord(file, "Unsupported file type. Use PDF or TXT.");
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setFiles((current) => [...current, {
-        id,
-        name: file.name,
-        size: file.size,
-        status: "error",
-        progress: 100,
-        error: "File is larger than 10 MB.",
-      }]);
+      await createErrorRecord(file, "File is larger than 10 MB.");
       return;
     }
 
-    setFiles((current) => [...current, {
-      id,
-      name: file.name,
-      size: file.size,
-      status: "extracting",
-      progress: 45,
-    }]);
     setError("");
 
+    let uploadId: number | null = null;
+
     try {
+      const created = await cvUploadsApi.create(file.name, file.size, "Extracting");
+      uploadId = created.id;
+      setFiles((current) => [created, ...current]);
+
       const result = await aiApi.extractConsultantFromFile(file);
-      updateFile(id, { status: "review", progress: 75, draft: result });
-      setActiveId(id);
+      const updated = await cvUploadsApi.update(created.id, {
+        status: "Review",
+        draftJson: JSON.stringify(result),
+        consultantId: null,
+        errorMessage: null,
+      });
+
+      updateLocal(created.id, { ...updated, draft: result });
+      setActiveId(created.id);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : "Could not extract the CV.";
-      updateFile(id, { status: "error", progress: 100, error: message });
       setError(message);
+
+      if (uploadId !== null) {
+        try {
+          const updated = await cvUploadsApi.update(uploadId, {
+            status: "Error",
+            errorMessage: message,
+            consultantId: null,
+            draftJson: null,
+          });
+          updateLocal(uploadId, updated);
+        } catch {
+          // Keep the original extraction error visible.
+        }
+      }
     }
   };
 
   const saveConsultant = async () => {
     if (!activeFile?.draft) return;
+
     if (!activeFile.draft.firstName.trim() || !activeFile.draft.lastName.trim()) {
       setError("First name and last name are required before saving.");
       return;
@@ -188,7 +215,15 @@ export default function CvUpload() {
 
     try {
       const created = await consultantsApi.create(toConsultant(activeFile.draft));
-      updateFile(activeFile.id, { status: "done", progress: 100, consultantId: created.id });
+
+      const updatedUpload = await cvUploadsApi.update(activeFile.id, {
+        status: "Indexed",
+        consultantId: created.id,
+        errorMessage: null,
+        draftJson: null,
+      });
+
+      updateLocal(activeFile.id, { ...updatedUpload, draft: undefined });
       setActiveId(null);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save consultant.");
@@ -197,22 +232,32 @@ export default function CvUpload() {
     }
   };
 
+  const removeUpload = async (id: number) => {
+    try {
+      await cvUploadsApi.remove(id);
+      if (activeId === id) setActiveId(null);
+      setFiles((current) => current.filter((item) => item.id !== id));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not remove upload history.");
+    }
+  };
+
   const total = files.length;
-  const processing = files.filter((file) => file.status === "extracting" || file.status === "review").length;
-  const indexed = files.filter((file) => file.status === "done").length;
-  const errors = files.filter((file) => file.status === "error").length;
+  const processing = files.filter((file) => file.status === "Extracting" || file.status === "Review").length;
+  const indexed = files.filter((file) => file.status === "Indexed").length;
+  const errors = files.filter((file) => file.status === "Error").length;
   const canSave = Boolean(draft?.firstName.trim() && draft?.lastName.trim());
 
-  const statusLabel = (status: UploadStatus) =>
-    status === "extracting" ? "Extracting" :
-    status === "review" ? "Review needed" :
-    status === "done" ? "Indexed" : "Error";
-
-  const statusColor = (status: UploadStatus) =>
-    status === "done" ? "var(--color-success)" :
-    status === "error" ? "var(--color-danger)" :
-    status === "review" ? "var(--color-warning)" :
+  const statusColor = (status: CvUploadStatus) =>
+    status === "Indexed" ? "var(--color-success)" :
+    status === "Error" ? "var(--color-danger)" :
+    status === "Review" ? "var(--color-warning)" :
     "var(--color-brand)";
+
+  const progress = (status: CvUploadStatus) =>
+    status === "Extracting" ? 45 :
+    status === "Review" ? 75 :
+    100;
 
   return (
     <div className="p-6 space-y-5">
@@ -265,11 +310,11 @@ export default function CvUpload() {
         />
         <UploadIcon size={28} className="mx-auto mb-3 text-app-faint" />
         <p className="text-sm text-app-secondary">Drop a PDF/TXT here or click to choose a CV</p>
-        <p className="text-xs text-app-faint mt-1">Maximum 10 MB. Upload → AI extraction → review → save to Consultants.</p>
+        <p className="text-xs text-app-faint mt-1">Upload → AI extraction → review → save to Consultants.</p>
       </div>
 
       <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-[11px] text-app-muted">
-        Upload history stays available while you navigate inside the app. Extracted CV data is kept only in the current browser session until you approve and save it.
+        Upload history is stored in the database and remains after navigation, refresh, and restart. The original PDF file itself is not stored in the MVP.
       </div>
 
       {error && (
@@ -278,78 +323,80 @@ export default function CvUpload() {
         </div>
       )}
 
-      {files.length > 0 && (
-        <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
-          <div className="px-4 py-2.5 border-b border-app flex items-center justify-between">
-            <span className="text-xs font-medium text-app-primary">CV processing history</span>
-            <span className="text-[10px] text-app-faint">{files.length} files</span>
-          </div>
+      <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
+        <div className="px-4 py-2.5 border-b border-app flex items-center justify-between">
+          <span className="text-xs font-medium text-app-primary">CV processing history</span>
+          <span className="text-[10px] text-app-faint">{loading ? "Loading..." : `${files.length} files`}</span>
+        </div>
 
-          {files.map((file, index) => (
-            <div
-              key={file.id}
-              className="flex items-center gap-3 px-4 py-3"
-              style={{ borderBottom: index < files.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
-            >
-              <FileText size={13} className="text-app-faint flex-none" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-app-primary font-mono truncate">{file.name}</span>
-                  <span className="text-[10px] text-app-faint">{formatBytes(file.size)}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <div className="flex-1 h-1 rounded-full" style={{ background: "var(--color-border)" }}>
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: file.progress + "%", backgroundColor: statusColor(file.status) }}
-                    />
-                  </div>
-                  <span className="text-[10px] min-w-20" style={{ color: statusColor(file.status) }}>
-                    {file.status === "extracting" && <Loader size={9} className="inline animate-spin mr-1" />}
-                    {file.status === "done" && <CheckCircle size={9} className="inline mr-1" />}
-                    {file.status === "error" && <AlertCircle size={9} className="inline mr-1" />}
-                    {statusLabel(file.status)}
-                  </span>
-                </div>
-                {file.error && <p className="text-[10px] mt-1" style={{ color: "var(--color-danger)" }}>{file.error}</p>}
+        {!loading && files.length === 0 && (
+          <p className="px-4 py-6 text-xs text-app-faint text-center">No CVs uploaded yet.</p>
+        )}
+
+        {files.map((file, index) => (
+          <div
+            key={file.id}
+            className="flex items-center gap-3 px-4 py-3"
+            style={{ borderBottom: index < files.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
+          >
+            <FileText size={13} className="text-app-faint flex-none" />
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-app-primary font-mono truncate">{file.fileName}</span>
+                <span className="text-[10px] text-app-faint">{formatBytes(file.fileSize)}</span>
               </div>
 
-              {file.status === "review" && file.draft && (
-                <button
-                  type="button"
-                  onClick={() => setActiveId(file.id)}
-                  className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
-                >
-                  <Eye size={11} /> Review
-                </button>
-              )}
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex-1 h-1 rounded-full" style={{ background: "var(--color-border)" }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: progress(file.status) + "%", backgroundColor: statusColor(file.status) }}
+                  />
+                </div>
 
-              {file.status === "done" && file.consultantId && (
-                <a
-                  href={"/consultants/" + file.consultantId}
-                  className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
-                >
-                  <Eye size={11} /> View Consultant
-                </a>
-              )}
+                <span className="text-[10px] min-w-24" style={{ color: statusColor(file.status) }}>
+                  {file.status === "Extracting" && <Loader size={9} className="inline animate-spin mr-1" />}
+                  {file.status === "Indexed" && <CheckCircle size={9} className="inline mr-1" />}
+                  {file.status === "Error" && <AlertCircle size={9} className="inline mr-1" />}
+                  {file.status === "Review" ? "Review needed" : file.status}
+                </span>
+              </div>
 
-              {file.status !== "extracting" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (activeId === file.id) setActiveId(null);
-                    setFiles((current) => current.filter((item) => item.id !== file.id));
-                  }}
-                  className="text-app-faint hover:text-app-secondary"
-                  aria-label="Remove file from history"
-                >
-                  <X size={12} />
-                </button>
-              )}
+              <p className="text-[10px] text-app-faint mt-1">{new Date(file.uploadedAt).toLocaleString()}</p>
+              {file.errorMessage && <p className="text-[10px] mt-1" style={{ color: "var(--color-danger)" }}>{file.errorMessage}</p>}
             </div>
-          ))}
-        </div>
-      )}
+
+            {file.status === "Review" && file.draft && (
+              <button
+                type="button"
+                onClick={() => setActiveId(file.id)}
+                className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
+              >
+                <Eye size={11} /> Review
+              </button>
+            )}
+
+            {file.status === "Indexed" && file.consultantId && (
+              <Link
+                to={"/consultants/" + file.consultantId}
+                className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
+              >
+                <Eye size={11} /> View Consultant
+              </Link>
+            )}
+
+            <button
+              type="button"
+              onClick={() => void removeUpload(file.id)}
+              className="text-app-faint hover:text-app-secondary"
+              aria-label="Remove upload history"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
 
       {draft && activeFile && (
         <Modal
@@ -360,7 +407,7 @@ export default function CvUpload() {
         >
           <div className="p-5 space-y-5 max-h-[75vh] overflow-auto">
             <div className="flex items-center gap-2 text-xs text-app-muted">
-              <FileText size={12} /> {activeFile.name}
+              <FileText size={12} /> {activeFile.fileName}
             </div>
 
             <section className="space-y-3">

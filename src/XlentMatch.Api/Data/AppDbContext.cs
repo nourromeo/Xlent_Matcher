@@ -18,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MatchResult> MatchResults => Set<MatchResult>();
     public DbSet<MatchRequirementResult> MatchRequirementResults => Set<MatchRequirementResult>();
     public DbSet<AdaptedCv> AdaptedCvs => Set<AdaptedCv>();
+    public DbSet<CvUploadRecord> CvUploads => Set<CvUploadRecord>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -35,5 +36,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<MatchResult>().HasIndex(m => new { m.AssignmentId, m.ConsultantId });
 
         mb.Entity<AdaptedCv>().HasIndex(x => new { x.ConsultantId, x.AssignmentId });
+
+        mb.Entity<CvUploadRecord>()
+            .HasOne<Consultant>()
+            .WithMany()
+            .HasForeignKey(x => x.ConsultantId)
+            .OnDelete(DeleteBehavior.SetNull);
+        mb.Entity<CvUploadRecord>().HasIndex(x => x.ConsultantId);
     }
 }
