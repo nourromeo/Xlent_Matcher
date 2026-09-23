@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
@@ -7,222 +7,456 @@ import { Textarea } from "../components/ui/Textarea";
 import { EditFormModal } from "../components/ui/EditFormModal";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
-import { PROFILE } from "../features/consultants";
+import { consultantsApi } from "../services/consultantsApi";
+import type { Consultant, ConsultantSkill } from "../types";
 
-
-
-const LEVEL_BG: Record<string, React.CSSProperties> = {
-  Expert:    { color: "var(--color-success)",  background: "var(--color-success-subtle)"  },
-  Proficient:{ color: "var(--color-brand)", background: "var(--color-brand-subtle)" },
-  Familiar:  { color: "var(--color-text-muted)",  background: "var(--color-surface-raised)"  },
+const levelLabel = (level: number) => {
+  if (level >= 5) return "Expert";
+  if (level >= 3) return "Proficient";
+  return "Familiar";
 };
 
+const levelStyle = (level: number): React.CSSProperties => {
+  if (level >= 5) {
+    return { color: "var(--color-success)", background: "var(--color-success-subtle)" };
+  }
 
-const lines = (value: string) => value.split("\\n").map((line) => line.trim()).filter(Boolean);
-const parseSkills = (value: string) => lines(value).map((line) => {
-  const [name, category = "Skill", yearsUsed = "0", level = "Familiar", ...evidence] = line.split("|").map((part) => part.trim());
-  return { name, category, yearsUsed: Number(yearsUsed) || 0, level, evidence: evidence.join(" | ") || "Evidence requires review." };
-});
-const parseEducation = (value: string) => lines(value).map((line) => {
-  const [degree, school = "", year = ""] = line.split("|").map((part) => part.trim());
-  return { degree, school, year };
-});
-const parseExperience = (value: string) => lines(value).map((line) => {
-  const [role, company = "", start = "", end = "Present", stack = "", ...achievements] = line.split("|").map((part) => part.trim());
-  return { role, company, start, end, stack: stack.split(",").map((item) => item.trim()).filter(Boolean), achievements: achievements.length ? achievements : ["Achievement requires review."] };
-});
+  if (level >= 3) {
+    return { color: "var(--color-brand)", background: "var(--color-brand-subtle)" };
+  }
+
+  return { color: "var(--color-text-muted)", background: "var(--color-surface-raised)" };
+};
+
+const fullName = (consultant: Consultant) =>
+  consultant.fullName?.trim() || `${consultant.firstName} ${consultant.lastName}`.trim();
+
+const initials = (consultant: Consultant) =>
+  [consultant.firstName, consultant.lastName]
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase())
+    .join("")
+    .slice(0, 2);
+
+const skillsToText = (skills: ConsultantSkill[]) =>
+  skills
+    .map((skill) => [skill.name, skill.category ?? "", skill.years, skill.level, skill.evidence ?? ""].join(" | "))
+    .join("\n");
+
+const parseSkills = (value: string, consultantId: number): ConsultantSkill[] =>
+  value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const [name, category = "", years = "0", level = "0", ...evidence] =
+        line.split("|").map((part) => part.trim());
+
+      return {
+        id: 0,
+        consultantId,
+        name,
+        category: category || null,
+        years: Number(years) || 0,
+        level: Number(level) || 0,
+        evidence: evidence.join(" | ") || null,
+      };
+    });
 
 export default function ConsultantDetail() {
   const { t } = useI18n();
+  const { id } = useParams();
+  const consultantId = Number(id);
+
   const [activeTab, setActiveTab] = useState<"profile" | "original">("profile");
+  const [consultant, setConsultant] = useState<Consultant | null>(null);
+  const [draft, setDraft] = useState<Consultant | null>(null);
+  const [skillsText, setSkillsText] = useState("");
   const [editMode, setEditMode] = useState(false);
-  const [profile, setProfile] = useState(PROFILE);
-  const [draft, setDraft] = useState(PROFILE);
-  const [draftLists, setDraftLists] = useState({ skills: "", experience: "", education: "", languages: "", industries: "", certifications: "" });
-  const [reviewStatus, setReviewStatus] = useState<"Needs Review" | "Verified">("Needs Review");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!Number.isInteger(consultantId) || consultantId <= 0) {
+      setError("Invalid consultant id.");
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    consultantsApi
+      .getById(consultantId)
+      .then((data) => {
+        if (!cancelled) setConsultant(data);
+      })
+      .catch((requestError: unknown) => {
+        if (!cancelled) {
+          setError(requestError instanceof Error ? requestError.message : "Could not load consultant.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [consultantId]);
+
+  const technologiesByExperience = useMemo(() => {
+    if (!consultant) return new Map<string, string[]>();
+
+    const technologies = consultant.projects
+      .flatMap((project) => (project.technologies ?? "").split(","))
+      .map((technology) => technology.trim())
+      .filter(Boolean);
+
+    return new Map(consultant.experiences.map((experience) => [experience.company + experience.role, technologies]));
+  }, [consultant]);
+
+  const openEdit = () => {
+    if (!consultant) return;
+    setDraft(structuredClone(consultant));
+    setSkillsText(skillsToText(consultant.skills));
+    setEditMode(true);
+  };
+
+  const save = async () => {
+    if (!draft) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const payload: Consultant = {
+        ...draft,
+        skills: parseSkills(skillsText, draft.id),
+      };
+
+      const updated = await consultantsApi.update(draft.id, payload);
+      setConsultant(updated);
+      setEditMode(false);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not save consultant.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-6 text-sm text-app-muted">Loading consultant...</div>;
+  }
+
+  if (!consultant) {
+    return (
+      <div className="p-6 space-y-3">
+        <Link to="/consultants" className="text-xs text-app-brand">← {t("consultants_title")}</Link>
+        <p className="text-sm text-app-secondary">{error || "Consultant not found."}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="px-6 py-4 border-b border-app bg-app-surface flex items-start gap-4 flex-none">
-        <Link to="/consultants" className="text-app-faint hover:text-app-secondary transition-colors mt-0.5"><ChevronLeft size={16} /></Link>
+        <Link to="/consultants" className="text-app-faint hover:text-app-secondary transition-colors mt-0.5">
+          <ChevronLeft size={16} />
+        </Link>
+
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand">{profile.initials}</div>
+            <div className="w-9 h-9 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand">
+              {initials(consultant)}
+            </div>
+
             <div>
               <h1 className="text-sm font-semibold text-app-primary">
-                {profile.name} — {t("consultant_profile")}
+                {fullName(consultant)} — {t("consultant_profile")}
               </h1>
-              <p className="text-xs text-app-muted">{profile.role} · {profile.office} · {profile.totalYearsExperience} {t("consultant_years_experience")}</p>
+              <p className="text-xs text-app-muted">
+                {consultant.title || "Consultant"} · {consultant.office || "—"} · {consultant.yearsOfExperience} {t("consultant_years_experience")}
+              </p>
             </div>
-            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}>{profile.availability === "Immediate" ? t("immediate") : profile.availability}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: reviewStatus === "Verified" ? "var(--color-success)" : "var(--color-warning)", background: reviewStatus === "Verified" ? "var(--color-success-subtle)" : "var(--color-warning-subtle)" }}>{reviewStatus === "Verified" ? t("common_verified") : t("common_needs_review")}</span>
+
+            {consultant.availability && (
+              <span
+                className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium"
+                style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}
+              >
+                {consultant.availability === "Immediate" ? t("immediate") : consultant.availability}
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => { setDraft(profile); setDraftLists({ skills: profile.skills.map((s) => [s.name, s.category, s.yearsUsed, s.level, s.evidence].join(" | ")).join("\\n"), experience: profile.experience.map((e) => [e.role, e.company, e.start, e.end, e.stack.join(", "), e.achievements.join("; ")].join(" | ")).join("\\n"), education: profile.education.map((e) => [e.degree, e.school, e.year].join(" | ")).join("\\n"), languages: profile.languages.join("\\n"), industries: profile.industries.join("\\n"), certifications: profile.certifications.join("\\n") }); setEditMode(true); }} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors"
-            style={editMode ? { border: "1px solid var(--color-brand)", color: "var(--color-brand)", background: "var(--color-brand-subtle)" } : { border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}>
-            <Edit3 size={12} /> {t("consultant_edit")}
-          </button>
-        </div>
+
+        <button
+          onClick={openEdit}
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors"
+          style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+        >
+          <Edit3 size={12} /> {t("consultant_edit")}
+        </button>
       </div>
 
-      {/* Tabs */}
       <div className="flex border-b border-app px-6 bg-app-surface flex-none">
         {(["profile", "original"] as const).map((tab) => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
             className="flex items-center gap-1.5 text-xs px-1 py-2.5 mr-5 border-b-2 transition-colors"
-            style={activeTab === tab ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 } : { borderColor: "transparent", color: "var(--color-text-muted)" }}>
+            style={activeTab === tab
+              ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 }
+              : { borderColor: "transparent", color: "var(--color-text-muted)" }}
+          >
             {tab === "profile" ? <Code size={12} /> : <FileText size={12} />}
             {tab === "profile" ? t("consultant_extracted_profile") : t("consultant_original_cv")}
           </button>
         ))}
       </div>
 
-      {/* Content */}
+      {error && (
+        <div className="mx-6 mt-4 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+          {error}
+        </div>
+      )}
+
       <div className="flex-1 overflow-auto bg-app">
         {activeTab === "profile" ? (
           <div className="p-6 grid grid-cols-3 gap-5">
             <div className="col-span-2 space-y-4">
-              <div className="flex items-center justify-between">
-                <div><p className="text-xs font-semibold text-app-primary">{t("consultant_extraction_title")}</p><p className="text-[11px] text-app-muted mt-1">{t("consultant_extraction_description")}</p></div>
-                <span className="text-[10px] text-app-faint">{t("consultant_human_review")}</span>
-              </div>
+              {consultant.summary && (
+                <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                  <p className="text-xs font-medium text-app-primary mb-2">Summary</p>
+                  <p className="text-[11px] text-app-secondary leading-relaxed">{consultant.summary}</p>
+                </div>
+              )}
 
-              {/* Skills */}
-              <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
+              <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
                 <div className="px-4 py-3 border-b border-app flex items-center gap-2">
                   <Code size={12} className="text-app-faint" />
                   <span className="text-xs font-medium text-app-primary">{t("consultant_skills")}</span>
                 </div>
-                <div>
-                  {profile.skills.map((s, i) => (
-                    <div key={s.name} className="px-4 py-3" style={{ borderBottom: i < profile.skills.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
-                      <div className="flex items-start gap-3">
-                        <div className="flex-none w-28">
-                          <p className="text-xs font-medium text-app-primary font-mono">{s.name}</p>
-                          <p className="text-[10px] text-app-faint mt-0.5">{s.category}</p>
-                        </div>
-                        <div className="flex-none flex items-center gap-3">
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={LEVEL_BG[s.level] ?? LEVEL_BG.Familiar}>{s.level}</span>
-                          <span className="text-[10px] font-mono text-app-muted">{s.yearsUsed}y</span>
-                        </div>
-                        <p className="flex-1 text-[11px] text-app-muted italic leading-relaxed">"{s.evidence}"</p>
+
+                {consultant.skills.length === 0 ? (
+                  <p className="px-4 py-3 text-[11px] text-app-faint">No skills saved.</p>
+                ) : consultant.skills.map((skill, index) => (
+                  <div
+                    key={skill.id || `${skill.name}-${index}`}
+                    className="px-4 py-3"
+                    style={{ borderBottom: index < consultant.skills.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-none w-28">
+                        <p className="text-xs font-medium text-app-primary font-mono">{skill.name}</p>
+                        <p className="text-[10px] text-app-faint mt-0.5">{skill.category || "Skill"}</p>
                       </div>
+                      <div className="flex-none flex items-center gap-3">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={levelStyle(skill.level)}>
+                          {levelLabel(skill.level)}
+                        </span>
+                        <span className="text-[10px] font-mono text-app-muted">{skill.years}y</span>
+                      </div>
+                      <p className="flex-1 text-[11px] text-app-muted italic leading-relaxed">
+                        {skill.evidence || "No evidence saved."}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
 
-              {/* Experience */}
-              <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
+              <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
                 <div className="px-4 py-3 border-b border-app flex items-center gap-2">
                   <Briefcase size={12} className="text-app-faint" />
                   <span className="text-xs font-medium text-app-primary">{t("consultant_projects")}</span>
                 </div>
-                {profile.experience.map((e, i) => (
-                  <div key={i} className="px-4 py-3 space-y-2" style={{ borderBottom: i < profile.experience.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
+
+                {consultant.experiences.length === 0 ? (
+                  <p className="px-4 py-3 text-[11px] text-app-faint">No experience saved.</p>
+                ) : consultant.experiences.map((experience, index) => (
+                  <div
+                    key={experience.id || index}
+                    className="px-4 py-3 space-y-2"
+                    style={{ borderBottom: index < consultant.experiences.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
+                  >
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-xs font-medium text-app-primary">{e.role}</p>
-                        <p className="text-[11px] text-app-muted">{e.company}</p>
+                        <p className="text-xs font-medium text-app-primary">{experience.role}</p>
+                        <p className="text-[11px] text-app-muted">{experience.company}</p>
                       </div>
-                      <span className="text-[10px] font-mono text-app-faint">{e.start} – {e.end}</span>
+                      <span className="text-[10px] font-mono text-app-faint">
+                        {experience.startDate || "—"} – {experience.endDate || "Present"}
+                      </span>
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {e.stack.map((s) => (
-                        <span key={s} className="text-[10px] text-app-secondary px-1.5 py-0.5 rounded font-mono" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>{s}</span>
-                      ))}
-                    </div>
-                    <ul className="space-y-0.5">
-                      {e.achievements.map((a, j) => (
-                        <li key={j} className="text-[11px] text-app-muted flex gap-2">
-                          <span className="text-app-faint flex-none">–</span>{a}
-                        </li>
-                      ))}
-                    </ul>
+
+                    {(technologiesByExperience.get(experience.company + experience.role) ?? []).length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {(technologiesByExperience.get(experience.company + experience.role) ?? []).map((technology) => (
+                          <span
+                            key={technology}
+                            className="text-[10px] text-app-secondary px-1.5 py-0.5 rounded font-mono"
+                            style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
+                          >
+                            {technology}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {experience.description && (
+                      <p className="text-[11px] text-app-muted leading-relaxed">{experience.description}</p>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Sidebar */}
             <div className="space-y-4">
-              <div className="bg-app-surface border border-app rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <div className="flex items-center gap-2 mb-1"><GraduationCap size={12} className="text-app-faint" /><span className="text-xs font-medium text-app-primary">{t("consultant_education")}</span></div>
-                {profile.education.map((e, i) => (
-                  <div key={i}><p className="text-xs text-app-primary">{e.degree}</p><p className="text-[11px] text-app-muted">{e.school} · {e.year}</p></div>
-                ))}
-              </div>
-              <div className="bg-app-surface border border-app rounded-lg p-4" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <div className="flex items-center gap-2 mb-3"><Globe size={12} className="text-app-faint" /><span className="text-xs font-medium text-app-primary">{t("consultant_languages")}</span></div>
-                <div className="space-y-1.5">{profile.languages.map((l) => <p key={l} className="text-[11px] text-app-secondary">{l}</p>)}</div>
-              </div>
-              <div className="bg-app-surface border border-app rounded-lg p-4" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <p className="text-xs font-medium text-app-primary mb-3">{t("consultant_industries")}</p>
-                <div className="flex flex-wrap gap-1.5">{profile.industries.map((industry) => <span key={industry} className="text-[10px] text-app-secondary px-1.5 py-0.5 rounded" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>{industry}</span>)}</div>
-              </div>
-              <div className="bg-app-surface border border-app rounded-lg p-4" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <p className="text-xs font-medium text-app-primary mb-3">{t("consultant_certifications")}</p>
-                <div className="space-y-1.5">{profile.certifications.map((certification) => <p key={certification} className="text-[11px] text-app-secondary">{certification}</p>)}</div>
-              </div>
-              <div className="bg-app-surface border border-app rounded-lg p-4" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <details className="group"><summary className="cursor-pointer list-none text-[10px] text-app-faint uppercase tracking-wider font-medium flex items-center justify-between"><span>{t("consultant_extraction_details")}</span><span className="text-[10px] text-app-muted group-open:rotate-180 transition-transform">⌄</span></summary><div className="space-y-2 text-[11px] mt-3">
-                  {[[t("consultant_parser_model"), "gpt-4o"], [t("consultant_prompt_version"), "v2.3"], [t("consultant_embedding"), "text-embedding-3-large"], [t("consultant_parse_cost"), "$0.032"], [t("consultant_tokens"), "4,821"]].map(([k, v]) => (
-                    <div key={k} className="flex justify-between"><span className="text-app-muted">{k}</span><span className="font-mono text-app-secondary">{v}</span></div>
+              <div className="bg-app-surface border border-app rounded-lg p-4 space-y-3 shadow-app-surface">
+                <div className="flex items-center gap-2 mb-1">
+                  <GraduationCap size={12} className="text-app-faint" />
+                  <span className="text-xs font-medium text-app-primary">{t("consultant_education")}</span>
+                </div>
+                {consultant.education.length === 0
+                  ? <p className="text-[11px] text-app-faint">—</p>
+                  : consultant.education.map((education) => (
+                    <div key={education.id || education.degree}>
+                      <p className="text-xs text-app-primary">{education.degree}</p>
+                      <p className="text-[11px] text-app-muted">{education.school || "—"} · {education.year || "—"}</p>
+                    </div>
                   ))}
-                </div></details>
               </div>
-              <div className="bg-app-surface border border-app rounded-lg p-4" style={{ boxShadow: "var(--shadow-surface)" }}>
-                <p className="text-xs font-medium text-app-primary mb-2">{t("consultant_extraction_review")}</p>
-                <p className="text-[11px] text-app-muted mb-3">{t("consultant_review_help")}</p>
-                <div className="flex items-center justify-between text-[11px] mb-3"><span className="text-app-muted">{t("common_status")}</span><span className="text-app-secondary">{reviewStatus === "Verified" ? t("common_verified") : t("common_needs_review")}</span></div>
-                <button onClick={() => setReviewStatus("Verified")} className="w-full text-xs px-3 py-1.5 rounded border transition-colors" style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>{reviewStatus === "Verified" ? t("common_verified") : t("common_mark_reviewed")}</button>
+
+              <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe size={12} className="text-app-faint" />
+                  <span className="text-xs font-medium text-app-primary">{t("consultant_languages")}</span>
+                </div>
+                <div className="space-y-1.5">
+                  {consultant.languages.length === 0
+                    ? <p className="text-[11px] text-app-faint">—</p>
+                    : consultant.languages.map((language) => (
+                      <p key={language.id || language.name} className="text-[11px] text-app-secondary">
+                        {language.name}{language.level ? ` (${language.level})` : ""}
+                      </p>
+                    ))}
+                </div>
+              </div>
+
+              <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                <p className="text-xs font-medium text-app-primary mb-3">{t("consultant_industries")}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {consultant.industries.length === 0
+                    ? <p className="text-[11px] text-app-faint">—</p>
+                    : consultant.industries.map((industry) => (
+                      <span
+                        key={industry.id || industry.name}
+                        className="text-[10px] text-app-secondary px-1.5 py-0.5 rounded"
+                        style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
+                      >
+                        {industry.name}
+                      </span>
+                    ))}
+                </div>
+              </div>
+
+              <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                <p className="text-xs font-medium text-app-primary mb-3">{t("consultant_certifications")}</p>
+                <div className="space-y-1.5">
+                  {consultant.certifications.length === 0
+                    ? <p className="text-[11px] text-app-faint">—</p>
+                    : consultant.certifications.map((certification) => (
+                      <p key={certification.id || certification.name} className="text-[11px] text-app-secondary">
+                        {certification.name}{certification.issuer ? ` — ${certification.issuer}` : ""}
+                      </p>
+                    ))}
+                </div>
               </div>
             </div>
           </div>
         ) : (
           <div className="p-6 h-full">
-            <div className="bg-app-surface border border-app rounded-lg h-[600px] flex items-center justify-center" style={{ boxShadow: "var(--shadow-surface)" }}>
-              <div className="text-center">
-                <FileText size={32} className="text-app-faint mx-auto mb-3" />
-                <p className="text-sm text-app-faint">{t("consultant_original_cv_title")}</p>
-                <p className="text-xs text-app-faint mt-1">{t("consultant_original_cv_sub")}</p>
-              </div>
+            <div className="bg-app-surface border border-app rounded-lg min-h-[500px] p-5 shadow-app-surface">
+              {consultant.originalCvText ? (
+                <pre className="text-xs text-app-secondary whitespace-pre-wrap font-sans leading-relaxed">
+                  {consultant.originalCvText}
+                </pre>
+              ) : (
+                <div className="h-[450px] flex items-center justify-center text-center">
+                  <div>
+                    <FileText size={32} className="text-app-faint mx-auto mb-3" />
+                    <p className="text-sm text-app-faint">{t("consultant_original_cv_title")}</p>
+                    <p className="text-xs text-app-faint mt-1">{t("consultant_original_cv_sub")}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      <EditFormModal
-        open={editMode}
-        title={t("consultant_edit_title")}
-        description={t("consultant_edit_sub")}
-        onClose={() => setEditMode(false)}
-        onSubmit={() => { setProfile({ ...draft, skills: parseSkills(draftLists.skills), experience: parseExperience(draftLists.experience), education: parseEducation(draftLists.education), languages: lines(draftLists.languages), industries: lines(draftLists.industries), certifications: lines(draftLists.certifications) }); setEditMode(false); }}
-      >
-        <FormSection title={t("consultant_basic_info")}>
-          <div className="grid grid-cols-2 gap-3">
-            {[[t("consultant_full_name"), "name"], [t("consultant_headline"), "headline"], [t("consultant_role"), "role"], [t("consultant_seniority"), "seniority"], [t("consultant_availability"), "availability"], [t("consultant_office"), "office"]].map(([label, key]) => (
-              <FormField key={key} label={label}><Input value={draft[key as keyof typeof draft] as string} onChange={(event) => setDraft({ ...draft, [key]: event.target.value })} /></FormField>
-            ))}
-            <FormField label={t("consultant_years")}><Input type="number" value={draft.totalYearsExperience} onChange={(event) => setDraft({ ...draft, totalYearsExperience: Number(event.target.value) })} /></FormField>
-          </div>
-        </FormSection>
-        <FormSection title={t("consultant_skills")} description={t("consultant_skill_format")}>
-          <Textarea value={draftLists.skills} onChange={(event) => setDraftLists({ ...draftLists, skills: event.target.value })} rows={6} className="font-mono" />
-        </FormSection>
-        <FormSection title={t("consultant_projects")} description={t("consultant_project_format")}>
-          <Textarea value={draftLists.experience} onChange={(event) => setDraftLists({ ...draftLists, experience: event.target.value })} rows={5} className="font-mono" />
-        </FormSection>
-        <div className="grid grid-cols-2 gap-4">
-          <FormSection title={t("consultant_education")} description={t("consultant_education_format")}><Textarea value={draftLists.education} onChange={(event) => setDraftLists({ ...draftLists, education: event.target.value })} rows={3} className="font-mono" /></FormSection>
-          <FormSection title={t("consultant_languages")} description={t("consultant_language_format")}><Textarea value={draftLists.languages} onChange={(event) => setDraftLists({ ...draftLists, languages: event.target.value })} rows={3} /></FormSection>
-          <FormSection title={t("consultant_industries")} description={t("consultant_industry_format")}><Textarea value={draftLists.industries} onChange={(event) => setDraftLists({ ...draftLists, industries: event.target.value })} rows={3} /></FormSection>
-          <FormSection title={t("consultant_certifications")} description={t("consultant_certification_format")}><Textarea value={draftLists.certifications} onChange={(event) => setDraftLists({ ...draftLists, certifications: event.target.value })} rows={3} /></FormSection>
-        </div>
-      </EditFormModal>
+      {draft && (
+        <EditFormModal
+          open={editMode}
+          title={t("consultant_edit_title")}
+          description={t("consultant_edit_sub")}
+          onClose={() => setEditMode(false)}
+          onSubmit={save}
+        >
+          <FormSection title={t("consultant_basic_info")}>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="First name">
+                <Input value={draft.firstName} onChange={(event) => setDraft({ ...draft, firstName: event.target.value })} />
+              </FormField>
+              <FormField label="Last name">
+                <Input value={draft.lastName} onChange={(event) => setDraft({ ...draft, lastName: event.target.value })} />
+              </FormField>
+              <FormField label={t("consultant_role")}>
+                <Input value={draft.title ?? ""} onChange={(event) => setDraft({ ...draft, title: event.target.value || null })} />
+              </FormField>
+              <FormField label={t("consultant_seniority")}>
+                <Input value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} />
+              </FormField>
+              <FormField label={t("consultant_availability")}>
+                <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />
+              </FormField>
+              <FormField label={t("consultant_office")}>
+                <Input value={draft.office ?? ""} onChange={(event) => setDraft({ ...draft, office: event.target.value || null })} />
+              </FormField>
+              <FormField label={t("consultant_years")}>
+                <Input
+                  type="number"
+                  value={draft.yearsOfExperience}
+                  onChange={(event) => setDraft({ ...draft, yearsOfExperience: Number(event.target.value) || 0 })}
+                />
+              </FormField>
+              <FormField label="Email">
+                <Input value={draft.email ?? ""} onChange={(event) => setDraft({ ...draft, email: event.target.value || null })} />
+              </FormField>
+            </div>
 
+            <FormField label="Summary">
+              <Textarea
+                value={draft.summary ?? ""}
+                onChange={(event) => setDraft({ ...draft, summary: event.target.value || null })}
+                rows={4}
+              />
+            </FormField>
+          </FormSection>
+
+          <FormSection title={t("consultant_skills")} description="Name | Category | Years | Level 1-5 | Evidence">
+            <Textarea
+              value={skillsText}
+              onChange={(event) => setSkillsText(event.target.value)}
+              rows={7}
+              className="font-mono"
+            />
+          </FormSection>
+
+          {saving && <p className="text-xs text-app-muted">Saving...</p>}
+        </EditFormModal>
+      )}
     </div>
   );
 }

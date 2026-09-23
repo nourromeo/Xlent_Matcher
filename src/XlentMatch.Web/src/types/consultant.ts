@@ -1,3 +1,78 @@
-import type { Id } from "./common";
-export type Consultant = { id: Id; initials: string; name: string; headline: string; seniority: string; experience: string; skills: string[]; availability: string };
-export type ConsultantSkill = { name: string; category: string; yearsUsed: number; level: string; evidence: string };
+export type ConsultantSkill = {
+  id: number;
+  consultantId: number;
+  name: string;
+  category: string | null;
+  years: number;
+  level: number;
+  evidence: string | null;
+};
+
+export type ConsultantExperience = {
+  id: number;
+  consultantId: number;
+  company: string;
+  role: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+};
+
+export type ConsultantProject = {
+  id: number;
+  consultantId: number;
+  name: string;
+  description: string | null;
+  technologies: string | null;
+};
+
+export type ConsultantEducation = {
+  id: number;
+  consultantId: number;
+  degree: string;
+  school: string | null;
+  year: string | null;
+};
+
+export type ConsultantLanguage = {
+  id: number;
+  consultantId: number;
+  name: string;
+  level: string | null;
+};
+
+export type ConsultantIndustry = {
+  id: number;
+  consultantId: number;
+  name: string;
+};
+
+export type ConsultantCertification = {
+  id: number;
+  consultantId: number;
+  name: string;
+  issuer: string | null;
+  issuedDate: string | null;
+};
+
+export type Consultant = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  title: string | null;
+  summary: string | null;
+  seniority: string | null;
+  yearsOfExperience: number;
+  availability: string | null;
+  office: string | null;
+  originalCvText: string | null;
+  skills: ConsultantSkill[];
+  experiences: ConsultantExperience[];
+  projects: ConsultantProject[];
+  education: ConsultantEducation[];
+  languages: ConsultantLanguage[];
+  industries: ConsultantIndustry[];
+  certifications: ConsultantCertification[];
+  fullName?: string;
+};

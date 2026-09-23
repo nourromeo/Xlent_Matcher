@@ -1,6 +1,4 @@
-import type { Consultant } from "../../types";
-
-export const CONSULTANTS: Consultant[] = [
+export const CONSULTANTS = [
   { id: "1", initials: "AK", name: "Anna Kovacs", headline: "Senior Backend Consultant · Go, Rust, PostgreSQL", seniority: "Senior", experience: "8 yrs", skills: ["Go", "Rust", "PostgreSQL", "Kafka", "Kubernetes"], availability: "Immediate" },
   { id: "2", initials: "ML", name: "Marcus Lee", headline: "AI Consultant · PyTorch, Transformers, NLP", seniority: "Mid", experience: "5 yrs", skills: ["Python", "PyTorch", "NLP", "Azure ML", "FastAPI"], availability: "2 weeks" },
   { id: "3", initials: "PS", name: "Priya Sharma", headline: "Platform Consultant · Observability, Terraform", seniority: "Staff", experience: "11 yrs", skills: ["Terraform", "Kubernetes", "Prometheus", "Go", "Python"], availability: "1 month" },

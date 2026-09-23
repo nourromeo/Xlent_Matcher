@@ -1,0 +1,25 @@
+import type { Consultant } from "../types";
+import { apiRequest } from "./api";
+
+export const consultantsApi = {
+  getAll: () => apiRequest<Consultant[]>("/consultants"),
+
+  getById: (id: number) => apiRequest<Consultant>(`/consultants/${id}`),
+
+  create: (consultant: Consultant) =>
+    apiRequest<Consultant>("/consultants", {
+      method: "POST",
+      body: JSON.stringify(consultant),
+    }),
+
+  update: (id: number, consultant: Consultant) =>
+    apiRequest<Consultant>(`/consultants/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(consultant),
+    }),
+
+  remove: (id: number) =>
+    apiRequest<void>(`/consultants/${id}`, {
+      method: "DELETE",
+    }),
+};
