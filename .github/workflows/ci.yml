@@ -25,6 +25,10 @@ jobs:
         run: |
           dotnet ef migrations add DiagnosePending --no-build --configuration Release --output-dir Migrations/Diagnosis
           find Migrations/Diagnosis -type f -maxdepth 1 -print -exec cat {} \;
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ef-diagnosis
+          path: src/XlentMatch.Api/Migrations/Diagnosis
 
   web:
     name: Web build
