@@ -18,29 +18,51 @@ namespace XlentMatch.Api.Migrations
                     THROW 51001, 'Cannot make AssignmentRequirements.SkillId required because some rows still have NULL SkillId.', 1;
                 """);
 
-            migrationBuilder.DropForeignKey(
-                name: "FK_ConsultantSkills_Skills_SkillId",
-                table: "ConsultantSkills");
+            migrationBuilder.Sql("""
+                IF EXISTS (
+                    SELECT 1 FROM sys.foreign_keys
+                    WHERE name = 'FK_ConsultantSkills_Skills_SkillId'
+                      AND parent_object_id = OBJECT_ID(N'[ConsultantSkills]')
+                )
+                    ALTER TABLE [ConsultantSkills]
+                    DROP CONSTRAINT [FK_ConsultantSkills_Skills_SkillId];
 
-            migrationBuilder.DropForeignKey(
-                name: "FK_AssignmentRequirements_Skills_SkillId",
-                table: "AssignmentRequirements");
+                IF EXISTS (
+                    SELECT 1 FROM sys.foreign_keys
+                    WHERE name = 'FK_AssignmentRequirements_Skills_SkillId'
+                      AND parent_object_id = OBJECT_ID(N'[AssignmentRequirements]')
+                )
+                    ALTER TABLE [AssignmentRequirements]
+                    DROP CONSTRAINT [FK_AssignmentRequirements_Skills_SkillId];
 
-            migrationBuilder.DropIndex(
-                name: "IX_ConsultantSkills_SkillId",
-                table: "ConsultantSkills");
+                IF EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_ConsultantSkills_SkillId'
+                      AND object_id = OBJECT_ID(N'[ConsultantSkills]')
+                )
+                    DROP INDEX [IX_ConsultantSkills_SkillId] ON [ConsultantSkills];
 
-            migrationBuilder.DropIndex(
-                name: "IX_ConsultantSkills_ConsultantId_SkillId",
-                table: "ConsultantSkills");
+                IF EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_ConsultantSkills_ConsultantId_SkillId'
+                      AND object_id = OBJECT_ID(N'[ConsultantSkills]')
+                )
+                    DROP INDEX [IX_ConsultantSkills_ConsultantId_SkillId] ON [ConsultantSkills];
 
-            migrationBuilder.DropIndex(
-                name: "IX_AssignmentRequirements_SkillId",
-                table: "AssignmentRequirements");
+                IF EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_AssignmentRequirements_SkillId'
+                      AND object_id = OBJECT_ID(N'[AssignmentRequirements]')
+                )
+                    DROP INDEX [IX_AssignmentRequirements_SkillId] ON [AssignmentRequirements];
 
-            migrationBuilder.DropIndex(
-                name: "IX_AssignmentRequirements_AssignmentId_SkillId",
-                table: "AssignmentRequirements");
+                IF EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_AssignmentRequirements_AssignmentId_SkillId'
+                      AND object_id = OBJECT_ID(N'[AssignmentRequirements]')
+                )
+                    DROP INDEX [IX_AssignmentRequirements_AssignmentId_SkillId] ON [AssignmentRequirements];
+                """);
 
             migrationBuilder.AlterColumn<int>(
                 name: "SkillId",
@@ -112,29 +134,51 @@ namespace XlentMatch.Api.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_ConsultantSkills_Skills_SkillId",
-                table: "ConsultantSkills");
+            migrationBuilder.Sql("""
+                IF EXISTS (
+                    SELECT 1 FROM sys.foreign_keys
+                    WHERE name = 'FK_ConsultantSkills_Skills_SkillId'
+                      AND parent_object_id = OBJECT_ID(N'[ConsultantSkills]')
+                )
+                    ALTER TABLE [ConsultantSkills]
+                    DROP CONSTRAINT [FK_ConsultantSkills_Skills_SkillId];
 
-            migrationBuilder.DropForeignKey(
-                name: "FK_AssignmentRequirements_Skills_SkillId",
-                table: "AssignmentRequirements");
+                IF EXISTS (
+                    SELECT 1 FROM sys.foreign_keys
+                    WHERE name = 'FK_AssignmentRequirements_Skills_SkillId'
+                      AND parent_object_id = OBJECT_ID(N'[AssignmentRequirements]')
+                )
+                    ALTER TABLE [AssignmentRequirements]
+                    DROP CONSTRAINT [FK_AssignmentRequirements_Skills_SkillId];
 
-            migrationBuilder.DropIndex(
-                name: "IX_ConsultantSkills_SkillId",
-                table: "ConsultantSkills");
+                IF EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_ConsultantSkills_SkillId'
+                      AND object_id = OBJECT_ID(N'[ConsultantSkills]')
+                )
+                    DROP INDEX [IX_ConsultantSkills_SkillId] ON [ConsultantSkills];
 
-            migrationBuilder.DropIndex(
-                name: "IX_ConsultantSkills_ConsultantId_SkillId",
-                table: "ConsultantSkills");
+                IF EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_ConsultantSkills_ConsultantId_SkillId'
+                      AND object_id = OBJECT_ID(N'[ConsultantSkills]')
+                )
+                    DROP INDEX [IX_ConsultantSkills_ConsultantId_SkillId] ON [ConsultantSkills];
 
-            migrationBuilder.DropIndex(
-                name: "IX_AssignmentRequirements_SkillId",
-                table: "AssignmentRequirements");
+                IF EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_AssignmentRequirements_SkillId'
+                      AND object_id = OBJECT_ID(N'[AssignmentRequirements]')
+                )
+                    DROP INDEX [IX_AssignmentRequirements_SkillId] ON [AssignmentRequirements];
 
-            migrationBuilder.DropIndex(
-                name: "IX_AssignmentRequirements_AssignmentId_SkillId",
-                table: "AssignmentRequirements");
+                IF EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_AssignmentRequirements_AssignmentId_SkillId'
+                      AND object_id = OBJECT_ID(N'[AssignmentRequirements]')
+                )
+                    DROP INDEX [IX_AssignmentRequirements_AssignmentId_SkillId] ON [AssignmentRequirements];
+                """);
 
             migrationBuilder.AlterColumn<int>(
                 name: "SkillId",
