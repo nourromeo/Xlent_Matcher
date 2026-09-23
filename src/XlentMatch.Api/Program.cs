@@ -15,6 +15,7 @@ builder.Services.AddHttpClient<IAiTextService, OpenAiTextService>(client =>
     client.Timeout = TimeSpan.FromMinutes(3));
 
 builder.Services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
+builder.Services.AddSingleton<MatchingWeightsStore>();
 builder.Services.AddScoped<MatchingService>();
 builder.Services.AddScoped<SkillNormalizationService>();
 
