@@ -43,6 +43,7 @@ coverage.*
 BenchmarkDotNet.Artifacts/
 
 # Local application settings and secrets
+**/App_Data/
 appsettings.*.local.json
 secrets.json
 
