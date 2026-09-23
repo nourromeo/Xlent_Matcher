@@ -29,7 +29,7 @@ const translations = {
     dash_assignment: "Client Assignment",
     dash_score: "Match Score",
     dash_date: "Date",
-    // Talent Pool
+    // Consultants
     consultants_title: "Consultant Pool",
     consultants_sub: "XLENT consultants indexed",
     consultants_search: "Search by consultant, role, skill, or technology…",
