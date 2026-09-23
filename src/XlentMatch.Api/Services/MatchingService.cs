@@ -1,11 +1,9 @@
-using Microsoft.Extensions.Options;
 using XlentMatch.Api.Models;
 
 namespace XlentMatch.Api.Services;
 
-public class MatchingService(IOptions<MatchingOptions> options)
+public class MatchingService(MatchingWeightsStore weightsStore)
 {
-    private readonly MatchingOptions _o = options.Value;
 
     public List<MatchResult> MatchAndRank(Assignment assignment, IEnumerable<Consultant> consultants)
     {
@@ -35,12 +33,14 @@ public class MatchingService(IOptions<MatchingOptions> options)
             ? 1.0
             : Math.Min(1.0, (double)consultant.YearsOfExperience / assignment.MinYearsExperience);
 
-        var score = mandatoryRatio * _o.MandatoryWeight
-                  + desiredRatio * _o.DesiredWeight
-                  + experienceRatio * _o.ExperienceWeight;
+        var weights = weightsStore.Get();
+
+        var score = mandatoryRatio * weights.MandatoryWeight
+                  + desiredRatio * weights.DesiredWeight
+                  + experienceRatio * weights.ExperienceWeight;
 
         var missingMandatory = mandatory.Where(d => !d.IsMatched).ToList();
-        score -= missingMandatory.Count * _o.MissingMandatoryPenalty;
+        score -= missingMandatory.Count * weights.MissingMandatoryPenalty;
 
         var result = new MatchResult
         {
