@@ -1,7 +1,7 @@
 export type ConsultantSkill = {
   id: number;
   consultantId: number;
-  skillId: number;
+  skillId?: number;
   name: string;
   category: string | null;
   years: number;
