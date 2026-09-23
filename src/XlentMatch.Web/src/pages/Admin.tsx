@@ -386,6 +386,19 @@ export default function Admin() {
           </div>
         )}
       </div>
+
+      <SkillEditModal
+        open={editingSkill !== null}
+        canonical={editCanonical}
+        category={editCategory}
+        aliases={editAliases}
+        saving={savingSkill}
+        onCanonicalChange={setEditCanonical}
+        onCategoryChange={setEditCategory}
+        onAliasesChange={setEditAliases}
+        onClose={() => !savingSkill && setEditingSkill(null)}
+        onSave={() => void saveSkill()}
+      />
     </div>
   );
 }
