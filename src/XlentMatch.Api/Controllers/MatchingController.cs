@@ -38,6 +38,10 @@ public class MatchingController(AppDbContext db, MatchingService matching) : Con
 
         db.MatchResults.RemoveRange(old);
         db.MatchResults.AddRange(results);
+
+        var trackedAssignment = await db.Assignments.FirstAsync(a => a.Id == assignment.Id, ct);
+        trackedAssignment.Status = AssignmentStatus.Done;
+
         await db.SaveChangesAsync(ct);
 
         return results;

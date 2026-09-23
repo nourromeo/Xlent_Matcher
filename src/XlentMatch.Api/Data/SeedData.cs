@@ -211,7 +211,7 @@ public static class SeedData
                     Seniority = "Senior",
                     MinYearsExperience = 6,
                     Availability = "Immediate",
-                    Status = AssignmentStatus.Matching,
+                    Status = AssignmentStatus.Draft,
                     CreatedAt = DateTime.UtcNow.AddDays(-3),
                     Requirements =
                     [
@@ -231,7 +231,7 @@ public static class SeedData
                     Seniority = "Mid",
                     MinYearsExperience = 4,
                     Availability = "2 weeks",
-                    Status = AssignmentStatus.Done,
+                    Status = AssignmentStatus.Draft,
                     CreatedAt = DateTime.UtcNow.AddDays(-5),
                     Requirements =
                     [
@@ -265,6 +265,18 @@ public static class SeedData
             };
 
             db.Assignments.AddRange(assignments);
+            await db.SaveChangesAsync(ct);
+        }
+        var assignmentsWithoutResults = await db.Assignments
+            .Where(a => a.Status != AssignmentStatus.Draft &&
+                        !db.MatchResults.Any(m => m.AssignmentId == a.Id))
+            .ToListAsync(ct);
+
+        if (assignmentsWithoutResults.Count > 0)
+        {
+            foreach (var assignment in assignmentsWithoutResults)
+                assignment.Status = AssignmentStatus.Draft;
+
             await db.SaveChangesAsync(ct);
         }
     }

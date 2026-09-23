@@ -280,9 +280,11 @@ export default function ClientAssignments() {
   };
 
   const statusConfig = (status: AssignmentStatusApi) => {
-    if (status === "Matching") return { label: t("status_matching"), tone: "warning" as const, icon: <Zap size={9} /> };
-    if (status === "Done") return { label: t("status_match_complete"), tone: "success" as const, icon: <CheckCircle size={9} /> };
-    return { label: t("assignment_draft"), tone: "neutral" as const, icon: <Clock size={9} /> };
+    if (status === "Draft") {
+      return { label: "Draft", tone: "neutral" as const, icon: <Clock size={9} /> };
+    }
+
+    return { label: "Matched", tone: "success" as const, icon: <CheckCircle size={9} /> };
   };
 
   const displaySeniority = (value: string) =>

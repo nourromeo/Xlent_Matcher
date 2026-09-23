@@ -190,12 +190,9 @@ export default function AssignmentDetail() {
 
   const required = requirementNames(assignment, "Mandatory");
   const preferred = requirementNames(assignment, "Desired");
-  const statusTone = assignment.status === "Done" ? "success" : assignment.status === "Matching" ? "warning" : "neutral";
-  const statusLabel = assignment.status === "Done"
-    ? t("assignment_match_complete")
-    : assignment.status === "Matching"
-      ? t("assignment_matching")
-      : t("assignment_draft");
+  const isMatched = assignment.status !== "Draft";
+  const statusTone = isMatched ? "success" : "neutral";
+  const statusLabel = isMatched ? "Matched" : "Draft";
 
   return (
     <div className="flex flex-col h-full">

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Upload as UploadIcon, FileText, CheckCircle, Loader, Plus, X } from "../design-system/icons";
+import { Upload as UploadIcon, FileText, CheckCircle, AlertCircle, Loader, Plus, X, Eye } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -10,6 +10,23 @@ import { consultantsApi } from "../services/consultantsApi";
 import type { Consultant } from "../types";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+type UploadStatus = "extracting" | "review" | "done" | "error";
+
+type UploadEntry = {
+  id: string;
+  name: string;
+  size: number;
+  status: UploadStatus;
+  progress: number;
+  error?: string;
+  draft?: ConsultantDraft;
+};
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function dateOnly(value: string | null) {
   if (!value) return null;
@@ -30,111 +47,131 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     office: draft.office?.trim() || null,
     originalCvText: draft.sourceText,
     fullName: undefined,
-    skills: draft.skills
-      .filter((skill) => skill.name.trim())
-      .map((skill) => ({
-        id: 0,
-        consultantId: 0,
-        name: skill.name.trim(),
-        category: skill.category?.trim() || null,
-        years: skill.years,
-        level: skill.level,
-        evidence: skill.evidence?.trim() || null,
-      })),
-    experiences: draft.experiences
-      .filter((experience) => experience.company.trim() || experience.role.trim())
-      .map((experience) => ({
-        id: 0,
-        consultantId: 0,
-        company: experience.company.trim(),
-        role: experience.role.trim(),
-        description: experience.description?.trim() || null,
-        startDate: dateOnly(experience.startDate),
-        endDate: dateOnly(experience.endDate),
-      })),
-    projects: draft.projects
-      .filter((project) => project.name.trim())
-      .map((project) => ({
-        id: 0,
-        consultantId: 0,
-        name: project.name.trim(),
-        description: project.description?.trim() || null,
-        technologies: project.technologies?.trim() || null,
-      })),
-    education: draft.education
-      .filter((item) => item.degree.trim())
-      .map((item) => ({
-        id: 0,
-        consultantId: 0,
-        degree: item.degree.trim(),
-        school: item.school?.trim() || null,
-        year: item.year?.trim() || null,
-      })),
-    languages: draft.languages
-      .filter((language) => language.name.trim())
-      .map((language) => ({
-        id: 0,
-        consultantId: 0,
-        name: language.name.trim(),
-        level: language.level?.trim() || null,
-      })),
-    industries: draft.industries
-      .filter((name) => name.trim())
-      .map((name) => ({ id: 0, consultantId: 0, name: name.trim() })),
-    certifications: draft.certifications
-      .filter((certification) => certification.name.trim())
-      .map((certification) => ({
-        id: 0,
-        consultantId: 0,
-        name: certification.name.trim(),
-        issuer: certification.issuer?.trim() || null,
-        issuedDate: dateOnly(certification.issuedDate),
-      })),
+    skills: draft.skills.filter((skill) => skill.name.trim()).map((skill) => ({
+      id: 0,
+      consultantId: 0,
+      name: skill.name.trim(),
+      category: skill.category?.trim() || null,
+      years: skill.years,
+      level: skill.level,
+      evidence: skill.evidence?.trim() || null,
+    })),
+    experiences: draft.experiences.filter((item) => item.company.trim() || item.role.trim()).map((item) => ({
+      id: 0,
+      consultantId: 0,
+      company: item.company.trim(),
+      role: item.role.trim(),
+      description: item.description?.trim() || null,
+      startDate: dateOnly(item.startDate),
+      endDate: dateOnly(item.endDate),
+    })),
+    projects: draft.projects.filter((item) => item.name.trim()).map((item) => ({
+      id: 0,
+      consultantId: 0,
+      name: item.name.trim(),
+      description: item.description?.trim() || null,
+      technologies: item.technologies?.trim() || null,
+    })),
+    education: draft.education.filter((item) => item.degree.trim()).map((item) => ({
+      id: 0,
+      consultantId: 0,
+      degree: item.degree.trim(),
+      school: item.school?.trim() || null,
+      year: item.year?.trim() || null,
+    })),
+    languages: draft.languages.filter((item) => item.name.trim()).map((item) => ({
+      id: 0,
+      consultantId: 0,
+      name: item.name.trim(),
+      level: item.level?.trim() || null,
+    })),
+    industries: draft.industries.filter((name) => name.trim()).map((name) => ({
+      id: 0,
+      consultantId: 0,
+      name: name.trim(),
+    })),
+    certifications: draft.certifications.filter((item) => item.name.trim()).map((item) => ({
+      id: 0,
+      consultantId: 0,
+      name: item.name.trim(),
+      issuer: item.issuer?.trim() || null,
+      issuedDate: dateOnly(item.issuedDate),
+    })),
   };
 }
 
 export default function CvUpload() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState<ConsultantDraft | null>(null);
-  const [fileName, setFileName] = useState("");
+  const [files, setFiles] = useState<UploadEntry[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  const activeFile = files.find((file) => file.id === activeId) ?? null;
+  const draft = activeFile?.draft ?? null;
+
+  const updateFile = (id: string, patch: Partial<UploadEntry>) => {
+    setFiles((current) => current.map((file) => file.id === id ? { ...file, ...patch } : file));
+  };
+
+  const updateDraft = (next: ConsultantDraft) => {
+    if (!activeId) return;
+    updateFile(activeId, { draft: next });
+  };
 
   const handleFile = async (file?: File) => {
     if (!file) return;
 
+    const id = crypto.randomUUID();
+
     if (!/\.(pdf|txt)$/i.test(file.name)) {
-      setError("Use a PDF or TXT file for AI extraction.");
+      setFiles((current) => [...current, {
+        id,
+        name: file.name,
+        size: file.size,
+        status: "error",
+        progress: 100,
+        error: "Unsupported file type. Use PDF or TXT.",
+      }]);
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("The file is larger than 10 MB.");
+      setFiles((current) => [...current, {
+        id,
+        name: file.name,
+        size: file.size,
+        status: "error",
+        progress: 100,
+        error: "File is larger than 10 MB.",
+      }]);
       return;
     }
 
-    setExtracting(true);
-    setSaved(false);
+    setFiles((current) => [...current, {
+      id,
+      name: file.name,
+      size: file.size,
+      status: "extracting",
+      progress: 45,
+    }]);
     setError("");
-    setFileName(file.name);
 
     try {
       const result = await aiApi.extractConsultantFromFile(file);
-      setDraft(result);
+      updateFile(id, { status: "review", progress: 75, draft: result });
+      setActiveId(id);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not extract the CV.");
-    } finally {
-      setExtracting(false);
+      const message = requestError instanceof Error ? requestError.message : "Could not extract the CV.";
+      updateFile(id, { status: "error", progress: 100, error: message });
+      setError(message);
     }
   };
 
   const saveConsultant = async () => {
-    if (!draft) return;
-
-    if (!draft.firstName.trim() || !draft.lastName.trim()) {
+    if (!activeFile?.draft) return;
+    if (!activeFile.draft.firstName.trim() || !activeFile.draft.lastName.trim()) {
       setError("First name and last name are required before saving.");
       return;
     }
@@ -143,10 +180,9 @@ export default function CvUpload() {
     setError("");
 
     try {
-      await consultantsApi.create(toConsultant(draft));
-      setSaved(true);
-      setDraft(null);
-      setFileName("");
+      await consultantsApi.create(toConsultant(activeFile.draft));
+      updateFile(activeFile.id, { status: "done", progress: 100 });
+      setActiveId(null);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save consultant.");
     } finally {
@@ -154,21 +190,43 @@ export default function CvUpload() {
     }
   };
 
+  const total = files.length;
+  const processing = files.filter((file) => file.status === "extracting" || file.status === "review").length;
+  const indexed = files.filter((file) => file.status === "done").length;
+  const errors = files.filter((file) => file.status === "error").length;
   const canSave = Boolean(draft?.firstName.trim() && draft?.lastName.trim());
+
+  const statusLabel = (status: UploadStatus) =>
+    status === "extracting" ? "Extracting" :
+    status === "review" ? "Review needed" :
+    status === "done" ? "Indexed" : "Error";
+
+  const statusColor = (status: UploadStatus) =>
+    status === "done" ? "var(--color-success)" :
+    status === "error" ? "var(--color-danger)" :
+    status === "review" ? "var(--color-warning)" :
+    "var(--color-brand)";
 
   return (
     <div className="p-6 space-y-5">
       <PageHeader
         title="CV Upload"
-        description="Upload a consultant CV, let AI extract structured data, review it, then save the consultant."
+        description="Upload consultant CVs, extract structured data with AI, review the result, and save approved consultants."
       />
 
-      {saved && (
-        <div className="rounded-lg px-4 py-3 flex items-center gap-2" style={{ background: "var(--color-success-soft)", border: "1px solid var(--color-success-border)" }}>
-          <CheckCircle size={13} style={{ color: "var(--color-success)" }} />
-          <p className="text-xs text-app-secondary">Consultant saved to the database.</p>
-        </div>
-      )}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Total CVs", value: total },
+          { label: "Processing / Review", value: processing },
+          { label: "Saved / Indexed", value: indexed },
+          { label: "Errors", value: errors },
+        ].map((item) => (
+          <div key={item.label} className="bg-app-surface border border-app rounded-lg px-4 py-3 shadow-app-surface">
+            <p className="text-xl font-semibold font-mono text-app-primary">{item.value}</p>
+            <p className="text-[10px] text-app-faint mt-0.5">{item.label}</p>
+          </div>
+        ))}
+      </div>
 
       <div
         className="border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors"
@@ -186,43 +244,103 @@ export default function CvUpload() {
           setDragging(false);
           void handleFile(event.dataTransfer.files?.[0]);
         }}
-        onClick={() => !extracting && inputRef.current?.click()}
+        onClick={() => inputRef.current?.click()}
       >
         <input
           ref={inputRef}
           type="file"
           accept=".pdf,.txt,application/pdf,text/plain"
           className="hidden"
-          disabled={extracting}
           onChange={(event) => {
             void handleFile(event.target.files?.[0]);
             event.currentTarget.value = "";
           }}
         />
-        {extracting ? (
-          <Loader size={28} className="animate-spin mx-auto mb-3 text-app-brand" />
-        ) : (
-          <UploadIcon size={28} className="mx-auto mb-3 text-app-faint" />
-        )}
-        <p className="text-sm text-app-secondary">
-          {extracting ? "Azure OpenAI is extracting the CV..." : "Drop a PDF/TXT here or click to choose a CV"}
-        </p>
-        <p className="text-xs text-app-faint mt-1">Maximum 10 MB. Nothing is saved before your review and approval.</p>
+        <UploadIcon size={28} className="mx-auto mb-3 text-app-faint" />
+        <p className="text-sm text-app-secondary">Drop a PDF/TXT here or click to choose a CV</p>
+        <p className="text-xs text-app-faint mt-1">Maximum 10 MB. Each CV is reviewed before it is saved.</p>
       </div>
 
-      {fileName && !draft && <p className="text-xs text-app-muted font-mono">{fileName}</p>}
-      {error && <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">{error}</div>}
+      {error && (
+        <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+          {error}
+        </div>
+      )}
 
-      {draft && (
+      {files.length > 0 && (
+        <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
+          <div className="px-4 py-2.5 border-b border-app flex items-center justify-between">
+            <span className="text-xs font-medium text-app-primary">CV processing history</span>
+            <span className="text-[10px] text-app-faint">{files.length} files</span>
+          </div>
+
+          {files.map((file, index) => (
+            <div
+              key={file.id}
+              className="flex items-center gap-3 px-4 py-3"
+              style={{ borderBottom: index < files.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
+            >
+              <FileText size={13} className="text-app-faint flex-none" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-app-primary font-mono truncate">{file.name}</span>
+                  <span className="text-[10px] text-app-faint">{formatBytes(file.size)}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <div className="flex-1 h-1 rounded-full" style={{ background: "var(--color-border)" }}>
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: file.progress + "%", backgroundColor: statusColor(file.status) }}
+                    />
+                  </div>
+                  <span className="text-[10px] min-w-20" style={{ color: statusColor(file.status) }}>
+                    {file.status === "extracting" && <Loader size={9} className="inline animate-spin mr-1" />}
+                    {file.status === "done" && <CheckCircle size={9} className="inline mr-1" />}
+                    {file.status === "error" && <AlertCircle size={9} className="inline mr-1" />}
+                    {statusLabel(file.status)}
+                  </span>
+                </div>
+                {file.error && <p className="text-[10px] mt-1" style={{ color: "var(--color-danger)" }}>{file.error}</p>}
+              </div>
+
+              {file.status === "review" && file.draft && (
+                <button
+                  type="button"
+                  onClick={() => setActiveId(file.id)}
+                  className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
+                >
+                  <Eye size={11} /> Review
+                </button>
+              )}
+
+              {file.status !== "extracting" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeId === file.id) setActiveId(null);
+                    setFiles((current) => current.filter((item) => item.id !== file.id));
+                  }}
+                  className="text-app-faint hover:text-app-secondary"
+                  aria-label="Remove file from history"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {draft && activeFile && (
         <Modal
           open
           title="Review extracted consultant"
           description="AI extracted this data from the CV. Correct anything that is wrong before saving."
-          onClose={() => setDraft(null)}
+          onClose={() => setActiveId(null)}
         >
           <div className="p-5 space-y-5 max-h-[75vh] overflow-auto">
             <div className="flex items-center gap-2 text-xs text-app-muted">
-              <FileText size={12} /> {fileName}
+              <FileText size={12} /> {activeFile.name}
             </div>
 
             <section className="space-y-3">
@@ -230,41 +348,41 @@ export default function CvUpload() {
               <div className="grid grid-cols-2 gap-3">
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">First name <span className="text-app-brand">*</span></span>
-                  <Input value={draft.firstName} onChange={(event) => setDraft({ ...draft, firstName: event.target.value })} />
+                  <Input value={draft.firstName} onChange={(event) => updateDraft({ ...draft, firstName: event.target.value })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Last name <span className="text-app-brand">*</span></span>
-                  <Input value={draft.lastName} onChange={(event) => setDraft({ ...draft, lastName: event.target.value })} />
+                  <Input value={draft.lastName} onChange={(event) => updateDraft({ ...draft, lastName: event.target.value })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Title</span>
-                  <Input value={draft.title ?? ""} onChange={(event) => setDraft({ ...draft, title: event.target.value || null })} />
+                  <Input value={draft.title ?? ""} onChange={(event) => updateDraft({ ...draft, title: event.target.value || null })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Seniority</span>
-                  <Input value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} />
+                  <Input value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Years of experience</span>
-                  <Input type="number" min={0} value={draft.yearsOfExperience} onChange={(event) => setDraft({ ...draft, yearsOfExperience: Number(event.target.value) || 0 })} />
+                  <Input type="number" min={0} value={draft.yearsOfExperience} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: Number(event.target.value) || 0 })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Email</span>
-                  <Input value={draft.email ?? ""} onChange={(event) => setDraft({ ...draft, email: event.target.value || null })} />
+                  <Input value={draft.email ?? ""} onChange={(event) => updateDraft({ ...draft, email: event.target.value || null })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Availability</span>
-                  <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />
+                  <Input value={draft.availability ?? ""} onChange={(event) => updateDraft({ ...draft, availability: event.target.value || null })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Office</span>
-                  <Input value={draft.office ?? ""} onChange={(event) => setDraft({ ...draft, office: event.target.value || null })} />
+                  <Input value={draft.office ?? ""} onChange={(event) => updateDraft({ ...draft, office: event.target.value || null })} />
                 </label>
               </div>
 
               <label className="block">
                 <span className="text-[11px] text-app-muted block mb-1">Summary</span>
-                <Textarea value={draft.summary ?? ""} onChange={(event) => setDraft({ ...draft, summary: event.target.value || null })} rows={4} />
+                <Textarea value={draft.summary ?? ""} onChange={(event) => updateDraft({ ...draft, summary: event.target.value || null })} rows={4} />
               </label>
             </section>
 
@@ -274,7 +392,7 @@ export default function CvUpload() {
                 <Button
                   variant="ghost"
                   icon={<Plus size={11} />}
-                  onClick={() => setDraft({
+                  onClick={() => updateDraft({
                     ...draft,
                     skills: [...draft.skills, { name: "", category: null, level: 0, years: 0, evidence: null }],
                   })}
@@ -289,7 +407,7 @@ export default function CvUpload() {
                     <Input
                       value={skill.name}
                       placeholder="Skill"
-                      onChange={(event) => setDraft({
+                      onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, name: event.target.value } : item),
                       })}
@@ -297,7 +415,7 @@ export default function CvUpload() {
                     <Input
                       value={skill.category ?? ""}
                       placeholder="Category"
-                      onChange={(event) => setDraft({
+                      onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, category: event.target.value || null } : item),
                       })}
@@ -307,7 +425,7 @@ export default function CvUpload() {
                       min={0}
                       value={skill.years}
                       placeholder="Years"
-                      onChange={(event) => setDraft({
+                      onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, years: Number(event.target.value) || 0 } : item),
                       })}
@@ -318,14 +436,14 @@ export default function CvUpload() {
                       max={5}
                       value={skill.level}
                       placeholder="Level"
-                      onChange={(event) => setDraft({
+                      onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, level: Number(event.target.value) || 0 } : item),
                       })}
                     />
                     <button
                       type="button"
-                      onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, currentIndex) => currentIndex !== index) })}
+                      onClick={() => updateDraft({ ...draft, skills: draft.skills.filter((_, currentIndex) => currentIndex !== index) })}
                       className="text-app-faint hover:text-app-secondary"
                       aria-label="Remove skill"
                     >
@@ -339,37 +457,30 @@ export default function CvUpload() {
             <section className="grid grid-cols-2 gap-4">
               <div className="rounded-lg border border-app bg-app-raised p-3">
                 <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">Experience ({draft.experiences.length})</p>
-                <div className="space-y-2">
-                  {draft.experiences.slice(0, 5).map((item, index) => (
-                    <div key={index}>
-                      <p className="text-xs text-app-primary">{item.role || "Role"} · {item.company || "Company"}</p>
-                      <p className="text-[10px] text-app-muted">{item.startDate || "?"} – {item.endDate || "Present"}</p>
-                    </div>
-                  ))}
-                  {draft.experiences.length === 0 && <p className="text-xs text-app-faint">No experience extracted.</p>}
-                </div>
+                {draft.experiences.slice(0, 5).map((item, index) => (
+                  <div key={index} className="mb-2">
+                    <p className="text-xs text-app-primary">{item.role || "Role"} · {item.company || "Company"}</p>
+                    <p className="text-[10px] text-app-muted">{item.startDate || "?"} – {item.endDate || "Present"}</p>
+                  </div>
+                ))}
+                {draft.experiences.length === 0 && <p className="text-xs text-app-faint">No experience extracted.</p>}
               </div>
 
               <div className="rounded-lg border border-app bg-app-raised p-3">
                 <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">Projects ({draft.projects.length})</p>
-                <div className="space-y-2">
-                  {draft.projects.slice(0, 5).map((item, index) => (
-                    <div key={index}>
-                      <p className="text-xs text-app-primary">{item.name}</p>
-                      <p className="text-[10px] text-app-muted">{item.technologies || "No technologies listed"}</p>
-                    </div>
-                  ))}
-                  {draft.projects.length === 0 && <p className="text-xs text-app-faint">No projects extracted.</p>}
-                </div>
+                {draft.projects.slice(0, 5).map((item, index) => (
+                  <div key={index} className="mb-2">
+                    <p className="text-xs text-app-primary">{item.name}</p>
+                    <p className="text-[10px] text-app-muted">{item.technologies || "No technologies listed"}</p>
+                  </div>
+                ))}
+                {draft.projects.length === 0 && <p className="text-xs text-app-faint">No projects extracted.</p>}
               </div>
 
               <div className="rounded-lg border border-app bg-app-raised p-3">
                 <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">Education & certifications</p>
                 <p className="text-xs text-app-secondary">Education: {draft.education.length}</p>
                 <p className="text-xs text-app-secondary mt-1">Certifications: {draft.certifications.length}</p>
-                {draft.certifications.slice(0, 4).map((item, index) => (
-                  <p key={index} className="text-[10px] text-app-muted mt-1">{item.name}{item.issuer ? ` · ${item.issuer}` : ""}</p>
-                ))}
               </div>
 
               <div className="rounded-lg border border-app bg-app-raised p-3">
@@ -379,12 +490,10 @@ export default function CvUpload() {
               </div>
             </section>
 
-            {!canSave && (
-              <p className="text-[10px] text-app-faint">First name and last name must be filled in before saving.</p>
-            )}
+            {!canSave && <p className="text-[10px] text-app-faint">First name and last name must be filled in before saving.</p>}
 
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setDraft(null)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setActiveId(null)}>Close</Button>
               <Button variant="primary" onClick={saveConsultant} disabled={saving || !canSave}>
                 {saving ? "Saving..." : "Approve and save consultant"}
               </Button>
