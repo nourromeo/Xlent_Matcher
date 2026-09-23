@@ -27,6 +27,15 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
             return BadRequest("FirstName is required.");
 
         consultant.Id = 0;
+
+        foreach (var skill in consultant.Skills) { skill.Id = 0; skill.ConsultantId = 0; }
+        foreach (var experience in consultant.Experiences) { experience.Id = 0; experience.ConsultantId = 0; }
+        foreach (var project in consultant.Projects) { project.Id = 0; project.ConsultantId = 0; }
+        foreach (var education in consultant.Education) { education.Id = 0; education.ConsultantId = 0; }
+        foreach (var language in consultant.Languages) { language.Id = 0; language.ConsultantId = 0; }
+        foreach (var industry in consultant.Industries) { industry.Id = 0; industry.ConsultantId = 0; }
+        foreach (var certification in consultant.Certifications) { certification.Id = 0; certification.ConsultantId = 0; }
+
         db.Consultants.Add(consultant);
         await db.SaveChangesAsync(ct);
         return CreatedAtAction(nameof(GetById), new { id = consultant.Id }, consultant);
