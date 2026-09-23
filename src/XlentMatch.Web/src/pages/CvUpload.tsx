@@ -232,16 +232,6 @@ export default function CvUpload() {
     }
   };
 
-  const removeUpload = async (id: number) => {
-    try {
-      await cvUploadsApi.remove(id);
-      if (activeId === id) setActiveId(null);
-      setFiles((current) => current.filter((item) => item.id !== id));
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not remove upload history.");
-    }
-  };
-
   const total = files.length;
   const processing = files.filter((file) => file.status === "Extracting" || file.status === "Review").length;
   const indexed = files.filter((file) => file.status === "Indexed").length;
@@ -386,14 +376,6 @@ export default function CvUpload() {
               </Link>
             )}
 
-            <button
-              type="button"
-              onClick={() => void removeUpload(file.id)}
-              className="text-app-faint hover:text-app-secondary"
-              aria-label="Remove upload history"
-            >
-              <X size={12} />
-            </button>
           </div>
         ))}
       </div>
