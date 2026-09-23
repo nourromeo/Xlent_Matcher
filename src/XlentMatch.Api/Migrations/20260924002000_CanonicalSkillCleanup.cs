@@ -20,6 +20,33 @@ public class CanonicalSkillCleanup : Migration
                 THROW 51001, 'Cannot remove legacy AssignmentRequirement Name because some rows do not have SkillId.', 1;
             """);
 
+        // SQL Server does not allow changing SkillId nullability while indexes/FKs
+        // are using the column. Drop the dependent objects, alter the column,
+        // then recreate the canonical schema objects.
+        migrationBuilder.DropForeignKey(
+            name: "FK_ConsultantSkills_Skills_SkillId",
+            table: "ConsultantSkills");
+
+        migrationBuilder.DropForeignKey(
+            name: "FK_AssignmentRequirements_Skills_SkillId",
+            table: "AssignmentRequirements");
+
+        migrationBuilder.DropIndex(
+            name: "IX_ConsultantSkills_SkillId",
+            table: "ConsultantSkills");
+
+        migrationBuilder.DropIndex(
+            name: "IX_ConsultantSkills_ConsultantId_SkillId",
+            table: "ConsultantSkills");
+
+        migrationBuilder.DropIndex(
+            name: "IX_AssignmentRequirements_SkillId",
+            table: "AssignmentRequirements");
+
+        migrationBuilder.DropIndex(
+            name: "IX_AssignmentRequirements_AssignmentId_SkillId",
+            table: "AssignmentRequirements");
+
         migrationBuilder.AlterColumn<int>(
             name: "SkillId",
             table: "ConsultantSkills",
@@ -41,10 +68,70 @@ public class CanonicalSkillCleanup : Migration
         migrationBuilder.DropColumn(name: "Name", table: "ConsultantSkills");
         migrationBuilder.DropColumn(name: "Category", table: "ConsultantSkills");
         migrationBuilder.DropColumn(name: "Name", table: "AssignmentRequirements");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_ConsultantSkills_SkillId",
+            table: "ConsultantSkills",
+            column: "SkillId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_ConsultantSkills_ConsultantId_SkillId",
+            table: "ConsultantSkills",
+            columns: new[] { "ConsultantId", "SkillId" });
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AssignmentRequirements_SkillId",
+            table: "AssignmentRequirements",
+            column: "SkillId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AssignmentRequirements_AssignmentId_SkillId",
+            table: "AssignmentRequirements",
+            columns: new[] { "AssignmentId", "SkillId" });
+
+        migrationBuilder.AddForeignKey(
+            name: "FK_ConsultantSkills_Skills_SkillId",
+            table: "ConsultantSkills",
+            column: "SkillId",
+            principalTable: "Skills",
+            principalColumn: "Id",
+            onDelete: ReferentialAction.Restrict);
+
+        migrationBuilder.AddForeignKey(
+            name: "FK_AssignmentRequirements_Skills_SkillId",
+            table: "AssignmentRequirements",
+            column: "SkillId",
+            principalTable: "Skills",
+            principalColumn: "Id",
+            onDelete: ReferentialAction.Restrict);
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
+        migrationBuilder.DropForeignKey(
+            name: "FK_ConsultantSkills_Skills_SkillId",
+            table: "ConsultantSkills");
+
+        migrationBuilder.DropForeignKey(
+            name: "FK_AssignmentRequirements_Skills_SkillId",
+            table: "AssignmentRequirements");
+
+        migrationBuilder.DropIndex(
+            name: "IX_ConsultantSkills_SkillId",
+            table: "ConsultantSkills");
+
+        migrationBuilder.DropIndex(
+            name: "IX_ConsultantSkills_ConsultantId_SkillId",
+            table: "ConsultantSkills");
+
+        migrationBuilder.DropIndex(
+            name: "IX_AssignmentRequirements_SkillId",
+            table: "AssignmentRequirements");
+
+        migrationBuilder.DropIndex(
+            name: "IX_AssignmentRequirements_AssignmentId_SkillId",
+            table: "AssignmentRequirements");
+
         migrationBuilder.AddColumn<string>(
             name: "Name",
             table: "ConsultantSkills",
@@ -80,5 +167,41 @@ public class CanonicalSkillCleanup : Migration
             nullable: true,
             oldClrType: typeof(int),
             oldType: "int");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_ConsultantSkills_SkillId",
+            table: "ConsultantSkills",
+            column: "SkillId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_ConsultantSkills_ConsultantId_SkillId",
+            table: "ConsultantSkills",
+            columns: new[] { "ConsultantId", "SkillId" });
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AssignmentRequirements_SkillId",
+            table: "AssignmentRequirements",
+            column: "SkillId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AssignmentRequirements_AssignmentId_SkillId",
+            table: "AssignmentRequirements",
+            columns: new[] { "AssignmentId", "SkillId" });
+
+        migrationBuilder.AddForeignKey(
+            name: "FK_ConsultantSkills_Skills_SkillId",
+            table: "ConsultantSkills",
+            column: "SkillId",
+            principalTable: "Skills",
+            principalColumn: "Id",
+            onDelete: ReferentialAction.Restrict);
+
+        migrationBuilder.AddForeignKey(
+            name: "FK_AssignmentRequirements_Skills_SkillId",
+            table: "AssignmentRequirements",
+            column: "SkillId",
+            principalTable: "Skills",
+            principalColumn: "Id",
+            onDelete: ReferentialAction.Restrict);
     }
 }
