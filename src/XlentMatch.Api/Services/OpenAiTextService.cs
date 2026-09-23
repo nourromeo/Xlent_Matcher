@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
@@ -126,12 +125,15 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
     {
         var o = options.Value;
 
-        if (string.IsNullOrWhiteSpace(o.ApiKey) || o.ApiKey.StartsWith("AQUI_") ||
-            string.IsNullOrWhiteSpace(o.Endpoint) || o.Endpoint.StartsWith("AQUI_"))
+        if (string.IsNullOrWhiteSpace(o.ApiKey) ||
+            string.IsNullOrWhiteSpace(o.Endpoint) ||
+            string.IsNullOrWhiteSpace(o.Model))
         {
             throw new InvalidOperationException(
-                "OpenAI is not configured. Set OpenAi:Endpoint and OpenAi:ApiKey in appsettings.json.");
+                "Azure OpenAI is not configured. Set OpenAi:Endpoint, OpenAi:ApiKey and OpenAi:Model using configuration or user secrets.");
         }
+
+        var requestUrl = $"{o.Endpoint.TrimEnd('/')}/chat/completions";
 
         var body = new
         {
@@ -144,15 +146,15 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             }
         };
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, o.Endpoint);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", o.ApiKey);
+        using var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+        request.Headers.Add("api-key", o.ApiKey);
         request.Content = JsonContent.Create(body);
 
         using var response = await http.SendAsync(request, ct);
         var raw = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"OpenAI request failed ({(int)response.StatusCode}): {raw}");
+            throw new InvalidOperationException($"Azure OpenAI request failed ({(int)response.StatusCode}): {raw}");
 
         using var doc = JsonDocument.Parse(raw);
         var content = doc.RootElement
