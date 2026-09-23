@@ -87,6 +87,53 @@ export default function Admin() {
     currentSkillPage * skillsPerPage,
   );
 
+  const openSkillEditor = (skill: AdminSkill) => {
+    setEditingSkill(skill);
+    setEditCanonical(skill.canonical);
+    setEditCategory(skill.category);
+    setEditAliases(skill.aliases.join(", "));
+    setError("");
+  };
+
+  const saveSkill = async () => {
+    if (!editingSkill) return;
+
+    const canonicalName = editCanonical.trim();
+    const categoryName = editCategory.trim();
+
+    if (!canonicalName || !categoryName) {
+      setError("Canonical name and category are required.");
+      return;
+    }
+
+    setSavingSkill(true);
+    setError("");
+
+    try {
+      const updated = await adminApi.updateSkill(editingSkill.id, {
+        canonicalName,
+        category: categoryName,
+        aliases: editAliases.split(",").map((alias) => alias.trim()).filter(Boolean),
+      });
+
+      setOverview((current) =>
+        current
+          ? {
+              ...current,
+              skills: current.skills
+                .map((skill) => (skill.id === updated.id ? updated : skill))
+                .sort((a, b) => a.canonical.localeCompare(b.canonical)),
+            }
+          : current,
+      );
+      setEditingSkill(null);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not update skill.");
+    } finally {
+      setSavingSkill(false);
+    }
+  };
+
   const total = factors.reduce((sum, factor) => sum + factor.value, 0);
   const ok = total === 100;
 
