@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: write
-
 jobs:
   api:
     name: API build
@@ -23,19 +20,8 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
-      - name: Install EF tool
-        if: github.event_name == 'push' && github.event.head_commit.message == 'ci: apply exact EF snapshot'
-        run: dotnet tool install --global dotnet-ef --version 10.0.0
-      - name: Generate and commit exact EF snapshot
-        if: github.event_name == 'push' && github.event.head_commit.message == 'ci: apply exact EF snapshot'
-        run: |
-          dotnet ef migrations add SnapshotSync --no-build --configuration Release
-          rm -f Migrations/*_SnapshotSync.cs Migrations/*_SnapshotSync.Designer.cs
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Migrations/AppDbContextModelSnapshot.cs
-          git commit -m "fix: sync exact EF model snapshot"
-          git push
+      - run: dotnet tool install --global dotnet-ef --version 10.0.0
+      - run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
 
   web:
     name: Web build
