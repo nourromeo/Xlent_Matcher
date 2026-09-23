@@ -16,71 +16,80 @@ public class AdminController(
     [HttpGet("overview")]
     public async Task<ActionResult<AdminOverviewDto>> GetOverview(CancellationToken ct)
     {
-        var skills = await db.ConsultantSkills
+        var skills = await db.Skills
+            .Include(skill => skill.Aliases)
             .AsNoTracking()
-            .Where(skill => skill.Name != "")
-            .GroupBy(skill => new { skill.Name, Category = skill.Category ?? "Uncategorized" })
-            .Select(group => new AdminSkillDto
+            .OrderBy(skill => skill.CanonicalName)
+            .Select(skill => new AdminSkillDto
             {
-                Id = group.Key.Name + "|" + group.Key.Category,
-                Canonical = group.Key.Name,
-                Category = group.Key.Category,
-                Aliases = new List<string>(),
-                ConsultantCount = group.Select(skill => skill.ConsultantId).Distinct().Count()
+                Id = skill.Id.ToString(),
+                Canonical = skill.CanonicalName,
+                Category = skill.Category,
+                Aliases = skill.Aliases
+                    .OrderBy(alias => alias.Alias)
+                    .Select(alias => alias.Alias)
+                    .ToList(),
+                ConsultantCount = db.ConsultantSkills
+                    .Where(link => link.SkillId == skill.Id)
+                    .Select(link => link.ConsultantId)
+                    .Distinct()
+                    .Count()
             })
-            .OrderBy(skill => skill.Canonical)
             .ToListAsync(ct);
 
         var matching = matchingOptions.Value;
         var ai = openAiOptions.Value;
 
-        var factors = new List<AdminMatchingFactorDto>
-        {
-            new() { Key = "mandatory", Label = "Mandatory requirements", Value = matching.MandatoryWeight, Description = "Weight used for mandatory requirement coverage." },
-            new() { Key = "desired", Label = "Desired requirements", Value = matching.DesiredWeight, Description = "Weight used for desired requirement coverage." },
-            new() { Key = "experience", Label = "Experience", Value = matching.ExperienceWeight, Description = "Weight used for overall years-of-experience coverage." }
-        };
-
-        var capabilities = new List<AdminCapabilityDto>
-        {
-            new()
-            {
-                Key = "AzureOpenAiConfigured",
-                Label = "Azure OpenAI",
-                Description = "AI extraction and temporary CV adaptation are available when endpoint, model and API key are configured.",
-                Enabled = !string.IsNullOrWhiteSpace(ai.Endpoint) &&
-                          !string.IsNullOrWhiteSpace(ai.Model) &&
-                          !string.IsNullOrWhiteSpace(ai.ApiKey)
-            },
-            new()
-            {
-                Key = "DeterministicMatching",
-                Label = "Deterministic matching",
-                Description = "Match Score is calculated by the backend MatchingService using explicit weights.",
-                Enabled = true
-            },
-            new()
-            {
-                Key = "PdfTextExtraction",
-                Label = "PDF text extraction",
-                Description = "Text-based PDF and TXT extraction is enabled. OCR for image-only PDFs is not enabled.",
-                Enabled = true
-            },
-            new()
-            {
-                Key = "OriginalPdfStorage",
-                Label = "Original PDF storage",
-                Description = "The MVP does not store the original uploaded PDF file.",
-                Enabled = false
-            }
-        };
-
         return new AdminOverviewDto
         {
             Skills = skills,
-            MatchingFactors = factors,
+            MatchingFactors =
+            [
+                new() { Key = "mandatory", Label = "Mandatory requirements", Value = matching.MandatoryWeight, Description = "Weight used for mandatory requirement coverage." },
+                new() { Key = "desired", Label = "Desired requirements", Value = matching.DesiredWeight, Description = "Weight used for desired requirement coverage." },
+                new() { Key = "experience", Label = "Experience", Value = matching.ExperienceWeight, Description = "Weight used for overall years-of-experience coverage." }
+            ],
             MissingMandatoryPenalty = matching.MissingMandatoryPenalty,
-            Capabilities = capabilities
+            Capabilities =
+            [
+                new()
+                {
+                    Key = "AzureOpenAiConfigured",
+                    Label = "Azure OpenAI",
+                    Description = "AI extraction and temporary CV adaptation are available when endpoint, model and API key are configured.",
+                    Enabled = !string.IsNullOrWhiteSpace(ai.Endpoint) &&
+                              !string.IsNullOrWhiteSpace(ai.Model) &&
+                              !string.IsNullOrWhiteSpace(ai.ApiKey)
+                },
+                new()
+                {
+                    Key = "CanonicalSkillTaxonomy",
+                    Label = "Canonical skill taxonomy",
+                    Description = "Consultant skills and assignment requirements are normalized against the central skill catalog.",
+                    Enabled = true
+                },
+                new()
+                {
+                    Key = "DeterministicMatching",
+                    Label = "Deterministic matching",
+                    Description = "Match Score is calculated by the backend MatchingService using canonical skill links and explicit weights.",
+                    Enabled = true
+                },
+                new()
+                {
+                    Key = "PdfTextExtraction",
+                    Label = "PDF text extraction",
+                    Description = "Text-based PDF and TXT extraction is enabled. OCR for image-only PDFs is not enabled.",
+                    Enabled = true
+                },
+                new()
+                {
+                    Key = "OriginalPdfStorage",
+                    Label = "Original PDF storage",
+                    Description = "The MVP does not store the original uploaded PDF file.",
+                    Enabled = false
+                }
+            ]
         };
     }
 }

@@ -2,16 +2,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.Models;
+using XlentMatch.Api.Services;
 
 namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/consultants")]
-public class ConsultantsController(AppDbContext db) : ControllerBase
+public class ConsultantsController(AppDbContext db, SkillNormalizationService skills) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<Consultant>>> GetAll(CancellationToken ct) =>
-        await db.Consultants.Include(c => c.Skills).AsNoTracking().ToListAsync(ct);
+        await db.Consultants
+            .Include(c => c.Skills).ThenInclude(s => s.Skill)
+            .AsNoTracking()
+            .ToListAsync(ct);
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Consultant>> GetById(int id, CancellationToken ct)
@@ -36,8 +40,11 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
         foreach (var industry in consultant.Industries) { industry.Id = 0; industry.ConsultantId = 0; }
         foreach (var certification in consultant.Certifications) { certification.Id = 0; certification.ConsultantId = 0; }
 
+        await skills.NormalizeConsultantSkillsAsync(consultant.Skills, ct);
+
         db.Consultants.Add(consultant);
         await db.SaveChangesAsync(ct);
+
         return CreatedAtAction(nameof(GetById), new { id = consultant.Id }, consultant);
     }
 
@@ -58,7 +65,7 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
         existing.Office = input.Office;
         existing.OriginalCvText = input.OriginalCvText;
 
-        input.Skills.ForEach(x => x.Id = 0);
+        input.Skills.ForEach(x => { x.Id = 0; x.ConsultantId = 0; x.SkillId = null; x.Skill = null; });
         input.Experiences.ForEach(x => x.Id = 0);
         input.Projects.ForEach(x => x.Id = 0);
         input.Education.ForEach(x => x.Id = 0);
@@ -66,6 +73,9 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
         input.Industries.ForEach(x => x.Id = 0);
         input.Certifications.ForEach(x => x.Id = 0);
 
+        await skills.NormalizeConsultantSkillsAsync(input.Skills, ct);
+
+        db.ConsultantSkills.RemoveRange(existing.Skills);
         existing.Skills = input.Skills;
         existing.Experiences = input.Experiences;
         existing.Projects = input.Projects;
@@ -75,7 +85,7 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
         existing.Certifications = input.Certifications;
 
         await db.SaveChangesAsync(ct);
-        return existing;
+        return await LoadFull(id, ct) ?? existing;
     }
 
     [HttpDelete("{id:int}")]
@@ -87,6 +97,7 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
         var matchResults = await db.MatchResults
             .Where(m => m.ConsultantId == id)
             .ToListAsync(ct);
+
         db.MatchResults.RemoveRange(matchResults);
         db.Consultants.Remove(consultant);
         await db.SaveChangesAsync(ct);
@@ -96,7 +107,7 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
     private Task<Consultant?> LoadFull(int id, CancellationToken ct, bool track = false)
     {
         IQueryable<Consultant> query = db.Consultants
-            .Include(c => c.Skills)
+            .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .Include(c => c.Experiences)
             .Include(c => c.Projects)
             .Include(c => c.Education)

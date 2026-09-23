@@ -68,36 +68,42 @@ public class MatchingService(IOptions<MatchingOptions> options)
         var evidence = new List<string>();
         var matched = false;
 
-        var skill = c.Skills.FirstOrDefault(s => SameName(s.Name, req.Name));
+        var skill = req.SkillId is not null
+            ? c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId)
+            : c.Skills.FirstOrDefault(s => SameName(s.Name, req.Name));
+
         if (skill is not null)
         {
             var yearsOk = req.MinYears is null || skill.Years >= req.MinYears;
             var levelOk = req.MinLevel is null || skill.Level >= req.MinLevel;
             matched = yearsOk && levelOk;
 
-            evidence.Add($"Skill '{skill.Name}': level {skill.Level}/5, {skill.Years} years");
+            var skillName = skill.Skill?.CanonicalName ?? skill.Name;
+            evidence.Add($"Skill '{skillName}': level {skill.Level}/5, {skill.Years} years");
             if (!string.IsNullOrWhiteSpace(skill.Evidence))
                 evidence.Add(skill.Evidence);
             if (!yearsOk) evidence.Add($"Requires {req.MinYears} years, consultant has {skill.Years}");
             if (!levelOk) evidence.Add($"Requires level {req.MinLevel}, consultant has {skill.Level}");
         }
 
-        var cert = c.Certifications.FirstOrDefault(x => SameName(x.Name, req.Name));
+        var requirementName = req.Skill?.CanonicalName ?? req.Name;
+
+        var cert = c.Certifications.FirstOrDefault(x => SameName(x.Name, requirementName));
         if (cert is not null)
         {
             if (req.MinYears is null && req.MinLevel is null) matched = true;
             evidence.Add($"Certification '{cert.Name}'" + (cert.Issuer is null ? "" : $" ({cert.Issuer})"));
         }
 
-        foreach (var project in c.Projects.Where(p => UsesTechnology(p, req.Name)))
-            evidence.Add($"Project '{project.Name}' used {req.Name}");
+        foreach (var project in c.Projects.Where(p => UsesTechnology(p, requirementName)))
+            evidence.Add($"Project '{project.Name}' used {requirementName}");
 
         if (evidence.Count == 0)
-            evidence.Add("No matching skill, certification or project found in profile");
+            evidence.Add("No matching canonical skill, certification or project found in profile");
 
         return new MatchRequirementResult
         {
-            RequirementName = req.Name,
+            RequirementName = requirementName,
             Type = req.Type,
             IsMatched = matched,
             Evidence = string.Join("; ", evidence)

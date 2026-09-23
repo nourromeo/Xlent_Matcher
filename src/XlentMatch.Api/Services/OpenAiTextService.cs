@@ -24,12 +24,14 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
         var system = $$"""
             You extract structured consultant profiles from CV text.
             {{NoInventionRule}}
+            Extract skill names exactly enough for later normalization, but do NOT classify skills into categories.
+            The application's canonical Skill Catalog is the source of truth for skill names, aliases and categories.
             Return a JSON object with exactly this shape:
             {
               "firstName": string, "lastName": string, "email": string|null, "title": string|null,
               "summary": string|null, "seniority": string|null, "yearsOfExperience": int,
               "availability": string|null, "office": string|null,
-              "skills": [{ "name": string, "category": string|null, "level": int, "years": int, "evidence": string|null }],
+              "skills": [{ "name": string, "level": int, "years": int, "evidence": string|null }],
               "experiences": [{ "company": string, "role": string, "description": string|null,
                                  "startDate": "yyyy-MM"|null, "endDate": "yyyy-MM"|null }],
               "projects": [{ "name": string, "description": string|null, "technologies": "comma, separated"|null }],

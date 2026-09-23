@@ -41,7 +41,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
       id: 0,
       consultantId: 0,
       name: skill.name.trim(),
-      category: skill.category?.trim() || null,
+      category: null,
       years: skill.years,
       level: skill.level,
       evidence: skill.evidence?.trim() || null,
@@ -454,7 +454,7 @@ export default function CvUpload() {
                   icon={<Plus size={11} />}
                   onClick={() => updateDraft({
                     ...draft,
-                    skills: [...draft.skills, { name: "", category: null, level: 0, years: 0, evidence: null }],
+                    skills: [...draft.skills, { name: "", level: 0, years: 0, evidence: null }],
                   })}
                 >
                   Add skill
@@ -463,21 +463,13 @@ export default function CvUpload() {
 
               <div className="space-y-2">
                 {draft.skills.map((skill, index) => (
-                  <div key={index} className="grid grid-cols-[1fr_120px_80px_80px_30px] gap-2 items-center">
+                  <div key={index} className="grid grid-cols-[1fr_80px_80px_30px] gap-2 items-center">
                     <Input
                       value={skill.name}
                       placeholder="Skill"
                       onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, name: event.target.value } : item),
-                      })}
-                    />
-                    <Input
-                      value={skill.category ?? ""}
-                      placeholder="Category"
-                      onChange={(event) => updateDraft({
-                        ...draft,
-                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, category: event.target.value || null } : item),
                       })}
                     />
                     <Input
