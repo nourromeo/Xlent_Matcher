@@ -11,7 +11,7 @@ namespace XlentMatch.Api.Controllers;
 [Route("api/admin")]
 public class AdminController(
     AppDbContext db,
-    IOptions<MatchingOptions> matchingOptions,
+    MatchingWeightsStore matchingWeightsStore,
     IOptions<OpenAiOptions> openAiOptions) : ControllerBase
 {
     [HttpGet("overview")]
@@ -38,7 +38,7 @@ public class AdminController(
             })
             .ToListAsync(ct);
 
-        var matching = matchingOptions.Value;
+        var matching = matchingWeightsStore.Get();
         var ai = openAiOptions.Value;
 
         return new AdminOverviewDto
@@ -92,6 +92,80 @@ public class AdminController(
                 }
             ]
         };
+    }
+
+    [HttpPost("skills")]
+    public async Task<ActionResult<AdminSkillDto>> CreateSkill(
+        UpdateAdminSkillRequest input,
+        CancellationToken ct)
+    {
+        var canonical = input.CanonicalName?.Trim() ?? "";
+        var category = input.Category?.Trim() ?? "";
+
+        if (string.IsNullOrWhiteSpace(canonical))
+            return BadRequest("Canonical skill name is required.");
+
+        if (string.IsNullOrWhiteSpace(category))
+            return BadRequest("Category is required.");
+
+        var normalizedCanonical = SkillNormalizationService.NormalizeKey(canonical);
+
+        var canonicalConflict = await db.Skills.AnyAsync(
+            x => x.NormalizedName == normalizedCanonical, ct);
+
+        var aliasConflict = await db.SkillAliases.AnyAsync(
+            x => x.NormalizedAlias == normalizedCanonical, ct);
+
+        if (canonicalConflict || aliasConflict)
+            return Conflict("That canonical name is already used by another skill or alias.");
+
+        var requestedAliases = (input.Aliases ?? [])
+            .Where(alias => !string.IsNullOrWhiteSpace(alias))
+            .Select(alias => alias.Trim())
+            .GroupBy(SkillNormalizationService.NormalizeKey)
+            .Select(group => group.First())
+            .Where(alias => SkillNormalizationService.NormalizeKey(alias) != normalizedCanonical)
+            .ToList();
+
+        foreach (var alias in requestedAliases)
+        {
+            var normalizedAlias = SkillNormalizationService.NormalizeKey(alias);
+
+            var usedAsCanonical = await db.Skills.AnyAsync(
+                x => x.NormalizedName == normalizedAlias, ct);
+
+            var usedAsAlias = await db.SkillAliases.AnyAsync(
+                x => x.NormalizedAlias == normalizedAlias, ct);
+
+            if (usedAsCanonical || usedAsAlias)
+                return Conflict($"Alias '{alias}' is already used by another skill.");
+        }
+
+        var skill = new Skill
+        {
+            CanonicalName = canonical,
+            NormalizedName = normalizedCanonical,
+            Category = category,
+            Aliases = requestedAliases
+                .Select(alias => new SkillAlias
+                {
+                    Alias = alias,
+                    NormalizedAlias = SkillNormalizationService.NormalizeKey(alias)
+                })
+                .ToList()
+        };
+
+        db.Skills.Add(skill);
+        await db.SaveChangesAsync(ct);
+
+        return Created($"/api/admin/skills/{skill.Id}", new AdminSkillDto
+        {
+            Id = skill.Id.ToString(),
+            Canonical = skill.CanonicalName,
+            Category = skill.Category,
+            Aliases = skill.Aliases.OrderBy(x => x.Alias).Select(x => x.Alias).ToList(),
+            ConsultantCount = 0
+        });
     }
 
     [HttpPut("skills/{id:int}")]
@@ -189,6 +263,36 @@ public class AdminController(
             ConsultantCount = consultantCount
         };
     }
+    [HttpPut("matching-weights")]
+    public async Task<ActionResult<AdminOverviewDto>> UpdateMatchingWeights(
+        UpdateMatchingWeightsRequest input,
+        CancellationToken ct)
+    {
+        try
+        {
+            await matchingWeightsStore.UpdateAsync(new MatchingWeights
+            {
+                MandatoryWeight = input.MandatoryWeight,
+                DesiredWeight = input.DesiredWeight,
+                ExperienceWeight = input.ExperienceWeight,
+                MissingMandatoryPenalty = input.MissingMandatoryPenalty
+            }, ct);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
+        return await GetOverview(ct);
+    }
+
+    [HttpPost("matching-weights/reset")]
+    public async Task<ActionResult<AdminOverviewDto>> ResetMatchingWeights(CancellationToken ct)
+    {
+        await matchingWeightsStore.ResetAsync(ct);
+        return await GetOverview(ct);
+    }
+
 }
 
 public class UpdateAdminSkillRequest
@@ -196,6 +300,14 @@ public class UpdateAdminSkillRequest
     public string? CanonicalName { get; set; }
     public string? Category { get; set; }
     public List<string>? Aliases { get; set; }
+}
+
+public class UpdateMatchingWeightsRequest
+{
+    public int MandatoryWeight { get; set; }
+    public int DesiredWeight { get; set; }
+    public int ExperienceWeight { get; set; }
+    public int MissingMandatoryPenalty { get; set; }
 }
 
 public class AdminOverviewDto
