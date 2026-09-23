@@ -243,7 +243,9 @@ export default function Admin() {
                   render: (skill: AdminSkill) => (
                     <div className="flex items-center gap-1">
                       <span className="text-[10px] text-app-muted mr-2">{skill.consultantCount} consultants</span>
-                      <Button variant="ghost" icon={<Edit3 size={11} />} disabled>{t("admin_edit")}</Button>
+                      <Button variant="ghost" icon={<Edit3 size={11} />} onClick={() => openSkillEditor(skill)}>
+                        {t("admin_edit")}
+                      </Button>
                       <button
                         disabled
                         className="p-2 text-app-faint opacity-40 cursor-not-allowed"
