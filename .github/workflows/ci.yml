@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   api:
     name: API build
@@ -21,14 +24,30 @@ jobs:
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
       - run: dotnet tool install --global dotnet-ef --version 10.0.0
-      - name: Diagnose pending EF model changes
+      - name: Sync EF snapshot exactly once
+        if: github.event_name == 'push' && github.event.head_commit.message == 'ci: sync EF snapshot once'
         run: |
           dotnet ef migrations add DiagnosePending --no-build --configuration Release --output-dir Migrations/Diagnosis
-          find Migrations/Diagnosis -type f -maxdepth 1 -print -exec cat {} \;
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ef-diagnosis
-          path: src/XlentMatch.Api/Migrations/Diagnosis
+          python - <<'PY'
+          from pathlib import Path
+          designer = next(Path("Migrations/Diagnosis").glob("*_DiagnosePending.Designer.cs"))
+          text = designer.read_text(encoding="utf-8-sig")
+          text = text.replace("namespace XlentMatch.Api.Migrations.Diagnosis", "namespace XlentMatch.Api.Migrations")
+          text = text.replace("using Microsoft.EntityFrameworkCore.Migrations;\n", "")
+          import re
+          text = re.sub(r'\[Migration\("[^"]+"\)\]\n\s*partial class DiagnosePending',
+                        'partial class AppDbContextModelSnapshot : ModelSnapshot', text)
+          text = text.replace("protected override void BuildTargetModel(ModelBuilder modelBuilder)",
+                              "protected override void BuildModel(ModelBuilder modelBuilder)")
+          Path("Migrations/AppDbContextModelSnapshot.cs").write_text(text, encoding="utf-8")
+          PY
+          rm -rf Migrations/Diagnosis
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Migrations/AppDbContextModelSnapshot.cs
+          git commit -m "fix: sync EF model snapshot"
+          git push
+
 
   web:
     name: Web build
