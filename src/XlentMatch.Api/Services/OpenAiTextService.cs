@@ -46,9 +46,9 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
 
     public Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct)
     {
-        var system = $"""
+        var system = NoInventionRule + """
+            
             You extract structured information from a customer assignment / requirement specification.
-            {{NoInventionRule}}
 
             Separate assignment metadata from actual consultant requirements.
 
