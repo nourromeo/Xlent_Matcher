@@ -143,13 +143,13 @@ namespace XlentMatch.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<string>("Office")
+                    b.Property<string>("Office")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OriginalCvText")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<string>("Seniority")
+                    b.Property<string>("Seniority")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Summary")
@@ -158,7 +158,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<int>("YearsOfExperience")
+                    b.Property<int>("YearsOfExperience")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -172,9 +172,9 @@ namespace XlentMatch.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Propertx<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Propertx<int>("ConsultantId")
+                    b.Property<int>("ConsultantId")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -190,7 +190,7 @@ namespace XlentMatch.Api.Migrations
 
             modelBuilder.Entity("XlentMatch.Api.Models.ConsultantLanguage", b =>
                 {
-                    b.Propertx<int>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
@@ -202,7 +202,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Level")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<string>("Name")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -224,7 +224,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("ConsultantId")
                         .HasColumnType("int");
 
-                    b.Propertx<string>("Evidence")
+                    b.Property<string>("Evidence")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Level")
@@ -233,7 +233,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("SkillId")
                         .HasColumnType("int");
 
-                    b.Propertx<int>("Years")
+                    b.Property<int>("Years")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -251,9 +251,9 @@ namespace XlentMatch.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Propertx<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Propertx<int?>("ConsultantId")
+                    b.Property<int?>("ConsultantId")
                         .HasColumnType("int");
 
                     b.Property<string>("DraftJson")
@@ -262,11 +262,11 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("ErrorMessage")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<string>("FileName")
+                    b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<long>("FileSize")
+                    b.Property<long>("FileSize")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Status")
@@ -294,14 +294,14 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("ConsultantId")
                         .HasColumnType("int");
 
-                    b.Propertx<string>("Degree")
+                    b.Property<string>("Degree")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("School")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<string>("Year")
+                    b.Property<string>("Year")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -317,16 +317,16 @@ namespace XlentMatch.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Propertx<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Propertx<string>("Company")
+                    b.Property<string>("Company")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ConsultantId")
                         .HasColumnType("int");
 
-                    b.Propertx<string>("Description")
+                    b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly?>("EndDate")
@@ -336,7 +336,7 @@ namespace XlentMatch.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<DateOnly?>("StartDate")
+                    b.Property<DateOnly?>("StartDate")
                         .HasColumnType("date");
 
                     b.HasKey("Id");
@@ -348,7 +348,7 @@ namespace XlentMatch.Api.Migrations
 
             modelBuilder.Entity("XlentMatch.Api.Models.MatchRequirementResult", b =>
                 {
-                    b.Propertx<int>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
@@ -361,14 +361,14 @@ namespace XlentMatch.Api.Migrations
                     b.Property<bool>("IsMatched")
                         .HasColumnType("bit");
 
-                    b.Propertx<int>("MatchResultId")
+                    b.Property<int>("MatchResultId")
                         .HasColumnType("int");
 
                     b.Property<string>("RequirementName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<int>("Type")
+                    b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -384,9 +384,9 @@ namespace XlentMatch.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Propertx<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Propertx<int>("AssignmentId")
+                    b.Property<int>("AssignmentId")
                         .HasColumnType("int");
 
                     b.Property<int>("ConsultantId")
@@ -402,14 +402,14 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("ExperienceScore")
                         .HasColumnType("int");
 
-                    b.Propertx<string>("Explanation")
+                    b.Property<string>("Explanation")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Propertx<int>("MatchedDesired")
+                    b.Property<int>("MatchedDesired")
                         .HasColumnType("int");
 
-                    b.Propertx<int>("MatchedMandatory")
+                    b.Property<int>("MatchedMandatory")
                         .HasColumnType("int");
 
                     b.Property<int>("Rank")
@@ -437,9 +437,9 @@ namespace XlentMatch.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Propertx<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Propertx<int>("ConsultantId")
+                    b.Property<int>("ConsultantId")
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
@@ -465,9 +465,9 @@ namespace XlentMatch.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Propertx<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Propertx<string>("CanonicalName")
+                    b.Property<string>("CanonicalName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -489,7 +489,7 @@ namespace XlentMatch.Api.Migrations
 
             modelBuilder.Entity("XlentMatch.Api.Models.SkillAlias", b =>
                 {
-                    b.Propertx<int>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
