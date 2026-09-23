@@ -18,45 +18,31 @@ public class SkillNormalizationService(AppDbContext db)
         foreach (var item in SkillCatalogSeed.Items)
         {
             var normalizedName = NormalizeKey(item.Name);
-            var skill = await db.Skills
+            var existing = await db.Skills
                 .Include(x => x.Aliases)
                 .FirstOrDefaultAsync(x =>
                     x.NormalizedName == normalizedName ||
                     x.Aliases.Any(alias => alias.NormalizedAlias == normalizedName),
                     ct);
 
-            if (skill is null)
+            // Seed defaults only when the canonical skill does not exist.
+            // Admin changes are the source of truth after a skill has been created.
+            if (existing is not null)
+                continue;
+
+            db.Skills.Add(new Skill
             {
-                skill = new Skill
-                {
-                    CanonicalName = item.Name,
-                    NormalizedName = normalizedName,
-                    Category = item.Category
-                };
-                db.Skills.Add(skill);
-                await db.SaveChangesAsync(ct);
-            }
-
-            foreach (var alias in item.Aliases)
-            {
-                var normalizedAlias = NormalizeKey(alias);
-                if (skill.Aliases.Any(x => x.NormalizedAlias == normalizedAlias))
-                    continue;
-
-                var usedElsewhere = await db.SkillAliases.AnyAsync(
-                    x => x.SkillId != skill.Id && x.NormalizedAlias == normalizedAlias, ct);
-                var isAnotherCanonical = await db.Skills.AnyAsync(
-                    x => x.Id != skill.Id && x.NormalizedName == normalizedAlias, ct);
-
-                if (usedElsewhere || isAnotherCanonical)
-                    continue;
-
-                skill.Aliases.Add(new SkillAlias
-                {
-                    Alias = alias,
-                    NormalizedAlias = normalizedAlias
-                });
-            }
+                CanonicalName = item.Name,
+                NormalizedName = normalizedName,
+                Category = item.Category,
+                Aliases = item.Aliases
+                    .Select(alias => new SkillAlias
+                    {
+                        Alias = alias,
+                        NormalizedAlias = NormalizeKey(alias)
+                    })
+                    .ToList()
+            });
         }
 
         await db.SaveChangesAsync(ct);
