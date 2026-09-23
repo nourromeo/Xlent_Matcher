@@ -5,6 +5,7 @@ import { Modal } from "./ui/Modal";
 
 type Props = {
   open: boolean;
+  mode: "add" | "edit";
   canonical: string;
   category: string;
   aliases: string;
@@ -18,6 +19,7 @@ type Props = {
 
 export function SkillEditModal({
   open,
+  mode,
   canonical,
   category,
   aliases,
@@ -31,8 +33,12 @@ export function SkillEditModal({
   return (
     <Modal
       open={open}
-      title="Edit canonical skill"
-      description="Changes are saved to the central Skill Taxonomy and used by consultants, assignments and matching."
+      title={mode === "add" ? "Add canonical skill" : "Edit canonical skill"}
+      description={
+        mode === "add"
+          ? "Create a canonical skill and optional aliases in the central Skill Taxonomy."
+          : "Changes are saved to the central Skill Taxonomy and used by consultants, assignments and matching."
+      }
       onClose={onClose}
     >
       <div className="p-5 space-y-4">
@@ -64,7 +70,7 @@ export function SkillEditModal({
             Cancel
           </Button>
           <Button variant="primary" icon={<Save size={11} />} onClick={onSave} disabled={saving}>
-            {saving ? "Saving..." : "Save changes"}
+            {saving ? "Saving..." : mode === "add" ? "Add skill" : "Save changes"}
           </Button>
         </div>
       </div>
