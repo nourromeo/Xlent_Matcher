@@ -78,11 +78,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int?>("MinYears")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("SkillId")
+                    b.Property<int>("SkillId")
                         .HasColumnType("int");
 
                     b.Property<int>("Type")
@@ -225,9 +221,6 @@ namespace XlentMatch.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Category")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("ConsultantId")
                         .HasColumnType("int");
 
@@ -237,11 +230,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("Level")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("SkillId")
+                    b.Property<int>("SkillId")
                         .HasColumnType("int");
 
                     b.Property<int>("Years")
@@ -538,7 +527,8 @@ namespace XlentMatch.Api.Migrations
                     b.HasOne("XlentMatch.Api.Models.Skill", "Skill")
                         .WithMany()
                         .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Skill");
                 });
@@ -581,7 +571,8 @@ namespace XlentMatch.Api.Migrations
                     b.HasOne("XlentMatch.Api.Models.Skill", "Skill")
                         .WithMany()
                         .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Skill");
                 });
