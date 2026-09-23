@@ -52,7 +52,7 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         {
             requirement.Id = 0;
             requirement.AssignmentId = 0;
-            requirement.SkillId = null;
+            requirement.SkillId = 0;
             requirement.Skill = null;
         }
 

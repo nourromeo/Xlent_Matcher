@@ -1,20 +1,12 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-
-    // Temporary during the one-time adoption of EF migrations on the existing LocalDB.
-    // Remove this once the generated snapshot is synchronized in the next migration.
-    options.ConfigureWarnings(warnings =>
-        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
-});
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.Configure<OpenAiOptions>(builder.Configuration.GetSection("OpenAi"));
 builder.Services.Configure<MatchingOptions>(builder.Configuration.GetSection("Matching"));
@@ -43,13 +35,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
     await db.Database.MigrateAsync();
-    await SeedData.InitializeAsync(db);
 
     var skillNormalization = scope.ServiceProvider.GetRequiredService<SkillNormalizationService>();
     await skillNormalization.EnsureCatalogAsync();
-    await skillNormalization.NormalizeExistingDataAsync();
+    await SeedData.InitializeAsync(db);
 }
 
 if (app.Environment.IsDevelopment())

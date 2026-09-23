@@ -20,7 +20,10 @@ public class SkillNormalizationService(AppDbContext db)
             var normalizedName = NormalizeKey(item.Name);
             var skill = await db.Skills
                 .Include(x => x.Aliases)
-                .FirstOrDefaultAsync(x => x.NormalizedName == normalizedName, ct);
+                .FirstOrDefaultAsync(x =>
+                    x.NormalizedName == normalizedName ||
+                    x.Aliases.Any(alias => alias.NormalizedAlias == normalizedName),
+                    ct);
 
             if (skill is null)
             {
@@ -33,16 +36,19 @@ public class SkillNormalizationService(AppDbContext db)
                 db.Skills.Add(skill);
                 await db.SaveChangesAsync(ct);
             }
-            else
-            {
-                skill.CanonicalName = item.Name;
-                skill.Category = item.Category;
-            }
 
             foreach (var alias in item.Aliases)
             {
                 var normalizedAlias = NormalizeKey(alias);
                 if (skill.Aliases.Any(x => x.NormalizedAlias == normalizedAlias))
+                    continue;
+
+                var usedElsewhere = await db.SkillAliases.AnyAsync(
+                    x => x.SkillId != skill.Id && x.NormalizedAlias == normalizedAlias, ct);
+                var isAnotherCanonical = await db.Skills.AnyAsync(
+                    x => x.Id != skill.Id && x.NormalizedName == normalizedAlias, ct);
+
+                if (usedElsewhere || isAnotherCanonical)
                     continue;
 
                 skill.Aliases.Add(new SkillAlias
@@ -109,20 +115,5 @@ public class SkillNormalizationService(AppDbContext db)
             requirement.Skill = null;
             requirement.Name = skill.CanonicalName;
         }
-    }
-
-    public async Task NormalizeExistingDataAsync(CancellationToken ct = default)
-    {
-        var consultantSkills = await db.ConsultantSkills
-            .Where(x => x.SkillId == null)
-            .ToListAsync(ct);
-        await NormalizeConsultantSkillsAsync(consultantSkills, ct);
-
-        var requirements = await db.AssignmentRequirements
-            .Where(x => x.SkillId == null)
-            .ToListAsync(ct);
-        await NormalizeRequirementsAsync(requirements, ct);
-
-        await db.SaveChangesAsync(ct);
     }
 }

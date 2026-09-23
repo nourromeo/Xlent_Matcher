@@ -1,16 +1,30 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace XlentMatch.Api.Models;
 
 public class ConsultantSkill
 {
+    private string _inputName = "";
+    private string? _inputCategory;
+
     public int Id { get; set; }
     public int ConsultantId { get; set; }
-
-    // Compatibility columns kept until the migration cleanup step.
-    public string Name { get; set; } = "";
-    public string? Category { get; set; }
-
-    public int? SkillId { get; set; }
+    public int SkillId { get; set; }
     public Skill? Skill { get; set; }
+
+    [NotMapped]
+    public string Name
+    {
+        get => Skill?.CanonicalName ?? _inputName;
+        set => _inputName = value;
+    }
+
+    [NotMapped]
+    public string? Category
+    {
+        get => Skill?.Category ?? _inputCategory;
+        set => _inputCategory = value;
+    }
 
     public int Years { get; set; }
     public int Level { get; set; }

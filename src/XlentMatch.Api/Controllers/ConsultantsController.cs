@@ -65,7 +65,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.Office = input.Office;
         existing.OriginalCvText = input.OriginalCvText;
 
-        input.Skills.ForEach(x => { x.Id = 0; x.ConsultantId = 0; x.SkillId = null; x.Skill = null; });
+        input.Skills.ForEach(x => { x.Id = 0; x.ConsultantId = 0; x.SkillId = 0; x.Skill = null; });
         input.Experiences.ForEach(x => x.Id = 0);
         input.Projects.ForEach(x => x.Id = 0);
         input.Education.ForEach(x => x.Id = 0);

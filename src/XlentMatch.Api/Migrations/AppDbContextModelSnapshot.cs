@@ -57,12 +57,10 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
         modelBuilder.Entity("XlentMatch.Api.Models.ConsultantSkill", b =>
         {
             b.Property<int>("Id").ValueGeneratedOnAdd();
-            b.Property<string>("Category");
             b.Property<int>("ConsultantId");
             b.Property<string>("Evidence");
             b.Property<int>("Level");
-            b.Property<string>("Name").IsRequired();
-            b.Property<int?>("SkillId");
+            b.Property<int>("SkillId");
             b.Property<int>("Years");
             b.HasKey("Id");
             b.HasIndex("ConsultantId");
@@ -163,8 +161,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
             b.Property<int>("AssignmentId");
             b.Property<int?>("MinLevel");
             b.Property<int?>("MinYears");
-            b.Property<string>("Name").IsRequired();
-            b.Property<int?>("SkillId");
+            b.Property<int>("SkillId");
             b.Property<int>("Type");
             b.HasKey("Id");
             b.HasIndex("AssignmentId");
@@ -242,7 +239,8 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
             b.HasOne("XlentMatch.Api.Models.Skill", "Skill")
                 .WithMany()
                 .HasForeignKey("SkillId")
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
 
             b.Navigation("Skill");
         });
@@ -278,7 +276,8 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
             b.HasOne("XlentMatch.Api.Models.Skill", "Skill")
                 .WithMany()
                 .HasForeignKey("SkillId")
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
 
             b.Navigation("Skill");
         });

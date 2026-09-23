@@ -29,6 +29,18 @@ export type AdminOverview = {
   capabilities: AdminCapability[];
 };
 
+export type UpdateAdminSkillRequest = {
+  canonicalName: string;
+  category: string;
+  aliases: string[];
+};
+
 export const adminApi = {
   getOverview: () => apiRequest<AdminOverview>("/admin/overview"),
+
+  updateSkill: (id: string, input: UpdateAdminSkillRequest) =>
+    apiRequest<AdminSkill>(`/admin/skills/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
 };

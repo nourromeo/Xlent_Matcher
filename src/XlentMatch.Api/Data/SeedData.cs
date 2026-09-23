@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using XlentMatch.Api.Models;
+using XlentMatch.Api.Services;
 
 namespace XlentMatch.Api.Data;
 
@@ -7,6 +8,7 @@ public static class SeedData
 {
     public static async Task InitializeAsync(AppDbContext db, CancellationToken ct = default)
     {
+        var skillNormalizer = new SkillNormalizationService(db);
         if (!await db.Consultants.AnyAsync(ct))
         {
             var consultants = new List<Consultant>
@@ -195,6 +197,9 @@ public static class SeedData
             }
         };
 
+            foreach (var consultant in consultants)
+                await skillNormalizer.NormalizeConsultantSkillsAsync(consultant.Skills, ct);
+
             db.Consultants.AddRange(consultants);
             await db.SaveChangesAsync(ct);
         }
@@ -263,6 +268,9 @@ public static class SeedData
                     ]
                 }
             };
+
+            foreach (var assignment in assignments)
+                await skillNormalizer.NormalizeRequirementsAsync(assignment.Requirements, ct);
 
             db.Assignments.AddRange(assignments);
             await db.SaveChangesAsync(ct);

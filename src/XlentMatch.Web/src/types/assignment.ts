@@ -21,6 +21,7 @@ export type AssignmentStatusApi = "Draft" | "Matching" | "Done" | "Closed";
 export type AssignmentRequirementApi = {
   id: number;
   assignmentId: number;
+  skillId: number;
   name: string;
   type: RequirementTypeApi;
   minYears: number | null;

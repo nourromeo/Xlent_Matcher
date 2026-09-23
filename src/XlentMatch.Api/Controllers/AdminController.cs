@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using XlentMatch.Api.Data;
+using XlentMatch.Api.Models;
 using XlentMatch.Api.Services;
 
 namespace XlentMatch.Api.Controllers;
@@ -92,6 +93,109 @@ public class AdminController(
             ]
         };
     }
+
+    [HttpPut("skills/{id:int}")]
+    public async Task<ActionResult<AdminSkillDto>> UpdateSkill(
+        int id,
+        UpdateAdminSkillRequest input,
+        CancellationToken ct)
+    {
+        var skill = await db.Skills
+            .Include(x => x.Aliases)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+
+        if (skill is null)
+            return NotFound();
+
+        var canonical = input.CanonicalName?.Trim() ?? "";
+        var category = input.Category?.Trim() ?? "";
+
+        if (string.IsNullOrWhiteSpace(canonical))
+            return BadRequest("Canonical skill name is required.");
+
+        if (string.IsNullOrWhiteSpace(category))
+            return BadRequest("Category is required.");
+
+        var normalizedCanonical = SkillNormalizationService.NormalizeKey(canonical);
+
+        var canonicalConflict = await db.Skills.AnyAsync(
+            x => x.Id != id && x.NormalizedName == normalizedCanonical, ct);
+
+        var aliasConflict = await db.SkillAliases.AnyAsync(
+            x => x.SkillId != id && x.NormalizedAlias == normalizedCanonical, ct);
+
+        if (canonicalConflict || aliasConflict)
+            return Conflict("That canonical name is already used by another skill or alias.");
+
+        var requestedAliases = (input.Aliases ?? [])
+            .Where(alias => !string.IsNullOrWhiteSpace(alias))
+            .Select(alias => alias.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(alias => SkillNormalizationService.NormalizeKey(alias) != normalizedCanonical)
+            .ToList();
+
+        foreach (var alias in requestedAliases)
+        {
+            var normalizedAlias = SkillNormalizationService.NormalizeKey(alias);
+
+            var usedAsCanonical = await db.Skills.AnyAsync(
+                x => x.Id != id && x.NormalizedName == normalizedAlias, ct);
+
+            var usedAsAlias = await db.SkillAliases.AnyAsync(
+                x => x.SkillId != id && x.NormalizedAlias == normalizedAlias, ct);
+
+            if (usedAsCanonical || usedAsAlias)
+                return Conflict($"Alias '{alias}' is already used by another skill.");
+        }
+
+        var previousCanonical = skill.CanonicalName;
+        var aliases = requestedAliases.ToList();
+
+        if (!string.Equals(previousCanonical, canonical, StringComparison.OrdinalIgnoreCase))
+            aliases.Add(previousCanonical);
+
+        aliases = aliases
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(alias => SkillNormalizationService.NormalizeKey(alias) != normalizedCanonical)
+            .ToList();
+
+        db.SkillAliases.RemoveRange(skill.Aliases);
+
+        skill.CanonicalName = canonical;
+        skill.NormalizedName = normalizedCanonical;
+        skill.Category = category;
+        skill.Aliases = aliases
+            .Select(alias => new SkillAlias
+            {
+                Alias = alias,
+                NormalizedAlias = SkillNormalizationService.NormalizeKey(alias)
+            })
+            .ToList();
+
+        await db.SaveChangesAsync(ct);
+
+        var consultantCount = await db.ConsultantSkills
+            .Where(link => link.SkillId == skill.Id)
+            .Select(link => link.ConsultantId)
+            .Distinct()
+            .CountAsync(ct);
+
+        return new AdminSkillDto
+        {
+            Id = skill.Id.ToString(),
+            Canonical = skill.CanonicalName,
+            Category = skill.Category,
+            Aliases = skill.Aliases.OrderBy(x => x.Alias).Select(x => x.Alias).ToList(),
+            ConsultantCount = consultantCount
+        };
+    }
+}
+
+public class UpdateAdminSkillRequest
+{
+    public string? CanonicalName { get; set; }
+    public string? Category { get; set; }
+    public List<string>? Aliases { get; set; }
 }
 
 public class AdminOverviewDto
