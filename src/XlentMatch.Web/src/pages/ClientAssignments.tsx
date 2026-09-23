@@ -48,9 +48,14 @@ function NewAssignmentModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const canExtract =
+    title.trim().length > 0 &&
+    client.trim().length > 0 &&
+    brief.trim().length > 0;
+
   const extractRequirements = async () => {
-    if (!brief.trim()) {
-      setError("Paste the customer assignment description first.");
+    if (!canExtract) {
+      setError("Assignment title, customer and description are required before AI extraction.");
       return;
     }
 
@@ -122,25 +127,31 @@ function NewAssignmentModal({
       {step === "input" ? (
         <div className="p-5 space-y-4">
           <label className="block">
-            <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_name")}</span>
+            <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_name")} <span className="text-app-brand">*</span></span>
             <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Payments Platform Modernisation" />
           </label>
           <label className="block">
-            <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_client")}</span>
+            <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_client")} <span className="text-app-brand">*</span></span>
             <Input value={client} onChange={(event) => setClient(event.target.value)} placeholder="e.g. Nordic Financial Services" />
           </label>
           <label className="block">
             <span className="text-[11px] text-app-muted mb-1.5 block">
-              {t("assignment_modal_brief")} <span className="text-app-brand ml-1">AI extraction</span>
+              {t("assignment_modal_brief")} <span className="text-app-brand">*</span> <span className="text-app-brand ml-1">AI extraction</span>
             </span>
             <Textarea value={brief} onChange={(event) => setBrief(event.target.value)} rows={8} placeholder={t("assignment_modal_brief_placeholder")} />
           </label>
+
+          {!canExtract && !error && (
+            <p className="text-[10px] text-app-faint">
+              Fill in Assignment Title, Customer and Description before extracting requirements.
+            </p>
+          )}
 
           {error && <p className="text-xs text-app-secondary">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button onClick={onClose} variant="ghost">{t("assignment_modal_cancel")}</Button>
-            <Button onClick={extractRequirements} variant="primary" disabled={extracting} icon={<Sparkles size={12} />}>
+            <Button onClick={extractRequirements} variant="primary" disabled={extracting || !canExtract} icon={<Sparkles size={12} />}>
               {extracting ? "Extracting with AI..." : "Extract requirements"}
             </Button>
           </div>
