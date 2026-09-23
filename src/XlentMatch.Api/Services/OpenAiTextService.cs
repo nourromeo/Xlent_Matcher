@@ -44,22 +44,40 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
         return AskForJsonAsync<ConsultantDraftDto>(system, text, ct);
     }
 
-    public async Task<List<RequirementDraftDto>> ExtractRequirementsAsync(string text, CancellationToken ct)
+    public Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct)
     {
-        var system = $$"""
-            You extract requirements from customer assignment / requirement specification text.
+        var system = $"""
+            You extract structured information from a customer assignment / requirement specification.
             {{NoInventionRule}}
-            Classify each requirement as "Mandatory" or "Desired".
+
+            Separate assignment metadata from actual consultant requirements.
+
+            Assignment metadata:
+            - seniority: only values such as Junior, Mid, Senior or Staff when explicitly stated; otherwise null.
+            - minYearsExperience: the overall minimum years of professional experience when explicitly stated; otherwise null.
+            - availability: an explicit availability requirement such as Immediate, 2 weeks, or a stated start date; otherwise null.
+
+            Requirements:
+            - Include only concrete skills, technologies, platforms, tools, certifications, methods or clearly named competencies.
+            - Do NOT create requirements such as "senior consultant", ".NET consultant", role titles, availability, location, customer name, start date, or general years-of-experience statements.
+            - If a requirement has its own explicit minimum years, put that number in minYears.
+            - Classify as "Mandatory" when the text says must, required, mandatory, shall, need, or equivalent.
+            - Classify as "Desired" when the text says preferred, meriting, bonus, nice to have, or equivalent.
+            - If the text lists a skill without clearly saying preferred/optional, treat it as Mandatory.
+            - Keep technology names concise, for example "C#", "ASP.NET Core", "SQL Server", "Azure", "React", "Docker".
+
             Return a JSON object with exactly this shape:
             {
+              "seniority": string|null,
+              "minYearsExperience": int|null,
+              "availability": string|null,
               "requirements": [
                 { "name": string, "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null }
               ]
             }
             """;
 
-        var result = await AskForJsonAsync<RequirementExtractionResultDto>(system, text, ct);
-        return result.Requirements;
+        return AskForJsonAsync<RequirementExtractionResultDto>(system, text, ct);
     }
 
     public Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(

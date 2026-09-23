@@ -27,7 +27,7 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
 
     [HttpPost("requirements")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<List<RequirementDraftDto>>> ExtractRequirements(
+    public async Task<ActionResult<RequirementExtractionResultDto>> ExtractRequirements(
         [FromForm] ExtractionRequestDto request,
         CancellationToken ct)
     {

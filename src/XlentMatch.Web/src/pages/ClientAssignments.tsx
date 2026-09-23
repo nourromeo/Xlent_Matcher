@@ -64,11 +64,17 @@ function NewAssignmentModal({
 
     try {
       const extracted = await aiApi.extractRequirementsFromText(brief);
+
       setRequirements(
-        extracted.map((item) =>
+        extracted.requirements.map((item) =>
           emptyRequirement(item.name, item.type, item.minYears, item.minLevel),
         ),
       );
+
+      if (extracted.seniority) setSeniority(extracted.seniority);
+      if (extracted.availability) setAvailability(extracted.availability);
+      if (extracted.minYearsExperience !== null) setMinYears(extracted.minYearsExperience);
+
       setStep("review");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "AI extraction failed.");

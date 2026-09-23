@@ -12,5 +12,8 @@ public class RequirementDraftDto
 
 public class RequirementExtractionResultDto
 {
+    public string? Seniority { get; set; }
+    public int? MinYearsExperience { get; set; }
+    public string? Availability { get; set; }
     public List<RequirementDraftDto> Requirements { get; set; } = new();
 }

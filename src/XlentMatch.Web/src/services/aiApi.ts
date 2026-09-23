@@ -7,6 +7,13 @@ export type RequirementDraft = {
   minLevel: number | null;
 };
 
+export type RequirementExtractionResult = {
+  seniority: string | null;
+  minYearsExperience: number | null;
+  availability: string | null;
+  requirements: RequirementDraft[];
+};
+
 export type ConsultantDraft = {
   firstName: string;
   lastName: string;
@@ -43,7 +50,7 @@ function extractionForm(file?: File, text?: string) {
 
 export const aiApi = {
   extractRequirementsFromText: (text: string) =>
-    apiRequest<RequirementDraft[]>("/extraction/requirements", {
+    apiRequest<RequirementExtractionResult>("/extraction/requirements", {
       method: "POST",
       body: extractionForm(undefined, text),
     }),

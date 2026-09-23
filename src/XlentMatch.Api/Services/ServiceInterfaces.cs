@@ -13,7 +13,7 @@ public interface IPdfTextExtractor
 public interface IAiTextService
 {
     Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct);
-    Task<List<RequirementDraftDto>> ExtractRequirementsAsync(string text, CancellationToken ct);
+    Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct);
     Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(
         Consultant consultant, Assignment assignment, MatchResult? match, CancellationToken ct);
 }
