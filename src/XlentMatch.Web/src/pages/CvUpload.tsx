@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Upload as UploadIcon, FileText, CheckCircle, AlertCircle, Loader, Plus, X, Eye } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
@@ -21,7 +21,10 @@ type UploadEntry = {
   progress: number;
   error?: string;
   draft?: ConsultantDraft;
+  consultantId?: number;
 };
+
+let uploadSession: UploadEntry[] = [];
 
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -102,11 +105,15 @@ function toConsultant(draft: ConsultantDraft): Consultant {
 
 export default function CvUpload() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<UploadEntry[]>([]);
+  const [files, setFiles] = useState<UploadEntry[]>(() => uploadSession);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    uploadSession = files;
+  }, [files]);
 
   const activeFile = files.find((file) => file.id === activeId) ?? null;
   const draft = activeFile?.draft ?? null;
@@ -180,8 +187,8 @@ export default function CvUpload() {
     setError("");
 
     try {
-      await consultantsApi.create(toConsultant(activeFile.draft));
-      updateFile(activeFile.id, { status: "done", progress: 100 });
+      const created = await consultantsApi.create(toConsultant(activeFile.draft));
+      updateFile(activeFile.id, { status: "done", progress: 100, consultantId: created.id });
       setActiveId(null);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save consultant.");
@@ -258,7 +265,11 @@ export default function CvUpload() {
         />
         <UploadIcon size={28} className="mx-auto mb-3 text-app-faint" />
         <p className="text-sm text-app-secondary">Drop a PDF/TXT here or click to choose a CV</p>
-        <p className="text-xs text-app-faint mt-1">Maximum 10 MB. Each CV is reviewed before it is saved.</p>
+        <p className="text-xs text-app-faint mt-1">Maximum 10 MB. Upload → AI extraction → review → save to Consultants.</p>
+      </div>
+
+      <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-[11px] text-app-muted">
+        Upload history stays available while you navigate inside the app. Extracted CV data is kept only in the current browser session until you approve and save it.
       </div>
 
       {error && (
@@ -311,6 +322,15 @@ export default function CvUpload() {
                 >
                   <Eye size={11} /> Review
                 </button>
+              )}
+
+              {file.status === "done" && file.consultantId && (
+                <a
+                  href={"/consultants/" + file.consultantId}
+                  className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
+                >
+                  <Eye size={11} /> View Consultant
+                </a>
               )}
 
               {file.status !== "extracting" && (
