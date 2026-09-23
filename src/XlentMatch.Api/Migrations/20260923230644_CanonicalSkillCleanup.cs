@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,6 +10,56 @@ namespace XlentMatch.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("""
+                IF EXISTS (SELECT 1 FROM [ConsultantSkills] WHERE [SkillId] IS NULL)
+                    THROW 51000, 'Cannot make ConsultantSkills.SkillId required because some rows still have NULL SkillId.', 1;
+
+                IF EXISTS (SELECT 1 FROM [AssignmentRequirements] WHERE [SkillId] IS NULL)
+                    THROW 51001, 'Cannot make AssignmentRequirements.SkillId required because some rows still have NULL SkillId.', 1;
+                """);
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_ConsultantSkills_Skills_SkillId",
+                table: "ConsultantSkills");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_AssignmentRequirements_Skills_SkillId",
+                table: "AssignmentRequirements");
+
+            migrationBuilder.DropIndex(
+                name: "IX_ConsultantSkills_SkillId",
+                table: "ConsultantSkills");
+
+            migrationBuilder.DropIndex(
+                name: "IX_ConsultantSkills_ConsultantId_SkillId",
+                table: "ConsultantSkills");
+
+            migrationBuilder.DropIndex(
+                name: "IX_AssignmentRequirements_SkillId",
+                table: "AssignmentRequirements");
+
+            migrationBuilder.DropIndex(
+                name: "IX_AssignmentRequirements_AssignmentId_SkillId",
+                table: "AssignmentRequirements");
+
+            migrationBuilder.AlterColumn<int>(
+                name: "SkillId",
+                table: "ConsultantSkills",
+                type: "int",
+                nullable: false,
+                oldClrType: typeof(int),
+                oldType: "int",
+                oldNullable: true);
+
+            migrationBuilder.AlterColumn<int>(
+                name: "SkillId",
+                table: "AssignmentRequirements",
+                type: "int",
+                nullable: false,
+                oldClrType: typeof(int),
+                oldType: "int",
+                oldNullable: true);
+
             migrationBuilder.DropColumn(
                 name: "Category",
                 table: "ConsultantSkills");
@@ -22,33 +72,81 @@ namespace XlentMatch.Api.Migrations
                 name: "Name",
                 table: "AssignmentRequirements");
 
-            migrationBuilder.AlterColumn<int>(
-                name: "SkillId",
+            migrationBuilder.CreateIndex(
+                name: "IX_ConsultantSkills_SkillId",
                 table: "ConsultantSkills",
-                type: "int",
-                nullable: false,
-                defaultValue: 0,
-                oldClrType: typeof(int),
-                oldType: "int",
-                oldNullable: true);
+                column: "SkillId");
 
-            migrationBuilder.AlterColumn<int>(
-                name: "SkillId",
+            migrationBuilder.CreateIndex(
+                name: "IX_ConsultantSkills_ConsultantId_SkillId",
+                table: "ConsultantSkills",
+                columns: new[] { "ConsultantId", "SkillId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRequirements_SkillId",
                 table: "AssignmentRequirements",
-                type: "int",
-                nullable: false,
-                defaultValue: 0,
-                oldClrType: typeof(int),
-                oldType: "int",
-                oldNullable: true);
+                column: "SkillId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRequirements_AssignmentId_SkillId",
+                table: "AssignmentRequirements",
+                columns: new[] { "AssignmentId", "SkillId" });
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_ConsultantSkills_Skills_SkillId",
+                table: "ConsultantSkills",
+                column: "SkillId",
+                principalTable: "Skills",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_AssignmentRequirements_Skills_SkillId",
+                table: "AssignmentRequirements",
+                column: "SkillId",
+                principalTable: "Skills",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_ConsultantSkills_Skills_SkillId",
+                table: "ConsultantSkills");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_AssignmentRequirements_Skills_SkillId",
+                table: "AssignmentRequirements");
+
+            migrationBuilder.DropIndex(
+                name: "IX_ConsultantSkills_SkillId",
+                table: "ConsultantSkills");
+
+            migrationBuilder.DropIndex(
+                name: "IX_ConsultantSkills_ConsultantId_SkillId",
+                table: "ConsultantSkills");
+
+            migrationBuilder.DropIndex(
+                name: "IX_AssignmentRequirements_SkillId",
+                table: "AssignmentRequirements");
+
+            migrationBuilder.DropIndex(
+                name: "IX_AssignmentRequirements_AssignmentId_SkillId",
+                table: "AssignmentRequirements");
+
             migrationBuilder.AlterColumn<int>(
                 name: "SkillId",
                 table: "ConsultantSkills",
+                type: "int",
+                nullable: true,
+                oldClrType: typeof(int),
+                oldType: "int");
+
+            migrationBuilder.AlterColumn<int>(
+                name: "SkillId",
+                table: "AssignmentRequirements",
                 type: "int",
                 nullable: true,
                 oldClrType: typeof(int),
@@ -67,20 +165,48 @@ namespace XlentMatch.Api.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            migrationBuilder.AlterColumn<int>(
-                name: "SkillId",
-                table: "AssignmentRequirements",
-                type: "int",
-                nullable: true,
-                oldClrType: typeof(int),
-                oldType: "int");
-
             migrationBuilder.AddColumn<string>(
                 name: "Name",
                 table: "AssignmentRequirements",
                 type: "nvarchar(max)",
                 nullable: false,
                 defaultValue: "");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConsultantSkills_SkillId",
+                table: "ConsultantSkills",
+                column: "SkillId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConsultantSkills_ConsultantId_SkillId",
+                table: "ConsultantSkills",
+                columns: new[] { "ConsultantId", "SkillId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRequirements_SkillId",
+                table: "AssignmentRequirements",
+                column: "SkillId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AssignmentRequirements_AssignmentId_SkillId",
+                table: "AssignmentRequirements",
+                columns: new[] { "AssignmentId", "SkillId" });
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_ConsultantSkills_Skills_SkillId",
+                table: "ConsultantSkills",
+                column: "SkillId",
+                principalTable: "Skills",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_AssignmentRequirements_Skills_SkillId",
+                table: "AssignmentRequirements",
+                column: "SkillId",
+                principalTable: "Skills",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Restrict);
         }
     }
 }
