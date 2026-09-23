@@ -85,7 +85,18 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
         string text;
         if (extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase))
         {
-            text = pdf.Extract(stream);
+            try
+            {
+                text = pdf.Extract(stream);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                return (null, "The PDF could not be read. Make sure the file is a valid PDF and try again.");
+            }
         }
         else
         {
