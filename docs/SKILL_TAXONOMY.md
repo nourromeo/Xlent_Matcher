@@ -1,60 +1,94 @@
 # Canonical Skill Taxonomy
 
-The MVP now uses a central skill catalog as the source of truth for skill names and categories.
+MVP:n använder en central skill-katalog som source of truth för skill-namn och kategorier.
 
 ## Data model
 
 ### Skill
+
 - Id
 - CanonicalName
 - NormalizedName
 - Category
 
 ### SkillAlias
+
 - Id
 - SkillId
 - Alias
 - NormalizedAlias
 
 ### ConsultantSkill
+
 - ConsultantId
 - SkillId
 - Years
 - Level
 - Evidence
 
-The legacy Name and Category columns remain temporarily for compatibility until the EF Core migration cleanup.
-
 ### AssignmentRequirement
+
 - AssignmentId
 - SkillId
 - Type
 - MinYears
 - MinLevel
 
-The legacy Name column remains temporarily for compatibility until the EF Core migration cleanup.
+De gamla fysiska Name/Category-kolumnerna har tagits bort efter EF Core cleanup migration.
 
 ## Flow
 
+```text
 CV / assignment text
-→ AI extracts skill names
-→ SkillNormalizationService
-→ canonical Skill / Alias lookup
-→ SkillId
-→ deterministic matching
+        |
+        v
+AI extracts skill names
+        |
+        v
+SkillNormalizationService
+        |
+        v
+canonical Skill / Alias lookup
+        |
+        v
+SkillId
+        |
+        v
+deterministic matching
+```
 
-AI does not decide the final category.
+AI bestämmer inte den slutliga skill-kategorin.
 
-Unknown skills are added as **Unclassified** so they can be reviewed in Admin instead of receiving an arbitrary AI category.
+Okända skills skapas som `Unclassified` så att de kan granskas i Admin.
 
 ## Matching
 
-Matching uses SkillId when both sides have a canonical link. Name comparison remains only as a compatibility fallback while the old LocalDB schema is being migrated.
+Matching använder `SkillId` direkt mellan AssignmentRequirement och ConsultantSkill.
+
+Detta gör logiken:
+
+- tydligare,
+- mindre beroende av stavning,
+- lättare att testa,
+- lättare att förklara.
 
 ## Admin
 
-Skill Taxonomy now reads directly from the Skill and SkillAlias tables and shows the number of linked consultants.
+Admin -> Skill Taxonomy läser direkt från `Skill` och `SkillAlias`.
 
-## Next database step
+Nuvarande funktioner:
 
-Replace EnsureCreated and the temporary startup SQL bridge with EF Core migrations, then remove the compatibility Name/Category columns from ConsultantSkill and Name from AssignmentRequirement when the migrated data has been verified.
+- sök och filter,
+- pagination,
+- Add Skill,
+- Edit Skill,
+- duplicate validation för canonical names och aliases,
+- antal kopplade consultants.
+
+Delete Skill är medvetet disabled i nuvarande MVP.
+
+## Persistence
+
+Skills och aliases sparas i SQL Server via EF Core.
+
+Ändringar i canonical names bevarar det tidigare canonical name som alias när det behövs, så att normalisering fortfarande kan känna igen äldre namn.
