@@ -20,6 +20,11 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
+      - run: dotnet tool install --global dotnet-ef --version 10.0.0
+      - name: Diagnose pending EF model changes
+        run: |
+          dotnet ef migrations add DiagnosePending --no-build --configuration Release --output-dir Migrations/Diagnosis
+          find Migrations/Diagnosis -type f -maxdepth 1 -print -exec cat {} \;
 
   web:
     name: Web build
