@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Clock, CheckCircle, Zap, Eye, Sparkles } from "../design-system/icons";
+import { Plus, Search, Clock, CheckCircle, Eye, Sparkles } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
@@ -96,8 +96,17 @@ function NewAssignmentModal({
   };
 
   const createAssignment = async () => {
-    if (!title.trim()) {
-      setError("Assignment title is required.");
+    if (!title.trim() || !client.trim()) {
+      setError("Assignment title and customer are required.");
+      return;
+    }
+
+    const cleanedRequirements = requirements
+      .filter((requirement) => requirement.name.trim())
+      .map((requirement) => ({ ...requirement, name: requirement.name.trim() }));
+
+    if (cleanedRequirements.length === 0) {
+      setError("Add at least one requirement before creating the assignment.");
       return;
     }
 
@@ -114,7 +123,7 @@ function NewAssignmentModal({
       availability: availability.trim() || null,
       status: "Draft",
       createdAt: new Date().toISOString(),
-      requirements,
+      requirements: cleanedRequirements,
     };
 
     try {

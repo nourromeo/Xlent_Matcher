@@ -34,6 +34,16 @@ public class AssignmentsController(AppDbContext db) : ControllerBase
         if (string.IsNullOrWhiteSpace(assignment.Title))
             return BadRequest("Title is required.");
 
+        if (string.IsNullOrWhiteSpace(assignment.CustomerName))
+            return BadRequest("CustomerName is required.");
+
+        assignment.Requirements = assignment.Requirements
+            .Where(r => !string.IsNullOrWhiteSpace(r.Name))
+            .ToList();
+
+        if (assignment.Requirements.Count == 0)
+            return BadRequest("At least one assignment requirement is required.");
+
         assignment.Id = 0;
         assignment.CreatedAt = DateTime.UtcNow;
 
@@ -59,8 +69,21 @@ public class AssignmentsController(AppDbContext db) : ControllerBase
         if (existing is null)
             return NotFound();
 
-        existing.CustomerName = input.CustomerName;
-        existing.Title = input.Title;
+        if (string.IsNullOrWhiteSpace(input.Title))
+            return BadRequest("Title is required.");
+
+        if (string.IsNullOrWhiteSpace(input.CustomerName))
+            return BadRequest("CustomerName is required.");
+
+        input.Requirements = input.Requirements
+            .Where(r => !string.IsNullOrWhiteSpace(r.Name))
+            .ToList();
+
+        if (input.Requirements.Count == 0)
+            return BadRequest("At least one assignment requirement is required.");
+
+        existing.CustomerName = input.CustomerName.Trim();
+        existing.Title = input.Title.Trim();
         existing.Description = input.Description;
         existing.Seniority = input.Seniority;
         existing.MinYearsExperience = input.MinYearsExperience;

@@ -5,7 +5,6 @@ import {
   Briefcase,
   GitMerge,
   Upload,
-  Settings,
   Zap,
   ChevronRight,
   Sun,
@@ -14,8 +13,6 @@ import {
 } from "../design-system/icons";
 import { useTheme } from "../theme";
 import { useI18n, type Locale } from "../i18n";
-import { CONSULTANTS } from "../features/consultants";
-import { ASSIGNMENTS } from "../features/assignments";
 
 const LOCALE_LABELS: Record<Locale, string> = { en: "EN", es: "ES", sv: "SV" };
 const LOCALES: Locale[] = ["en", "es", "sv"];
@@ -32,31 +29,28 @@ export default function Layout() {
     { to: "/matching", icon: GitMerge, label: t("nav_matching") },
     { to: "/cv-upload", icon: Upload, label: t("nav_upload") },
     { to: "/cv-adaptation", icon: Sparkles, label: t("nav_coach") },
-    { to: "/admin", icon: Settings, label: t("nav_admin") },
   ];
 
-  const section = NAV.find((n) =>
-    n.to === "/" ? location.pathname === "/" : location.pathname.startsWith(n.to)
+  const section = NAV.find((item) =>
+    item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to)
   );
 
-  const consultantId = location.pathname.match(/^\/consultants\/([^/]+)$/)?.[1];
-  const assignmentId = location.pathname.match(/^\/client-assignments\/([^/]+)$/)?.[1];
-  const consultant = consultantId ? CONSULTANTS.find((item) => item.id === consultantId) : undefined;
-  const assignment = assignmentId ? ASSIGNMENTS.find((item) => item.id === assignmentId) : undefined;
+  const isConsultantDetail = /^\/consultants\/[^/]+$/.test(location.pathname);
+  const isAssignmentDetail = /^\/client-assignments\/[^/]+$/.test(location.pathname);
 
   const breadcrumbs = location.pathname === "/"
     ? [{ label: "XLENT Match" }]
-    : consultant
+    : isConsultantDetail
       ? [
           { label: "XLENT Match", to: "/" },
           { label: t("nav_consultants"), to: "/consultants" },
-          { label: consultant.name },
+          { label: "Consultant profile" },
         ]
-      : assignment
+      : isAssignmentDetail
         ? [
             { label: "XLENT Match", to: "/" },
             { label: t("nav_assignments"), to: "/client-assignments" },
-            { label: assignment.title },
+            { label: "Assignment details" },
           ]
         : [
             { label: "XLENT Match", to: "/" },
@@ -65,12 +59,10 @@ export default function Layout() {
 
   return (
     <div className="flex h-full bg-app">
-      {/* Sidebar */}
       <aside
         className="w-56 flex-none flex flex-col border-r border-app bg-app-surface"
         style={{ boxShadow: "var(--shadow-surface)" }}
       >
-        {/* Logo */}
         <div className="h-12 flex items-center px-4 border-b border-app">
           <Link
             to="/"
@@ -82,12 +74,9 @@ export default function Layout() {
             </div>
             <span className="text-sm font-semibold tracking-tight text-app-primary">XLENT Match</span>
           </Link>
-          <span className="ml-auto text-[10px] font-mono text-app-faint bg-app-raised px-1.5 py-0.5 rounded">
-            v1.0
-          </span>
+          <span className="ml-auto text-[10px] font-mono text-app-faint bg-app-raised px-1.5 py-0.5 rounded">MVP</span>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink
@@ -108,23 +97,13 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="border-t border-app p-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-app-brand-subtle flex items-center justify-center text-[10px] font-semibold text-app-brand">
-              JD
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-app-primary truncate">Johan Lind</p>
-              <p className="text-[10px] text-app-muted">{t("role_consultant_manager")}</p>
-            </div>
-          </div>
+        <div className="border-t border-app px-3 py-3">
+          <p className="text-[10px] uppercase tracking-wide text-app-faint">XLENT internal tool</p>
+          <p className="text-[10px] text-app-muted mt-1">Consultant ↔ client assignment matching</p>
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-app">
-        {/* Topbar */}
         <header className="h-12 flex items-center px-5 border-b border-app bg-app-surface flex-none">
           <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-app-faint min-w-0">
             {breadcrumbs.map((item, index) => (
@@ -147,13 +126,6 @@ export default function Layout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            {/* AI status */}
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-app-faint">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              {t("ai_online")}
-            </div>
-
-            {/* Language switcher */}
             <div className="flex items-center rounded overflow-hidden border border-app">
               {LOCALES.map((loc) => (
                 <button
@@ -170,7 +142,6 @@ export default function Layout() {
               ))}
             </div>
 
-            {/* Theme toggle */}
             <button
               onClick={toggle}
               className="w-7 h-7 rounded flex items-center justify-center text-app-muted hover:text-app-secondary hover:bg-app-raised border border-app transition-colors"
@@ -181,7 +152,6 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 overflow-auto bg-app">
           <Outlet />
         </main>

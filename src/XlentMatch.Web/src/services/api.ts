@@ -7,13 +7,28 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+    });
+  } catch {
+    throw new Error("Cannot reach the backend API. Make sure the API is running and try again.");
+  }
 
   if (!response.ok) {
-    const message = await response.text();
+    const raw = await response.text();
+    let message = raw;
+
+    try {
+      const parsed = JSON.parse(raw) as { detail?: string; title?: string };
+      message = parsed.detail || parsed.title || raw;
+    } catch {
+      // Keep plain-text API errors as-is.
+    }
+
     throw new Error(message || `API request failed with status ${response.status}`);
   }
 

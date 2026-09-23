@@ -1,67 +1,75 @@
-# MVP Smoke Test
+# MVP End-to-End Smoke Test
 
-Run the backend and frontend locally before this test.
+Use this checklist after pulling the latest code. Run both the ASP.NET Core API and the React frontend.
 
-## 1. CV upload flow
+## 1. CV Upload
 
-1. Open **CV Upload**.
-2. Upload a PDF or TXT consultant CV.
-3. Verify that a database-backed upload row appears with **Extracting**.
-4. Verify that the row changes to **Review needed** after AI extraction.
-5. Edit at least one extracted field and wait about one second.
-6. Refresh the page.
-7. Verify that the upload row still exists and the review data can still be opened.
-8. Approve and save the consultant.
-9. Verify that the upload row changes to **Indexed**.
-10. Open **Consultants** and verify that the new consultant exists.
-11. Return to **CV Upload** and use **View Consultant**.
-12. Verify that it opens the correct consultant profile.
+- Upload a valid PDF/TXT under 10 MB.
+- Confirm the upload appears in **CV processing history**.
+- Confirm status changes from **Extracting** to **Review needed**.
+- Edit extracted data, wait briefly, refresh, and confirm the review draft remains.
+- Approve the consultant and confirm status changes to **Indexed**.
+- Open **View Consultant** and confirm the correct profile is shown.
+- Try an unsupported file type: the UI must reject it without adding a history row.
+- Try an empty file: the UI/API must reject it.
+- Try a PDF with no readable text: the API must return a clear message about scanned/image-only PDFs.
+- Upload the same filename + file size again: the API must return a duplicate warning and must not add a second history record.
 
-Expected result: upload history survives navigation/refresh and an approved CV is linked to the created consultant.
+## 2. Client Assignment
 
-## 2. Matching flow
+- Create an assignment using title, customer and description.
+- Run AI requirement extraction.
+- Review/edit the extracted requirements.
+- Confirm at least one non-empty requirement is required before save.
+- Save and verify the assignment is shown as **Draft**.
+- Open the assignment detail page and verify the saved data.
 
-1. Create a new client assignment.
-2. Verify that its status is **Draft**.
-3. Open Matching for the assignment.
-4. Run matching against the consultants.
-5. Verify that ranked results are displayed with Match Score, matched requirements and missing requirements.
-6. Return to Client Assignments.
-7. Verify that the assignment status is **Matched**.
-8. Open Matching again and verify that the saved results can be loaded.
+## 3. Matching
 
-Expected result: matching results are persisted and the assignment changes from Draft to Matched only after matching has completed successfully.
+- Open a Draft assignment with requirements.
+- Run matching.
+- Confirm ranked consultants, Match Score, matched requirements, missing requirements and evidence are shown.
+- Confirm the assignment becomes **Matched** only after a successful matching run.
+- Reload Matching and verify saved results are restored.
+- Confirm matching is rejected if the assignment has no requirements or no consultants are selected.
 
-## 3. CV adaptation flow
+## 4. CV Adaptation
 
-Test all three source modes for both sides:
+Test source modes for both sides:
 
 - Consultant: **Existing / Upload / Paste**
 - Assignment: **Existing / Upload / Paste**
 
-At minimum, verify several combinations including:
+Verify several combinations:
 - Existing + Existing
 - Upload CV + Existing Assignment
 - Paste CV + Paste Assignment
 - Existing Consultant + Upload Requirements
 
-For each test:
-1. Choose the two input sources.
-2. Click **Generate suggestions**.
-3. Verify AI summary, emphasis suggestions, gaps/notes and adapted CV draft.
-4. Edit the temporary adapted CV text.
-5. Click **Copy text** and verify clipboard content.
-6. Click **Print** and verify the print preview contains only a clean A4-style CV document.
-7. Click **Close result** and verify inputs remain.
-8. Generate again, then click **Start over** and verify all inputs are reset.
-9. Refresh and confirm there is no saved CV adaptation history.
+For each:
+- Generate suggestions.
+- Verify summary, what to emphasize, gaps/notes and adapted CV draft.
+- Edit the result.
+- Use **Copy text**.
+- Use **Print** and verify only a clean A4 CV document appears in print preview.
+- Use **Close result** and verify the selected inputs remain.
+- Use **Start over** and verify the temporary inputs/result are cleared.
+- Refresh and confirm there is no adapted-CV history or saved result.
 
-Expected result: CV Adaptation is temporary only. It never modifies or stores consultants, assignments or adapted CV results.
+## 5. Failure handling
 
-## Failure checks
+- Stop the backend and perform an API action: the UI should say it cannot reach the backend.
+- Make Azure OpenAI unavailable/misconfigured: extraction/adaptation should show a friendly AI-service error instead of raw provider details.
+- Invalid files should be rejected.
+- Empty requirement sets should be rejected.
 
-- Backend unavailable: the UI should show an error instead of silently failing.
-- Azure OpenAI failure: extraction/adaptation should show an error.
-- Empty upload/paste input: Generate should return a clear validation message.
-- No consultants available: Matching should not run.
-- CV Adaptation must never create a database record.
+## Expected MVP result
+
+The complete flow works as:
+
+CV Upload -> Review -> Consultant
+Client Assignment -> Requirements
+Consultant + Assignment -> Matching -> Ranking
+CV Adaptation -> Temporary AI suggestions -> Copy / Print
+
+CV Adaptation does not write any result to the database.

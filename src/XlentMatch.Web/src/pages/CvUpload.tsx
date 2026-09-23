@@ -156,25 +156,21 @@ export default function CvUpload() {
     updateLocal(activeFile.id, { draft: next, draftJson: JSON.stringify(next) });
   };
 
-  const createErrorRecord = async (file: File, message: string) => {
-    try {
-      const created = await cvUploadsApi.create(file.name, file.size, "Error", message);
-      setFiles((current) => [created, ...current]);
-    } catch {
-      setError(message);
-    }
-  };
-
   const handleFile = async (file?: File) => {
     if (!file) return;
 
     if (!/\.(pdf|txt)$/i.test(file.name)) {
-      await createErrorRecord(file, "Unsupported file type. Use PDF or TXT.");
+      setError("Unsupported file type. Use PDF or TXT.");
+      return;
+    }
+
+    if (file.size <= 0) {
+      setError("The selected file is empty.");
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      await createErrorRecord(file, "File is larger than 10 MB.");
+      setError("File is larger than 10 MB.");
       return;
     }
 

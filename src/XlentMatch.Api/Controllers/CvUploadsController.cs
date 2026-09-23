@@ -22,9 +22,28 @@ public class CvUploadsController(AppDbContext db) : ControllerBase
         if (string.IsNullOrWhiteSpace(request.FileName))
             return BadRequest("FileName is required.");
 
+        if (request.FileSize <= 0)
+            return BadRequest("The uploaded file is empty.");
+
+        if (request.FileSize > 10 * 1024 * 1024)
+            return BadRequest("File is larger than 10 MB.");
+
+        var fileName = request.FileName.Trim();
+
+        var duplicate = await db.CvUploads
+            .AsNoTracking()
+            .AnyAsync(x =>
+                x.FileName == fileName &&
+                x.FileSize == request.FileSize &&
+                x.Status != "Error",
+                ct);
+
+        if (duplicate)
+            return Conflict("This CV file already exists in the upload history.");
+
         var upload = new CvUploadRecord
         {
-            FileName = request.FileName.Trim(),
+            FileName = fileName,
             FileSize = request.FileSize,
             Status = string.IsNullOrWhiteSpace(request.Status) ? "Extracting" : request.Status.Trim(),
             ErrorMessage = request.ErrorMessage,
@@ -34,7 +53,7 @@ public class CvUploadsController(AppDbContext db) : ControllerBase
         db.CvUploads.Add(upload);
         await db.SaveChangesAsync(ct);
 
-        return CreatedAtAction(nameof(GetAll), new { id = upload.Id }, upload);
+        return Ok(upload);
     }
 
     [HttpPut("{id:int}")]

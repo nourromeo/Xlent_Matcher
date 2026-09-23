@@ -14,9 +14,15 @@ public class MatchingController(AppDbContext db, MatchingService matching) : Con
     [HttpPost("run")]
     public async Task<ActionResult<List<MatchResult>>> Run(RunMatchingRequestDto request, CancellationToken ct)
     {
+        if (request.ConsultantIds.Count == 0)
+            return BadRequest("Select at least one consultant before running matching.");
+
         var assignment = await db.Assignments.Include(a => a.Requirements)
             .AsNoTracking().FirstOrDefaultAsync(a => a.Id == request.AssignmentId, ct);
         if (assignment is null) return NotFound($"Assignment {request.AssignmentId} not found.");
+
+        if (assignment.Requirements.Count == 0)
+            return BadRequest("The assignment has no requirements to match.");
 
         var consultants = await db.Consultants
             .Include(c => c.Skills)

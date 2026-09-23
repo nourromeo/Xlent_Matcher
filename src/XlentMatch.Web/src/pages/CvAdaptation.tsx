@@ -17,6 +17,15 @@ import type { AssignmentApi, Consultant } from "../types";
 
 type SourceMode = "existing" | "upload" | "paste";
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+function validateInputFile(file: File): string | null {
+  if (!/\.(pdf|txt)$/i.test(file.name)) return "Unsupported file type. Use PDF or TXT.";
+  if (file.size <= 0) return "The selected file is empty.";
+  if (file.size > MAX_FILE_SIZE) return "File is larger than 10 MB.";
+  return null;
+}
+
 const sourceTabs: Array<{ value: SourceMode; label: string }> = [
   { value: "existing", label: "Existing" },
   { value: "upload", label: "Upload" },
@@ -159,7 +168,22 @@ export default function CvAdaptation() {
     };
   };
 
+  const consultantReady =
+    consultantMode === "existing" ? Boolean(consultantId) :
+    consultantMode === "upload" ? Boolean(consultantFile) :
+    Boolean(consultantText.trim());
+
+  const assignmentReady =
+    assignmentMode === "existing" ? Boolean(assignmentId) :
+    assignmentMode === "upload" ? Boolean(assignmentFile) :
+    Boolean(assignmentText.trim());
+
   const generate = async () => {
+    if (!consultantReady || !assignmentReady) {
+      setError("Provide both a consultant CV and client assignment before generating suggestions.");
+      return;
+    }
+
     setAnalysing(true);
     setError("");
     setCopied(false);
@@ -328,7 +352,17 @@ export default function CvAdaptation() {
                   accept=".pdf,.txt,application/pdf,text/plain"
                   className="hidden"
                   onChange={(event) => {
-                    setConsultantFile(event.target.files?.[0] ?? null);
+                    const file = event.target.files?.[0] ?? null;
+                    if (file) {
+                      const validationError = validateInputFile(file);
+                      if (validationError) {
+                        setConsultantFile(null);
+                        setError(validationError);
+                        event.currentTarget.value = "";
+                        return;
+                      }
+                    }
+                    setConsultantFile(file);
                     clearResult();
                   }}
                 />
@@ -391,7 +425,17 @@ export default function CvAdaptation() {
                   accept=".pdf,.txt,application/pdf,text/plain"
                   className="hidden"
                   onChange={(event) => {
-                    setAssignmentFile(event.target.files?.[0] ?? null);
+                    const file = event.target.files?.[0] ?? null;
+                    if (file) {
+                      const validationError = validateInputFile(file);
+                      if (validationError) {
+                        setAssignmentFile(null);
+                        setError(validationError);
+                        event.currentTarget.value = "";
+                        return;
+                      }
+                    }
+                    setAssignmentFile(file);
                     clearResult();
                   }}
                 />
@@ -423,7 +467,7 @@ export default function CvAdaptation() {
             <Button
               variant="primary"
               onClick={generate}
-              disabled={analysing}
+              disabled={analysing || !consultantReady || !assignmentReady}
               icon={analysing ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
             >
               {analysing ? "Analysing..." : "Generate suggestions"}
