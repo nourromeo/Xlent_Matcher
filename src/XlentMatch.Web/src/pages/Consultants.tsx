@@ -242,7 +242,7 @@ export default function Consultants() {
             },
           ]}
           rows={filtered}
-          rowKey={(consultant) => consultant.id}
+          rowKey={(consultant) => String(consultant.id)}
           emptyMessage={loading ? "Loading consultants..." : t("consultants_empty")}
         />
 
