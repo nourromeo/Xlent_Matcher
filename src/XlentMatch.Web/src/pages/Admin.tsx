@@ -23,10 +23,14 @@ export default function Admin() {
   const [error, setError] = useState("");
   const [skillPage, setSkillPage] = useState(1);
   const [editingSkill, setEditingSkill] = useState<AdminSkill | null>(null);
+  const [skillModalMode, setSkillModalMode] = useState<"add" | "edit">("edit");
   const [editCanonical, setEditCanonical] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editAliases, setEditAliases] = useState("");
   const [savingSkill, setSavingSkill] = useState(false);
+  const [weightValues, setWeightValues] = useState<Record<string, number>>({});
+  const [missingPenalty, setMissingPenalty] = useState(10);
+  const [savingWeights, setSavingWeights] = useState(false);
   const skillsPerPage = 10;
 
   useEffect(() => {
@@ -35,7 +39,11 @@ export default function Admin() {
     adminApi
       .getOverview()
       .then((data) => {
-        if (!cancelled) setOverview(data);
+        if (!cancelled) {
+          setOverview(data);
+          setWeightValues(Object.fromEntries(data.matchingFactors.map((factor) => [factor.key, factor.value])));
+          setMissingPenalty(data.missingMandatoryPenalty);
+        }
       })
       .catch((requestError: unknown) => {
         if (!cancelled) {
@@ -86,7 +94,17 @@ export default function Admin() {
     currentSkillPage * skillsPerPage,
   );
 
+  const openAddSkill = () => {
+    setSkillModalMode("add");
+    setEditingSkill({ id: "", canonical: "", category: "", aliases: [], consultantCount: 0 });
+    setEditCanonical("");
+    setEditCategory("");
+    setEditAliases("");
+    setError("");
+  };
+
   const openSkillEditor = (skill: AdminSkill) => {
+    setSkillModalMode("edit");
     setEditingSkill(skill);
     setEditCanonical(skill.canonical);
     setEditCategory(skill.category);
@@ -109,19 +127,27 @@ export default function Admin() {
     setError("");
 
     try {
-      const updated = await adminApi.updateSkill(editingSkill.id, {
+      const payload = {
         canonicalName,
         category: categoryName,
         aliases: editAliases.split(",").map((alias) => alias.trim()).filter(Boolean),
-      });
+      };
+
+      const updated =
+        skillModalMode === "add"
+          ? await adminApi.createSkill(payload)
+          : await adminApi.updateSkill(editingSkill.id, payload);
 
       setOverview((current) =>
         current
           ? {
               ...current,
-              skills: current.skills
-                .map((skill) => (skill.id === updated.id ? updated : skill))
-                .sort((a, b) => a.canonical.localeCompare(b.canonical)),
+              skills:
+                skillModalMode === "add"
+                  ? [...current.skills, updated].sort((a, b) => a.canonical.localeCompare(b.canonical))
+                  : current.skills
+                      .map((skill) => (skill.id === updated.id ? updated : skill))
+                      .sort((a, b) => a.canonical.localeCompare(b.canonical)),
             }
           : current,
       );
@@ -133,8 +159,54 @@ export default function Admin() {
     }
   };
 
-  const total = factors.reduce((sum, factor) => sum + factor.value, 0);
+  const editableFactors = factors.map((factor) => ({
+    ...factor,
+    value: weightValues[factor.key] ?? factor.value,
+  }));
+  const total = editableFactors.reduce((sum, factor) => sum + factor.value, 0);
   const ok = total === 100;
+
+  const saveWeights = async () => {
+    if (!ok) {
+      setError("Matching weights must total 100%.");
+      return;
+    }
+
+    setSavingWeights(true);
+    setError("");
+
+    try {
+      const updated = await adminApi.updateMatchingWeights({
+        mandatoryWeight: weightValues.mandatory ?? 0,
+        desiredWeight: weightValues.desired ?? 0,
+        experienceWeight: weightValues.experience ?? 0,
+        missingMandatoryPenalty: missingPenalty,
+      });
+      setOverview(updated);
+      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, factor.value])));
+      setMissingPenalty(updated.missingMandatoryPenalty);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not save matching weights.");
+    } finally {
+      setSavingWeights(false);
+    }
+  };
+
+  const resetWeights = async () => {
+    setSavingWeights(true);
+    setError("");
+
+    try {
+      const updated = await adminApi.resetMatchingWeights();
+      setOverview(updated);
+      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, factor.value])));
+      setMissingPenalty(updated.missingMandatoryPenalty);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not reset matching weights.");
+    } finally {
+      setSavingWeights(false);
+    }
+  };
 
   return (
     <div className="h-full overflow-auto">
@@ -192,8 +264,7 @@ export default function Admin() {
               <Button
                 variant="primary"
                 icon={<Plus size={12} />}
-                disabled
-                title="Taxonomy editing will be connected after database migrations."
+                onClick={openAddSkill}
               >
                 {t("admin_add_skill_title")}
               </Button>
@@ -304,7 +375,7 @@ export default function Admin() {
             </div>
 
             <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
-              {factors.map((factor, index) => (
+              {editableFactors.map((factor, index) => (
                 <div
                   key={factor.key}
                   className="px-5 py-4"
@@ -322,24 +393,44 @@ export default function Admin() {
                     <input
                       type="range"
                       min={0}
-                      max={60}
+                      max={100}
                       value={factor.value}
-                      readOnly
-                      disabled
-                      className="w-40 accent-indigo-500 opacity-70"
+                      onChange={(event) =>
+                        setWeightValues((current) => ({
+                          ...current,
+                          [factor.key]: Number(event.target.value),
+                        }))
+                      }
+                      disabled={savingWeights}
+                      className="w-40 accent-indigo-500"
                     />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
-              Missing mandatory penalty: <strong>{overview?.missingMandatoryPenalty ?? "—"} points</strong> per missing mandatory requirement.
+            <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary flex items-center justify-between gap-4">
+              <span>
+                Missing mandatory penalty: <strong>{missingPenalty} points</strong> per missing mandatory requirement.
+              </span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={missingPenalty}
+                onChange={(event) => setMissingPenalty(Math.max(0, Math.min(100, Number(event.target.value))))}
+                disabled={savingWeights}
+                className="w-20 bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand"
+              />
             </div>
 
             <div className="flex items-center justify-between">
-              <Button variant="ghost" icon={<RefreshCw size={11} />} disabled>{t("admin_reset")}</Button>
-              <Button variant="primary" icon={<Save size={11} />} disabled>{t("admin_save_w")}</Button>
+              <Button variant="ghost" icon={<RefreshCw size={11} />} onClick={() => void resetWeights()} disabled={savingWeights}>
+                {t("admin_reset")}
+              </Button>
+              <Button variant="primary" icon={<Save size={11} />} onClick={() => void saveWeights()} disabled={savingWeights || !ok}>
+                {savingWeights ? "Saving..." : t("admin_save_w")}
+              </Button>
             </div>
           </div>
         )}
@@ -389,6 +480,7 @@ export default function Admin() {
 
       <SkillEditModal
         open={editingSkill !== null}
+        mode={skillModalMode}
         canonical={editCanonical}
         category={editCategory}
         aliases={editAliases}
