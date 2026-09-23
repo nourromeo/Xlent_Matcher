@@ -23,6 +23,11 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [skillPage, setSkillPage] = useState(1);
+  const [editingSkill, setEditingSkill] = useState<AdminSkill | null>(null);
+  const [editCanonical, setEditCanonical] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editAliases, setEditAliases] = useState("");
+  const [savingSkill, setSavingSkill] = useState(false);
   const skillsPerPage = 10;
 
   useEffect(() => {
