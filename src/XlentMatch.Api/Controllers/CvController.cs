@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.DTOs.Cv;
-using XlentMatch.Api.Models;
 using XlentMatch.Api.Services;
 
 namespace XlentMatch.Api.Controllers;
@@ -29,12 +28,15 @@ public class CvController(AppDbContext db, IAiTextService ai) : ControllerBase
 
         if (consultant is null) return NotFound("Consultant not found.");
 
-        var assignment = await db.Assignments.Include(a => a.Requirements)
-            .AsNoTracking().FirstOrDefaultAsync(a => a.Id == request.AssignmentId, ct);
+        var assignment = await db.Assignments
+            .Include(a => a.Requirements)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == request.AssignmentId, ct);
 
         if (assignment is null) return NotFound("Assignment not found.");
 
-        var match = await db.MatchResults.Include(m => m.Details)
+        var match = await db.MatchResults
+            .Include(m => m.Details)
             .Where(m => m.AssignmentId == request.AssignmentId && m.ConsultantId == request.ConsultantId)
             .OrderByDescending(m => m.CreatedAt)
             .AsNoTracking()
@@ -43,45 +45,17 @@ public class CvController(AppDbContext db, IAiTextService ai) : ControllerBase
         return await ai.SuggestCvAdaptationAsync(consultant, assignment, match, ct);
     }
 
-    [HttpPost("adapted")]
-    public async Task<ActionResult<AdaptedCv>> SaveAdapted(
-        SaveAdaptedCvRequestDto request,
+    [HttpPost("suggest-temporary")]
+    public async Task<ActionResult<CvAdaptationSuggestionDto>> SuggestTemporary(
+        TemporaryCvSuggestionRequestDto request,
         CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Content))
-            return BadRequest("Content is required.");
+        if (request.Consultant is null)
+            return BadRequest("Consultant input is required.");
 
-        if (!await db.Consultants.AnyAsync(c => c.Id == request.ConsultantId, ct))
-            return NotFound("Consultant not found.");
+        if (request.Assignment is null)
+            return BadRequest("Assignment input is required.");
 
-        if (!await db.Assignments.AnyAsync(a => a.Id == request.AssignmentId, ct))
-            return NotFound("Assignment not found.");
-
-        var adapted = new AdaptedCv
-        {
-            ConsultantId = request.ConsultantId,
-            AssignmentId = request.AssignmentId,
-            Content = request.Content
-        };
-
-        db.AdaptedCvs.Add(adapted);
-        await db.SaveChangesAsync(ct);
-
-        return Created($"/api/cv/adapted/{adapted.Id}", adapted);
+        return await ai.SuggestCvAdaptationAsync(request.Consultant, request.Assignment, ct);
     }
-
-    [HttpGet("adapted/{id:int}")]
-    public async Task<ActionResult<AdaptedCv>> GetAdapted(int id, CancellationToken ct)
-    {
-        var cv = await db.AdaptedCvs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
-        return cv is null ? NotFound() : cv;
-    }
-
-    [HttpGet("adapted/consultant/{consultantId:int}")]
-    public async Task<ActionResult<List<AdaptedCv>>> GetAdaptedForConsultant(int consultantId, CancellationToken ct) =>
-        await db.AdaptedCvs
-            .Where(x => x.ConsultantId == consultantId)
-            .OrderByDescending(x => x.CreatedAt)
-            .AsNoTracking()
-            .ToListAsync(ct);
 }

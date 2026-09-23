@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import type { AssignmentApi, Consultant } from "../types";
 
 export type RequirementDraft = {
   name: string;
@@ -12,6 +13,7 @@ export type RequirementExtractionResult = {
   minYearsExperience: number | null;
   availability: string | null;
   requirements: RequirementDraft[];
+  sourceText: string | null;
 };
 
 export type ConsultantDraft = {
@@ -34,19 +36,21 @@ export type ConsultantDraft = {
   sourceText: string | null;
 };
 
+export type TemporaryAssignmentDraft = {
+  customerName: string;
+  title: string;
+  description: string | null;
+  seniority: string | null;
+  minYearsExperience: number;
+  availability: string | null;
+  requirements: RequirementDraft[];
+};
+
 export type CvAdaptationSuggestion = {
   summary: string;
   highlightedExperiences: string[];
   adaptedCvText: string;
   notes: string[];
-};
-
-export type AdaptedCvRecord = {
-  id: number;
-  consultantId: number;
-  assignmentId: number;
-  content: string;
-  createdAt: string;
 };
 
 function extractionForm(file?: File, text?: string) {
@@ -56,11 +60,80 @@ function extractionForm(file?: File, text?: string) {
   return form;
 }
 
+export function consultantToDraft(consultant: Consultant): ConsultantDraft {
+  return {
+    firstName: consultant.firstName,
+    lastName: consultant.lastName,
+    email: consultant.email,
+    title: consultant.title,
+    summary: consultant.summary,
+    seniority: consultant.seniority,
+    yearsOfExperience: consultant.yearsOfExperience,
+    availability: consultant.availability,
+    office: consultant.office,
+    skills: consultant.skills.map((item) => ({
+      name: item.name,
+      category: item.category,
+      level: item.level,
+      years: item.years,
+      evidence: item.evidence,
+    })),
+    experiences: consultant.experiences.map((item) => ({
+      company: item.company,
+      role: item.role,
+      description: item.description,
+      startDate: item.startDate,
+      endDate: item.endDate,
+    })),
+    projects: consultant.projects.map((item) => ({
+      name: item.name,
+      description: item.description,
+      technologies: item.technologies,
+    })),
+    education: consultant.education.map((item) => ({
+      degree: item.degree,
+      school: item.school,
+      year: item.year,
+    })),
+    languages: consultant.languages.map((item) => ({ name: item.name, level: item.level })),
+    industries: consultant.industries.map((item) => item.name),
+    certifications: consultant.certifications.map((item) => ({
+      name: item.name,
+      issuer: item.issuer,
+      issuedDate: item.issuedDate,
+    })),
+    sourceText: null,
+  };
+}
+
+export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssignmentDraft {
+  return {
+    customerName: assignment.customerName,
+    title: assignment.title,
+    description: assignment.description,
+    seniority: assignment.seniority,
+    minYearsExperience: assignment.minYearsExperience,
+    availability: assignment.availability,
+    requirements: assignment.requirements.map((item) => ({
+      name: item.name,
+      type: item.type,
+      minYears: item.minYears,
+      minLevel: item.minLevel,
+    })),
+  };
+}
+
 export const aiApi = {
   extractRequirementsFromText: (text: string) =>
     apiRequest<RequirementExtractionResult>("/extraction/requirements", {
       method: "POST",
       body: extractionForm(undefined, text),
+    }),
+
+  extractRequirementsFromFile: (file: File) =>
+    apiRequest<RequirementExtractionResult>("/extraction/requirements", {
+      method: "POST",
+      body: extractionForm(file),
     }),
 
   extractConsultantFromFile: (file: File) =>
@@ -81,12 +154,9 @@ export const aiApi = {
       body: JSON.stringify({ consultantId, assignmentId }),
     }),
 
-  saveAdaptedCv: (consultantId: number, assignmentId: number, content: string) =>
-    apiRequest<AdaptedCvRecord>("/cv/adapted", {
+  suggestTemporaryCvAdaptation: (consultant: ConsultantDraft, assignment: TemporaryAssignmentDraft) =>
+    apiRequest<CvAdaptationSuggestion>("/cv/suggest-temporary", {
       method: "POST",
-      body: JSON.stringify({ consultantId, assignmentId, content }),
+      body: JSON.stringify({ consultant, assignment }),
     }),
-
-  getAdaptedCvsForConsultant: (consultantId: number) =>
-    apiRequest<AdaptedCvRecord[]>(`/cv/adapted/consultant/${consultantId}`),
 };

@@ -35,7 +35,9 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
         if (string.IsNullOrWhiteSpace(text))
             return BadRequest("Provide a PDF/text file or raw text.");
 
-        return await ai.ExtractRequirementsAsync(text, ct);
+        var draft = await ai.ExtractRequirementsAsync(text, ct);
+        draft.SourceText = text;
+        return draft;
     }
 
     private async Task<string?> GetText(ExtractionRequestDto request, CancellationToken ct)

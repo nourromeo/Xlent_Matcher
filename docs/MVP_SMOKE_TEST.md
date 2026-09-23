@@ -34,22 +34,34 @@ Expected result: matching results are persisted and the assignment changes from 
 
 ## 3. CV adaptation flow
 
-1. Open **CV Adaptation**.
-2. Select a consultant.
-3. Select a client assignment.
-4. Generate an adapted CV.
-5. Verify that AI summary, highlighted experience, notes and adapted CV text are displayed.
-6. Edit the adapted CV text.
-7. Save it.
-8. Verify that **Saved** is shown.
-9. Refresh the page and select the same consultant.
-10. Verify that the saved adaptation appears under **Saved adapted CVs**.
+Test all three source modes for both sides:
 
-Expected result: adapted CVs are saved in the database and remain visible after refresh.
+- Consultant: **Existing / Upload / Paste**
+- Assignment: **Existing / Upload / Paste**
+
+At minimum, verify several combinations including:
+- Existing + Existing
+- Upload CV + Existing Assignment
+- Paste CV + Paste Assignment
+- Existing Consultant + Upload Requirements
+
+For each test:
+1. Choose the two input sources.
+2. Click **Generate suggestions**.
+3. Verify AI summary, emphasis suggestions, gaps/notes and adapted CV draft.
+4. Edit the temporary adapted CV text.
+5. Click **Copy text** and verify clipboard content.
+6. Click **Print** and verify the print preview contains only a clean A4-style CV document.
+7. Click **Close result** and verify inputs remain.
+8. Generate again, then click **Start over** and verify all inputs are reset.
+9. Refresh and confirm there is no saved CV adaptation history.
+
+Expected result: CV Adaptation is temporary only. It never modifies or stores consultants, assignments or adapted CV results.
 
 ## Failure checks
 
 - Backend unavailable: the UI should show an error instead of silently failing.
-- Azure OpenAI failure: extraction/adaptation should show an error and not create an approved consultant.
-- Empty CV adaptation text: Save should stay disabled.
+- Azure OpenAI failure: extraction/adaptation should show an error.
+- Empty upload/paste input: Generate should return a clear validation message.
 - No consultants available: Matching should not run.
+- CV Adaptation must never create a database record.

@@ -1,3 +1,6 @@
+using XlentMatch.Api.DTOs.Assignments;
+using XlentMatch.Api.DTOs.Consultants;
+
 namespace XlentMatch.Api.DTOs.Cv;
 
 public class CvSuggestionRequestDto
@@ -6,11 +9,21 @@ public class CvSuggestionRequestDto
     public int AssignmentId { get; set; }
 }
 
-public class SaveAdaptedCvRequestDto
+public class TemporaryCvSuggestionRequestDto
 {
-    public int ConsultantId { get; set; }
-    public int AssignmentId { get; set; }
-    public string Content { get; set; } = "";
+    public ConsultantDraftDto Consultant { get; set; } = new();
+    public TemporaryAssignmentDraftDto Assignment { get; set; } = new();
+}
+
+public class TemporaryAssignmentDraftDto
+{
+    public string CustomerName { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+    public string? Seniority { get; set; }
+    public int MinYearsExperience { get; set; }
+    public string? Availability { get; set; }
+    public List<RequirementDraftDto> Requirements { get; set; } = new();
 }
 
 public class CvAdaptationSuggestionDto

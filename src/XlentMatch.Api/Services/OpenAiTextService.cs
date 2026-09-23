@@ -139,6 +139,35 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
         return AskForJsonAsync<CvAdaptationSuggestionDto>(system, user, ct);
     }
 
+    public Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(
+        ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, CancellationToken ct)
+    {
+        var system = $$"""
+            You help a consultant tailor an existing CV to a customer assignment.
+            {{NoInventionRule}}
+            You may reorder, emphasize and rephrase EXISTING CV content so relevant experience is highlighted.
+            You must NOT invent skills, experiences, certifications, employers, dates or achievements.
+            If the assignment asks for something missing from the CV, mention the gap in notes instead of adding it.
+            The result is temporary and intended for user review, copying or printing.
+            Return a JSON object with exactly this shape:
+            {
+              "summary": string,
+              "highlightedExperiences": [string],
+              "adaptedCvText": string,
+              "notes": [string]
+            }
+            """;
+
+        var user = JsonSerializer.Serialize(new
+        {
+            assignment,
+            consultant
+        }, Json);
+
+        return AskForJsonAsync<CvAdaptationSuggestionDto>(system, user, ct);
+    }
+
+
     private async Task<T> AskForJsonAsync<T>(string systemPrompt, string userContent, CancellationToken ct) where T : new()
     {
         var o = options.Value;
