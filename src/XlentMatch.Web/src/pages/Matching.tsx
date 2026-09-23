@@ -7,6 +7,7 @@ import { LinkButton } from "../components/ui/LinkButton";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { consultantsApi } from "../services/consultantsApi";
 import { matchingApi } from "../services/matchingApi";
+import { adminApi, type AdminMatchingFactor } from "../services/adminApi";
 import type { AssignmentApi, Consultant, MatchResultApi } from "../types";
 
 const ratio = (matched: number, total: number) =>
@@ -34,6 +35,8 @@ export default function Matching() {
   const [matching, setMatching] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [matchingFactors, setMatchingFactors] = useState<AdminMatchingFactor[]>([]);
+  const [missingMandatoryPenalty, setMissingMandatoryPenalty] = useState(10);
 
   const assignmentId = Number(searchParams.get("assignment"));
   const assignment = assignments.find((item) => item.id === assignmentId);
@@ -42,11 +45,13 @@ export default function Matching() {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([assignmentsApi.getAll(), consultantsApi.getAll()])
-      .then(([assignmentData, consultantData]) => {
+    Promise.all([assignmentsApi.getAll(), consultantsApi.getAll(), adminApi.getOverview()])
+      .then(([assignmentData, consultantData, adminOverview]) => {
         if (cancelled) return;
         setAssignments(assignmentData);
         setConsultants(consultantData);
+        setMatchingFactors(adminOverview.matchingFactors);
+        setMissingMandatoryPenalty(adminOverview.missingMandatoryPenalty);
       })
       .catch((requestError: unknown) => {
         if (!cancelled) {
@@ -143,11 +148,25 @@ export default function Matching() {
   const missingRequired = selected?.details.filter((detail) => detail.type === "Mandatory" && !detail.isMatched) ?? [];
   const matchedDesired = selected?.details.filter((detail) => detail.type === "Desired" && detail.isMatched) ?? [];
 
+  const weightByKey = Object.fromEntries(matchingFactors.map((factor) => [factor.key, factor.value]));
+
   const breakdown = selected
     ? [
-        { label: "Mandatory requirements", value: ratio(selected.matchedMandatory, selected.totalMandatory), weight: "60%" },
-        { label: "Desired requirements", value: ratio(selected.matchedDesired, selected.totalDesired), weight: "25%" },
-        { label: "Experience", value: selected.experienceScore, weight: "15%" },
+        {
+          label: "Mandatory requirements",
+          value: ratio(selected.matchedMandatory, selected.totalMandatory),
+          weight: `${weightByKey.mandatory ?? 60}%`,
+        },
+        {
+          label: "Desired requirements",
+          value: ratio(selected.matchedDesired, selected.totalDesired),
+          weight: `${weightByKey.desired ?? 25}%`,
+        },
+        {
+          label: "Experience",
+          value: selected.experienceScore,
+          weight: `${weightByKey.experience ?? 15}%`,
+        },
       ]
     : [];
 
@@ -432,7 +451,7 @@ export default function Matching() {
                 </div>
                 {missingRequired.length > 0 && (
                   <p className="text-[10px] text-app-muted mt-3">
-                    Missing mandatory penalty: -10 points per missing mandatory requirement.
+                    Missing mandatory penalty: -{missingMandatoryPenalty} points per missing mandatory requirement.
                   </p>
                 )}
               </section>
