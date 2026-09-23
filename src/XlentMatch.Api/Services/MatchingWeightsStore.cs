@@ -5,7 +5,7 @@ namespace XlentMatch.Api.Services;
 
 public sealed class MatchingWeightsStore
 {
-    private readonly MatchingOptions _defaults;
+    private readonly MatchingWeights _defaults;
     private readonly string _filePath;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private MatchingWeights _current;
