@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Clock, CheckCircle, Zap, Eye } from "../design-system/icons";
+import { Plus, Search, Clock, CheckCircle, Zap, Eye, Sparkles } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
@@ -11,22 +11,22 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { EmptyState } from "../components/ui/EmptyState";
 import { PageHeader } from "../components/ui/PageHeader";
 import { assignmentsApi } from "../services/assignmentsApi";
+import { aiApi } from "../services/aiApi";
 import type { AssignmentApi, AssignmentRequirementApi, AssignmentStatusApi } from "../types";
 
-const emptyRequirement = (name: string, type: "Mandatory" | "Desired"): AssignmentRequirementApi => ({
+const emptyRequirement = (
+  name: string,
+  type: "Mandatory" | "Desired",
+  minYears: number | null = null,
+  minLevel: number | null = null,
+): AssignmentRequirementApi => ({
   id: 0,
   assignmentId: 0,
   name,
   type,
-  minYears: null,
-  minLevel: null,
+  minYears,
+  minLevel,
 });
-
-const splitSkills = (value: string) =>
-  value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 
 function NewAssignmentModal({
   onClose,
@@ -43,10 +43,46 @@ function NewAssignmentModal({
   const [seniority, setSeniority] = useState("Mid");
   const [availability, setAvailability] = useState("Immediate");
   const [minYears, setMinYears] = useState(0);
-  const [requiredSkills, setRequiredSkills] = useState("");
-  const [preferredSkills, setPreferredSkills] = useState("");
+  const [requirements, setRequirements] = useState<AssignmentRequirementApi[]>([]);
+  const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const extractRequirements = async () => {
+    if (!brief.trim()) {
+      setError("Paste the customer assignment description first.");
+      return;
+    }
+
+    setExtracting(true);
+    setError("");
+
+    try {
+      const extracted = await aiApi.extractRequirementsFromText(brief);
+      setRequirements(
+        extracted.map((item) =>
+          emptyRequirement(item.name, item.type, item.minYears, item.minLevel),
+        ),
+      );
+      setStep("review");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "AI extraction failed.");
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const updateRequirement = (index: number, patch: Partial<AssignmentRequirementApi>) => {
+    setRequirements((current) =>
+      current.map((requirement, currentIndex) =>
+        currentIndex === index ? { ...requirement, ...patch } : requirement,
+      ),
+    );
+  };
+
+  const removeRequirement = (index: number) => {
+    setRequirements((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  };
 
   const createAssignment = async () => {
     if (!title.trim()) {
@@ -67,10 +103,7 @@ function NewAssignmentModal({
       availability: availability.trim() || null,
       status: "Draft",
       createdAt: new Date().toISOString(),
-      requirements: [
-        ...splitSkills(requiredSkills).map((name) => emptyRequirement(name, "Mandatory")),
-        ...splitSkills(preferredSkills).map((name) => emptyRequirement(name, "Desired")),
-      ],
+      requirements,
     };
 
     try {
@@ -97,17 +130,30 @@ function NewAssignmentModal({
             <Input value={client} onChange={(event) => setClient(event.target.value)} placeholder="e.g. Nordic Financial Services" />
           </label>
           <label className="block">
-            <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_brief")}</span>
-            <Textarea value={brief} onChange={(event) => setBrief(event.target.value)} rows={6} placeholder={t("assignment_modal_brief_placeholder")} />
+            <span className="text-[11px] text-app-muted mb-1.5 block">
+              {t("assignment_modal_brief")} <span className="text-app-brand ml-1">AI extraction</span>
+            </span>
+            <Textarea value={brief} onChange={(event) => setBrief(event.target.value)} rows={8} placeholder={t("assignment_modal_brief_placeholder")} />
           </label>
+
+          {error && <p className="text-xs text-app-secondary">{error}</p>}
+
           <div className="flex justify-end gap-2">
             <Button onClick={onClose} variant="ghost">{t("assignment_modal_cancel")}</Button>
-            <Button onClick={() => setStep("review")} variant="primary">Review requirements</Button>
+            <Button onClick={extractRequirements} variant="primary" disabled={extracting} icon={<Sparkles size={12} />}>
+              {extracting ? "Extracting with AI..." : "Extract requirements"}
+            </Button>
           </div>
         </div>
       ) : (
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg border border-app bg-app-raised px-3 py-2">
+            <p className="text-xs text-app-secondary">
+              AI extracted the requirements below. Review and edit them before saving.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_seniority")}</span>
               <Input value={seniority} onChange={(event) => setSeniority(event.target.value)} />
@@ -122,16 +168,40 @@ function NewAssignmentModal({
             </label>
           </div>
 
-          <label className="block">
-            <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_required")}</span>
-            <Input value={requiredSkills} onChange={(event) => setRequiredSkills(event.target.value)} placeholder="C#, .NET, React" />
-            <span className="text-[10px] text-app-faint mt-1 block">Separate skills with commas.</span>
-          </label>
+          <div className="space-y-2 max-h-72 overflow-auto">
+            {requirements.map((requirement, index) => (
+              <div key={index} className="grid grid-cols-[1fr_130px_90px_30px] gap-2 items-center">
+                <Input
+                  value={requirement.name}
+                  onChange={(event) => updateRequirement(index, { name: event.target.value })}
+                />
+                <select
+                  value={requirement.type}
+                  onChange={(event) => updateRequirement(index, { type: event.target.value as "Mandatory" | "Desired" })}
+                  className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                >
+                  <option value="Mandatory">Mandatory</option>
+                  <option value="Desired">Desired</option>
+                </select>
+                <Input
+                  type="number"
+                  min={0}
+                  value={requirement.minYears ?? ""}
+                  placeholder="Years"
+                  onChange={(event) => updateRequirement(index, { minYears: event.target.value ? Number(event.target.value) : null })}
+                />
+                <button type="button" onClick={() => removeRequirement(index)} className="text-app-faint hover:text-app-secondary">×</button>
+              </div>
+            ))}
+          </div>
 
-          <label className="block">
-            <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_preferred")}</span>
-            <Input value={preferredSkills} onChange={(event) => setPreferredSkills(event.target.value)} placeholder="Azure, Docker" />
-          </label>
+          <Button
+            variant="ghost"
+            onClick={() => setRequirements((current) => [...current, emptyRequirement("", "Mandatory")])}
+            icon={<Plus size={11} />}
+          >
+            Add requirement
+          </Button>
 
           {error && <p className="text-xs text-app-secondary">{error}</p>}
 
@@ -164,9 +234,7 @@ export default function ClientAssignments() {
         if (!cancelled) setAssignments(data);
       })
       .catch((requestError: unknown) => {
-        if (!cancelled) {
-          setError(requestError instanceof Error ? requestError.message : "Could not load assignments.");
-        }
+        if (!cancelled) setError(requestError instanceof Error ? requestError.message : "Could not load assignments.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -178,12 +246,8 @@ export default function ClientAssignments() {
   }, []);
 
   const statusConfig = (status: AssignmentStatusApi) => {
-    if (status === "Matching") {
-      return { label: t("status_matching"), tone: "warning" as const, icon: <Zap size={9} /> };
-    }
-    if (status === "Done") {
-      return { label: t("status_match_complete"), tone: "success" as const, icon: <CheckCircle size={9} /> };
-    }
+    if (status === "Matching") return { label: t("status_matching"), tone: "warning" as const, icon: <Zap size={9} /> };
+    if (status === "Done") return { label: t("status_match_complete"), tone: "success" as const, icon: <CheckCircle size={9} /> };
     return { label: t("assignment_draft"), tone: "neutral" as const, icon: <Clock size={9} /> };
   };
 
@@ -227,11 +291,7 @@ export default function ClientAssignments() {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
-          Backend connection failed: {error}
-        </div>
-      )}
+      {error && <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">Backend connection failed: {error}</div>}
 
       <div className="space-y-2">
         {filtered.map((assignment) => {
@@ -247,33 +307,25 @@ export default function ClientAssignments() {
                     <h2 className="text-sm font-medium text-app-primary">{assignment.title}</h2>
                     <StatusBadge tone={status.tone} icon={status.icon}>{status.label}</StatusBadge>
                   </div>
-
                   <p className="text-xs text-app-muted">
                     {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {new Date(assignment.createdAt).toLocaleDateString()}
                   </p>
-
                   <p className="text-[11px] text-app-secondary mt-1 mb-3 max-w-3xl">{assignment.description || "—"}</p>
-
                   <div className="flex flex-wrap gap-1.5">
                     {required.map((requirement) => <SkillTag key={requirement.id || requirement.name} variant="required">{requirement.name}</SkillTag>)}
                     {preferred.map((requirement) => <SkillTag key={requirement.id || requirement.name}>{requirement.name}</SkillTag>)}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
-                    {t("assignment_view")}
-                  </LinkButton>
-                </div>
+                <LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
+                  {t("assignment_view")}
+                </LinkButton>
               </div>
             </div>
           );
         })}
       </div>
 
-      {filtered.length === 0 && (
-        <EmptyState title={loading ? "Loading assignments..." : query ? t("assignments_empty_search") : t("assignments_empty")} />
-      )}
+      {filtered.length === 0 && <EmptyState title={loading ? "Loading assignments..." : query ? t("assignments_empty_search") : t("assignments_empty")} />}
 
       {showModal && (
         <NewAssignmentModal
