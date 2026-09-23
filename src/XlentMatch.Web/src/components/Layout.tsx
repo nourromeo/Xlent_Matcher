@@ -5,6 +5,7 @@ import {
   Briefcase,
   GitMerge,
   Upload,
+  Settings,
   Zap,
   ChevronRight,
   Sun,
@@ -29,6 +30,7 @@ export default function Layout() {
     { to: "/matching", icon: GitMerge, label: t("nav_matching") },
     { to: "/cv-upload", icon: Upload, label: t("nav_upload") },
     { to: "/cv-adaptation", icon: Sparkles, label: t("nav_coach") },
+    { to: "/admin", icon: Settings, label: t("nav_admin") },
   ];
 
   const section = NAV.find((item) =>

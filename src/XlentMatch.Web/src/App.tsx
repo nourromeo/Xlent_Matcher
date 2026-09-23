@@ -8,6 +8,7 @@ import AssignmentDetail from "./pages/AssignmentDetail";
 import Matching from "./pages/Matching";
 import CvUpload from "./pages/CvUpload";
 import CvAdaptation from "./pages/CvAdaptation";
+import Admin from "./pages/Admin";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="matching" element={<Matching />} />
           <Route path="cv-upload" element={<CvUpload />} />
           <Route path="cv-adaptation" element={<CvAdaptation />} />
+          <Route path="admin" element={<Admin />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

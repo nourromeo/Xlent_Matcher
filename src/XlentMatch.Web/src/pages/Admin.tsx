@@ -1,0 +1,297 @@
+import { useEffect, useMemo, useState } from "react";
+import { Edit3, Plus, RefreshCw, Save, Search, Trash2 } from "../design-system/icons";
+import { useI18n } from "../i18n";
+import { Button } from "../components/ui/Button";
+import { Tabs } from "../components/ui/Tabs";
+import { DataTable } from "../components/ui/DataTable";
+import { PageHeader } from "../components/ui/PageHeader";
+import { StatusBadge } from "../components/ui/StatusBadge";
+import { adminApi, type AdminOverview, type AdminSkill } from "../services/adminApi";
+
+const ADMIN_TABS = ["taxonomy", "weights", "flags"] as const;
+
+export default function Admin() {
+  const { t } = useI18n();
+  const TABS = ADMIN_TABS.map((id) => ({ id, label: t(`tab_${id}` as any) }));
+
+  const [tab, setTab] = useState("taxonomy");
+  const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    adminApi
+      .getOverview()
+      .then((data) => {
+        if (!cancelled) setOverview(data);
+      })
+      .catch((requestError: unknown) => {
+        if (!cancelled) {
+          setError(requestError instanceof Error ? requestError.message : "Could not load admin data.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const skills = overview?.skills ?? [];
+  const factors = overview?.matchingFactors ?? [];
+  const capabilities = overview?.capabilities ?? [];
+
+  const categories = useMemo(
+    () => ["All", ...Array.from(new Set(skills.map((skill) => skill.category))).sort()],
+    [skills],
+  );
+
+  const filteredSkills = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return skills.filter((skill) => {
+      const matchesCategory = category === "All" || skill.category === category;
+      const matchesSearch =
+        !query ||
+        skill.canonical.toLowerCase().includes(query) ||
+        skill.category.toLowerCase().includes(query) ||
+        skill.aliases.some((alias) => alias.toLowerCase().includes(query));
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [skills, search, category]);
+
+  const total = factors.reduce((sum, factor) => sum + factor.value, 0);
+  const ok = total === 100;
+
+  return (
+    <div className="h-full overflow-auto">
+      <div className="p-6 space-y-5 max-w-6xl mx-auto">
+        <PageHeader title={t("admin_title")} description={t("admin_description")} />
+
+        {error && (
+          <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: t("admin_skills_count"), value: loading ? "—" : skills.length },
+            { label: t("admin_matching_factors"), value: loading ? "—" : factors.length },
+            { label: t("admin_feature_flags"), value: loading ? "—" : capabilities.length },
+          ].map((item) => (
+            <div key={item.label} className="bg-app-surface border border-app rounded-lg px-4 py-3" style={{ boxShadow: "var(--shadow-surface)" }}>
+              <p className="text-[10px] uppercase tracking-wide text-app-faint">{item.label}</p>
+              <p className="text-lg font-semibold font-mono text-app-primary mt-1">{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
+
+        {tab === "taxonomy" && (
+          <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
+            <div className="flex items-end justify-between gap-4 px-4 py-3 border-b border-app">
+              <div className="flex items-end gap-2 flex-1">
+                <div className="relative w-full max-w-sm">
+                  <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-app-faint" />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder={t("admin_search_skills")}
+                    className="w-full bg-app border border-app rounded-md pl-8 pr-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand"
+                  />
+                </div>
+
+                <select
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  className="bg-app border border-app rounded-md px-3 py-2 text-xs text-app-secondary outline-none"
+                >
+                  {categories.map((item) => (
+                    <option key={item} value={item}>
+                      {item === "All" ? t("common_all") : item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Button
+                variant="primary"
+                icon={<Plus size={12} />}
+                disabled
+                title="Taxonomy editing will be connected after database migrations."
+              >
+                {t("admin_add_skill_title")}
+              </Button>
+            </div>
+
+            <DataTable
+              columns={[
+                {
+                  key: "canonical",
+                  header: t("admin_canonical"),
+                  sortable: true,
+                  sortValue: (skill: AdminSkill) => skill.canonical,
+                  render: (skill: AdminSkill) => (
+                    <span className="font-mono font-medium text-app-primary">{skill.canonical}</span>
+                  ),
+                },
+                {
+                  key: "category",
+                  header: t("admin_category"),
+                  sortable: true,
+                  sortValue: (skill: AdminSkill) => skill.category,
+                  render: (skill: AdminSkill) => (
+                    <span className="text-[11px] text-app-secondary px-2 py-1 rounded bg-app-raised">
+                      {skill.category}
+                    </span>
+                  ),
+                },
+                {
+                  key: "aliases",
+                  header: t("admin_aliases"),
+                  render: (skill: AdminSkill) => (
+                    <div className="flex flex-wrap gap-1">
+                      {skill.aliases.length > 0
+                        ? skill.aliases.map((alias) => (
+                            <span key={alias} className="text-[10px] font-mono text-app-secondary px-1.5 py-0.5 rounded bg-app-raised border border-app">
+                              {alias}
+                            </span>
+                          ))
+                        : <span className="text-[10px] text-app-faint">—</span>}
+                    </div>
+                  ),
+                },
+                {
+                  key: "actions",
+                  header: t("admin_actions"),
+                  render: (skill: AdminSkill) => (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-app-muted mr-2">{skill.consultantCount} consultants</span>
+                      <Button variant="ghost" icon={<Edit3 size={11} />} disabled>{t("admin_edit")}</Button>
+                      <button
+                        disabled
+                        className="p-2 text-app-faint opacity-40 cursor-not-allowed"
+                        aria-label={t("common_delete") + " " + skill.canonical}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ),
+                },
+              ]}
+              rows={filteredSkills}
+              rowKey={(skill: AdminSkill) => skill.id}
+              emptyMessage={loading ? "Loading skills..." : t("admin_empty_skills")}
+            />
+          </div>
+        )}
+
+        {tab === "weights" && (
+          <div className="space-y-3">
+            <div
+              className="text-xs px-4 py-3 rounded-lg flex items-center justify-between gap-3"
+              style={{
+                background: ok ? "var(--color-success-soft)" : "var(--color-warning-soft)",
+                border: "1px solid " + (ok ? "var(--color-success-border)" : "var(--color-warning-border)"),
+                color: ok ? "var(--color-success)" : "var(--color-warning)",
+              }}
+            >
+              <span>{t("admin_total_label")} <strong>{total}%</strong> {ok ? t("admin_ready_save") : t("admin_must_eq")}</span>
+              <span className="text-app-muted">Backend configuration</span>
+            </div>
+
+            <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+              {factors.map((factor, index) => (
+                <div
+                  key={factor.key}
+                  className="px-5 py-4"
+                  style={{ borderBottom: index < factors.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
+                >
+                  <div className="flex items-center gap-5">
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-xs font-medium text-app-primary">{factor.label}</p>
+                        <span className="text-xs font-mono font-semibold text-app-brand">{factor.value}%</span>
+                      </div>
+                      <p className="text-xs text-app-muted mt-1">{factor.description}</p>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={0}
+                      max={60}
+                      value={factor.value}
+                      readOnly
+                      disabled
+                      className="w-40 accent-indigo-500 opacity-70"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+              Missing mandatory penalty: <strong>{overview?.missingMandatoryPenalty ?? "—"} points</strong> per missing mandatory requirement.
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" icon={<RefreshCw size={11} />} disabled>{t("admin_reset")}</Button>
+              <Button variant="primary" icon={<Save size={11} />} disabled>{t("admin_save_w")}</Button>
+            </div>
+          </div>
+        )}
+
+        {tab === "flags" && (
+          <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
+            <div className="px-5 py-3 border-b border-app">
+              <p className="text-xs font-medium text-app-primary">{t("tab_flags")}</p>
+              <p className="text-[11px] text-app-muted mt-0.5">
+                Live system capabilities reported by the backend. These are status values, not mock toggles.
+              </p>
+            </div>
+
+            {capabilities.map((capability, index) => (
+              <div
+                key={capability.key}
+                className="flex items-center justify-between gap-5 px-5 py-4"
+                style={{ borderBottom: index < capabilities.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-medium text-app-primary">{capability.label}</p>
+                    <StatusBadge tone={capability.enabled ? "success" : "neutral"}>
+                      {capability.enabled ? t("common_enabled") : t("common_disabled")}
+                    </StatusBadge>
+                  </div>
+                  <p className="text-[11px] text-app-muted mt-1">{capability.description}</p>
+                  <p className="text-[10px] text-app-faint font-mono mt-1">{capability.key}</p>
+                </div>
+
+                <button
+                  disabled
+                  className="relative w-10 h-5 rounded-full flex-none cursor-not-allowed opacity-80"
+                  style={{ background: capability.enabled ? "var(--color-brand)" : "var(--color-border)" }}
+                  aria-label={capability.label}
+                >
+                  <span
+                    className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white"
+                    style={{ transform: capability.enabled ? "translateX(20px)" : "translateX(0)" }}
+                  />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
