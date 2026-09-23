@@ -68,9 +68,7 @@ public class MatchingService(IOptions<MatchingOptions> options)
         var evidence = new List<string>();
         var matched = false;
 
-        var skill = req.SkillId is not null
-            ? c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId)
-            : c.Skills.FirstOrDefault(s => SameName(s.Name, req.Name));
+        var skill = c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId);
 
         if (skill is not null)
         {
