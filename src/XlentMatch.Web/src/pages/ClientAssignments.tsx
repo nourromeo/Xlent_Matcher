@@ -241,6 +241,7 @@ export default function ClientAssignments() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -261,6 +262,22 @@ export default function ClientAssignments() {
       cancelled = true;
     };
   }, []);
+
+  const deleteAssignment = async (assignment: AssignmentApi) => {
+    if (!window.confirm(`Delete "${assignment.title}"? This will permanently remove the assignment from the database.`)) return;
+
+    setDeletingId(assignment.id);
+    setError("");
+
+    try {
+      await assignmentsApi.remove(assignment.id);
+      setAssignments((current) => current.filter((item) => item.id !== assignment.id));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not delete assignment.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const statusConfig = (status: AssignmentStatusApi) => {
     if (status === "Matching") return { label: t("status_matching"), tone: "warning" as const, icon: <Zap size={9} /> };
@@ -333,9 +350,20 @@ export default function ClientAssignments() {
                     {preferred.map((requirement) => <SkillTag key={requirement.id || requirement.name}>{requirement.name}</SkillTag>)}
                   </div>
                 </div>
-                <LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
-                  {t("assignment_view")}
-                </LinkButton>
+                <div className="flex items-center gap-2">
+                  <LinkButton to={"/client-assignments/" + assignment.id} variant="secondary" icon={<Eye size={12} />}>
+                    {t("assignment_view")}
+                  </LinkButton>
+                  <button
+                    type="button"
+                    onClick={() => void deleteAssignment(assignment)}
+                    disabled={deletingId === assignment.id}
+                    className="text-[11px] px-2.5 py-1.5 rounded border disabled:opacity-50"
+                    style={{ color: "var(--color-danger)", borderColor: "var(--color-danger)", background: "transparent" }}
+                  >
+                    {deletingId === assignment.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
               </div>
             </div>
           );

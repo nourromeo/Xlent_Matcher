@@ -75,6 +75,15 @@ public class ConsultantsController(AppDbContext db) : ControllerBase
         var consultant = await db.Consultants.FindAsync([id], ct);
         if (consultant is null) return NotFound();
 
+        var matchResults = await db.MatchResults
+            .Where(m => m.ConsultantId == id)
+            .ToListAsync(ct);
+        var adaptedCvs = await db.AdaptedCvs
+            .Where(cv => cv.ConsultantId == id)
+            .ToListAsync(ct);
+
+        db.MatchResults.RemoveRange(matchResults);
+        db.AdaptedCvs.RemoveRange(adaptedCvs);
         db.Consultants.Remove(consultant);
         await db.SaveChangesAsync(ct);
         return NoContent();

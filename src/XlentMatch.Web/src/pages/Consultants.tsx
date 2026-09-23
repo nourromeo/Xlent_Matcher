@@ -30,6 +30,7 @@ export default function Consultants() {
   const [query, setQuery] = useState("");
   const [seniority, setSeniority] = useState("All");
   const [avail, setAvail] = useState("All");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +53,23 @@ export default function Consultants() {
       cancelled = true;
     };
   }, []);
+
+  const deleteConsultant = async (consultant: Consultant) => {
+    const name = consultantName(consultant);
+    if (!window.confirm(`Delete ${name}? This will permanently remove the consultant from the database.`)) return;
+
+    setDeletingId(consultant.id);
+    setError("");
+
+    try {
+      await consultantsApi.remove(consultant.id);
+      setConsultants((current) => current.filter((item) => item.id !== consultant.id));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not delete consultant.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const displaySeniority = (value: string) =>
     value === "Junior" ? t("seniority_junior") :
@@ -206,10 +224,19 @@ export default function Consultants() {
               key: "actions",
               header: t("common_actions"),
               render: (consultant) => (
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
                   <LinkButton to={`/consultants/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>
                     {t("consultants_view")}
                   </LinkButton>
+                  <button
+                    type="button"
+                    onClick={() => void deleteConsultant(consultant)}
+                    disabled={deletingId === consultant.id}
+                    className="text-[11px] px-2.5 py-1.5 rounded border disabled:opacity-50"
+                    style={{ color: "var(--color-danger)", borderColor: "var(--color-danger)", background: "transparent" }}
+                  >
+                    {deletingId === consultant.id ? "Deleting..." : "Delete"}
+                  </button>
                 </div>
               ),
             },

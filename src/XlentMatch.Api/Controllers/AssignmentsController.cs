@@ -93,6 +93,15 @@ public class AssignmentsController(AppDbContext db) : ControllerBase
         if (assignment is null)
             return NotFound();
 
+        var matchResults = await db.MatchResults
+            .Where(m => m.AssignmentId == id)
+            .ToListAsync(ct);
+        var adaptedCvs = await db.AdaptedCvs
+            .Where(cv => cv.AssignmentId == id)
+            .ToListAsync(ct);
+
+        db.MatchResults.RemoveRange(matchResults);
+        db.AdaptedCvs.RemoveRange(adaptedCvs);
         db.Assignments.Remove(assignment);
         await db.SaveChangesAsync(ct);
         return NoContent();
