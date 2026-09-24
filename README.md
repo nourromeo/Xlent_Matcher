@@ -56,11 +56,18 @@ MatchingService räknar Match Score. AI bestämmer inte själva poängen.
 
 ```text
 Xlent_Matcher/
-├── src/
-│   ├── XlentMatch.Web/
-│   └── XlentMatch.Api/
-├── docs/
 ├── .github/
+│   └── workflows/
+├── docs/
+│   ├── architecture/
+│   ├── database/
+│   └── testing/
+├── src/
+│   ├── XlentMatch.Api/
+│   └── XlentMatch.Web/
+├── tests/
+├── .gitignore
+├── XlentMatch.slnx
 └── README.md
 ```
 
@@ -216,7 +223,7 @@ GitHub Actions kör:
 
 Manuell end-to-end-kontroll finns i:
 
-`docs/MVP_SMOKE_TEST.md`
+`docs/testing/MVP_SMOKE_TEST.md`
 
 ## Viktig avgränsning
 
