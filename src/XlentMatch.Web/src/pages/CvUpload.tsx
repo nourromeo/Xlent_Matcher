@@ -107,6 +107,7 @@ export default function CvUpload() {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -210,6 +211,21 @@ export default function CvUpload() {
           // Keep the original extraction error visible.
         }
       }
+    }
+  };
+
+  const clearUploadRecord = async (id: number) => {
+    setDeletingId(id);
+    setError("");
+
+    try {
+      await cvUploadsApi.remove(id);
+      setFiles((current) => current.filter((file) => file.id !== id));
+      if (activeId === id) setActiveId(null);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not clear CV history record.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -386,6 +402,17 @@ export default function CvUpload() {
                 <Eye size={11} /> View Consultant
               </Link>
             )}
+
+            <button
+              type="button"
+              onClick={() => void clearUploadRecord(file.id)}
+              disabled={deletingId === file.id}
+              className="p-1.5 rounded text-app-faint hover:text-app-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Clear this CV history record"
+              aria-label={"Clear " + file.fileName + " from CV history"}
+            >
+              {deletingId === file.id ? <Loader size={12} className="animate-spin" /> : <X size={12} />}
+            </button>
 
           </div>
         ))}
