@@ -349,7 +349,6 @@ export default function ConsultantDetail() {
             </div>
           </div>
         </div>
-      </div>
 
       {draft && (
         <EditFormModal
