@@ -10,7 +10,7 @@ import { consultantsApi } from "../services/consultantsApi";
 import type { Consultant } from "../types";
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
-const AVAIL_OPTIONS = ["All", "Immediate", "2 weeks", "1 month", "3 months"];
+const AVAIL_OPTIONS = ["All", "Available now", "Needs confirmation"];
 
 const consultantName = (consultant: Consultant) =>
   consultant.fullName?.trim() || `${consultant.firstName} ${consultant.lastName}`.trim();
@@ -21,6 +21,15 @@ const initials = (consultant: Consultant) =>
     .map((part) => part[0]?.toUpperCase())
     .join("")
     .slice(0, 2);
+
+function availabilityLabel(consultant: Consultant) {
+  if (!consultant.availableFromDate) return "Needs confirmation";
+  const confirmedAt = consultant.availabilityConfirmedAt ? new Date(consultant.availabilityConfirmedAt) : null;
+  if (!confirmedAt || Date.now() - confirmedAt.getTime() > 90 * 24 * 60 * 60 * 1000) return "Needs confirmation";
+  const start = new Date(`${consultant.availableFromDate.slice(0, 10)}T00:00:00`);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return start > today ? `Available from ${start.toLocaleDateString()}` : "Available now";
+}
 
 export default function Consultants() {
   const { t } = useI18n();
@@ -88,7 +97,7 @@ export default function Consultants() {
 
   const filtered = consultants.filter((consultant) => {
     const consultantSeniority = consultant.seniority ?? "";
-    const consultantAvailability = consultant.availability ?? "";
+    const consultantAvailability = availabilityLabel(consultant);
 
     if (seniority !== "All" && consultantSeniority !== seniority) return false;
     if (avail !== "All" && consultantAvailability !== avail) return false;
@@ -197,7 +206,7 @@ export default function Consultants() {
               header: t("col_experience"),
               sortable: true,
               sortValue: (consultant) => consultant.yearsOfExperience,
-              render: (consultant) => <span className="font-mono">{consultant.yearsOfExperience} yrs</span>,
+              render: (consultant) => <span className="font-mono">{consultant.yearsOfExperience == null ? "—" : `${consultant.yearsOfExperience} yrs`}</span>,
             },
             {
               key: "skills",

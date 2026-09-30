@@ -33,6 +33,9 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     summary: draft.summary?.trim() || null,
     seniority: draft.seniority?.trim() || null,
     yearsOfExperience: draft.yearsOfExperience,
+    yearsOfExperienceSource: draft.yearsOfExperienceSource,
+    availableFromDate: draft.availableFromDate,
+    availabilityConfirmedAt: null,
     availability: draft.availability?.trim() || null,
     office: draft.office?.trim() || null,
     originalCvText: null,
@@ -73,7 +76,8 @@ function toConsultant(draft: ConsultantDraft): Consultant {
       id: 0,
       consultantId: 0,
       name: item.name.trim(),
-      level: item.level?.trim() || null,
+      level: item.level,
+      sourceLevel: item.sourceLevel ?? null,
     })),
     industries: draft.industries.filter((name) => name.trim()).map((name) => ({
       id: 0,
@@ -104,6 +108,7 @@ export default function CvUpload() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<CvUploadView[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [reviewStep, setReviewStep] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -408,7 +413,7 @@ export default function CvUpload() {
             {file.status === "Review" && file.draft && (
               <button
                 type="button"
-                onClick={() => setActiveId(file.id)}
+                onClick={() => { setReviewStep(0); setActiveId(file.id); }}
                 className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
               >
                 <Eye size={11} /> Review
@@ -451,8 +456,8 @@ export default function CvUpload() {
               <FileText size={12} /> {activeFile.fileName}
             </div>
 
-            <section className="space-y-3">
-              <p className="text-[10px] uppercase tracking-wide text-app-faint">Basic information</p>
+            <section className={reviewStep === 0 ? "space-y-3" : "hidden"}>
+              <p className="text-[10px] uppercase tracking-wide text-app-faint">Step 1 of 4 · Basic information</p>
               <div className="grid grid-cols-2 gap-3">
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">First name <span className="text-app-brand">*</span></span>
@@ -468,11 +473,11 @@ export default function CvUpload() {
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Seniority</span>
-                  <Input value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} />
+                  <select value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Years of experience</span>
-                  <Input type="number" min={0} value={draft.yearsOfExperience} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: Number(event.target.value) || 0 })} />
+                  <Input type="number" min={0} value={draft.yearsOfExperience ?? ""} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: event.target.value ? Number(event.target.value) : null, yearsOfExperienceSource: "ManuallyConfirmed" })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Email</span>
@@ -480,7 +485,8 @@ export default function CvUpload() {
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Availability</span>
-                  <Input value={draft.availability ?? ""} onChange={(event) => updateDraft({ ...draft, availability: event.target.value || null })} />
+                  <Input value={draft.availability ?? ""} onChange={(event) => updateDraft({ ...draft, availability: event.target.value || null })} placeholder="e.g. Available now / from a date" />
+                  <Input type="date" aria-label="Available from date" value={draft.availableFromDate ?? ""} onChange={(event) => updateDraft({ ...draft, availableFromDate: event.target.value || null })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Office</span>
@@ -494,9 +500,9 @@ export default function CvUpload() {
               </label>
             </section>
 
-            <section className="space-y-3">
+            <section className={reviewStep === 1 ? "space-y-3" : "hidden"}>
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wide text-app-faint">Skills ({draft.skills.length})</p>
+                <p className="text-[10px] uppercase tracking-wide text-app-faint">Step 2 of 4 · Skills ({draft.skills.length})</p>
                 <Button
                   variant="ghost"
                   icon={<Plus size={11} />}
@@ -514,7 +520,7 @@ export default function CvUpload() {
                   <div key={index} className="grid grid-cols-[1fr_80px_80px_30px] gap-2 items-center">
                     <Input
                       value={skill.name}
-                      placeholder="Skill"
+                      aria-label="Skill name" placeholder="Skill"
                       onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, name: event.target.value } : item),
@@ -524,7 +530,7 @@ export default function CvUpload() {
                       type="number"
                       min={0}
                       value={skill.years}
-                      placeholder="Years"
+                      aria-label="Years using this skill" placeholder="Years"
                       onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, years: Number(event.target.value) || 0 } : item),
@@ -535,7 +541,7 @@ export default function CvUpload() {
                       min={0}
                       max={5}
                       value={skill.level}
-                      placeholder="Level"
+                      aria-label="Skill proficiency, 0 to 5" placeholder="Level"
                       onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, level: Number(event.target.value) || 0 } : item),
@@ -554,14 +560,15 @@ export default function CvUpload() {
               </div>
             </section>
 
-            <section className="space-y-5">
+            <section className={reviewStep >= 2 ? "space-y-5" : "hidden"}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide text-app-faint">Experience and profile details</p>
+                  <p className="text-[10px] uppercase tracking-wide text-app-faint">Step {reviewStep + 1} of 4 · Experience and profile details</p>
                   <p className="text-[11px] text-app-muted mt-1">Review every extracted item. Correct names, dates and levels before saving.</p>
                 </div>
               </div>
 
+              <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-app-primary">Languages ({draft.languages.length})</p>
@@ -570,13 +577,15 @@ export default function CvUpload() {
                 {draft.languages.map((item, index) => (
                   <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                     <Input aria-label="Language" placeholder="Language" value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                    <Input aria-label="Language level" placeholder="Level (e.g. C1, Fluent)" value={item.level ?? ""} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: event.target.value || null } : row) })} />
+                    <select aria-label="Language proficiency" value={item.level ?? ""} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: (event.target.value || null) as typeof row.level } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Basic">Basic</option><option value="Intermediate">Intermediate</option><option value="Fluent">Fluent</option></select>{item.sourceLevel && <span className="text-[10px] text-app-muted">CV wording: {item.sourceLevel}</span>}
                     <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label="Remove language"><X size={12} /></button>
                   </div>
                 ))}
                 {draft.languages.length === 0 && <p className="text-[11px] text-app-faint">No languages extracted. Add them if they are listed in the CV.</p>}
               </div>
 
+</div>
+              <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-app-primary">Experience ({draft.experiences.length})</p>
@@ -585,18 +594,20 @@ export default function CvUpload() {
                 {draft.experiences.map((item, index) => (
                   <div key={index} className="rounded-md border border-app bg-app-surface p-3 space-y-2">
                     <div className="grid grid-cols-2 gap-2">
-                      <Input aria-label="Role" placeholder="Role" value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
+                      <Input aria-label="Role or title" placeholder="Role" value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
                       <Input aria-label="Company" placeholder="Company" value={item.company} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
                       <Input type="month" aria-label="Start date" value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
                       <Input type="month" aria-label="End date" value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
                     </div>
-                    <Textarea aria-label="Experience description" placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                    <Textarea aria-label="Description" placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
                     <button type="button" onClick={() => updateDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted hover:text-app-secondary">Remove experience</button>
                   </div>
                 ))}
                 {draft.experiences.length === 0 && <p className="text-[11px] text-app-faint">No experience extracted. Add relevant experience from the CV.</p>}
               </div>
 
+</div>
+              <div className={reviewStep === 3 ? "space-y-4" : "hidden"}>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
@@ -605,9 +616,9 @@ export default function CvUpload() {
                   </div>
                   {draft.projects.map((item, index) => (
                     <div key={index} className="rounded border border-app bg-app-surface p-2 space-y-2">
-                      <Input placeholder="Project name" value={item.name} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                      <Input placeholder="Technologies (comma-separated)" value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
-                      <Textarea placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                      <Input aria-label="Project name" placeholder="Project name" value={item.name} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                      <Input aria-label="Technologies" placeholder="Technologies (comma-separated)" value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
+                      <Textarea aria-label="Description" placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
                       <button type="button" onClick={() => updateDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted">Remove project</button>
                     </div>
                   ))}
@@ -620,9 +631,9 @@ export default function CvUpload() {
                   </div>
                   {draft.education.map((item, index) => (
                     <div key={index} className="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-center">
-                      <Input placeholder="Degree" value={item.degree} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
-                      <Input placeholder="School" value={item.school ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
-                      <Input placeholder="Year" value={item.year ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
+                      <Input aria-label="Degree" placeholder="Degree" value={item.degree} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
+                      <Input aria-label="School" placeholder="School" value={item.school ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
+                      <Input aria-label="Graduation year" placeholder="Year" value={item.year ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
                       <button type="button" onClick={() => updateDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove education"><X size={12} /></button>
                     </div>
                   ))}
@@ -635,8 +646,8 @@ export default function CvUpload() {
                   </div>
                   {draft.certifications.map((item, index) => (
                     <div key={index} className="grid grid-cols-[1fr_1fr_110px_auto] gap-2 items-center">
-                      <Input placeholder="Certification" value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                      <Input placeholder="Issuer" value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
+                      <Input aria-label="Certification" placeholder="Certification" value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                      <Input aria-label="Certification issuer" placeholder="Issuer" value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
                       <Input type="month" aria-label="Issued date" value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
                       <button type="button" onClick={() => updateDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove certification"><X size={12} /></button>
                     </div>
@@ -650,7 +661,7 @@ export default function CvUpload() {
                   </div>
                   {draft.industries.map((item, index) => (
                     <div key={index} className="flex gap-2">
-                      <Input placeholder="Industry" value={item} onChange={(event) => updateDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? event.target.value : row) })} />
+                      <Input aria-label="Industry" placeholder="Industry" value={item} onChange={(event) => updateDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? event.target.value : row) })} />
                       <button type="button" onClick={() => updateDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove industry"><X size={12} /></button>
                     </div>
                   ))}
@@ -660,11 +671,12 @@ export default function CvUpload() {
 
             {!canSave && <p className="text-[10px] text-app-faint">First name and last name must be filled in before saving.</p>}
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-between gap-2">
               <Button variant="ghost" onClick={() => setActiveId(null)}>Close</Button>
-              <Button variant="primary" onClick={saveConsultant} disabled={saving || !canSave}>
-                {saving ? "Saving..." : "Approve and save consultant"}
-              </Button>
+              <div className="flex gap-2">
+                {reviewStep > 0 && <Button variant="ghost" onClick={() => setReviewStep((current) => current - 1)}>Back</Button>}
+                {reviewStep < 3 ? <Button variant="primary" onClick={() => setReviewStep((current) => current + 1)}>Next</Button> : <Button variant="primary" onClick={saveConsultant} disabled={saving || !canSave}>{saving ? "Saving..." : "Approve and save consultant"}</Button>}
+              </div>
             </div>
           </div>
         </Modal>

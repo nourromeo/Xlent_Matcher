@@ -62,6 +62,7 @@ export default function Admin() {
   const skills = overview?.skills ?? [];
   const factors = overview?.matchingFactors ?? [];
   const capabilities = overview?.capabilities ?? [];
+  const pendingLanguages = overview?.pendingLanguages ?? [];
 
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(skills.map((skill) => skill.category))).sort()],
@@ -110,6 +111,18 @@ export default function Admin() {
     setEditCategory(skill.category);
     setEditAliases(skill.aliases.join(", "));
     setError("");
+  };
+
+  const reviewLanguage = async (id: number, approve: boolean) => {
+    setError("");
+    try {
+      if (approve) await adminApi.approveLanguage(id);
+      else await adminApi.dismissLanguage(id);
+      setOverview((current) => current ? { ...current, pendingLanguages: current.pendingLanguages.filter((item) => item.id !== id) } : current);
+      if (approve) setOverview(await adminApi.getOverview());
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not review language.");
+    }
   };
 
   const saveSkill = async () => {
@@ -234,7 +247,28 @@ export default function Admin() {
 
         <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
-        {tab === "taxonomy" && (
+                {tab === "taxonomy" && pendingLanguages.length > 0 && (
+          <section className="bg-app-surface border border-app rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--shadow-surface)" }}>
+            <div>
+              <h2 className="text-xs font-semibold text-app-primary">Language suggestions for review</h2>
+              <p className="text-[11px] text-app-muted mt-1">Unrecognized CV and assignment language names stay outside the approved taxonomy until reviewed.</p>
+            </div>
+            {pendingLanguages.map((item) => (
+              <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-app pt-3">
+                <div>
+                  <p className="text-xs font-medium text-app-primary">{item.name}</p>
+                  <p className="text-[10px] text-app-muted">Seen {item.occurrences} time(s)</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => void reviewLanguage(item.id, false)}>Dismiss</Button>
+                  <Button variant="primary" onClick={() => void reviewLanguage(item.id, true)}>Approve as language</Button>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+{tab === "taxonomy" && (
           <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
             <div className="flex items-end justify-between gap-4 px-4 py-3 border-b border-app">
               <div className="flex items-end gap-2 flex-1">

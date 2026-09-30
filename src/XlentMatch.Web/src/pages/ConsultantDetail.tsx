@@ -28,6 +28,16 @@ const levelStyle = (level: number): React.CSSProperties => {
   return { color: "var(--color-text-muted)", background: "var(--color-surface-raised)" };
 };
 
+function availabilityLabel(consultant: Consultant) {
+  if (!consultant.availableFromDate) return consultant.availability || "Needs confirmation";
+  const confirmedAt = consultant.availabilityConfirmedAt ? new Date(consultant.availabilityConfirmedAt) : null;
+  if (!confirmedAt || Date.now() - confirmedAt.getTime() > 90 * 24 * 60 * 60 * 1000) return "Needs confirmation";
+  const start = new Date(`${consultant.availableFromDate.slice(0, 10)}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return start > today ? `Available from ${start.toLocaleDateString()}` : "Available now";
+}
+
 const fullName = (consultant: Consultant) =>
   consultant.fullName?.trim() || `${consultant.firstName} ${consultant.lastName}`.trim();
 
@@ -49,6 +59,7 @@ export default function ConsultantDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editStep, setEditStep] = useState(0);
 
   useEffect(() => {
     if (!Number.isInteger(consultantId) || consultantId <= 0) {
@@ -81,6 +92,7 @@ export default function ConsultantDetail() {
   const openEdit = () => {
     if (!consultant) return;
     setDraft(structuredClone(consultant));
+    setEditStep(0);
     setEditMode(true);
   };
 
@@ -143,7 +155,7 @@ export default function ConsultantDetail() {
                 {fullName(consultant)} — {t("consultant_profile")}
               </h1>
               <p className="text-xs text-app-muted">
-                {consultant.title || "Consultant"} · {consultant.office || "—"} · {consultant.yearsOfExperience} {t("consultant_years_experience")}
+                {consultant.title || "Consultant"} · {consultant.office || "—"} · {consultant.yearsOfExperience == null ? "Experience needs confirmation" : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}
               </p>
             </div>
 
@@ -152,7 +164,7 @@ export default function ConsultantDetail() {
                 className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium"
                 style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}
               >
-                {consultant.availability === "Immediate" ? t("immediate") : consultant.availability}
+                {availabilityLabel(consultant)}
               </span>
             )}
           </div>
@@ -290,7 +302,7 @@ export default function ConsultantDetail() {
                     ? <p className="text-[11px] text-app-faint">—</p>
                     : consultant.languages.map((language) => (
                       <p key={language.id || language.name} className="text-[11px] text-app-secondary">
-                        {language.name}{language.level ? ` (${language.level})` : ""}
+                        {language.name}{language.level ? ` (${language.level})` : ""}{language.sourceLevel ? ` · CV: ${language.sourceLevel}` : ""}
                       </p>
                     ))}
                 </div>
@@ -332,12 +344,15 @@ export default function ConsultantDetail() {
       {draft && (
         <EditFormModal
           open={editMode}
+          stepIndex={editStep}
+          stepCount={4}
+          onStepChange={setEditStep}
           title={t("consultant_edit_title")}
           description={t("consultant_edit_sub")}
           onClose={() => setEditMode(false)}
-          onSubmit={save}
+          onSubmit={() => editStep < 3 ? setEditStep(editStep + 1) : void save()}
         >
-          <FormSection title={t("consultant_basic_info")}>
+          <div className={editStep === 0 ? "space-y-4" : "hidden"}><FormSection title={t("consultant_basic_info")}>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="First name">
                 <Input value={draft.firstName} onChange={(event) => setDraft({ ...draft, firstName: event.target.value })} />
@@ -349,19 +364,20 @@ export default function ConsultantDetail() {
                 <Input value={draft.title ?? ""} onChange={(event) => setDraft({ ...draft, title: event.target.value || null })} />
               </FormField>
               <FormField label={t("consultant_seniority")}>
-                <Input value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} />
+                <select value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
               </FormField>
               <FormField label={t("consultant_availability")}>
                 <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />
               </FormField>
+              <FormField label="Available from date"><Input type="date" value={draft.availableFromDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, availableFromDate: event.target.value || null })} /></FormField>
               <FormField label={t("consultant_office")}>
                 <Input value={draft.office ?? ""} onChange={(event) => setDraft({ ...draft, office: event.target.value || null })} />
               </FormField>
               <FormField label={t("consultant_years")}>
                 <Input
                   type="number"
-                  value={draft.yearsOfExperience}
-                  onChange={(event) => setDraft({ ...draft, yearsOfExperience: Number(event.target.value) || 0 })}
+                  value={draft.yearsOfExperience ?? ""}
+                  onChange={(event) => setDraft({ ...draft, yearsOfExperience: event.target.value ? Number(event.target.value) : null, yearsOfExperienceSource: "ManuallyConfirmed" })}
                 />
               </FormField>
               <FormField label="Email">
@@ -378,11 +394,11 @@ export default function ConsultantDetail() {
             </FormField>
           </FormSection>
 
-          <FormSection title={t("consultant_skills")}>
+          </div><div className={editStep === 1 ? "space-y-4" : "hidden"}><FormSection title={t("consultant_skills")}>
             <div className="space-y-2">
               {draft.skills.map((item, index) => (
                 <div key={index} className="grid grid-cols-[minmax(140px,1fr)_90px_90px_minmax(140px,1fr)_auto] gap-2 items-center">
-                  <Input placeholder="Skill" value={item.name} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input aria-label="Skill name" placeholder="Skill" value={item.name} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
                   <Input type="number" min={0} aria-label="Years" placeholder="Years" value={item.years} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, years: Number(event.target.value) || 0 } : row) })} />
                   <Input type="number" min={0} max={5} aria-label="Skill level from 0 to 5" placeholder="Level" value={item.level} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, level: Number(event.target.value) || 0 } : row) })} />
                   <Input placeholder="Evidence from CV" value={item.evidence ?? ""} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, evidence: event.target.value || null } : row) })} />
@@ -397,8 +413,8 @@ export default function ConsultantDetail() {
             <div className="space-y-2">
               {draft.languages.map((item, index) => (
                 <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                  <Input placeholder="Language" value={item.name} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                  <Input placeholder="Level (e.g. C1, Fluent)" value={item.level ?? ""} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: event.target.value || null } : row) })} />
+                  <Input aria-label="Language name" placeholder="Language" value={item.name} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <select aria-label="Language proficiency" value={item.level ?? ""} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: (event.target.value || null) as typeof row.level } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Basic">Basic</option><option value="Intermediate">Intermediate</option><option value="Fluent">Fluent</option></select>
                   <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })}>Remove</button>
                 </div>
               ))}
@@ -406,13 +422,13 @@ export default function ConsultantDetail() {
             </div>
           </FormSection>
 
-          <FormSection title="Experience">
+          </div><div className={editStep === 2 ? "space-y-4" : "hidden"}><FormSection title="Experience">
             <div className="space-y-3">
               {draft.experiences.map((item, index) => (
                 <div key={index} className="rounded-lg border border-app p-3 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Role" value={item.role} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
-                    <Input placeholder="Company" value={item.company} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
+                    <Input aria-label="Role or title" placeholder="Role" value={item.role} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
+                    <Input aria-label="Company" placeholder="Company" value={item.company} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
                     <Input type="date" aria-label="Start date" value={item.startDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
                     <Input type="date" aria-label="End date" value={item.endDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
                   </div>
@@ -428,8 +444,8 @@ export default function ConsultantDetail() {
             <div className="space-y-3">
               {draft.projects.map((item, index) => (
                 <div key={index} className="rounded-lg border border-app p-3 space-y-2">
-                  <Input placeholder="Project name" value={item.name} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                  <Input placeholder="Technologies (comma-separated)" value={item.technologies ?? ""} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
+                  <Input aria-label="Project name" placeholder="Project name" value={item.name} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input aria-label="Project technologies" placeholder="Technologies (comma-separated)" value={item.technologies ?? ""} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
                   <Textarea rows={2} placeholder="Description" value={item.description ?? ""} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
                   <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })}>Remove project</button>
                 </div>
@@ -438,28 +454,28 @@ export default function ConsultantDetail() {
             </div>
           </FormSection>
 
-          <FormSection title="Education, industries and certifications">
+          </div><div className={editStep === 3 ? "space-y-4" : "hidden"}><FormSection title="Education, industries and certifications">
             <div className="space-y-3">
               {draft.education.map((item, index) => (
                 <div key={index} className="grid grid-cols-[1fr_1fr_100px_auto] gap-2 items-center">
-                  <Input placeholder="Degree" value={item.degree} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
-                  <Input placeholder="School" value={item.school ?? ""} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
-                  <Input placeholder="Year" value={item.year ?? ""} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
+                  <Input aria-label="Degree" placeholder="Degree" value={item.degree} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
+                  <Input aria-label="School" placeholder="School" value={item.school ?? ""} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
+                  <Input aria-label="Graduation year" placeholder="Year" value={item.year ?? ""} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
                   <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })}>Remove</button>
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, education: [...draft.education, { id: 0, consultantId: draft.id, degree: "", school: null, year: null }] })}>+ Add education</button>
               {draft.industries.map((item, index) => (
                 <div key={"industry-" + index} className="flex gap-2">
-                  <Input placeholder="Industry" value={item.name} onChange={(event) => setDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input aria-label="Industry" placeholder="Industry" value={item.name} onChange={(event) => setDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
                   <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })}>Remove</button>
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, industries: [...draft.industries, { id: 0, consultantId: draft.id, name: "" }] })}>+ Add industry</button>
               {draft.certifications.map((item, index) => (
                 <div key={"cert-" + index} className="grid grid-cols-[1fr_1fr_120px_auto] gap-2 items-center">
-                  <Input placeholder="Certification" value={item.name} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                  <Input placeholder="Issuer" value={item.issuer ?? ""} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
+                  <Input aria-label="Certification name" placeholder="Certification" value={item.name} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input aria-label="Certification issuer" placeholder="Issuer" value={item.issuer ?? ""} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
                   <Input placeholder="Issued date" value={item.issuedDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
                   <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })}>Remove</button>
                 </div>
@@ -468,7 +484,7 @@ export default function ConsultantDetail() {
             </div>
           </FormSection>
 
-          {saving && <p className="text-xs text-app-muted">Saving...</p>}
+          </div>{saving && <p className="text-xs text-app-muted">Saving...</p>}
         </EditFormModal>
       )}
     </div>

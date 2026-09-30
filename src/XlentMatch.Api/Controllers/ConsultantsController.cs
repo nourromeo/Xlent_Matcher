@@ -55,6 +55,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         }
 
         consultant.Id = 0;
+        consultant.AvailabilityConfirmedAt = consultant.AvailableFromDate is not null || !string.IsNullOrWhiteSpace(consultant.Availability) ? DateTime.UtcNow : null;
 
         foreach (var skill in consultant.Skills) { skill.Id = 0; skill.ConsultantId = 0; }
         foreach (var experience in consultant.Experiences) { experience.Id = 0; experience.ConsultantId = 0; }
@@ -65,7 +66,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         foreach (var certification in consultant.Certifications) { certification.Id = 0; certification.ConsultantId = 0; }
 
         await skills.NormalizeConsultantSkillsAsync(consultant.Skills, ct);
-        skills.NormalizeConsultantLanguages(consultant.Languages);
+        await skills.NormalizeConsultantLanguagesAsync(consultant.Languages, ct);
 
         db.Consultants.Add(consultant);
         await db.SaveChangesAsync(ct);
@@ -96,7 +97,10 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.Summary = input.Summary;
         existing.Seniority = input.Seniority;
         existing.YearsOfExperience = input.YearsOfExperience;
+        existing.YearsOfExperienceSource = input.YearsOfExperienceSource;
         existing.Availability = input.Availability;
+        existing.AvailableFromDate = input.AvailableFromDate;
+        existing.AvailabilityConfirmedAt = input.AvailableFromDate is not null || !string.IsNullOrWhiteSpace(input.Availability) ? DateTime.UtcNow : null;
         existing.Office = input.Office;
         existing.OriginalCvText = input.OriginalCvText;
 
@@ -109,7 +113,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         input.Certifications.ForEach(x => x.Id = 0);
 
         await skills.NormalizeConsultantSkillsAsync(input.Skills, ct);
-        skills.NormalizeConsultantLanguages(input.Languages);
+        await skills.NormalizeConsultantLanguagesAsync(input.Languages, ct);
 
         db.ConsultantSkills.RemoveRange(existing.Skills);
         existing.Skills = input.Skills;

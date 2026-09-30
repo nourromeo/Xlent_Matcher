@@ -22,8 +22,11 @@ export type AdminCapability = {
   enabled: boolean;
 };
 
+export type PendingLanguage = { id: number; name: string; occurrences: number; firstSeenAt: string };
+
 export type AdminOverview = {
   skills: AdminSkill[];
+  pendingLanguages: PendingLanguage[];
   matchingFactors: AdminMatchingFactor[];
   missingMandatoryPenalty: number;
   capabilities: AdminCapability[];
@@ -56,6 +59,10 @@ export const adminApi = {
       method: "PUT",
       body: JSON.stringify(input),
     }),
+
+  approveLanguage: (id: number) => apiRequest<void>(`/admin/languages/${id}/approve`, { method: "POST" }),
+
+  dismissLanguage: (id: number) => apiRequest<void>(`/admin/languages/${id}`, { method: "DELETE" }),
 
   updateMatchingWeights: (input: UpdateMatchingWeightsRequest) =>
     apiRequest<AdminOverview>("/admin/matching-weights", {

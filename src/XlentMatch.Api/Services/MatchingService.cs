@@ -29,9 +29,9 @@ public class MatchingService(MatchingWeightsStore weightsStore)
 
         var mandatoryRatio = Ratio(mandatory);
         var desiredRatio = Ratio(desired);
-        var experienceRatio = assignment.MinYearsExperience <= 0
+        var experienceRatio = assignment.MinYearsExperience <= 0 || consultant.YearsOfExperience is null
             ? 1.0
-            : Math.Min(1.0, (double)consultant.YearsOfExperience / assignment.MinYearsExperience);
+            : Math.Min(1.0, (double)consultant.YearsOfExperience.Value / assignment.MinYearsExperience);
 
         var weights = weightsStore.Get();
 
@@ -70,13 +70,15 @@ public class MatchingService(MatchingWeightsStore weightsStore)
 
         if (assignment.MinYearsExperience > 0)
         {
-            var matched = consultant.YearsOfExperience >= assignment.MinYearsExperience;
+            bool? matched = consultant.YearsOfExperience is null ? null : consultant.YearsOfExperience.Value >= assignment.MinYearsExperience;
             details.Add(new MatchContextResult
             {
                 Name = "Overall experience",
                 IsMatched = matched,
                 AffectsScore = true,
-                Evidence = $"Consultant has {consultant.YearsOfExperience} years; assignment requires at least {assignment.MinYearsExperience}."
+                Evidence = consultant.YearsOfExperience is null
+                    ? $"Consultant experience is not confirmed; assignment requires at least {assignment.MinYearsExperience} years."
+                    : $"Consultant has {consultant.YearsOfExperience} years; assignment requires at least {assignment.MinYearsExperience}."
             });
         }
 
@@ -87,7 +89,7 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             details.Add(new MatchContextResult
             {
                 Name = "Seniority",
-                IsMatched = requiredLevel is null || consultantLevel is null ? null : consultantLevel >= requiredLevel,
+                IsMatched = requiredLevel is null || consultantLevel is null ? null : consultantLevel == requiredLevel,
                 AffectsScore = false,
                 Evidence = requiredLevel is null || consultantLevel is null
                     ? $"Assignment: {assignment.Seniority}; consultant: {consultant.Seniority ?? "not specified"}. Confirm manually."
@@ -95,21 +97,24 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             });
         }
 
-        if (!string.IsNullOrWhiteSpace(assignment.Availability))
+        if (!string.IsNullOrWhiteSpace(assignment.Availability) || assignment.RequiredStartDate is not null)
         {
-            var required = NormalizeText(assignment.Availability);
-            var candidate = NormalizeText(consultant.Availability ?? "");
-            bool? matched = candidate.Length > 0 &&
-                (candidate == required || ((required is "immediate" or "asap") && (candidate is "immediate" or "asap")))
-                    ? true
-                    : null;
+            bool? matched = null;
+            var availabilityIsFresh = consultant.AvailabilityConfirmedAt is not null &&
+                consultant.AvailabilityConfirmedAt >= DateTime.UtcNow.AddDays(-90);
+            if (assignment.RequiredStartDate is not null && consultant.AvailableFromDate is not null && availabilityIsFresh)
+                matched = consultant.AvailableFromDate <= assignment.RequiredStartDate;
 
             details.Add(new MatchContextResult
             {
                 Name = "Availability",
                 IsMatched = matched,
                 AffectsScore = false,
-                Evidence = $"Assignment: {assignment.Availability}; consultant: {consultant.Availability ?? "not specified"}."
+                Evidence = assignment.RequiredStartDate is null
+                    ? $"Assignment timing “{assignment.Availability}” has no confirmed start date; confirm manually."
+                    : consultant.AvailableFromDate is null || !availabilityIsFresh
+                        ? $"Assignment starts {assignment.RequiredStartDate:yyyy-MM-dd}; consultant availability date is missing or stale and needs confirmation."
+                        : $"Assignment starts {assignment.RequiredStartDate:yyyy-MM-dd}; consultant is available from {consultant.AvailableFromDate:yyyy-MM-dd}."
             });
         }
 
@@ -138,10 +143,10 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
         var normalized = NormalizeText(value);
-        if (normalized is "junior" or "graduate") return 1;
-        if (normalized is "mid" or "medior" or "intermediate") return 2;
+        if (normalized == "junior") return 1;
+        if (normalized == "mid") return 2;
         if (normalized == "senior") return 3;
-        if (normalized is "lead" or "staff" or "principal" or "expert" or "architect") return 4;
+        if (normalized == "staff") return 4;
         return null;
     }
 
@@ -224,7 +229,7 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             .Replace("ä", "a", StringComparison.Ordinal)
             .Replace("ö", "o", StringComparison.Ordinal);
         var explicitLevelTokens = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return explicitLevelTokens.Any(token => token is "c1" or "c2")
+        return explicitLevelTokens.Any(token => token == "fluent")
             || normalized.Contains("fluent", StringComparison.Ordinal)
             || normalized.Contains("proficient", StringComparison.Ordinal)
             || normalized.Contains("flytande", StringComparison.Ordinal)
@@ -264,7 +269,9 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         };
 
         if (a.MinYearsExperience > 0)
-            parts.Add($"Experience: {c.YearsOfExperience} years (minimum {a.MinYearsExperience}).");
+            parts.Add(c.YearsOfExperience is null
+                ? $"Overall experience is not confirmed (minimum {a.MinYearsExperience} years required)."
+                : $"Experience: {c.YearsOfExperience} years (minimum {a.MinYearsExperience}).");
 
         if (missingMandatory.Count > 0)
             parts.Add("Missing mandatory: " + string.Join(", ", missingMandatory.Select(m => m.RequirementName)) + ".");

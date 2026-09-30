@@ -284,9 +284,9 @@ export default function AssignmentDetail() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-sm font-semibold text-app-primary">{assignment.title}</h1>
             <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
-            {assignment.availability && (
+            {(assignment.availability || assignment.requiredStartDate) && (
               <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>
-                {displayAvailability(assignment.availability)}
+                {assignment.requiredStartDate ? new Date(assignment.requiredStartDate).toLocaleDateString() : displayAvailability(assignment.availability ?? "")}
               </StatusBadge>
             )}
           </div>

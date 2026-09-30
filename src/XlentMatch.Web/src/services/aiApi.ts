@@ -14,6 +14,7 @@ export type RequirementExtractionResult = {
   seniority: string | null;
   minYearsExperience: number | null;
   availability: string | null;
+  requiredStartDate: string | null;
   location: string | null;
   requirements: RequirementDraft[];
   sourceText: string | null;
@@ -26,14 +27,16 @@ export type ConsultantDraft = {
   title: string | null;
   summary: string | null;
   seniority: string | null;
-  yearsOfExperience: number;
+  yearsOfExperience: number | null;
+  yearsOfExperienceSource: string | null;
+  availableFromDate: string | null;
   availability: string | null;
   office: string | null;
   skills: Array<{ name: string; level: number; years: number; evidence: string | null }>;
   experiences: Array<{ company: string; role: string; description: string | null; startDate: string | null; endDate: string | null }>;
   projects: Array<{ name: string; description: string | null; technologies: string | null }>;
   education: Array<{ degree: string; school: string | null; year: string | null }>;
-  languages: Array<{ name: string; level: string | null }>;
+  languages: Array<{ name: string; level: "Basic" | "Intermediate" | "Fluent" | null; sourceLevel: string | null }>;
   industries: string[];
   certifications: Array<{ name: string; issuer: string | null; issuedDate: string | null }>;
   sourceText: string | null;
@@ -46,6 +49,7 @@ export type TemporaryAssignmentDraft = {
   seniority: string | null;
   minYearsExperience: number;
   availability: string | null;
+  requiredStartDate: string | null;
   location: string | null;
   requirements: RequirementDraft[];
 };
@@ -73,6 +77,8 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
     summary: consultant.summary,
     seniority: consultant.seniority,
     yearsOfExperience: consultant.yearsOfExperience,
+    yearsOfExperienceSource: consultant.yearsOfExperienceSource,
+    availableFromDate: consultant.availableFromDate,
     availability: consultant.availability,
     office: consultant.office,
     skills: consultant.skills.map((item) => ({
@@ -98,7 +104,7 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
       school: item.school,
       year: item.year,
     })),
-    languages: consultant.languages.map((item) => ({ name: item.name, level: item.level })),
+    languages: consultant.languages.map((item) => ({ name: item.name, level: item.level, sourceLevel: item.sourceLevel ?? null })),
     industries: consultant.industries.map((item) => item.name),
     certifications: consultant.certifications.map((item) => ({
       name: item.name,
@@ -117,6 +123,7 @@ export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssig
     seniority: assignment.seniority,
     minYearsExperience: assignment.minYearsExperience,
     availability: assignment.availability,
+    requiredStartDate: assignment.requiredStartDate,
     location: assignment.location,
     requirements: assignment.requirements.map((item) => ({
       name: item.name,
