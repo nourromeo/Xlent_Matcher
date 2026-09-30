@@ -45,6 +45,9 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         if (assignment.Requirements.Count == 0)
             return BadRequest("At least one assignment requirement is required.");
 
+        var validation = ValidateRequirements(assignment.Requirements, assignment.MinYearsExperience);
+        if (validation is not null) return BadRequest(validation);
+
         assignment.Id = 0;
         assignment.CreatedAt = DateTime.UtcNow;
 
@@ -61,7 +64,11 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         db.Assignments.Add(assignment);
         await db.SaveChangesAsync(ct);
 
-        return CreatedAtAction(nameof(GetById), new { id = assignment.Id }, assignment);
+        var created = await db.Assignments
+            .Include(a => a.Requirements).ThenInclude(r => r.Skill)
+            .AsNoTracking()
+            .FirstAsync(a => a.Id == assignment.Id, ct);
+        return CreatedAtAction(nameof(GetById), new { id = assignment.Id }, created);
     }
 
     [HttpPut("{id:int}")]
@@ -87,12 +94,16 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
                 Name = requirement.Name,
                 Type = requirement.Type,
                 MinYears = requirement.MinYears,
-                MinLevel = requirement.MinLevel
+                MinLevel = requirement.MinLevel,
+                Category = requirement.Category
             })
             .ToList();
 
         if (input.Requirements.Count == 0)
             return BadRequest("At least one assignment requirement is required.");
+
+        var validation = ValidateRequirements(input.Requirements, input.MinYearsExperience);
+        if (validation is not null) return BadRequest(validation);
 
         await skills.NormalizeRequirementsAsync(input.Requirements, ct);
 
@@ -102,8 +113,11 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         existing.Seniority = input.Seniority;
         existing.MinYearsExperience = input.MinYearsExperience;
         existing.Availability = input.Availability;
-        existing.Status = input.Status;
+        // Any meaningful edit invalidates the previous matching snapshot.
+        existing.Status = AssignmentStatus.Draft;
 
+        var oldMatches = await db.MatchResults.Where(m => m.AssignmentId == id).ToListAsync(ct);
+        db.MatchResults.RemoveRange(oldMatches);
         db.AssignmentRequirements.RemoveRange(existing.Requirements);
         existing.Requirements = input.Requirements;
 
@@ -113,6 +127,19 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
             .Include(a => a.Requirements).ThenInclude(r => r.Skill)
             .AsNoTracking()
             .FirstAsync(a => a.Id == id, ct);
+    }
+
+    private static string? ValidateRequirements(IEnumerable<AssignmentRequirement> requirements, int minYearsExperience)
+    {
+        if (minYearsExperience < 0) return "Minimum experience cannot be negative.";
+        foreach (var requirement in requirements)
+        {
+            if (requirement.MinYears < 0) return $"Minimum years for '{requirement.Name}' cannot be negative.";
+            if (requirement.MinLevel is < 1 or > 6) return $"Minimum level for '{requirement.Name}' must be between 1 and 6.";
+            if (string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase) && requirement.MinYears is not null)
+                return $"Minimum skill years cannot be set for human language '{requirement.Name}'.";
+        }
+        return null;
     }
 
     [HttpDelete("{id:int}")]
