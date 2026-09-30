@@ -237,11 +237,33 @@ export default function CvUpload() {
       return;
     }
 
+    const currentDraft = activeFile.draft;
+    if (currentDraft.yearsOfExperience < 0 ||
+        currentDraft.skills.some((skill) => skill.years < 0 || skill.level < 0 || skill.level > 5)) {
+      setError("Check the experience years and skill levels. Years cannot be negative and skill level must be between 0 and 5.");
+      return;
+    }
+
+    const invalidDateRange = currentDraft.experiences.some((item) => {
+      if (!item.startDate || !item.endDate) return false;
+      return dateOnly(item.startDate)! > dateOnly(item.endDate)!;
+    });
+    if (invalidDateRange) {
+      setError("An experience start date cannot be later than its end date.");
+      return;
+    }
+
+    const normalizedLanguageNames = currentDraft.languages.map((item) => item.name.trim().toLocaleLowerCase()).filter(Boolean);
+    if (new Set(normalizedLanguageNames).size !== normalizedLanguageNames.length) {
+      setError("Remove duplicate language entries before saving.");
+      return;
+    }
+
     setSaving(true);
     setError("");
 
     try {
-      const created = await consultantsApi.create(toConsultant(activeFile.draft), activeFile.id);
+      const created = await consultantsApi.create(toConsultant(currentDraft), activeFile.id);
 
       updateLocal(activeFile.id, {
         status: "Indexed",
@@ -565,8 +587,8 @@ export default function CvUpload() {
                     <div className="grid grid-cols-2 gap-2">
                       <Input aria-label="Role" placeholder="Role" value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
                       <Input aria-label="Company" placeholder="Company" value={item.company} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
-                      <Input aria-label="Start date" placeholder="Start date (YYYY-MM)" value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
-                      <Input aria-label="End date" placeholder="End date (YYYY-MM or Present)" value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
+                      <Input aria-label="Start date" type="month" aria-label="Start date" value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
+                      <Input aria-label="End date" type="month" aria-label="End date" value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
                     </div>
                     <Textarea aria-label="Experience description" placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
                     <button type="button" onClick={() => updateDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted hover:text-app-secondary">Remove experience</button>
@@ -615,7 +637,7 @@ export default function CvUpload() {
                     <div key={index} className="grid grid-cols-[1fr_1fr_110px_auto] gap-2 items-center">
                       <Input placeholder="Certification" value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
                       <Input placeholder="Issuer" value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
-                      <Input placeholder="Issued YYYY-MM" value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
+                      <Input type="month" aria-label="Issued date" value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
                       <button type="button" onClick={() => updateDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove certification"><X size={12} /></button>
                     </div>
                   ))}
