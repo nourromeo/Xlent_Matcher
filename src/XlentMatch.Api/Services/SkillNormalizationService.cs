@@ -142,10 +142,11 @@ public class SkillNormalizationService(AppDbContext db)
 
         var skill = await db.Skills
             .Include(x => x.Aliases)
-            .FirstOrDefaultAsync(x =>
-                x.NormalizedName == normalized ||
-                x.Aliases.Any(alias => alias.NormalizedAlias == normalized),
-                ct);
+            .FirstOrDefaultAsync(x => x.NormalizedName == normalized, ct);
+
+        skill ??= await db.Skills
+            .Include(x => x.Aliases)
+            .FirstOrDefaultAsync(x => x.Aliases.Any(alias => alias.NormalizedAlias == normalized), ct);
 
         if (skill is not null)
         {
