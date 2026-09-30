@@ -68,6 +68,23 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         var evidence = new List<string>();
         var matched = false;
 
+        var requirementName = req.Skill?.CanonicalName ?? req.Name;
+        var isHumanLanguage = string.Equals(req.Skill?.Category, "Human language", StringComparison.OrdinalIgnoreCase);
+
+        if (isHumanLanguage)
+        {
+            var language = c.Languages.FirstOrDefault(x => SameName(x.Name, requirementName));
+            if (language is not null)
+            {
+                var languageLevel = LanguageLevel(language.Level);
+                matched = req.MinLevel is null || (languageLevel is not null && languageLevel >= req.MinLevel);
+                evidence.Add($"Language '{language.Name}': {language.Level ?? "level not specified"}");
+                if (req.MinLevel is not null && (languageLevel is null || languageLevel < req.MinLevel))
+                    evidence.Add($"Requires language level {req.MinLevel}/6, consultant level is {languageLevel?.ToString() ?? "unrecognized"}");
+            }
+        }
+        else
+        {
         var skill = c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId);
 
         if (skill is not null)
@@ -84,7 +101,7 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             if (!levelOk) evidence.Add($"Requires level {req.MinLevel}, consultant has {skill.Level}");
         }
 
-        var requirementName = req.Skill?.CanonicalName ?? req.Name;
+        }
 
         var cert = c.Certifications.FirstOrDefault(x => SameName(x.Name, requirementName));
         if (cert is not null)
@@ -97,7 +114,9 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             evidence.Add($"Project '{project.Name}' used {requirementName}");
 
         if (evidence.Count == 0)
-            evidence.Add("No matching canonical skill, certification or project found in profile");
+            evidence.Add(isHumanLanguage
+                ? "No matching language found in consultant profile"
+                : "No matching canonical skill, certification or project found in profile");
 
         return new MatchRequirementResult
         {
@@ -106,6 +125,22 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             IsMatched = matched,
             Evidence = string.Join("; ", evidence)
         };
+    }
+
+    private static int? LanguageLevel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var normalized = value.Trim().ToUpperInvariant();
+        var cefr = normalized switch
+        {
+            "A1" => 1, "A2" => 2, "B1" => 3, "B2" => 4, "C1" => 5, "C2" => 6,
+            "BEGINNER" => 1, "BASIC" => 1, "ELEMENTARY" => 2,
+            "INTERMEDIATE" => 3, "UPPER-INTERMEDIATE" => 4,
+            "ADVANCED" => 5, "FLUENT" => 5, "PROFESSIONAL" => 5,
+            "NATIVE" => 6, "NATIVE/BILINGUAL" => 6,
+            _ => 0
+        };
+        return cefr == 0 ? null : cefr;
     }
 
     private static bool UsesTechnology(Project p, string name) =>
