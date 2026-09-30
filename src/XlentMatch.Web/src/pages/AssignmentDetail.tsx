@@ -181,7 +181,7 @@ export default function AssignmentDetail() {
     try {
       const payload: AssignmentApi = {
         ...draft,
-        requirements: makeRequirements(draft.id, requiredSkills, preferredSkills, requiredLanguages, preferredLanguages, assignment.requirements),
+        requirements: makeRequirements(draft.id, requiredSkills, preferredSkills, requiredLanguages, preferredLanguages, assignment?.requirements ?? []),
       };
 
       const updated = await assignmentsApi.update(draft.id, payload);
