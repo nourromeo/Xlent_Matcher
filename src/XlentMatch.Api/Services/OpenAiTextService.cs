@@ -25,6 +25,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             You extract structured consultant profiles from CV text.
             {{NoInventionRule}}
             Extract skill names exactly enough for later normalization, but do NOT classify skills into categories.
+            For human languages, put only the language name in name and put any level or fluency wording in level. Never append proficiency wording in parentheses to the language name. Do not infer fluency.
             The application's canonical Skill Catalog is the source of truth for skill names, aliases and categories.
             Return a JSON object with exactly this shape:
             {
@@ -36,7 +37,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
                                  "startDate": "yyyy-MM"|null, "endDate": "yyyy-MM"|null }],
               "projects": [{ "name": string, "description": string|null, "technologies": "comma, separated"|null }],
               "education": [{ "degree": string, "school": string|null, "year": string|null }],
-              "languages": [{ "name": string, "level": string|null }],
+              "languages": [{ "name": canonical language name only (for example "Swedish", "English", "Arabic"), "level": explicitly stated proficiency text|null }],
               "industries": [string],
               "certifications": [{ "name": string, "issuer": string|null, "issuedDate": "yyyy-MM"|null }]
             }
