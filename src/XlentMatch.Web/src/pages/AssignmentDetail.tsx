@@ -363,7 +363,7 @@ export default function AssignmentDetail() {
                 {assignment.requirements.filter((requirement) => requirement.category === "HumanLanguage").map((requirement) => (
                   <div key={requirement.id} className="flex items-center justify-between text-sm">
                     <span className="text-app-secondary">{requirement.name}</span>
-                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? "Required" : "Preferred"}{requirement.minLevel ? ` · CEFR ${requirement.minLevel}` : ""}</span>
+                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? "Required" : "Preferred"}{requirement.requiresFluency ? " · Fluent" : ""}</span>
                   </div>
                 ))}
               </div>
