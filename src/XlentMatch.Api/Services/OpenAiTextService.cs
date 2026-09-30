@@ -64,7 +64,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             - Include explicit human language requirements (for example Swedish or English) as separate requirements with category "HumanLanguage". Do not treat programming languages such as C# or Python as human languages.
             - Do NOT create requirements such as "senior consultant", ".NET consultant", role titles, availability, location, customer name, start date, or general years-of-experience statements.
             - If a requirement has its own explicit minimum years, put that number in minYears.
-            - For explicit CEFR proficiency requirements, set minLevel from 1 (A1) to 6 (C2). Otherwise use null.
+            - For human languages, set requiresFluency=true only when the assignment explicitly asks for fluent / fluent-level / native-equivalent ability. Otherwise set false. Never convert a language description into a CEFR level.
             - Classify as "Mandatory" when the text says must, required, mandatory, shall, need, or equivalent.
             - Classify as "Desired" when the text says preferred, meriting, bonus, nice to have, or equivalent.
             - If the text lists a skill without clearly saying preferred/optional, treat it as Mandatory.
@@ -77,7 +77,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
               "availability": string|null,
               "location": string|null,
               "requirements": [
-                { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null }
+                { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null, "requiresFluency": bool }
               ]
             }
             """;
