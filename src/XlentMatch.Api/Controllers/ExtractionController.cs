@@ -24,6 +24,12 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
         try
         {
             var draft = await ai.ExtractConsultantProfileAsync(input.Text!, ct);
+            foreach (var language in draft.Languages)
+            {
+                var normalized = SkillNormalizationService.NormalizeHumanLanguage(language.Name, language.Level);
+                language.Name = normalized.Name;
+                language.Level = normalized.Level;
+            }
             draft.SourceText = input.Text;
             return draft;
         }

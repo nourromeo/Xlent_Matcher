@@ -78,6 +78,10 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("AssignmentId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("RequiresFluency")
                         .HasColumnType("bit");
 

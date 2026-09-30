@@ -25,7 +25,6 @@ public class AssignmentRequirement
 
     private string _category = "Skill";
 
-    [NotMapped]
     public string Category
     {
         get => string.Equals(Skill?.Category, "Human language", StringComparison.OrdinalIgnoreCase)
