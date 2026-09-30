@@ -81,6 +81,7 @@ namespace XlentMatch.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Category")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("RequiresFluency")
