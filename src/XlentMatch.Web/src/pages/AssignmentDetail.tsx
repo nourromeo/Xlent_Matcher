@@ -98,19 +98,16 @@ function RequirementRuleEditor({ category, type, requirements, onChange }: {
     <div className="mt-3 space-y-2">
       {items.map((item) => (
         <div key={item.id + ":" + item.name} className="grid grid-cols-[1fr_130px] items-center gap-2">
-          <span className="text-[10px] text-app-muted">{item.name} · {category === "HumanLanguage" ? "minimum CEFR level (1–6)" : "minimum years"}</span>
-          <Input
-            type="number"
-            step={1}
-            min={category === "HumanLanguage" ? 1 : 0}
-            max={category === "HumanLanguage" ? 6 : undefined}
-            aria-label={category === "HumanLanguage" ? item.name + " minimum CEFR level" : item.name + " minimum years"}
-            value={category === "HumanLanguage" ? item.minLevel ?? "" : item.minYears ?? ""}
-            placeholder="No minimum"
-            onChange={(event) => onChange(item.name, category === "HumanLanguage"
-              ? { minLevel: event.target.value ? Number(event.target.value) : null, minYears: null }
-              : { minYears: event.target.value ? Number(event.target.value) : null })}
-          />
+          <span className="text-[10px] text-app-muted">{item.name} · {category === "HumanLanguage" ? "fluency required" : "minimum years"}</span>
+          {category === "HumanLanguage" ? (
+            <label className="flex items-center justify-end gap-1.5 text-[10px] text-app-muted">
+              <input type="checkbox" aria-label={item.name + " fluent required"} checked={item.requiresFluency} onChange={(event) => onChange(item.name, { requiresFluency: event.target.checked, minLevel: null })} />
+              Fluent
+            </label>
+          ) : (
+            <Input type="number" min={0} aria-label={item.name + " minimum years"} value={item.minYears ?? ""} placeholder="No minimum"
+              onChange={(event) => onChange(item.name, { minYears: event.target.value ? Number(event.target.value) : null })} />
+          )}
         </div>
       ))}
     </div>
@@ -129,7 +126,7 @@ const makeRequirements = (
     const previous = existing.find((item) => item.type === type && item.category === category && item.name.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase());
     return previous
       ? { ...previous, assignmentId, name, type, category }
-      : { id: 0, assignmentId, name, category, type, minYears: null, minLevel: null };
+      : { id: 0, assignmentId, name, category, type, minYears: null, minLevel: null, requiresFluency: false };
   });
   return [
     ...make("Mandatory", required, "Skill"),
@@ -216,7 +213,7 @@ export default function AssignmentDetail() {
       const retained = current.filter((item) => !matches(item) || names.some((name) => name.toLocaleLowerCase() === item.name.toLocaleLowerCase()));
       const added = names
         .filter((name) => !retained.some((item) => matches(item) && item.name.toLocaleLowerCase() === name.toLocaleLowerCase()))
-        .map((name) => ({ id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null }));
+        .map((name) => ({ id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null, requiresFluency: false }));
       return [...retained, ...added];
     });
   };
@@ -224,7 +221,7 @@ export default function AssignmentDetail() {
   const updateRequirementRule = (type: "Mandatory" | "Desired", category: "Skill" | "HumanLanguage", name: string, patch: Partial<AssignmentRequirementApi>) => {
     setRequirementEdits((current) => {
       const index = current.findIndex((item) => item.type === type && item.category === category && item.name.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase());
-      if (index < 0) return [...current, { id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null, ...patch }];
+      if (index < 0) return [...current, { id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null, requiresFluency: false, ...patch }];
       return current.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item);
     });
   };
@@ -240,7 +237,7 @@ export default function AssignmentDetail() {
         ...draft,
         requirements: makeRequirements(draft.id, requiredSkills, preferredSkills, requiredLanguages, preferredLanguages, assignment?.requirements ?? []).map((item) => {
           const edited = requirementEdits.find((row) => row.type === item.type && row.category === item.category && row.name.trim().toLocaleLowerCase() === item.name.trim().toLocaleLowerCase());
-          return edited ? { ...item, minYears: edited.minYears, minLevel: edited.minLevel } : item;
+          return edited ? { ...item, minYears: edited.minYears, minLevel: edited.minLevel, requiresFluency: edited.requiresFluency } : item;
         }),
       };
 
