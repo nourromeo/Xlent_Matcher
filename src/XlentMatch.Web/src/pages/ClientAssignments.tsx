@@ -191,6 +191,13 @@ function NewAssignmentModal({
 
           <div className="flex justify-end gap-2">
             <Button onClick={onClose} variant="ghost">{t("assignment_modal_cancel")}</Button>
+            <Button
+              onClick={() => { setRequirements([]); setStep("review"); setError(""); }}
+              variant="secondary"
+              disabled={!title.trim() || !client.trim() || extracting}
+            >
+              Enter requirements manually
+            </Button>
             <Button onClick={extractRequirements} variant="primary" disabled={extracting || !canExtract} icon={<Sparkles size={12} />}>
               {extracting ? "Extracting with AI..." : "Extract requirements"}
             </Button>
@@ -200,9 +207,15 @@ function NewAssignmentModal({
         <div className="p-5 space-y-4">
           <div className="rounded-lg border border-app bg-app-raised px-3 py-2">
             <p className="text-xs text-app-secondary">
-              AI extracted the requirements below. Review and edit them before saving.
+              Review and edit the extracted requirements before saving.
             </p>
           </div>
+          {brief.trim() && (
+            <details className="rounded-lg border border-app bg-app-surface px-3 py-2">
+              <summary className="cursor-pointer text-xs text-app-secondary">View source brief</summary>
+              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words text-[11px] text-app-muted">{brief}</pre>
+            </details>
+          )}
 
           <div className="grid grid-cols-3 gap-3">
             <label className="block">
