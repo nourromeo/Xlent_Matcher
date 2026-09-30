@@ -486,6 +486,33 @@ export default function Matching() {
                 </div>
               </section>
 
+              {(selected.contextDetails ?? []).length > 0 && (
+                <section className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <p className="text-xs font-medium text-app-primary">Assignment fit checks</p>
+                    <span className="text-[10px] text-app-muted">Experience affects score; other checks are context only.</span>
+                  </div>
+                  <div className="space-y-3">
+                    {selected.contextDetails.map((item) => (
+                      <div key={item.name} className="flex items-start gap-2.5">
+                        {item.isMatched === true
+                          ? <CheckCircle size={11} style={{ color: "var(--color-success)" }} className="mt-0.5 flex-none" />
+                          : item.isMatched === false
+                            ? <AlertTriangle size={11} style={{ color: "var(--color-warning)" }} className="mt-0.5 flex-none" />
+                            : <Info size={11} className="text-app-faint mt-0.5 flex-none" />}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-medium text-app-secondary">{item.name}</span>
+                            <span className="text-[9px] text-app-faint">{item.affectsScore ? "Included in score" : "Manual review"}</span>
+                          </div>
+                          <p className="text-[10px] text-app-muted mt-0.5">{item.evidence}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               <section className="rounded-lg p-4" style={{ background: "var(--color-brand-soft)", border: "1px solid var(--color-brand-subtle)" }}>
                 <div className="flex items-start gap-2.5">
                   <Info size={13} className="text-app-brand flex-none mt-0.5" />
