@@ -14,7 +14,7 @@ public static class SkillCatalogSeed
         ("CSS", "Frontend", []),
 
         ("English", "Human language", ["English language", "Engelska"]),
-        ("Swedish", "Human language", ["Svenska", "Swedish language", "Svensk"]),
+        ("Swedish", "Human language", ["Svenska", "Svenska språket", "Swedish language", "Svensk"]),
         ("Arabic", "Human language", ["العربية", "Arabic language", "Arabiska"]),
         ("German", "Human language", ["Deutsch", "German language", "Tyska"]),
         ("French", "Human language", ["Français", "Francais", "French language", "Franska"]),
