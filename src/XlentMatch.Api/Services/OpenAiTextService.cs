@@ -57,6 +57,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             - seniority: only values such as Junior, Mid, Senior or Staff when explicitly stated; otherwise null.
             - minYearsExperience: the overall minimum years of professional experience when explicitly stated; otherwise null.
             - availability: an explicit availability requirement such as Immediate, 2 weeks, or a stated start date; otherwise null.
+            - location: an explicit work location or Remote/Hybrid arrangement; otherwise null.
 
             Requirements:
             - Include concrete technical skills, technologies, platforms, tools, certifications, methods or clearly named competencies with category "Skill".
@@ -74,6 +75,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
               "seniority": string|null,
               "minYearsExperience": int|null,
               "availability": string|null,
+              "location": string|null,
               "requirements": [
                 { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null }
               ]
