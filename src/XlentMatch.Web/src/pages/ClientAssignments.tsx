@@ -173,7 +173,7 @@ function NewAssignmentModal({
                 const file = event.target.files?.[0] ?? null;
                 setError("");
                 if (file && file.size > 10 * 1024 * 1024) { setError("File is larger than 10 MB."); event.target.value = ""; setBriefFile(null); return; }
-                if (file && !/\\.(pdf|txt)$/i.test(file.name)) { setError("Unsupported file type. Use PDF or TXT."); event.target.value = ""; setBriefFile(null); return; }
+                if (file && !/\.(pdf|txt)$/i.test(file.name)) { setError("Unsupported file type. Use PDF or TXT."); event.target.value = ""; setBriefFile(null); return; }
                 setBriefFile(file);
                 if (file) setBrief("");
               }}
