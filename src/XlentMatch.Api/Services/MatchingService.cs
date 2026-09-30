@@ -154,7 +154,8 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         var matched = false;
 
         var requirementName = req.Skill?.CanonicalName ?? req.Name;
-        var isHumanLanguage = string.Equals(req.Skill?.Category, "Human language", StringComparison.OrdinalIgnoreCase);
+        var isHumanLanguage = string.Equals(req.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase) ||
+                              string.Equals(req.Skill?.Category, "Human language", StringComparison.OrdinalIgnoreCase);
 
         if (isHumanLanguage)
         {
