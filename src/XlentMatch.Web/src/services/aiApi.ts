@@ -7,6 +7,7 @@ export type RequirementDraft = {
   type: "Mandatory" | "Desired";
   minYears: number | null;
   minLevel: number | null;
+  requiresFluency: boolean;
 };
 
 export type RequirementExtractionResult = {
@@ -123,6 +124,7 @@ export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssig
       type: item.type,
       minYears: item.minYears,
       minLevel: item.minLevel,
+      requiresFluency: item.requiresFluency,
     })),
   };
 }

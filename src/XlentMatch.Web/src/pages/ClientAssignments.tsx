@@ -20,6 +20,7 @@ const emptyRequirement = (
   minYears: number | null = null,
   minLevel: number | null = null,
   category: "Skill" | "HumanLanguage" = "Skill",
+  requiresFluency = false,
 ): AssignmentRequirementApi => ({
   id: 0,
   assignmentId: 0,
@@ -28,6 +29,7 @@ const emptyRequirement = (
   type,
   minYears,
   minLevel,
+  requiresFluency,
 });
 
 function NewAssignmentModal({
@@ -73,7 +75,7 @@ function NewAssignmentModal({
 
       setRequirements(
         extracted.requirements.map((item) =>
-          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category),
+          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.requiresFluency),
         ),
       );
 
@@ -115,6 +117,8 @@ function NewAssignmentModal({
         ...requirement,
         name: requirement.name.trim(),
         minYears: requirement.category === "HumanLanguage" ? null : requirement.minYears,
+        minLevel: requirement.category === "HumanLanguage" ? null : requirement.minLevel,
+        requiresFluency: requirement.category === "HumanLanguage" && requirement.requiresFluency,
       }));
 
     if (cleanedRequirements.length === 0) {
@@ -242,7 +246,7 @@ function NewAssignmentModal({
 
           <div className="space-y-2 max-h-72 overflow-auto">
             {requirements.map((requirement, index) => (
-              <div key={index} className="grid grid-cols-[minmax(130px,1fr)_100px_110px_90px_30px] gap-2 items-center">
+              <div key={index} className="grid grid-cols-[minmax(130px,1fr)_100px_110px_minmax(100px,auto)_30px] gap-2 items-center">
                 <Input
                   aria-label="Requirement name"
                   value={requirement.name}
@@ -266,17 +270,15 @@ function NewAssignmentModal({
                   <option value="Mandatory">Mandatory</option>
                   <option value="Desired">Desired</option>
                 </select>
-                <Input
-                  type="number"
-                  min={requirement.category === "HumanLanguage" ? 1 : 0}
-                  value={requirement.category === "HumanLanguage" ? requirement.minLevel ?? "" : requirement.minYears ?? ""}
-                  placeholder={requirement.category === "HumanLanguage" ? "CEFR 1–6" : "Years"}
-                  aria-label={requirement.category === "HumanLanguage" ? "Minimum language level, CEFR 1 to 6" : "Minimum skill years"}
-                  max={requirement.category === "HumanLanguage" ? 6 : undefined}
-                  onChange={(event) => updateRequirement(index, requirement.category === "HumanLanguage"
-                    ? { minLevel: event.target.value ? Number(event.target.value) : null, minYears: null }
-                    : { minYears: event.target.value ? Number(event.target.value) : null })}
-                />
+                {requirement.category === "HumanLanguage" ? (
+                  <label className="flex items-center gap-1.5 text-[10px] text-app-muted">
+                    <input type="checkbox" checked={requirement.requiresFluency} onChange={(event) => updateRequirement(index, { requiresFluency: event.target.checked, minLevel: null, minYears: null })} />
+                    Fluent required
+                  </label>
+                ) : (
+                  <Input type="number" min={0} value={requirement.minYears ?? ""} placeholder="Years" aria-label="Minimum skill years"
+                    onChange={(event) => updateRequirement(index, { minYears: event.target.value ? Number(event.target.value) : null })} />
+                )}
                 <button type="button" onClick={() => removeRequirement(index)} className="text-app-faint hover:text-app-secondary">×</button>
               </div>
             ))}

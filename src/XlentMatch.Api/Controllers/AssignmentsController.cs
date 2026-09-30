@@ -96,6 +96,7 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
                 Type = requirement.Type,
                 MinYears = requirement.MinYears,
                 MinLevel = requirement.MinLevel,
+                RequiresFluency = requirement.RequiresFluency,
                 Category = requirement.Category
             })
             .ToList();
@@ -138,7 +139,10 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         foreach (var requirement in requirements)
         {
             if (requirement.MinYears < 0) return $"Minimum years for '{requirement.Name}' cannot be negative.";
-            var maximumLevel = string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase) ? 6 : 5;
+            var isLanguage = string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase);
+            var maximumLevel = 5;
+            if (isLanguage && requirement.MinLevel is not null)
+                return $"Language '{requirement.Name}' cannot use a numeric proficiency level. Use RequiresFluency instead.";
             if (requirement.MinLevel is < 1 || requirement.MinLevel > maximumLevel)
                 return $"Minimum level for '{requirement.Name}' must be between 1 and {maximumLevel}.";
             if (string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase) && requirement.MinYears is not null)

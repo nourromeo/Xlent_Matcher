@@ -161,11 +161,11 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             var language = c.Languages.FirstOrDefault(x => SameLanguage(x.Name, requirementName));
             if (language is not null)
             {
-                var languageLevel = LanguageLevel(language.Level);
-                matched = req.MinLevel is null || (languageLevel is not null && languageLevel >= req.MinLevel);
+                var fluencyConfirmed = IsFluencyEvidence(language.Level);
+                matched = !req.RequiresFluency || fluencyConfirmed;
                 evidence.Add($"Language '{language.Name}': {language.Level ?? "level not specified"}");
-                if (req.MinLevel is not null && (languageLevel is null || languageLevel < req.MinLevel))
-                    evidence.Add($"Requires language level {req.MinLevel}/6, consultant level is {languageLevel?.ToString() ?? "unrecognized"}");
+                if (req.RequiresFluency && !fluencyConfirmed)
+                    evidence.Add("Fluency is required, but the consultant profile does not explicitly confirm fluency.");
             }
         }
         else
@@ -215,20 +215,27 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         };
     }
 
-    private static int? LanguageLevel(string? value)
+    private static bool IsFluencyEvidence(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return null;
-        var normalized = value.Trim().ToUpperInvariant();
-        var cefr = new[] { ("C2", 6), ("C1", 5), ("B2", 4), ("B1", 3), ("A2", 2), ("A1", 1) }
-            .FirstOrDefault(level => normalized.Contains(level.Item1, StringComparison.Ordinal));
-        if (cefr.Item2 > 0) return cefr.Item2;
-        if (normalized.Contains("NATIVE", StringComparison.Ordinal) || normalized.Contains("MOTHER TONGUE", StringComparison.Ordinal)) return 6;
-        if (normalized.Contains("FLUENT", StringComparison.Ordinal) || normalized.Contains("ADVANCED", StringComparison.Ordinal) || normalized.Contains("PROFESSIONAL", StringComparison.Ordinal)) return 5;
-        if (normalized.Contains("UPPER-INTERMEDIATE", StringComparison.Ordinal)) return 4;
-        if (normalized.Contains("INTERMEDIATE", StringComparison.Ordinal)) return 3;
-        if (normalized.Contains("ELEMENTARY", StringComparison.Ordinal)) return 2;
-        if (normalized.Contains("BEGINNER", StringComparison.Ordinal) || normalized.Contains("BASIC", StringComparison.Ordinal)) return 1;
-        return null;
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        var normalized = NormalizeText(value)
+            .Replace("å", "a", StringComparison.Ordinal)
+            .Replace("ä", "a", StringComparison.Ordinal)
+            .Replace("ö", "o", StringComparison.Ordinal);
+        var explicitLevelTokens = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return explicitLevelTokens.Any(token => token is "c1" or "c2")
+            || normalized.Contains("fluent", StringComparison.Ordinal)
+            || normalized.Contains("proficient", StringComparison.Ordinal)
+            || normalized.Contains("flytande", StringComparison.Ordinal)
+            || normalized.Contains("fließend", StringComparison.Ordinal)
+            || normalized.Contains("sujuva", StringComparison.Ordinal)
+            || normalized.Contains("fluido", StringComparison.Ordinal)
+            || normalized.Contains("mycket goda kunskaper", StringComparison.Ordinal)
+            || normalized.Contains("obehindrat", StringComparison.Ordinal)
+            || normalized.Contains("native", StringComparison.Ordinal)
+            || normalized.Contains("mother tongue", StringComparison.Ordinal)
+            || normalized.Contains("modersmal", StringComparison.Ordinal)
+            || normalized.Contains("matern", StringComparison.Ordinal);
     }
 
     private static bool UsesTechnology(Project p, string name) =>

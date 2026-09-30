@@ -118,6 +118,9 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.Industries = input.Industries;
         existing.Certifications = input.Certifications;
 
+        var staleMatches = await db.MatchResults.Where(m => m.ConsultantId == id).ToListAsync(ct);
+        db.MatchResults.RemoveRange(staleMatches);
+
         await db.SaveChangesAsync(ct);
         return await LoadFull(id, ct) ?? existing;
     }
