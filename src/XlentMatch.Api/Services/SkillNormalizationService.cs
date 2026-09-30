@@ -61,8 +61,10 @@ public class SkillNormalizationService(AppDbContext db)
 
         if (skill is not null)
         {
-            if (string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(skill.Category, "Unclassified", StringComparison.OrdinalIgnoreCase))
+            var commonHumanLanguage = normalized is "ENGLISH" or "SWEDISH" or "SVENSKA" or "ARABIC" or "العربية" or "GERMAN" or "DEUTSCH" or "FRENCH" or "FRANÇAIS" or "SPANISH" or "ESPAÑOL";
+            var categoryNeedsCorrection = string.Equals(skill.Category, "Unclassified", StringComparison.OrdinalIgnoreCase) ||
+                (commonHumanLanguage && string.Equals(skill.Category, "Language", StringComparison.OrdinalIgnoreCase));
+            if (string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase) && categoryNeedsCorrection)
                 skill.Category = category;
             return skill;
         }
