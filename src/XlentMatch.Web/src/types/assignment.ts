@@ -16,6 +16,7 @@ export type Assignment = {
 };
 
 export type RequirementTypeApi = "Mandatory" | "Desired";
+export type RequirementCategoryApi = "Skill" | "HumanLanguage";
 export type AssignmentStatusApi = "Draft" | "Matching" | "Done" | "Closed";
 
 export type AssignmentRequirementApi = {
@@ -23,6 +24,7 @@ export type AssignmentRequirementApi = {
   assignmentId: number;
   skillId?: number;
   name: string;
+  category: RequirementCategoryApi;
   type: RequirementTypeApi;
   minYears: number | null;
   minLevel: number | null;
@@ -36,6 +38,8 @@ export type AssignmentApi = {
   seniority: string | null;
   minYearsExperience: number;
   availability: string | null;
+  location: string | null;
+  updatedAt: string | null;
   status: AssignmentStatusApi;
   createdAt: string;
   requirements: AssignmentRequirementApi[];

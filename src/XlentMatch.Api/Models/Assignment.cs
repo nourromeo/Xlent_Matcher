@@ -9,6 +9,8 @@ public class Assignment
     public string? Seniority { get; set; }
     public int MinYearsExperience { get; set; }
     public string? Availability { get; set; }
+    public string? Location { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public AssignmentStatus Status { get; set; } = AssignmentStatus.Draft;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<AssignmentRequirement> Requirements { get; set; } = new();

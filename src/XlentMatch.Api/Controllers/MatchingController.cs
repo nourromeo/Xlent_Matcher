@@ -30,6 +30,7 @@ public class MatchingController(AppDbContext db, MatchingService matching) : Con
             .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .Include(c => c.Projects)
             .Include(c => c.Certifications)
+            .Include(c => c.Languages)
             .Include(c => c.Experiences)
             .Where(c => request.ConsultantIds.Contains(c.Id))
             .AsNoTracking()
@@ -56,11 +57,32 @@ public class MatchingController(AppDbContext db, MatchingService matching) : Con
     }
 
     [HttpGet("assignment/{assignmentId:int}")]
-    public async Task<ActionResult<List<MatchResult>>> GetForAssignment(int assignmentId, CancellationToken ct) =>
-        await db.MatchResults
+    public async Task<ActionResult<List<MatchResult>>> GetForAssignment(int assignmentId, CancellationToken ct)
+    {
+        var assignment = await db.Assignments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == assignmentId, ct);
+        if (assignment is null) return NotFound();
+
+        var results = await db.MatchResults
             .Include(m => m.Details)
             .Where(m => m.AssignmentId == assignmentId)
             .OrderByDescending(m => m.Score)
             .AsNoTracking()
             .ToListAsync(ct);
+
+        var consultantIds = results.Select(result => result.ConsultantId).Distinct().ToList();
+        var consultants = await db.Consultants
+            .Where(consultant => consultantIds.Contains(consultant.Id))
+            .AsNoTracking()
+            .ToDictionaryAsync(consultant => consultant.Id, ct);
+
+        foreach (var result in results)
+        {
+            if (consultants.TryGetValue(result.ConsultantId, out var consultant))
+                result.ContextDetails = matching.BuildContextDetails(assignment, consultant);
+        }
+
+        return results;
+    }
 }

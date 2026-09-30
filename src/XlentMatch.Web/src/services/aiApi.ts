@@ -3,6 +3,7 @@ import type { AssignmentApi, Consultant } from "../types";
 
 export type RequirementDraft = {
   name: string;
+  category: "Skill" | "HumanLanguage";
   type: "Mandatory" | "Desired";
   minYears: number | null;
   minLevel: number | null;
@@ -12,6 +13,7 @@ export type RequirementExtractionResult = {
   seniority: string | null;
   minYearsExperience: number | null;
   availability: string | null;
+  location: string | null;
   requirements: RequirementDraft[];
   sourceText: string | null;
 };
@@ -43,6 +45,7 @@ export type TemporaryAssignmentDraft = {
   seniority: string | null;
   minYearsExperience: number;
   availability: string | null;
+  location: string | null;
   requirements: RequirementDraft[];
 };
 
@@ -113,8 +116,10 @@ export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssig
     seniority: assignment.seniority,
     minYearsExperience: assignment.minYearsExperience,
     availability: assignment.availability,
+    location: assignment.location,
     requirements: assignment.requirements.map((item) => ({
       name: item.name,
+      category: item.category,
       type: item.type,
       minYears: item.minYears,
       minLevel: item.minLevel,

@@ -36,6 +36,13 @@ export type MatchRequirementResultApi = {
   evidence: string;
 };
 
+export type MatchContextResultApi = {
+  name: string;
+  isMatched: boolean | null;
+  affectsScore: boolean;
+  evidence: string;
+};
+
 export type MatchResultApi = {
   id: number;
   assignmentId: number;
@@ -51,6 +58,7 @@ export type MatchResultApi = {
   explanation: string;
   createdAt: string;
   details: MatchRequirementResultApi[];
+  contextDetails: MatchContextResultApi[];
 };
 
 export type RunMatchingRequest = {

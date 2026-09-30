@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
+import { ChevronLeft, Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
@@ -38,40 +38,13 @@ const initials = (consultant: Consultant) =>
     .join("")
     .slice(0, 2);
 
-const skillsToText = (skills: ConsultantSkill[]) =>
-  skills
-    .map((skill) => [skill.name, skill.category ?? "", skill.years, skill.level, skill.evidence ?? ""].join(" | "))
-    .join("\n");
-
-const parseSkills = (value: string, consultantId: number): ConsultantSkill[] =>
-  value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, index) => {
-      const [name, category = "", years = "0", level = "0", ...evidence] =
-        line.split("|").map((part) => part.trim());
-
-      return {
-        id: 0,
-        consultantId,
-        name,
-        category: category || null,
-        years: Number(years) || 0,
-        level: Number(level) || 0,
-        evidence: evidence.join(" | ") || null,
-      };
-    });
-
 export default function ConsultantDetail() {
   const { t } = useI18n();
   const { id } = useParams();
   const consultantId = Number(id);
 
-  const [activeTab, setActiveTab] = useState<"profile" | "original">("profile");
   const [consultant, setConsultant] = useState<Consultant | null>(null);
   const [draft, setDraft] = useState<Consultant | null>(null);
-  const [skillsText, setSkillsText] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -105,21 +78,9 @@ export default function ConsultantDetail() {
     };
   }, [consultantId]);
 
-  const technologiesByExperience = useMemo(() => {
-    if (!consultant) return new Map<string, string[]>();
-
-    const technologies = consultant.projects
-      .flatMap((project) => (project.technologies ?? "").split(","))
-      .map((technology) => technology.trim())
-      .filter(Boolean);
-
-    return new Map(consultant.experiences.map((experience) => [experience.company + experience.role, technologies]));
-  }, [consultant]);
-
   const openEdit = () => {
     if (!consultant) return;
     setDraft(structuredClone(consultant));
-    setSkillsText(skillsToText(consultant.skills));
     setEditMode(true);
   };
 
@@ -132,7 +93,13 @@ export default function ConsultantDetail() {
     try {
       const payload: Consultant = {
         ...draft,
-        skills: parseSkills(skillsText, draft.id),
+        skills: draft.skills.filter((skill) => skill.name.trim()).map((skill) => ({ ...skill, id: 0, consultantId: 0, skillId: 0 })),
+        languages: draft.languages.filter((item) => item.name.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        experiences: draft.experiences.filter((item) => item.company.trim() || item.role.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        projects: draft.projects.filter((item) => item.name.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        education: draft.education.filter((item) => item.degree.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        industries: draft.industries.filter((item) => item.name.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        certifications: draft.certifications.filter((item) => item.name.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
       };
 
       const updated = await consultantsApi.update(draft.id, payload);
@@ -200,22 +167,6 @@ export default function ConsultantDetail() {
         </button>
       </div>
 
-      <div className="flex border-b border-app px-6 bg-app-surface flex-none">
-        {(["profile", "original"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className="flex items-center gap-1.5 text-xs px-1 py-2.5 mr-5 border-b-2 transition-colors"
-            style={activeTab === tab
-              ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 }
-              : { borderColor: "transparent", color: "var(--color-text-muted)" }}
-          >
-            {tab === "profile" ? <Code size={12} /> : <FileText size={12} />}
-            {tab === "profile" ? t("consultant_extracted_profile") : t("consultant_original_cv")}
-          </button>
-        ))}
-      </div>
-
       {error && (
         <div className="mx-6 mt-4 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
           {error}
@@ -223,8 +174,7 @@ export default function ConsultantDetail() {
       )}
 
       <div className="flex-1 overflow-auto bg-app">
-        {activeTab === "profile" ? (
-          <div className="p-6 grid grid-cols-3 gap-5">
+        <div className="p-6 grid grid-cols-3 gap-5">
             <div className="col-span-2 space-y-4">
               {consultant.summary && (
                 <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
@@ -269,7 +219,7 @@ export default function ConsultantDetail() {
               <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
                 <div className="px-4 py-3 border-b border-app flex items-center gap-2">
                   <Briefcase size={12} className="text-app-faint" />
-                  <span className="text-xs font-medium text-app-primary">{t("consultant_projects")}</span>
+                  <span className="text-xs font-medium text-app-primary">Experience</span>
                 </div>
 
                 {consultant.experiences.length === 0 ? (
@@ -290,23 +240,25 @@ export default function ConsultantDetail() {
                       </span>
                     </div>
 
-                    {(technologiesByExperience.get(experience.company + experience.role) ?? []).length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {(technologiesByExperience.get(experience.company + experience.role) ?? []).map((technology) => (
-                          <span
-                            key={technology}
-                            className="text-[10px] text-app-secondary px-1.5 py-0.5 rounded font-mono"
-                            style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
-                          >
-                            {technology}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
                     {experience.description && (
                       <p className="text-[11px] text-app-muted leading-relaxed">{experience.description}</p>
                     )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
+                <div className="px-4 py-3 border-b border-app flex items-center gap-2">
+                  <Code size={12} className="text-app-faint" />
+                  <span className="text-xs font-medium text-app-primary">Projects</span>
+                </div>
+                {consultant.projects.length === 0 ? (
+                  <p className="px-4 py-3 text-[11px] text-app-faint">No projects saved.</p>
+                ) : consultant.projects.map((project, index) => (
+                  <div key={project.id || index} className="px-4 py-3 space-y-1.5" style={{ borderBottom: index < consultant.projects.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
+                    <p className="text-xs font-medium text-app-primary">{project.name}</p>
+                    {project.technologies && <p className="text-[10px] font-mono text-app-muted">{project.technologies}</p>}
+                    {project.description && <p className="text-[11px] text-app-muted leading-relaxed">{project.description}</p>}
                   </div>
                 ))}
               </div>
@@ -375,24 +327,7 @@ export default function ConsultantDetail() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="p-6 h-full">
-            <div className="bg-app-surface border border-app rounded-lg min-h-[500px] p-5 shadow-app-surface">
-              <div className="h-[450px] flex items-center justify-center text-center">
-                <div className="max-w-md">
-                  <FileText size={32} className="text-app-faint mx-auto mb-3" />
-                  <p className="text-sm font-medium text-app-primary">Original CV</p>
-                  <p className="text-xs text-app-muted mt-2 leading-relaxed">
-                    In a future version, this section will show the consultant's original CV file.
-                    The current MVP stores the CV upload record and links it to the consultant,
-                    while the extracted profile is shown in the profile tab.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
 
       {draft && (
         <EditFormModal
@@ -443,13 +378,94 @@ export default function ConsultantDetail() {
             </FormField>
           </FormSection>
 
-          <FormSection title={t("consultant_skills")} description="Name | Category | Years | Level 1-5 | Evidence">
-            <Textarea
-              value={skillsText}
-              onChange={(event) => setSkillsText(event.target.value)}
-              rows={7}
-              className="font-mono"
-            />
+          <FormSection title={t("consultant_skills")}>
+            <div className="space-y-2">
+              {draft.skills.map((item, index) => (
+                <div key={index} className="grid grid-cols-[minmax(140px,1fr)_90px_90px_minmax(140px,1fr)_auto] gap-2 items-center">
+                  <Input placeholder="Skill" value={item.name} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input type="number" min={0} aria-label="Years" placeholder="Years" value={item.years} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, years: Number(event.target.value) || 0 } : row) })} />
+                  <Input type="number" min={0} max={5} aria-label="Skill level from 0 to 5" placeholder="Level" value={item.level} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, level: Number(event.target.value) || 0 } : row) })} />
+                  <Input placeholder="Evidence from CV" value={item.evidence ?? ""} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, evidence: event.target.value || null } : row) })} />
+                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, i) => i !== index) })}>Remove</button>
+                </div>
+              ))}
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, skills: [...draft.skills, { id: 0, consultantId: draft.id, name: "", category: null, years: 0, level: 0, evidence: null }] })}>+ Add skill</button>
+            </div>
+          </FormSection>
+
+          <FormSection title="Languages">
+            <div className="space-y-2">
+              {draft.languages.map((item, index) => (
+                <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                  <Input placeholder="Language" value={item.name} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input placeholder="Level (e.g. C1, Fluent)" value={item.level ?? ""} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: event.target.value || null } : row) })} />
+                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })}>Remove</button>
+                </div>
+              ))}
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, languages: [...draft.languages, { id: 0, consultantId: draft.id, name: "", level: null }] })}>+ Add language</button>
+            </div>
+          </FormSection>
+
+          <FormSection title="Experience">
+            <div className="space-y-3">
+              {draft.experiences.map((item, index) => (
+                <div key={index} className="rounded-lg border border-app p-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Role" value={item.role} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
+                    <Input placeholder="Company" value={item.company} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
+                    <Input type="date" aria-label="Start date" value={item.startDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
+                    <Input type="date" aria-label="End date" value={item.endDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
+                  </div>
+                  <Textarea rows={2} placeholder="Description" value={item.description ?? ""} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })}>Remove experience</button>
+                </div>
+              ))}
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, experiences: [...draft.experiences, { id: 0, consultantId: draft.id, company: "", role: "", description: null, startDate: null, endDate: null }] })}>+ Add experience</button>
+            </div>
+          </FormSection>
+
+          <FormSection title="Projects">
+            <div className="space-y-3">
+              {draft.projects.map((item, index) => (
+                <div key={index} className="rounded-lg border border-app p-3 space-y-2">
+                  <Input placeholder="Project name" value={item.name} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input placeholder="Technologies (comma-separated)" value={item.technologies ?? ""} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
+                  <Textarea rows={2} placeholder="Description" value={item.description ?? ""} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })}>Remove project</button>
+                </div>
+              ))}
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, projects: [...draft.projects, { id: 0, consultantId: draft.id, name: "", description: null, technologies: null }] })}>+ Add project</button>
+            </div>
+          </FormSection>
+
+          <FormSection title="Education, industries and certifications">
+            <div className="space-y-3">
+              {draft.education.map((item, index) => (
+                <div key={index} className="grid grid-cols-[1fr_1fr_100px_auto] gap-2 items-center">
+                  <Input placeholder="Degree" value={item.degree} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
+                  <Input placeholder="School" value={item.school ?? ""} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
+                  <Input placeholder="Year" value={item.year ?? ""} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
+                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })}>Remove</button>
+                </div>
+              ))}
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, education: [...draft.education, { id: 0, consultantId: draft.id, degree: "", school: null, year: null }] })}>+ Add education</button>
+              {draft.industries.map((item, index) => (
+                <div key={"industry-" + index} className="flex gap-2">
+                  <Input placeholder="Industry" value={item.name} onChange={(event) => setDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })}>Remove</button>
+                </div>
+              ))}
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, industries: [...draft.industries, { id: 0, consultantId: draft.id, name: "" }] })}>+ Add industry</button>
+              {draft.certifications.map((item, index) => (
+                <div key={"cert-" + index} className="grid grid-cols-[1fr_1fr_120px_auto] gap-2 items-center">
+                  <Input placeholder="Certification" value={item.name} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input placeholder="Issuer" value={item.issuer ?? ""} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
+                  <Input placeholder="Issued date" value={item.issuedDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
+                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })}>Remove</button>
+                </div>
+              ))}
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, certifications: [...draft.certifications, { id: 0, consultantId: draft.id, name: "", issuer: null, issuedDate: null }] })}>+ Add certification</button>
+            </div>
           </FormSection>
 
           {saving && <p className="text-xs text-app-muted">Saving...</p>}

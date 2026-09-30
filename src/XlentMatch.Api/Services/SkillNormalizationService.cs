@@ -25,10 +25,15 @@ public class SkillNormalizationService(AppDbContext db)
                     x.Aliases.Any(alias => alias.NormalizedAlias == normalizedName),
                     ct);
 
-            // Seed defaults only when the canonical skill does not exist.
-            // Admin changes are the source of truth after a skill has been created.
             if (existing is not null)
+            {
+                // Human languages have their own matching semantics. Correct old common-language
+                // entries that may have been added under the generic programming-language category.
+                if (string.Equals(item.Category, "Human language", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(existing.CanonicalName, item.Name, StringComparison.OrdinalIgnoreCase))
+                    existing.Category = item.Category;
                 continue;
+            }
 
             db.Skills.Add(new Skill
             {
@@ -48,7 +53,7 @@ public class SkillNormalizationService(AppDbContext db)
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<Skill> ResolveAsync(string rawName, CancellationToken ct = default)
+    public async Task<Skill> ResolveAsync(string rawName, CancellationToken ct = default, string? category = null)
     {
         var normalized = NormalizeKey(rawName);
 
@@ -60,13 +65,20 @@ public class SkillNormalizationService(AppDbContext db)
                 ct);
 
         if (skill is not null)
+        {
+            var commonHumanLanguage = normalized is "ENGLISH" or "SWEDISH" or "SVENSKA" or "ARABIC" or "العربية" or "GERMAN" or "DEUTSCH" or "FRENCH" or "FRANÇAIS" or "SPANISH" or "ESPAÑOL";
+            var categoryNeedsCorrection = string.Equals(skill.Category, "Unclassified", StringComparison.OrdinalIgnoreCase) ||
+                (commonHumanLanguage && string.Equals(skill.Category, "Language", StringComparison.OrdinalIgnoreCase));
+            if (string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase) && categoryNeedsCorrection)
+                skill.Category = category;
             return skill;
+        }
 
         skill = new Skill
         {
             CanonicalName = Regex.Replace(rawName.Trim(), @"\s+", " "),
             NormalizedName = normalized,
-            Category = "Unclassified"
+            Category = string.IsNullOrWhiteSpace(category) ? "Unclassified" : category
         };
 
         db.Skills.Add(skill);
@@ -96,7 +108,10 @@ public class SkillNormalizationService(AppDbContext db)
             if (string.IsNullOrWhiteSpace(requirement.Name))
                 continue;
 
-            var skill = await ResolveAsync(requirement.Name, ct);
+            var category = string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase)
+                ? "Human language"
+                : null;
+            var skill = await ResolveAsync(requirement.Name, ct, category);
             requirement.SkillId = skill.Id;
             requirement.Skill = null;
             requirement.Name = skill.CanonicalName;

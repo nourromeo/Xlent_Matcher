@@ -53,7 +53,8 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             MatchedDesired = desired.Count(d => d.IsMatched),
             TotalDesired = desired.Count,
             ExperienceScore = (int)Math.Round(experienceRatio * 100),
-            Details = details
+            Details = details,
+            ContextDetails = BuildContextDetails(assignment, consultant)
         };
 
         result.Explanation = BuildExplanation(result, assignment, consultant, missingMandatory);
@@ -63,11 +64,112 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     private static double Ratio(List<MatchRequirementResult> items) =>
         items.Count == 0 ? 1.0 : (double)items.Count(i => i.IsMatched) / items.Count;
 
+    public List<MatchContextResult> BuildContextDetails(Assignment assignment, Consultant consultant)
+    {
+        var details = new List<MatchContextResult>();
+
+        if (assignment.MinYearsExperience > 0)
+        {
+            var matched = consultant.YearsOfExperience >= assignment.MinYearsExperience;
+            details.Add(new MatchContextResult
+            {
+                Name = "Overall experience",
+                IsMatched = matched,
+                AffectsScore = true,
+                Evidence = $"Consultant has {consultant.YearsOfExperience} years; assignment requires at least {assignment.MinYearsExperience}."
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(assignment.Seniority))
+        {
+            var requiredLevel = SeniorityLevel(assignment.Seniority);
+            var consultantLevel = SeniorityLevel(consultant.Seniority);
+            details.Add(new MatchContextResult
+            {
+                Name = "Seniority",
+                IsMatched = requiredLevel is null || consultantLevel is null ? null : consultantLevel >= requiredLevel,
+                AffectsScore = false,
+                Evidence = requiredLevel is null || consultantLevel is null
+                    ? $"Assignment: {assignment.Seniority}; consultant: {consultant.Seniority ?? "not specified"}. Confirm manually."
+                    : $"Assignment requires {assignment.Seniority}; consultant profile says {consultant.Seniority}."
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(assignment.Availability))
+        {
+            var required = NormalizeText(assignment.Availability);
+            var candidate = NormalizeText(consultant.Availability ?? "");
+            bool? matched = candidate.Length > 0 &&
+                (candidate == required || ((required is "immediate" or "asap") && (candidate is "immediate" or "asap")))
+                    ? true
+                    : null;
+
+            details.Add(new MatchContextResult
+            {
+                Name = "Availability",
+                IsMatched = matched,
+                AffectsScore = false,
+                Evidence = $"Assignment: {assignment.Availability}; consultant: {consultant.Availability ?? "not specified"}."
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(assignment.Location))
+        {
+            var required = NormalizeText(assignment.Location);
+            var candidate = NormalizeText(consultant.Office ?? "");
+            bool? matched = candidate.Length > 0 && required.Length > 0 &&
+                (required == candidate);
+
+            details.Add(new MatchContextResult
+            {
+                Name = "Work location",
+                IsMatched = matched == true ? true : null,
+                AffectsScore = false,
+                Evidence = matched == true
+                    ? $"Assignment location '{assignment.Location}' matches consultant office '{consultant.Office}'."
+                    : $"Assignment: {assignment.Location}; consultant office: {consultant.Office ?? "not specified"}. Confirm travel, hybrid or remote fit manually."
+            });
+        }
+
+        return details;
+    }
+
+    private static int? SeniorityLevel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var normalized = NormalizeText(value);
+        if (normalized is "junior" or "graduate") return 1;
+        if (normalized is "mid" or "medior" or "intermediate") return 2;
+        if (normalized == "senior") return 3;
+        if (normalized is "lead" or "staff" or "principal" or "expert" or "architect") return 4;
+        return null;
+    }
+
+    private static string NormalizeText(string value) =>
+        string.Join(" ", value.Trim().ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
     private static MatchRequirementResult Evaluate(AssignmentRequirement req, Consultant c)
     {
         var evidence = new List<string>();
         var matched = false;
 
+        var requirementName = req.Skill?.CanonicalName ?? req.Name;
+        var isHumanLanguage = string.Equals(req.Skill?.Category, "Human language", StringComparison.OrdinalIgnoreCase);
+
+        if (isHumanLanguage)
+        {
+            var language = c.Languages.FirstOrDefault(x => SameLanguage(x.Name, requirementName));
+            if (language is not null)
+            {
+                var languageLevel = LanguageLevel(language.Level);
+                matched = req.MinLevel is null || (languageLevel is not null && languageLevel >= req.MinLevel);
+                evidence.Add($"Language '{language.Name}': {language.Level ?? "level not specified"}");
+                if (req.MinLevel is not null && (languageLevel is null || languageLevel < req.MinLevel))
+                    evidence.Add($"Requires language level {req.MinLevel}/6, consultant level is {languageLevel?.ToString() ?? "unrecognized"}");
+            }
+        }
+        else
+        {
         var skill = c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId);
 
         if (skill is not null)
@@ -84,20 +186,25 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             if (!levelOk) evidence.Add($"Requires level {req.MinLevel}, consultant has {skill.Level}");
         }
 
-        var requirementName = req.Skill?.CanonicalName ?? req.Name;
-
-        var cert = c.Certifications.FirstOrDefault(x => SameName(x.Name, requirementName));
-        if (cert is not null)
-        {
-            if (req.MinYears is null && req.MinLevel is null) matched = true;
-            evidence.Add($"Certification '{cert.Name}'" + (cert.Issuer is null ? "" : $" ({cert.Issuer})"));
         }
 
-        foreach (var project in c.Projects.Where(p => UsesTechnology(p, requirementName)))
-            evidence.Add($"Project '{project.Name}' used {requirementName}");
+        if (!isHumanLanguage)
+        {
+            var cert = c.Certifications.FirstOrDefault(x => SameName(x.Name, requirementName));
+            if (cert is not null)
+            {
+                if (req.MinYears is null && req.MinLevel is null) matched = true;
+                evidence.Add($"Certification '{cert.Name}'" + (cert.Issuer is null ? "" : $" ({cert.Issuer})"));
+            }
+
+            foreach (var project in c.Projects.Where(p => UsesTechnology(p, requirementName)))
+                evidence.Add($"Project '{project.Name}' used {requirementName}");
+        }
 
         if (evidence.Count == 0)
-            evidence.Add("No matching canonical skill, certification or project found in profile");
+            evidence.Add(isHumanLanguage
+                ? "No matching language found in consultant profile"
+                : "No matching canonical skill, certification or project found in profile");
 
         return new MatchRequirementResult
         {
@@ -108,10 +215,47 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         };
     }
 
+    private static int? LanguageLevel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var normalized = value.Trim().ToUpperInvariant();
+        var cefr = new[] { ("C2", 6), ("C1", 5), ("B2", 4), ("B1", 3), ("A2", 2), ("A1", 1) }
+            .FirstOrDefault(level => normalized.Contains(level.Item1, StringComparison.Ordinal));
+        if (cefr.Item2 > 0) return cefr.Item2;
+        if (normalized.Contains("NATIVE", StringComparison.Ordinal) || normalized.Contains("MOTHER TONGUE", StringComparison.Ordinal)) return 6;
+        if (normalized.Contains("FLUENT", StringComparison.Ordinal) || normalized.Contains("ADVANCED", StringComparison.Ordinal) || normalized.Contains("PROFESSIONAL", StringComparison.Ordinal)) return 5;
+        if (normalized.Contains("UPPER-INTERMEDIATE", StringComparison.Ordinal)) return 4;
+        if (normalized.Contains("INTERMEDIATE", StringComparison.Ordinal)) return 3;
+        if (normalized.Contains("ELEMENTARY", StringComparison.Ordinal)) return 2;
+        if (normalized.Contains("BEGINNER", StringComparison.Ordinal) || normalized.Contains("BASIC", StringComparison.Ordinal)) return 1;
+        return null;
+    }
+
     private static bool UsesTechnology(Project p, string name) =>
         (p.Technologies ?? "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Any(t => SameName(t, name));
+
+    private static bool SameLanguage(string a, string b) =>
+        string.Equals(NormalizeLanguageName(a), NormalizeLanguageName(b), StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeLanguageName(string value)
+    {
+        var name = value.Trim().ToLowerInvariant();
+        return name switch
+        {
+            "swedish" or "svenska" or "svensk" => "swedish",
+            "english" or "engelska" => "english",
+            "arabic" or "arabiska" or "العربية" => "arabic",
+            "german" or "deutsch" or "tyska" => "german",
+            "french" or "français" or "francais" or "franska" => "french",
+            "spanish" or "español" or "espanol" or "spanska" => "spanish",
+            "norwegian" or "norsk" or "norska" => "norwegian",
+            "danish" or "dansk" or "danska" => "danish",
+            "finnish" or "suomi" or "finska" => "finnish",
+            _ => name
+        };
+    }
 
     private static bool SameName(string a, string b) =>
         string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
