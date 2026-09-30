@@ -53,7 +53,8 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             MatchedDesired = desired.Count(d => d.IsMatched),
             TotalDesired = desired.Count,
             ExperienceScore = (int)Math.Round(experienceRatio * 100),
-            Details = details
+            Details = details,
+            ContextDetails = BuildContextDetails(assignment, consultant)
         };
 
         result.Explanation = BuildExplanation(result, assignment, consultant, missingMandatory);
@@ -62,6 +63,90 @@ public class MatchingService(MatchingWeightsStore weightsStore)
 
     private static double Ratio(List<MatchRequirementResult> items) =>
         items.Count == 0 ? 1.0 : (double)items.Count(i => i.IsMatched) / items.Count;
+
+    public List<MatchContextResult> BuildContextDetails(Assignment assignment, Consultant consultant)
+    {
+        var details = new List<MatchContextResult>();
+
+        if (assignment.MinYearsExperience > 0)
+        {
+            var matched = consultant.YearsOfExperience >= assignment.MinYearsExperience;
+            details.Add(new MatchContextResult
+            {
+                Name = "Overall experience",
+                IsMatched = matched,
+                AffectsScore = true,
+                Evidence = $"Consultant has {consultant.YearsOfExperience} years; assignment requires at least {assignment.MinYearsExperience}."
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(assignment.Seniority))
+        {
+            var requiredLevel = SeniorityLevel(assignment.Seniority);
+            var consultantLevel = SeniorityLevel(consultant.Seniority);
+            details.Add(new MatchContextResult
+            {
+                Name = "Seniority",
+                IsMatched = requiredLevel is null || consultantLevel is null ? null : consultantLevel >= requiredLevel,
+                AffectsScore = false,
+                Evidence = requiredLevel is null || consultantLevel is null
+                    ? $"Assignment: {assignment.Seniority}; consultant: {consultant.Seniority ?? "not specified"}. Confirm manually."
+                    : $"Assignment requires {assignment.Seniority}; consultant profile says {consultant.Seniority}."
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(assignment.Availability))
+        {
+            var required = NormalizeText(assignment.Availability);
+            var candidate = NormalizeText(consultant.Availability ?? "");
+            bool? matched = candidate.Length > 0 &&
+                (candidate == required || ((required is "immediate" or "asap") && (candidate is "immediate" or "asap")))
+                    ? true
+                    : null;
+
+            details.Add(new MatchContextResult
+            {
+                Name = "Availability",
+                IsMatched = matched,
+                AffectsScore = false,
+                Evidence = $"Assignment: {assignment.Availability}; consultant: {consultant.Availability ?? "not specified"}."
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(assignment.Location))
+        {
+            var required = NormalizeText(assignment.Location);
+            var candidate = NormalizeText(consultant.Office ?? "");
+            bool? matched = candidate.Length > 0 && required.Length > 0 &&
+                (required == candidate);
+
+            details.Add(new MatchContextResult
+            {
+                Name = "Work location",
+                IsMatched = matched == true ? true : null,
+                AffectsScore = false,
+                Evidence = matched == true
+                    ? $"Assignment location '{assignment.Location}' matches consultant office '{consultant.Office}'."
+                    : $"Assignment: {assignment.Location}; consultant office: {consultant.Office ?? "not specified"}. Confirm travel, hybrid or remote fit manually."
+            });
+        }
+
+        return details;
+    }
+
+    private static int? SeniorityLevel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var normalized = NormalizeText(value);
+        if (normalized is "junior" or "graduate") return 1;
+        if (normalized is "mid" or "medior" or "intermediate") return 2;
+        if (normalized == "senior") return 3;
+        if (normalized is "lead" or "staff" or "principal" or "expert" or "architect") return 4;
+        return null;
+    }
+
+    private static string NormalizeText(string value) =>
+        string.Join(" ", value.Trim().ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     private static MatchRequirementResult Evaluate(AssignmentRequirement req, Consultant c)
     {
