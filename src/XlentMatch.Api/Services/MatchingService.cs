@@ -73,7 +73,7 @@ public class MatchingService(MatchingWeightsStore weightsStore)
 
         if (isHumanLanguage)
         {
-            var language = c.Languages.FirstOrDefault(x => SameName(x.Name, requirementName));
+            var language = c.Languages.FirstOrDefault(x => SameLanguage(x.Name, requirementName));
             if (language is not null)
             {
                 var languageLevel = LanguageLevel(language.Level);
@@ -134,22 +134,43 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
         var normalized = value.Trim().ToUpperInvariant();
-        var cefr = normalized switch
-        {
-            "A1" => 1, "A2" => 2, "B1" => 3, "B2" => 4, "C1" => 5, "C2" => 6,
-            "BEGINNER" => 1, "BASIC" => 1, "ELEMENTARY" => 2,
-            "INTERMEDIATE" => 3, "UPPER-INTERMEDIATE" => 4,
-            "ADVANCED" => 5, "FLUENT" => 5, "PROFESSIONAL" => 5,
-            "NATIVE" => 6, "NATIVE/BILINGUAL" => 6,
-            _ => 0
-        };
-        return cefr == 0 ? null : cefr;
+        var cefr = new[] { ("C2", 6), ("C1", 5), ("B2", 4), ("B1", 3), ("A2", 2), ("A1", 1) }
+            .FirstOrDefault(level => normalized.Contains(level.Item1, StringComparison.Ordinal));
+        if (cefr.Item2 > 0) return cefr.Item2;
+        if (normalized.Contains("NATIVE", StringComparison.Ordinal) || normalized.Contains("MOTHER TONGUE", StringComparison.Ordinal)) return 6;
+        if (normalized.Contains("FLUENT", StringComparison.Ordinal) || normalized.Contains("ADVANCED", StringComparison.Ordinal) || normalized.Contains("PROFESSIONAL", StringComparison.Ordinal)) return 5;
+        if (normalized.Contains("UPPER-INTERMEDIATE", StringComparison.Ordinal)) return 4;
+        if (normalized.Contains("INTERMEDIATE", StringComparison.Ordinal)) return 3;
+        if (normalized.Contains("ELEMENTARY", StringComparison.Ordinal)) return 2;
+        if (normalized.Contains("BEGINNER", StringComparison.Ordinal) || normalized.Contains("BASIC", StringComparison.Ordinal)) return 1;
+        return null;
     }
 
     private static bool UsesTechnology(Project p, string name) =>
         (p.Technologies ?? "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Any(t => SameName(t, name));
+
+    private static bool SameLanguage(string a, string b) =>
+        string.Equals(NormalizeLanguageName(a), NormalizeLanguageName(b), StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeLanguageName(string value)
+    {
+        var name = value.Trim().ToLowerInvariant();
+        return name switch
+        {
+            "swedish" or "svenska" or "svensk" => "swedish",
+            "english" or "engelska" => "english",
+            "arabic" or "arabiska" or "العربية" => "arabic",
+            "german" or "deutsch" or "tyska" => "german",
+            "french" or "français" or "francais" or "franska" => "french",
+            "spanish" or "español" or "espanol" or "spanska" => "spanish",
+            "norwegian" or "norsk" or "norska" => "norwegian",
+            "danish" or "dansk" or "danska" => "danish",
+            "finnish" or "suomi" or "finska" => "finnish",
+            _ => name
+        };
+    }
 
     private static bool SameName(string a, string b) =>
         string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
