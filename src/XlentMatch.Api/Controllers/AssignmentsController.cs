@@ -50,6 +50,7 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
 
         assignment.Id = 0;
         assignment.CreatedAt = DateTime.UtcNow;
+        assignment.UpdatedAt = assignment.CreatedAt;
 
         foreach (var requirement in assignment.Requirements)
         {
@@ -113,6 +114,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         existing.Seniority = input.Seniority;
         existing.MinYearsExperience = input.MinYearsExperience;
         existing.Availability = input.Availability;
+        existing.Location = input.Location;
+        existing.UpdatedAt = DateTime.UtcNow;
         // Any meaningful edit invalidates the previous matching snapshot.
         existing.Status = AssignmentStatus.Draft;
 
