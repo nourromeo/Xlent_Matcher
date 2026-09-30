@@ -116,6 +116,7 @@ export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssig
     availability: assignment.availability,
     requirements: assignment.requirements.map((item) => ({
       name: item.name,
+      category: item.category,
       type: item.type,
       minYears: item.minYears,
       minLevel: item.minLevel,
