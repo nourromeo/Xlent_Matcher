@@ -78,6 +78,9 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("AssignmentId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("RequiresFluency")
+                        .HasColumnType("bit");
+
                     b.Property<int?>("MinLevel")
                         .HasColumnType("int");
 
