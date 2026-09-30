@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
 import { useI18n } from "../i18n";
