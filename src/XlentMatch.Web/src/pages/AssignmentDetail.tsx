@@ -336,7 +336,7 @@ export default function AssignmentDetail() {
               <div className="flex flex-wrap gap-2">
                 {preferred.map((skill) => {
                   const requirement = assignment.requirements.find((item) => item.type === "Desired" && item.category === "Skill" && item.name === skill);
-                  return <div key={skill} className="space-y-1"><SkillTag>{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ years` : `Level ${requirement!.minLevel}/5`}</p>}</div>;
+                  return <div key={skill} className="space-y-1"><SkillTag>{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ years` : `Level ${requirement.minLevel}/5`}</p>}</div>;
                 })}
               </div>
             </div>
