@@ -399,8 +399,8 @@ export default function ClientAssignments() {
                   <p className="text-[11px] text-app-secondary mt-1 mb-2 max-w-3xl line-clamp-2">{assignment.description || "—"}</p>
                   <p className="text-[10px] text-app-muted mb-2">{assignment.requirements.length} requirements{assignment.minYearsExperience > 0 ? ` · ${assignment.minYearsExperience}+ years experience` : ""}</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {required.map((requirement) => <SkillTag key={requirement.id || requirement.name} variant="required">{requirement.name}</SkillTag>)}
-                    {preferred.map((requirement) => <SkillTag key={requirement.id || requirement.name}>{requirement.name}</SkillTag>)}
+                    {required.map((requirement) => <SkillTag key={requirement.id || requirement.name} variant="required">{requirement.category === "HumanLanguage" ? `Language: ${requirement.name}` : requirement.name}</SkillTag>)}
+                    {preferred.map((requirement) => <SkillTag key={requirement.id || requirement.name}>{requirement.category === "HumanLanguage" ? `Language: ${requirement.name}` : requirement.name}</SkillTag>)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
