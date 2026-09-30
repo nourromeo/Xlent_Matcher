@@ -234,7 +234,7 @@ export default function AssignmentDetail() {
             )}
           </div>
           <p className="text-xs text-app-muted mt-1">
-            {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {t("common_created")} {new Date(assignment.createdAt).toLocaleDateString()}
+            {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {assignment.location || "Location not specified"} · Updated {new Date(assignment.updatedAt || assignment.createdAt).toLocaleDateString()}
           </p>
         </div>
 
@@ -337,6 +337,9 @@ export default function AssignmentDetail() {
               </FormField>
               <FormField label={t("assignment_availability")}>
                 <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />
+              </FormField>
+              <FormField label="Work location">
+                <Input value={draft.location ?? ""} onChange={(event) => setDraft({ ...draft, location: event.target.value || null })} placeholder="e.g. Stockholm / Hybrid / Remote" />
               </FormField>
               <FormField label="Minimum years experience">
                 <Input type="number" min={0} value={draft.minYearsExperience} onChange={(event) => setDraft({ ...draft, minYearsExperience: Number(event.target.value) || 0 })} />
