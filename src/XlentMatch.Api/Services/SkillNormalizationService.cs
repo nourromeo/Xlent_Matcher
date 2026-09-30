@@ -7,10 +7,48 @@ namespace XlentMatch.Api.Services;
 
 public class SkillNormalizationService(AppDbContext db)
 {
+    private static readonly Regex TrailingParenthetical = new(@"^(?<name>.*?)\s*\((?<level>[^()]*)\)\s*$", RegexOptions.Compiled);
+
     public static string NormalizeKey(string value)
     {
         var collapsed = Regex.Replace(value.Trim(), @"\s+", " ");
         return collapsed.ToUpperInvariant();
+    }
+
+    public static (string Name, string? Level) NormalizeHumanLanguage(string? rawName, string? level)
+    {
+        var name = Regex.Replace((rawName ?? "").Trim(), @"\s+", " ");
+        var proficiency = string.IsNullOrWhiteSpace(level) ? null : level.Trim();
+
+        var suffix = TrailingParenthetical.Match(name);
+        if (suffix.Success && IsProficiencyDescription(suffix.Groups["level"].Value))
+        {
+            name = suffix.Groups["name"].Value.Trim();
+            proficiency ??= suffix.Groups["level"].Value.Trim();
+        }
+
+        var normalized = NormalizeKey(name);
+        var catalogItem = SkillCatalogSeed.Items.FirstOrDefault(item =>
+            string.Equals(item.Category, "Human language", StringComparison.OrdinalIgnoreCase) &&
+            (NormalizeKey(item.Name) == normalized ||
+             item.Aliases.Any(alias => NormalizeKey(alias) == normalized)));
+
+        return (catalogItem?.Name ?? name, proficiency);
+    }
+
+    private static bool IsProficiencyDescription(string value)
+    {
+        var normalized = NormalizeKey(value);
+        return normalized is "C1" or "C2" or "BASIC" or "BEGINNER" or "CONVERSATIONAL" or "INTERMEDIATE" or "ADVANCED" or "FLUENT" or "NATIVE" ||
+               normalized.Contains("FLUENT", StringComparison.Ordinal) ||
+               normalized.Contains("FLYTANDE", StringComparison.Ordinal) ||
+               normalized.Contains("MODERSMAL", StringComparison.Ordinal) ||
+               normalized.Contains("MODERSMÅL", StringComparison.Ordinal) ||
+               normalized.Contains("MOTHER TONGUE", StringComparison.Ordinal) ||
+               normalized.Contains("NATIVE", StringComparison.Ordinal) ||
+               normalized.Contains("PROFICIENT", StringComparison.Ordinal) ||
+               normalized.Contains("GODA KUNSKAPER", StringComparison.Ordinal) ||
+               normalized.Contains("OBEHINDRAT", StringComparison.Ordinal);
     }
 
     public async Task EnsureCatalogAsync(CancellationToken ct = default)
@@ -20,37 +58,73 @@ public class SkillNormalizationService(AppDbContext db)
             var normalizedName = NormalizeKey(item.Name);
             var existing = await db.Skills
                 .Include(x => x.Aliases)
-                .FirstOrDefaultAsync(x =>
-                    x.NormalizedName == normalizedName ||
-                    x.Aliases.Any(alias => alias.NormalizedAlias == normalizedName),
-                    ct);
+                .FirstOrDefaultAsync(x => x.NormalizedName == normalizedName, ct);
 
-            if (existing is not null)
+            if (existing is null)
             {
-                // Human languages have their own matching semantics. Correct old common-language
-                // entries that may have been added under the generic programming-language category.
-                if (string.Equals(item.Category, "Human language", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(existing.CanonicalName, item.Name, StringComparison.OrdinalIgnoreCase))
+                existing = await db.Skills
+                    .Include(x => x.Aliases)
+                    .FirstOrDefaultAsync(x => x.Aliases.Any(alias => alias.NormalizedAlias == normalizedName), ct);
+
+                if (existing is not null)
+                {
+                    var previousCanonical = existing.CanonicalName;
+                    var conflictingAlias = existing.Aliases.FirstOrDefault(alias => alias.NormalizedAlias == normalizedName);
+                    if (conflictingAlias is not null)
+                    {
+                        existing.Aliases.Remove(conflictingAlias);
+                        db.SkillAliases.Remove(conflictingAlias);
+                    }
+
+                    existing.CanonicalName = item.Name;
+                    existing.NormalizedName = normalizedName;
                     existing.Category = item.Category;
-                continue;
+                    await AddAliasIfAvailableAsync(existing, previousCanonical, ct);
+                }
             }
 
-            db.Skills.Add(new Skill
+            if (existing is null)
             {
-                CanonicalName = item.Name,
-                NormalizedName = normalizedName,
-                Category = item.Category,
-                Aliases = item.Aliases
-                    .Select(alias => new SkillAlias
-                    {
-                        Alias = alias,
-                        NormalizedAlias = NormalizeKey(alias)
-                    })
-                    .ToList()
-            });
+                existing = new Skill
+                {
+                    CanonicalName = item.Name,
+                    NormalizedName = normalizedName,
+                    Category = item.Category
+                };
+                db.Skills.Add(existing);
+            }
+            else
+            {
+                existing.Category = item.Category;
+            }
+
+            foreach (var alias in item.Aliases)
+                await AddAliasIfAvailableAsync(existing, alias, ct);
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    private async Task AddAliasIfAvailableAsync(Skill skill, string alias, CancellationToken ct)
+    {
+        var normalizedAlias = NormalizeKey(alias);
+        if (normalizedAlias == skill.NormalizedName ||
+            skill.Aliases.Any(existing => existing.NormalizedAlias == normalizedAlias))
+            return;
+
+        var canonicalConflict = await db.Skills.AnyAsync(
+            existing => existing.Id != skill.Id && existing.NormalizedName == normalizedAlias, ct);
+        var aliasConflict = await db.SkillAliases.AnyAsync(
+            existing => existing.SkillId != skill.Id && existing.NormalizedAlias == normalizedAlias, ct);
+
+        if (canonicalConflict || aliasConflict)
+            return;
+
+        skill.Aliases.Add(new SkillAlias
+        {
+            Alias = alias,
+            NormalizedAlias = normalizedAlias
+        });
     }
 
     public async Task<Skill> ResolveAsync(string rawName, CancellationToken ct = default, string? category = null)
@@ -66,7 +140,10 @@ public class SkillNormalizationService(AppDbContext db)
 
         if (skill is not null)
         {
-            var commonHumanLanguage = normalized is "ENGLISH" or "SWEDISH" or "SVENSKA" or "ARABIC" or "العربية" or "GERMAN" or "DEUTSCH" or "FRENCH" or "FRANÇAIS" or "SPANISH" or "ESPAÑOL";
+            var commonHumanLanguage = SkillCatalogSeed.Items
+                .Where(item => string.Equals(item.Category, "Human language", StringComparison.OrdinalIgnoreCase))
+                .Any(item => NormalizeKey(item.Name) == normalized ||
+                             item.Aliases.Any(alias => NormalizeKey(alias) == normalized));
             var categoryNeedsCorrection = string.Equals(skill.Category, "Unclassified", StringComparison.OrdinalIgnoreCase) ||
                 (commonHumanLanguage && string.Equals(skill.Category, "Language", StringComparison.OrdinalIgnoreCase));
             if (string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase) && categoryNeedsCorrection)
@@ -84,6 +161,16 @@ public class SkillNormalizationService(AppDbContext db)
         db.Skills.Add(skill);
         await db.SaveChangesAsync(ct);
         return skill;
+    }
+
+    public void NormalizeConsultantLanguages(IEnumerable<ConsultantLanguage> languages)
+    {
+        foreach (var language in languages)
+        {
+            var normalized = NormalizeHumanLanguage(language.Name, language.Level);
+            language.Name = normalized.Name;
+            language.Level = normalized.Level;
+        }
     }
 
     public async Task NormalizeConsultantSkillsAsync(IEnumerable<ConsultantSkill> skills, CancellationToken ct = default)
@@ -111,7 +198,10 @@ public class SkillNormalizationService(AppDbContext db)
             var category = string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase)
                 ? "Human language"
                 : null;
-            var skill = await ResolveAsync(requirement.Name, ct, category);
+            var language = string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase)
+                ? NormalizeHumanLanguage(requirement.Name, null).Name
+                : requirement.Name;
+            var skill = await ResolveAsync(language, ct, category);
             requirement.SkillId = skill.Id;
             requirement.Skill = null;
             requirement.Name = skill.CanonicalName;
