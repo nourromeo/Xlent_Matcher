@@ -20,12 +20,14 @@ function SkillEditor({
   skills,
   onChange,
   accent,
+  category = "Skill",
 }: {
   label: string;
   hint: string;
   skills: string[];
   onChange: (skills: string[]) => void;
   accent: "indigo" | "neutral";
+  category?: "Skill" | "HumanLanguage";
 }) {
   const { t } = useI18n();
   const [value, setValue] = useState("");
@@ -81,22 +83,29 @@ function SkillEditor({
   );
 }
 
-const requirementNames = (assignment: AssignmentApi, type: "Mandatory" | "Desired") =>
-  assignment.requirements.filter((requirement) => requirement.type === type).map((requirement) => requirement.name);
+const requirementNames = (assignment: AssignmentApi, type: "Mandatory" | "Desired", category: "Skill" | "HumanLanguage" = "Skill") =>
+  assignment.requirements.filter((requirement) => requirement.type === type && requirement.category === category).map((requirement) => requirement.name);
 
 const makeRequirements = (
   assignmentId: number,
   required: string[],
   preferred: string[],
+  requiredLanguages: string[],
+  preferredLanguages: string[],
   existing: AssignmentRequirementApi[],
 ): AssignmentRequirementApi[] => {
-  const make = (type: "Mandatory" | "Desired", names: string[]) => names.map((name) => {
-    const previous = existing.find((item) => item.type === type && item.name.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase());
+  const make = (type: "Mandatory" | "Desired", names: string[], category: "Skill" | "HumanLanguage") => names.map((name) => {
+    const previous = existing.find((item) => item.type === type && item.category === category && item.name.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase());
     return previous
-      ? { ...previous, assignmentId, name, type }
-      : { id: 0, assignmentId, name, category: "Skill" as const, type, minYears: null, minLevel: null };
+      ? { ...previous, assignmentId, name, type, category }
+      : { id: 0, assignmentId, name, category, type, minYears: null, minLevel: null };
   });
-  return [...make("Mandatory", required), ...make("Desired", preferred)];
+  return [
+    ...make("Mandatory", required, "Skill"),
+    ...make("Desired", preferred, "Skill"),
+    ...make("Mandatory", requiredLanguages, "HumanLanguage"),
+    ...make("Desired", preferredLanguages, "HumanLanguage"),
+  ];
 };
 
 export default function AssignmentDetail() {
@@ -108,6 +117,8 @@ export default function AssignmentDetail() {
   const [draft, setDraft] = useState<AssignmentApi | null>(null);
   const [requiredSkills, setRequiredSkills] = useState<string[]>([]);
   const [preferredSkills, setPreferredSkills] = useState<string[]>([]);
+  const [requiredLanguages, setRequiredLanguages] = useState<string[]>([]);
+  const [preferredLanguages, setPreferredLanguages] = useState<string[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -154,8 +165,10 @@ export default function AssignmentDetail() {
   const openEdit = () => {
     if (!assignment) return;
     setDraft(structuredClone(assignment));
-    setRequiredSkills(requirementNames(assignment, "Mandatory"));
-    setPreferredSkills(requirementNames(assignment, "Desired"));
+    setRequiredSkills(requirementNames(assignment, "Mandatory", "Skill"));
+    setPreferredSkills(requirementNames(assignment, "Desired", "Skill"));
+    setRequiredLanguages(requirementNames(assignment, "Mandatory", "HumanLanguage"));
+    setPreferredLanguages(requirementNames(assignment, "Desired", "HumanLanguage"));
     setEditMode(true);
   };
 
@@ -168,7 +181,7 @@ export default function AssignmentDetail() {
     try {
       const payload: AssignmentApi = {
         ...draft,
-        requirements: makeRequirements(draft.id, requiredSkills, preferredSkills, assignment.requirements),
+        requirements: makeRequirements(draft.id, requiredSkills, preferredSkills, requiredLanguages, preferredLanguages, assignment.requirements),
       };
 
       const updated = await assignmentsApi.update(draft.id, payload);
@@ -280,6 +293,20 @@ export default function AssignmentDetail() {
             </div>
           </section>
 
+          {assignment.requirements.some((requirement) => requirement.category === "HumanLanguage") && (
+            <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+              <h2 className="text-sm font-medium text-app-primary mb-3">Human languages</h2>
+              <div className="space-y-2">
+                {assignment.requirements.filter((requirement) => requirement.category === "HumanLanguage").map((requirement) => (
+                  <div key={requirement.id} className="flex items-center justify-between text-sm">
+                    <span className="text-app-secondary">{requirement.name}</span>
+                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? "Required" : "Preferred"}{requirement.minLevel ? ` · CEFR ${requirement.minLevel}` : ""}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {assignment.minYearsExperience > 0 && (
             <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
               <p className="text-xs font-medium text-app-primary">Minimum experience</p>
@@ -341,6 +368,24 @@ export default function AssignmentDetail() {
                 skills={preferredSkills}
                 onChange={setPreferredSkills}
                 accent="neutral"
+              />
+            </div>
+            <div className="grid md:grid-cols-2 gap-5 mt-5">
+              <SkillEditor
+                label="Required human languages"
+                hint="Add a language such as Swedish or English."
+                skills={requiredLanguages}
+                onChange={setRequiredLanguages}
+                accent="indigo"
+                category="HumanLanguage"
+              />
+              <SkillEditor
+                label="Preferred human languages"
+                hint="Add languages that are useful but not mandatory."
+                skills={preferredLanguages}
+                onChange={setPreferredLanguages}
+                accent="neutral"
+                category="HumanLanguage"
               />
             </div>
           </FormSection>
