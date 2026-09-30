@@ -667,6 +667,7 @@ export default function CvUpload() {
                   ))}
                 </div>
               </div>
+              </div>
             </section>
 
             {!canSave && <p className="text-[10px] text-app-faint">First name and last name must be filled in before saving.</p>}
