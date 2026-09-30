@@ -30,6 +30,7 @@ public class MatchingController(AppDbContext db, MatchingService matching) : Con
             .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .Include(c => c.Projects)
             .Include(c => c.Certifications)
+            .Include(c => c.Languages)
             .Include(c => c.Experiences)
             .Where(c => request.ConsultantIds.Contains(c.Id))
             .AsNoTracking()
