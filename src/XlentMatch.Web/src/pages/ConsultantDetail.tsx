@@ -240,7 +240,7 @@ export default function ConsultantDetail() {
               <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
                 <div className="px-4 py-3 border-b border-app flex items-center gap-2">
                   <Briefcase size={12} className="text-app-faint" />
-                  <span className="text-xs font-medium text-app-primary">{t("consultant_projects")}</span>
+                  <span className="text-xs font-medium text-app-primary">Experience</span>
                 </div>
 
                 {consultant.experiences.length === 0 ? (
@@ -266,6 +266,8 @@ export default function ConsultantDetail() {
                     )}
                   </div>
                 ))}
+              </div>
+
               <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
                 <div className="px-4 py-3 border-b border-app flex items-center gap-2">
                   <Code size={12} className="text-app-faint" />
@@ -280,7 +282,6 @@ export default function ConsultantDetail() {
                     {project.description && <p className="text-[11px] text-app-muted leading-relaxed">{project.description}</p>}
                   </div>
                 ))}
-              </div>
               </div>
             </div>
 
