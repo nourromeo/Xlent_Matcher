@@ -19,10 +19,12 @@ const emptyRequirement = (
   type: "Mandatory" | "Desired",
   minYears: number | null = null,
   minLevel: number | null = null,
+  category: "Skill" | "HumanLanguage" = "Skill",
 ): AssignmentRequirementApi => ({
   id: 0,
   assignmentId: 0,
   name,
+  category,
   type,
   minYears,
   minLevel,
@@ -40,6 +42,7 @@ function NewAssignmentModal({
   const [title, setTitle] = useState("");
   const [client, setClient] = useState("");
   const [brief, setBrief] = useState("");
+  const [briefFile, setBriefFile] = useState<File | null>(null);
   const [seniority, setSeniority] = useState("Mid");
   const [availability, setAvailability] = useState("Immediate");
   const [minYears, setMinYears] = useState(0);
@@ -51,7 +54,7 @@ function NewAssignmentModal({
   const canExtract =
     title.trim().length > 0 &&
     client.trim().length > 0 &&
-    brief.trim().length > 0;
+    (brief.trim().length > 0 || briefFile !== null);
 
   const extractRequirements = async () => {
     if (!canExtract) {
@@ -63,14 +66,17 @@ function NewAssignmentModal({
     setError("");
 
     try {
-      const extracted = await aiApi.extractRequirementsFromText(brief);
+      const extracted = briefFile
+        ? await aiApi.extractRequirementsFromFile(briefFile)
+        : await aiApi.extractRequirementsFromText(brief);
 
       setRequirements(
         extracted.requirements.map((item) =>
-          emptyRequirement(item.name, item.type, item.minYears, item.minLevel),
+          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category),
         ),
       );
 
+      setBrief(extracted.sourceText ?? brief);
       if (extracted.seniority) setSeniority(extracted.seniority);
       if (extracted.availability) setAvailability(extracted.availability);
       if (extracted.minYearsExperience !== null) setMinYears(extracted.minYearsExperience);
@@ -103,7 +109,11 @@ function NewAssignmentModal({
 
     const cleanedRequirements = requirements
       .filter((requirement) => requirement.name.trim())
-      .map((requirement) => ({ ...requirement, name: requirement.name.trim() }));
+      .map((requirement) => ({
+        ...requirement,
+        name: requirement.name.trim(),
+        minYears: requirement.category === "HumanLanguage" ? null : requirement.minYears,
+      }));
 
     if (cleanedRequirements.length === 0) {
       setError("Add at least one requirement before creating the assignment.");
@@ -117,7 +127,7 @@ function NewAssignmentModal({
       id: 0,
       customerName: client.trim(),
       title: title.trim(),
-      description: brief.trim() || null,
+      description: brief.trim() || (briefFile ? `Source file: ${briefFile.name}` : null),
       seniority: seniority.trim() || null,
       minYearsExperience: minYears,
       availability: availability.trim() || null,
@@ -153,7 +163,22 @@ function NewAssignmentModal({
             <span className="text-[11px] text-app-muted mb-1.5 block">
               {t("assignment_modal_brief")} <span className="text-app-brand">*</span> <span className="text-app-brand ml-1">AI extraction</span>
             </span>
-            <Textarea value={brief} onChange={(event) => setBrief(event.target.value)} rows={8} placeholder={t("assignment_modal_brief_placeholder")} />
+            <Textarea value={brief} onChange={(event) => { setBrief(event.target.value); setBriefFile(null); }} rows={6} placeholder={t("assignment_modal_brief_placeholder")} />
+            <span className="text-[10px] text-app-muted block mt-2">Or upload a PDF/TXT brief (max 10 MB)</span>
+            <input
+              type="file"
+              accept=".pdf,.txt,application/pdf,text/plain"
+              className="mt-2 block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app file:bg-app-surface file:px-3 file:py-2"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                setError("");
+                if (file && file.size > 10 * 1024 * 1024) { setError("File is larger than 10 MB."); event.target.value = ""; setBriefFile(null); return; }
+                if (file && !/\\.(pdf|txt)$/i.test(file.name)) { setError("Unsupported file type. Use PDF or TXT."); event.target.value = ""; setBriefFile(null); return; }
+                setBriefFile(file);
+                if (file) setBrief("");
+              }}
+            />
+            {briefFile && <p className="text-[11px] text-app-secondary">Selected: {briefFile.name}</p>}
           </label>
 
           {!canExtract && !error && (
@@ -196,12 +221,23 @@ function NewAssignmentModal({
 
           <div className="space-y-2 max-h-72 overflow-auto">
             {requirements.map((requirement, index) => (
-              <div key={index} className="grid grid-cols-[1fr_130px_90px_30px] gap-2 items-center">
+              <div key={index} className="grid grid-cols-[minmax(130px,1fr)_100px_110px_90px_30px] gap-2 items-center">
                 <Input
+                  aria-label="Requirement name"
                   value={requirement.name}
                   onChange={(event) => updateRequirement(index, { name: event.target.value })}
                 />
                 <select
+                  aria-label="Requirement category"
+                  value={requirement.category}
+                  onChange={(event) => updateRequirement(index, { category: event.target.value as "Skill" | "HumanLanguage", minYears: event.target.value === "HumanLanguage" ? null : requirement.minYears })}
+                  className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                >
+                  <option value="Skill">Skill</option>
+                  <option value="HumanLanguage">Language</option>
+                </select>
+                <select
+                  aria-label="Requirement priority"
                   value={requirement.type}
                   onChange={(event) => updateRequirement(index, { type: event.target.value as "Mandatory" | "Desired" })}
                   className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
@@ -212,9 +248,13 @@ function NewAssignmentModal({
                 <Input
                   type="number"
                   min={0}
-                  value={requirement.minYears ?? ""}
-                  placeholder="Years"
-                  onChange={(event) => updateRequirement(index, { minYears: event.target.value ? Number(event.target.value) : null })}
+                  value={requirement.category === "HumanLanguage" ? requirement.minLevel ?? "" : requirement.minYears ?? ""}
+                  placeholder={requirement.category === "HumanLanguage" ? "CEFR 1–6" : "Years"}
+                  aria-label={requirement.category === "HumanLanguage" ? "Minimum language level, CEFR 1 to 6" : "Minimum skill years"}
+                  max={requirement.category === "HumanLanguage" ? 6 : undefined}
+                  onChange={(event) => updateRequirement(index, requirement.category === "HumanLanguage"
+                    ? { minLevel: event.target.value ? Number(event.target.value) : null, minYears: null }
+                    : { minYears: event.target.value ? Number(event.target.value) : null })}
                 />
                 <button type="button" onClick={() => removeRequirement(index)} className="text-app-faint hover:text-app-secondary">×</button>
               </div>
@@ -289,11 +329,12 @@ export default function ClientAssignments() {
   };
 
   const statusConfig = (status: AssignmentStatusApi) => {
-    if (status === "Draft") {
-      return { label: "Draft", tone: "neutral" as const, icon: <Clock size={9} /> };
+    switch (status) {
+      case "Draft": return { label: "Draft", tone: "neutral" as const, icon: <Clock size={9} /> };
+      case "Matching": return { label: "Matching", tone: "neutral" as const, icon: <Clock size={9} /> };
+      case "Closed": return { label: "Closed", tone: "neutral" as const, icon: <Clock size={9} /> };
+      default: return { label: "Done", tone: "success" as const, icon: <CheckCircle size={9} /> };
     }
-
-    return { label: "Matched", tone: "success" as const, icon: <CheckCircle size={9} /> };
   };
 
   const displaySeniority = (value: string) =>
@@ -355,7 +396,8 @@ export default function ClientAssignments() {
                   <p className="text-xs text-app-muted">
                     {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {new Date(assignment.createdAt).toLocaleDateString()}
                   </p>
-                  <p className="text-[11px] text-app-secondary mt-1 mb-3 max-w-3xl">{assignment.description || "—"}</p>
+                  <p className="text-[11px] text-app-secondary mt-1 mb-2 max-w-3xl line-clamp-2">{assignment.description || "—"}</p>
+                  <p className="text-[10px] text-app-muted mb-2">{assignment.requirements.length} requirements{assignment.minYearsExperience > 0 ? ` · ${assignment.minYearsExperience}+ years experience` : ""}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {required.map((requirement) => <SkillTag key={requirement.id || requirement.name} variant="required">{requirement.name}</SkillTag>)}
                     {preferred.map((requirement) => <SkillTag key={requirement.id || requirement.name}>{requirement.name}</SkillTag>)}
