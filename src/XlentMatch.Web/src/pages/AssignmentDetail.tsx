@@ -207,8 +207,8 @@ export default function AssignmentDetail() {
     );
   }
 
-  const required = requirementNames(assignment, "Mandatory");
-  const preferred = requirementNames(assignment, "Desired");
+  const required = requirementNames(assignment, "Mandatory", "Skill");
+  const preferred = requirementNames(assignment, "Desired", "Skill");
   const statusTone = assignment.status === "Done" ? "success" : "neutral";
   const statusLabel = assignment.status;
 
