@@ -25,10 +25,34 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
     }
 
     [HttpPost]
-    public async Task<ActionResult<Consultant>> Create(Consultant consultant, CancellationToken ct)
+    public async Task<ActionResult<Consultant>> Create(
+        Consultant consultant,
+        [FromQuery] int? cvUploadId,
+        CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(consultant.FirstName))
             return BadRequest("FirstName is required.");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        CvUploadRecord? upload = null;
+        if (cvUploadId.HasValue)
+        {
+            upload = await db.CvUploads.FirstOrDefaultAsync(x => x.Id == cvUploadId.Value, ct);
+            if (upload is null)
+                return NotFound($"CV upload {cvUploadId.Value} not found.");
+
+            // Makes a retry safe if the consultant was created but the client did not receive the response.
+            if (upload.ConsultantId is int existingConsultantId)
+            {
+                var existingConsultant = await LoadFull(existingConsultantId, ct);
+                if (existingConsultant is not null)
+                {
+                    await transaction.CommitAsync(ct);
+                    return Ok(existingConsultant);
+                }
+            }
+        }
 
         consultant.Id = 0;
 
@@ -45,6 +69,16 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         db.Consultants.Add(consultant);
         await db.SaveChangesAsync(ct);
 
+        if (upload is not null)
+        {
+            upload.Status = "Indexed";
+            upload.ConsultantId = consultant.Id;
+            upload.ErrorMessage = null;
+            upload.DraftJson = null;
+            await db.SaveChangesAsync(ct);
+        }
+
+        await transaction.CommitAsync(ct);
         return CreatedAtAction(nameof(GetById), new { id = consultant.Id }, consultant);
     }
 
