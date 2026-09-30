@@ -103,15 +103,18 @@ public class MatchingService(MatchingWeightsStore weightsStore)
 
         }
 
-        var cert = c.Certifications.FirstOrDefault(x => SameName(x.Name, requirementName));
-        if (cert is not null)
+        if (!isHumanLanguage)
         {
-            if (req.MinYears is null && req.MinLevel is null) matched = true;
-            evidence.Add($"Certification '{cert.Name}'" + (cert.Issuer is null ? "" : $" ({cert.Issuer})"));
-        }
+            var cert = c.Certifications.FirstOrDefault(x => SameName(x.Name, requirementName));
+            if (cert is not null)
+            {
+                if (req.MinYears is null && req.MinLevel is null) matched = true;
+                evidence.Add($"Certification '{cert.Name}'" + (cert.Issuer is null ? "" : $" ({cert.Issuer})"));
+            }
 
-        foreach (var project in c.Projects.Where(p => UsesTechnology(p, requirementName)))
-            evidence.Add($"Project '{project.Name}' used {requirementName}");
+            foreach (var project in c.Projects.Where(p => UsesTechnology(p, requirementName)))
+                evidence.Add($"Project '{project.Name}' used {requirementName}");
+        }
 
         if (evidence.Count == 0)
             evidence.Add(isHumanLanguage
