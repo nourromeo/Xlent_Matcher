@@ -23,7 +23,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
     {
         var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
         var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
-        var system = $"""
+        var system = $$"""
             You extract structured consultant profiles from CV text.
             {{NoInventionRule}}
             Extract skill names exactly enough for later normalization, but do NOT classify skills into categories.
@@ -55,7 +55,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
     {
         var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
         var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
-        var system = NoInventionRule + $"""
+        var system = NoInventionRule + $$"""
             
             You extract structured information from a customer assignment / requirement specification.
             The current date in Europe/Stockholm is {{today}}.
