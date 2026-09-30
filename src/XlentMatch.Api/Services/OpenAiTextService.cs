@@ -59,9 +59,11 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             - availability: an explicit availability requirement such as Immediate, 2 weeks, or a stated start date; otherwise null.
 
             Requirements:
-            - Include only concrete skills, technologies, platforms, tools, certifications, methods or clearly named competencies.
+            - Include concrete technical skills, technologies, platforms, tools, certifications, methods or clearly named competencies with category "Skill".
+            - Include explicit human language requirements (for example Swedish or English) as separate requirements with category "HumanLanguage". Do not treat programming languages such as C# or Python as human languages.
             - Do NOT create requirements such as "senior consultant", ".NET consultant", role titles, availability, location, customer name, start date, or general years-of-experience statements.
             - If a requirement has its own explicit minimum years, put that number in minYears.
+            - For explicit CEFR proficiency requirements, set minLevel from 1 (A1) to 6 (C2). Otherwise use null.
             - Classify as "Mandatory" when the text says must, required, mandatory, shall, need, or equivalent.
             - Classify as "Desired" when the text says preferred, meriting, bonus, nice to have, or equivalent.
             - If the text lists a skill without clearly saying preferred/optional, treat it as Mandatory.
@@ -73,7 +75,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
               "minYearsExperience": int|null,
               "availability": string|null,
               "requirements": [
-                { "name": string, "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null }
+                { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null }
               ]
             }
             """;
