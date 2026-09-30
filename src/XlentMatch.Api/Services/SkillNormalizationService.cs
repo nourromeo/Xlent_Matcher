@@ -25,10 +25,15 @@ public class SkillNormalizationService(AppDbContext db)
                     x.Aliases.Any(alias => alias.NormalizedAlias == normalizedName),
                     ct);
 
-            // Seed defaults only when the canonical skill does not exist.
-            // Admin changes are the source of truth after a skill has been created.
             if (existing is not null)
+            {
+                // Human languages have their own matching semantics. Correct old common-language
+                // entries that may have been added under the generic programming-language category.
+                if (string.Equals(item.Category, "Human language", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(existing.CanonicalName, item.Name, StringComparison.OrdinalIgnoreCase))
+                    existing.Category = item.Category;
                 continue;
+            }
 
             db.Skills.Add(new Skill
             {
