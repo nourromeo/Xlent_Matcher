@@ -72,7 +72,7 @@ function SkillEditor({
               addSkill();
             }
           }}
-          placeholder={t("assignment_add_skill")}
+          placeholder={category === "HumanLanguage" ? "e.g. Swedish" : t("assignment_add_skill")}
           className="flex-1"
         />
         <button type="button" onClick={addSkill} className="inline-flex items-center gap-1 text-xs text-app-secondary border border-app rounded px-2.5 py-2">
