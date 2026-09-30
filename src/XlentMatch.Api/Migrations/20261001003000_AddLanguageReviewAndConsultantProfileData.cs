@@ -13,13 +13,13 @@ public partial class AddLanguageReviewAndConsultantProfileData : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.Sql("""
-            UPDATE Consultants SET YearsOfExperience = NULL WHERE YearsOfExperience <= 0;
-            """);
-
         migrationBuilder.AlterColumn<int>(
             name: "YearsOfExperience", table: "Consultants", type: "int", nullable: true,
             oldClrType: typeof(int), oldType: "int");
+
+        migrationBuilder.Sql("""
+            UPDATE Consultants SET YearsOfExperience = NULL WHERE YearsOfExperience <= 0;
+            """);
 
         migrationBuilder.AddColumn<string>(
             name: "YearsOfExperienceSource", table: "Consultants", type: "nvarchar(max)", nullable: true);
