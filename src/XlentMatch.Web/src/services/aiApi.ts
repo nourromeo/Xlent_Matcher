@@ -3,6 +3,7 @@ import type { AssignmentApi, Consultant } from "../types";
 
 export type RequirementDraft = {
   name: string;
+  category: "Skill" | "HumanLanguage";
   type: "Mandatory" | "Desired";
   minYears: number | null;
   minLevel: number | null;
