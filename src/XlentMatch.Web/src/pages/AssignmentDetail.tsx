@@ -89,13 +89,15 @@ const makeRequirements = (
   required: string[],
   preferred: string[],
   existing: AssignmentRequirementApi[],
-): AssignmentRequirementApi[] => [...required.map((name) => ["Mandatory" as const, name]), ...preferred.map((name) => ["Desired" as const, name])]
-  .map(([type, name]) => {
+): AssignmentRequirementApi[] => {
+  const make = (type: "Mandatory" | "Desired", names: string[]) => names.map((name) => {
     const previous = existing.find((item) => item.type === type && item.name.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase());
     return previous
       ? { ...previous, assignmentId, name, type }
       : { id: 0, assignmentId, name, category: "Skill" as const, type, minYears: null, minLevel: null };
   });
+  return [...make("Mandatory", required), ...make("Desired", preferred)];
+};
 
 export default function AssignmentDetail() {
   const { t } = useI18n();
