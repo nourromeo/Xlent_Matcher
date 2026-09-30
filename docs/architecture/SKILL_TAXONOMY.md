@@ -33,8 +33,9 @@ MVP:n använder en central skill-katalog som source of truth för skill-namn och
 - Type
 - MinYears
 - MinLevel
+- Category (Skill eller HumanLanguage)
 
-De gamla fysiska Name/Category-kolumnerna har tagits bort efter EF Core cleanup migration.
+Name är ett visningsvärde som kommer från den länkade skillen. Category sparas separat så att ett okänt språkkrav kan ligga kvar i HumanLanguage-flödet även när taxonomiposten markeras Unclassified för granskning.
 
 ## Flow
 
@@ -59,7 +60,7 @@ deterministic matching
 
 AI bestämmer inte den slutliga skill-kategorin. För mänskliga språk läser extraktionen bara språkets namn och uttrycklig nivå; kända namn och aliases normaliseras mot den seedade katalogen. En parentes som `Svenska (Flytande nivå)` sparas som `Swedish` med nivån `Flytande nivå`.
 
-Den seedade katalogen är source of truth för vanliga språk. Extrahering skapar inte taxonomy-poster för konsultens språk. Okända språk i konsultens profilutkast sparas utan att skapas i taxonomy. Okända språkkrav från kunduppdrag sparas som `Unclassified` så att de syns i Admin för granskning innan de kategoriseras. Katalogsynken är idempotent och körs både vid API-start och när Admin hämtar översikten, så saknade seed-rader och kategorier repareras utan en databas-migration.
+Den seedade katalogen är source of truth för vanliga språk. Extrahering skapar inte taxonomy-poster för konsultens språk. Okända språk i konsultens profilutkast sparas utan att skapas i taxonomy. Okända språkkrav från kunduppdrag sparas som `Unclassified` så att de syns i Admin för granskning innan de kategoriseras. Katalogsynken är idempotent och körs både vid API-start och när Admin hämtar översikten, så saknade seed-rader och kategorier repareras. En migration sparar kravets kategori och fyller befintliga rader utifrån länkad skill.
 
 Okända skills skapas som `Unclassified` så att de kan granskas i Admin.
 
