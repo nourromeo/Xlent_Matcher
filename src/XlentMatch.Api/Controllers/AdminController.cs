@@ -12,11 +12,14 @@ namespace XlentMatch.Api.Controllers;
 public class AdminController(
     AppDbContext db,
     MatchingWeightsStore matchingWeightsStore,
-    IOptions<OpenAiOptions> openAiOptions) : ControllerBase
+    IOptions<OpenAiOptions> openAiOptions,
+    SkillNormalizationService skillNormalization) : ControllerBase
 {
     [HttpGet("overview")]
     public async Task<ActionResult<AdminOverviewDto>> GetOverview(CancellationToken ct)
     {
+        await skillNormalization.EnsureCatalogAsync(ct);
+
         var skills = await db.Skills
             .Include(skill => skill.Aliases)
             .AsNoTracking()
