@@ -21,23 +21,28 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
 
     public Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {
-        var system = $$"""
+        var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
+        var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
+        var system = $"""
             You extract structured consultant profiles from CV text.
             {{NoInventionRule}}
             Extract skill names exactly enough for later normalization, but do NOT classify skills into categories.
-            For human languages, put only the language name in name and put any level or fluency wording in level. Never append proficiency wording in parentheses to the language name. Do not infer fluency.
+            Seniority: return only Junior, Mid, Senior or Staff when that exact level is explicitly stated in the CV or current title. Never infer it from age, years of experience or title synonyms. Otherwise return null.
+            Experience: yearsOfExperience should be null unless the CV explicitly states total professional years. The application may calculate an estimate from dated roles and will label its source.
+            Availability: keep the original statement in availability. Resolve relative phrases such as “in one week” against today={{today}} and return the resulting start date as availableFromDate (yyyy-MM-dd). If the text has no explicit timing, return null. A user reviews this date before saving.
+            For human languages, put only the language name in name. Use level only for an explicitly stated descriptor that clearly maps to Basic, Intermediate or Fluent. CEFR codes such as B2/C1/C2 must not be converted; preserve their original wording exactly in sourceLevel. Do not infer fluency.
             The application's canonical Skill Catalog is the source of truth for skill names, aliases and categories.
             Return a JSON object with exactly this shape:
             {
               "firstName": string, "lastName": string, "email": string|null, "title": string|null,
-              "summary": string|null, "seniority": string|null, "yearsOfExperience": int,
-              "availability": string|null, "office": string|null,
+              "summary": string|null, "seniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "yearsOfExperience": int|null,
+              "yearsOfExperienceSource": "ExplicitInCv"|null, "availability": string|null, "availableFromDate": "yyyy-MM-dd"|null, "office": string|null,
               "skills": [{ "name": string, "level": int, "years": int, "evidence": string|null }],
               "experiences": [{ "company": string, "role": string, "description": string|null,
                                  "startDate": "yyyy-MM"|null, "endDate": "yyyy-MM"|null }],
               "projects": [{ "name": string, "description": string|null, "technologies": "comma, separated"|null }],
               "education": [{ "degree": string, "school": string|null, "year": string|null }],
-              "languages": [{ "name": canonical language name only (for example "Swedish", "English", "Arabic"), "level": explicitly stated proficiency text|null }],
+              "languages": [{ "name": canonical language name only (for example "Swedish", "English", "Arabic"), "level": "Basic"|"Intermediate"|"Fluent"|null, "sourceLevel": original wording exactly as written in CV|null }],
               "industries": [string],
               "certifications": [{ "name": string, "issuer": string|null, "issuedDate": "yyyy-MM"|null }]
             }
@@ -48,16 +53,19 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
 
     public Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct)
     {
-        var system = NoInventionRule + """
+        var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
+        var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
+        var system = NoInventionRule + $"""
             
             You extract structured information from a customer assignment / requirement specification.
+            The current date in Europe/Stockholm is {{today}}.
 
             Separate assignment metadata from actual consultant requirements.
 
             Assignment metadata:
             - seniority: only values such as Junior, Mid, Senior or Staff when explicitly stated; otherwise null.
             - minYearsExperience: the overall minimum years of professional experience when explicitly stated; otherwise null.
-            - availability: an explicit availability requirement such as Immediate, 2 weeks, or a stated start date; otherwise null.
+            - availability: preserve explicit availability wording; otherwise null. Resolve relative timing against today={{today}} into requiredStartDate (yyyy-MM-dd); otherwise null.
             - location: an explicit work location or Remote/Hybrid arrangement; otherwise null.
 
             Requirements:
@@ -75,7 +83,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             {
               "seniority": string|null,
               "minYearsExperience": int|null,
-              "availability": string|null,
+              "availability": string|null, "requiredStartDate": "yyyy-MM-dd"|null,
               "location": string|null,
               "requirements": [
                 { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null, "requiresFluency": bool }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
@@ -24,6 +25,7 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
         try
         {
             var draft = await ai.ExtractConsultantProfileAsync(input.Text!, ct);
+            SetExperienceYears(draft);
             foreach (var language in draft.Languages)
             {
                 var normalized = SkillNormalizationService.NormalizeHumanLanguage(language.Name, language.Level);
@@ -64,6 +66,52 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
                 title: "AI service unavailable",
                 detail: "The AI service could not process the assignment requirements right now. Try again shortly.");
         }
+    }
+
+
+    private static void SetExperienceYears(ConsultantDraftDto draft)
+    {
+        if (draft.YearsOfExperience is not null)
+        {
+            draft.YearsOfExperienceSource = "ExplicitInCv";
+            return;
+        }
+
+        var ranges = new List<(int Start, int End)>();
+        foreach (var item in draft.Experiences)
+        {
+            if (!TryMonth(item.StartDate, out var start)) continue;
+            var end = TryMonth(item.EndDate, out var parsedEnd) ? parsedEnd : DateOnly.FromDateTime(DateTime.UtcNow);
+            if (end < start) continue;
+            ranges.Add((start.Year * 12 + start.Month, end.Year * 12 + end.Month));
+        }
+
+        if (ranges.Count == 0) { draft.YearsOfExperienceSource = null; return; }
+        var ordered = ranges.OrderBy(range => range.Start).ToList();
+        var totalMonths = 0;
+        var currentStart = ordered[0].Start;
+        var currentEnd = ordered[0].End;
+        foreach (var range in ordered.Skip(1))
+        {
+            if (range.Start <= currentEnd + 1) currentEnd = Math.Max(currentEnd, range.End);
+            else { totalMonths += currentEnd - currentStart + 1; currentStart = range.Start; currentEnd = range.End; }
+        }
+        totalMonths += currentEnd - currentStart + 1;
+        draft.YearsOfExperience = totalMonths / 12;
+        draft.YearsOfExperienceSource = "CalculatedFromExperienceDates";
+    }
+
+    private static bool TryMonth(string? value, out DateOnly month)
+    {
+        month = default;
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        var parts = value.Split('-', StringSplitOptions.TrimEntries);
+        if (parts.Length != 2 ||
+            !int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var year) ||
+            !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var monthNumber) ||
+            monthNumber is < 1 or > 12) return false;
+        month = new DateOnly(year, monthNumber, 1);
+        return true;
     }
 
     private async Task<(string? Text, string? Error)> GetText(ExtractionRequestDto request, CancellationToken ct)

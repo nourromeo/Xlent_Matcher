@@ -39,7 +39,8 @@ export type ConsultantLanguage = {
   id: number;
   consultantId: number;
   name: string;
-  level: string | null;
+  level: "Basic" | "Intermediate" | "Fluent" | null;
+  sourceLevel?: string | null;
 };
 
 export type ConsultantIndustry = {
@@ -64,7 +65,10 @@ export type Consultant = {
   title: string | null;
   summary: string | null;
   seniority: string | null;
-  yearsOfExperience: number;
+  yearsOfExperience: number | null;
+  yearsOfExperienceSource: string | null;
+  availableFromDate: string | null;
+  availabilityConfirmedAt: string | null;
   availability: string | null;
   office: string | null;
   originalCvText: string | null;

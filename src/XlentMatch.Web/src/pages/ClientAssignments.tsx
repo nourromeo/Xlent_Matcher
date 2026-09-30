@@ -46,7 +46,8 @@ function NewAssignmentModal({
   const [brief, setBrief] = useState("");
   const [briefFile, setBriefFile] = useState<File | null>(null);
   const [seniority, setSeniority] = useState("Mid");
-  const [availability, setAvailability] = useState("Immediate");
+  const [availability, setAvailability] = useState("Available now");
+  const [requiredStartDate, setRequiredStartDate] = useState("");
   const [location, setLocation] = useState("");
   const [minYears, setMinYears] = useState(0);
   const [requirements, setRequirements] = useState<AssignmentRequirementApi[]>([]);
@@ -82,6 +83,7 @@ function NewAssignmentModal({
       setBrief(extracted.sourceText ?? brief);
       if (extracted.seniority) setSeniority(extracted.seniority);
       if (extracted.availability) setAvailability(extracted.availability);
+      if (extracted.requiredStartDate) setRequiredStartDate(extracted.requiredStartDate);
       if (extracted.location) setLocation(extracted.location);
       if (extracted.minYearsExperience !== null) setMinYears(extracted.minYearsExperience);
 
@@ -137,6 +139,7 @@ function NewAssignmentModal({
       seniority: seniority.trim() || null,
       minYearsExperience: minYears,
       availability: availability.trim() || null,
+      requiredStartDate: requiredStartDate || null,
       location: location.trim() || null,
       status: "Draft",
       createdAt: new Date().toISOString(),
@@ -228,7 +231,7 @@ function NewAssignmentModal({
           <div className="grid md:grid-cols-2 gap-3">
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_seniority")}</span>
-              <Input value={seniority} onChange={(event) => setSeniority(event.target.value)} />
+              <select value={seniority} onChange={(event) => setSeniority(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
             </label>
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_availability")}</span>
@@ -237,6 +240,7 @@ function NewAssignmentModal({
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">Work location</span>
               <Input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="e.g. Stockholm / Hybrid / Remote" />
+              <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Required start date</span><Input type="date" value={requiredStartDate} onChange={(event) => setRequiredStartDate(event.target.value)} /></label>
             </label>
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">Minimum years experience</span>

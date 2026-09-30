@@ -47,6 +47,7 @@ public class AdminController(
         return new AdminOverviewDto
         {
             Skills = skills,
+            PendingLanguages = await db.LanguageSuggestions.AsNoTracking().OrderByDescending(item => item.Occurrences).Select(item => new PendingLanguageDto { Id = item.Id, Name = item.Name, Occurrences = item.Occurrences, FirstSeenAt = item.FirstSeenAt }).ToListAsync(ct),
             MatchingFactors =
             [
                 new() { Key = "mandatory", Label = "Mandatory requirements", Value = matching.MandatoryWeight, Description = "Weight used for mandatory requirement coverage." },
@@ -266,6 +267,47 @@ public class AdminController(
             ConsultantCount = consultantCount
         };
     }
+    [HttpPost("languages/{id:int}/approve")]
+    public async Task<IActionResult> ApproveLanguageSuggestion(int id, CancellationToken ct)
+    {
+        var suggestion = await db.LanguageSuggestions.FirstOrDefaultAsync(item => item.Id == id, ct);
+        if (suggestion is null) return NotFound();
+        var skill = await db.Skills.Include(item => item.Aliases)
+            .FirstOrDefaultAsync(item => item.NormalizedName == suggestion.NormalizedName ||
+                item.Aliases.Any(alias => alias.NormalizedAlias == suggestion.NormalizedName), ct);
+        if (skill is null)
+        {
+            skill = new Skill { CanonicalName = suggestion.Name, NormalizedName = suggestion.NormalizedName, Category = "Human language" };
+            db.Skills.Add(skill);
+            await db.SaveChangesAsync(ct);
+        }
+        else skill.Category = "Human language";
+
+        var requirements = await db.AssignmentRequirements.Where(item => item.Category == "HumanLanguage").ToListAsync(ct);
+        foreach (var requirement in requirements.Where(item => SkillNormalizationService.NormalizeKey(item.Name) == suggestion.NormalizedName))
+        {
+            requirement.SkillId = skill.Id;
+            requirement.Name = skill.CanonicalName;
+        }
+        var profiles = await db.ConsultantLanguages.ToListAsync(ct);
+        foreach (var language in profiles.Where(item => SkillNormalizationService.NormalizeKey(item.Name) == suggestion.NormalizedName))
+            language.Name = skill.CanonicalName;
+
+        db.LanguageSuggestions.Remove(suggestion);
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpDelete("languages/{id:int}")]
+    public async Task<IActionResult> DismissLanguageSuggestion(int id, CancellationToken ct)
+    {
+        var suggestion = await db.LanguageSuggestions.FindAsync([id], ct);
+        if (suggestion is null) return NotFound();
+        db.LanguageSuggestions.Remove(suggestion);
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
     [HttpPut("matching-weights")]
     public async Task<ActionResult<AdminOverviewDto>> UpdateMatchingWeights(
         UpdateMatchingWeightsRequest input,
@@ -316,6 +358,7 @@ public class UpdateMatchingWeightsRequest
 public class AdminOverviewDto
 {
     public List<AdminSkillDto> Skills { get; set; } = new();
+    public List<PendingLanguageDto> PendingLanguages { get; set; } = new();
     public List<AdminMatchingFactorDto> MatchingFactors { get; set; } = new();
     public int MissingMandatoryPenalty { get; set; }
     public List<AdminCapabilityDto> Capabilities { get; set; } = new();
@@ -328,6 +371,14 @@ public class AdminSkillDto
     public string Category { get; set; } = "";
     public List<string> Aliases { get; set; } = new();
     public int ConsultantCount { get; set; }
+}
+
+public class PendingLanguageDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public int Occurrences { get; set; }
+    public DateTime FirstSeenAt { get; set; }
 }
 
 public class AdminMatchingFactorDto

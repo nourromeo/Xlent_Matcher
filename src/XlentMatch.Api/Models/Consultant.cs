@@ -9,7 +9,10 @@ public class Consultant
     public string? Title { get; set; }
     public string? Summary { get; set; }
     public string? Seniority { get; set; }
-    public int YearsOfExperience { get; set; }
+    public int? YearsOfExperience { get; set; }
+    public string? YearsOfExperienceSource { get; set; }
+    public DateOnly? AvailableFromDate { get; set; }
+    public DateTime? AvailabilityConfirmedAt { get; set; }
     public string? Availability { get; set; }
     public string? Office { get; set; }
     public string? OriginalCvText { get; set; }
