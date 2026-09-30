@@ -13,6 +13,13 @@ public static class SkillCatalogSeed
         ("TypeScript", "Language", ["TS"]),
         ("CSS", "Frontend", []),
 
+        ("English", "Human language", ["English language"]),
+        ("Swedish", "Human language", ["Svenska", "Swedish language"]),
+        ("Arabic", "Human language", ["العربية", "Arabic language"]),
+        ("German", "Human language", ["Deutsch", "German language"]),
+        ("French", "Human language", ["Français", "French language"]),
+        ("Spanish", "Human language", ["Español", "Spanish language"]),
+
         (".NET", "Framework", ["dotnet", ".NET Core", "DotNet"]),
         ("ASP.NET Core", "Framework", ["ASP Net Core", "ASP.NET", "ASP.NET Core Web API"]),
         ("React", "Frontend", ["React.js", "ReactJS"]),
