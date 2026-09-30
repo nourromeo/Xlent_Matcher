@@ -65,6 +65,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         foreach (var certification in consultant.Certifications) { certification.Id = 0; certification.ConsultantId = 0; }
 
         await skills.NormalizeConsultantSkillsAsync(consultant.Skills, ct);
+        skills.NormalizeConsultantLanguages(consultant.Languages);
 
         db.Consultants.Add(consultant);
         await db.SaveChangesAsync(ct);
@@ -108,6 +109,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         input.Certifications.ForEach(x => x.Id = 0);
 
         await skills.NormalizeConsultantSkillsAsync(input.Skills, ct);
+        skills.NormalizeConsultantLanguages(input.Languages);
 
         db.ConsultantSkills.RemoveRange(existing.Skills);
         existing.Skills = input.Skills;
