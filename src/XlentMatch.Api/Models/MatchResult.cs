@@ -16,4 +16,6 @@ public class MatchResult
     public string Explanation { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<MatchRequirementResult> Details { get; set; } = new();
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public List<MatchContextResult> ContextDetails { get; set; } = new();
 }
