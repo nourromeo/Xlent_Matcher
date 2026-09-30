@@ -247,7 +247,7 @@ function NewAssignmentModal({
                 </select>
                 <Input
                   type="number"
-                  min={0}
+                  min={requirement.category === "HumanLanguage" ? 1 : 0}
                   value={requirement.category === "HumanLanguage" ? requirement.minLevel ?? "" : requirement.minYears ?? ""}
                   placeholder={requirement.category === "HumanLanguage" ? "CEFR 1–6" : "Years"}
                   aria-label={requirement.category === "HumanLanguage" ? "Minimum language level, CEFR 1 to 6" : "Minimum skill years"}
