@@ -34,7 +34,7 @@ public class SkillNormalizationService(AppDbContext db)
             (NormalizeKey(item.Name) == normalized ||
              item.Aliases.Any(alias => NormalizeKey(alias) == normalized)));
 
-        return (catalogItem?.Name ?? name, proficiency);
+        return (catalogItem.Name is not null ? catalogItem.Name : name, proficiency);
     }
 
     private static bool IsProficiencyDescription(string value)
@@ -156,7 +156,7 @@ public class SkillNormalizationService(AppDbContext db)
             var categoryNeedsCorrection = string.Equals(skill.Category, "Unclassified", StringComparison.OrdinalIgnoreCase) ||
                 (commonHumanLanguage && string.Equals(skill.Category, "Language", StringComparison.OrdinalIgnoreCase));
             if (string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase) && categoryNeedsCorrection)
-                skill.Category = category;
+                skill.Category = "Human language";
             return skill;
         }
 
