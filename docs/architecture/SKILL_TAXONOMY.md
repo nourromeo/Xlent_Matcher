@@ -59,7 +59,7 @@ deterministic matching
 
 AI bestämmer inte den slutliga skill-kategorin. För mänskliga språk läser extraktionen bara språkets namn och uttrycklig nivå; kända namn och aliases normaliseras mot den seedade katalogen. En parentes som `Svenska (Flytande nivå)` sparas som `Swedish` med nivån `Flytande nivå`.
 
-Den seedade katalogen är source of truth för vanliga språk. Extrahering skapar inte taxonomy-poster för konsultens språk. Okända språk behålls i konsultens granskningsbara profilutkast; de läggs till i taxonomy först via Admin. Katalogsynken är idempotent och körs både vid API-start och när Admin hämtar översikten, så saknade seed-rader och kategorier repareras utan en databas-migration.
+Den seedade katalogen är source of truth för vanliga språk. Extrahering skapar inte taxonomy-poster för konsultens språk. Okända språk i konsultens profilutkast sparas utan att skapas i taxonomy. Okända språkkrav från kunduppdrag sparas som `Unclassified` så att de syns i Admin för granskning innan de kategoriseras. Katalogsynken är idempotent och körs både vid API-start och när Admin hämtar översikten, så saknade seed-rader och kategorier repareras utan en databas-migration.
 
 Okända skills skapas som `Unclassified` så att de kan granskas i Admin.
 
