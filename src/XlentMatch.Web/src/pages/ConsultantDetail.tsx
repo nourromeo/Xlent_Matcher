@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronLeft, FileText, Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
+import { ChevronLeft, Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
@@ -68,7 +68,6 @@ export default function ConsultantDetail() {
   const { id } = useParams();
   const consultantId = Number(id);
 
-  const [activeTab, setActiveTab] = useState<"profile" | "original">("profile");
   const [consultant, setConsultant] = useState<Consultant | null>(null);
   const [draft, setDraft] = useState<Consultant | null>(null);
   const [skillsText, setSkillsText] = useState("");
@@ -189,22 +188,6 @@ export default function ConsultantDetail() {
         </button>
       </div>
 
-      <div className="flex border-b border-app px-6 bg-app-surface flex-none">
-        {(["profile", "original"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className="flex items-center gap-1.5 text-xs px-1 py-2.5 mr-5 border-b-2 transition-colors"
-            style={activeTab === tab
-              ? { borderColor: "var(--color-brand)", color: "var(--color-text-primary)", fontWeight: 500 }
-              : { borderColor: "transparent", color: "var(--color-text-muted)" }}
-          >
-            {tab === "profile" ? <Code size={12} /> : <FileText size={12} />}
-            {tab === "profile" ? t("consultant_extracted_profile") : t("consultant_original_cv")}
-          </button>
-        ))}
-      </div>
-
       {error && (
         <div className="mx-6 mt-4 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
           {error}
@@ -212,8 +195,7 @@ export default function ConsultantDetail() {
       )}
 
       <div className="flex-1 overflow-auto bg-app">
-        {activeTab === "profile" ? (
-          <div className="p-6 grid grid-cols-3 gap-5">
+        <div className="p-6 grid grid-cols-3 gap-5">
             <div className="col-span-2 space-y-4">
               {consultant.summary && (
                 <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
@@ -365,23 +347,7 @@ export default function ConsultantDetail() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="p-6 h-full">
-            <div className="bg-app-surface border border-app rounded-lg min-h-[500px] p-5 shadow-app-surface">
-              <div className="h-[450px] flex items-center justify-center text-center">
-                <div className="max-w-md">
-                  <FileText size={32} className="text-app-faint mx-auto mb-3" />
-                  <p className="text-sm font-medium text-app-primary">Original CV</p>
-                  <p className="text-xs text-app-muted mt-2 leading-relaxed">
-                    In a future version, this section will show the consultant's original CV file.
-                    The current MVP stores the CV upload record and links it to the consultant,
-                    while the extracted profile is shown in the profile tab.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {draft && (
