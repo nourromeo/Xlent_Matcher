@@ -246,23 +246,8 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     private static bool SameLanguage(string a, string b) =>
         string.Equals(NormalizeLanguageName(a), NormalizeLanguageName(b), StringComparison.OrdinalIgnoreCase);
 
-    private static string NormalizeLanguageName(string value)
-    {
-        var name = value.Trim().ToLowerInvariant();
-        return name switch
-        {
-            "swedish" or "svenska" or "svensk" => "swedish",
-            "english" or "engelska" => "english",
-            "arabic" or "arabiska" or "العربية" => "arabic",
-            "german" or "deutsch" or "tyska" => "german",
-            "french" or "français" or "francais" or "franska" => "french",
-            "spanish" or "español" or "espanol" or "spanska" => "spanish",
-            "norwegian" or "norsk" or "norska" => "norwegian",
-            "danish" or "dansk" or "danska" => "danish",
-            "finnish" or "suomi" or "finska" => "finnish",
-            _ => name
-        };
-    }
+    private static string NormalizeLanguageName(string value) =>
+        SkillNormalizationService.NormalizeHumanLanguage(value, null).Name.Trim().ToLowerInvariant();
 
     private static bool SameName(string a, string b) =>
         string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
