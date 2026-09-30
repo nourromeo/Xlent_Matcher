@@ -6,11 +6,14 @@ export const consultantsApi = {
 
   getById: (id: number) => apiRequest<Consultant>(`/consultants/${id}`),
 
-  create: (consultant: Consultant) =>
-    apiRequest<Consultant>("/consultants", {
-      method: "POST",
-      body: JSON.stringify(consultant),
-    }),
+  create: (consultant: Consultant, cvUploadId?: number) =>
+    apiRequest<Consultant>(
+      `/consultants${cvUploadId ? `?cvUploadId=${cvUploadId}` : ""}`,
+      {
+        method: "POST",
+        body: JSON.stringify(consultant),
+      },
+    ),
 
   update: (id: number, consultant: Consultant) =>
     apiRequest<Consultant>(`/consultants/${id}`, {
