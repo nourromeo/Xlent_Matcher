@@ -164,6 +164,7 @@ export default function CvAdaptation() {
       seniority: extracted.seniority,
       minYearsExperience: extracted.minYearsExperience ?? 0,
       availability: extracted.availability,
+      location: extracted.location,
       requirements: extracted.requirements,
     };
   };
