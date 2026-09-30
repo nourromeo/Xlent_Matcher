@@ -21,4 +21,17 @@ public class AssignmentRequirement
     public RequirementType Type { get; set; } = RequirementType.Mandatory;
     public int? MinYears { get; set; }
     public int? MinLevel { get; set; }
+
+    private string _category = "Skill";
+
+    [NotMapped]
+    public string Category
+    {
+        get => string.Equals(Skill?.Category, "Human language", StringComparison.OrdinalIgnoreCase)
+            ? "HumanLanguage"
+            : _category;
+        set => _category = string.Equals(value, "HumanLanguage", StringComparison.OrdinalIgnoreCase)
+            ? "HumanLanguage"
+            : "Skill";
+    }
 }
