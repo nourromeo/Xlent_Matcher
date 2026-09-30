@@ -45,6 +45,7 @@ export type TemporaryAssignmentDraft = {
   seniority: string | null;
   minYearsExperience: number;
   availability: string | null;
+  location: string | null;
   requirements: RequirementDraft[];
 };
 
