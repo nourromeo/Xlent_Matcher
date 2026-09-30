@@ -7,6 +7,7 @@ namespace XlentMatch.Api.Services;
 
 public class SkillNormalizationService(AppDbContext db)
 {
+    private static readonly SemaphoreSlim CatalogSyncGate = new(1, 1);
     private static readonly Regex TrailingParenthetical = new(@"^(?<name>.*?)\s*\((?<level>[^()]*)\)\s*$", RegexOptions.Compiled);
 
     public static string NormalizeKey(string value)
@@ -53,6 +54,9 @@ public class SkillNormalizationService(AppDbContext db)
 
     public async Task EnsureCatalogAsync(CancellationToken ct = default)
     {
+        await CatalogSyncGate.WaitAsync(ct);
+        try
+        {
         foreach (var item in SkillCatalogSeed.Items)
         {
             var normalizedName = NormalizeKey(item.Name);
@@ -103,6 +107,11 @@ public class SkillNormalizationService(AppDbContext db)
         }
 
         await db.SaveChangesAsync(ct);
+        }
+        finally
+        {
+            CatalogSyncGate.Release();
+        }
     }
 
     private async Task AddAliasIfAvailableAsync(Skill skill, string alias, CancellationToken ct)
@@ -198,10 +207,18 @@ public class SkillNormalizationService(AppDbContext db)
             var category = string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase)
                 ? "Human language"
                 : null;
+            var isKnownHumanLanguage = string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase) &&
+                SkillCatalogSeed.Items
+                    .Where(item => string.Equals(item.Category, "Human language", StringComparison.OrdinalIgnoreCase))
+                    .Any(item => NormalizeKey(item.Name) == NormalizeKey(requirement.Name) ||
+                                 item.Aliases.Any(alias => NormalizeKey(alias) == NormalizeKey(requirement.Name)));
             var language = string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase)
                 ? NormalizeHumanLanguage(requirement.Name, null).Name
                 : requirement.Name;
-            var skill = await ResolveAsync(language, ct, category);
+            var resolvedCategory = category is null
+                ? null
+                : isKnownHumanLanguage ? category : "Unclassified";
+            var skill = await ResolveAsync(language, ct, resolvedCategory);
             requirement.SkillId = skill.Id;
             requirement.Skill = null;
             requirement.Name = skill.CanonicalName;
