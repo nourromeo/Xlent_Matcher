@@ -101,6 +101,7 @@ function RequirementRuleEditor({ category, type, requirements, onChange }: {
           <span className="text-[10px] text-app-muted">{item.name} · {category === "HumanLanguage" ? "minimum CEFR level (1–6)" : "minimum years"}</span>
           <Input
             type="number"
+            step={1}
             min={category === "HumanLanguage" ? 1 : 0}
             max={category === "HumanLanguage" ? 6 : undefined}
             aria-label={category === "HumanLanguage" ? item.name + " minimum CEFR level" : item.name + " minimum years"}
@@ -202,6 +203,22 @@ export default function AssignmentDetail() {
     setPreferredLanguages(requirementNames(assignment, "Desired", "HumanLanguage"));
     setRequirementEdits(structuredClone(assignment.requirements));
     setEditMode(true);
+  };
+
+  const updateRequirementNames = (type: "Mandatory" | "Desired", category: "Skill" | "HumanLanguage", names: string[]) => {
+    if (category === "Skill" && type === "Mandatory") setRequiredSkills(names);
+    if (category === "Skill" && type === "Desired") setPreferredSkills(names);
+    if (category === "HumanLanguage" && type === "Mandatory") setRequiredLanguages(names);
+    if (category === "HumanLanguage" && type === "Desired") setPreferredLanguages(names);
+
+    setRequirementEdits((current) => {
+      const matches = (item: AssignmentRequirementApi) => item.type === type && item.category === category;
+      const retained = current.filter((item) => !matches(item) || names.some((name) => name.toLocaleLowerCase() === item.name.toLocaleLowerCase()));
+      const added = names
+        .filter((name) => !retained.some((item) => matches(item) && item.name.toLocaleLowerCase() === name.toLocaleLowerCase()))
+        .map((name) => ({ id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null }));
+      return [...retained, ...added];
+    });
   };
 
   const updateRequirementRule = (type: "Mandatory" | "Desired", category: "Skill" | "HumanLanguage", name: string, patch: Partial<AssignmentRequirementApi>) => {
@@ -411,7 +428,7 @@ export default function AssignmentDetail() {
                 label={t("assignment_required_skills")}
                 hint={t("assignment_required_hint")}
                 skills={requiredSkills}
-                onChange={setRequiredSkills}
+                onChange={(names) => updateRequirementNames("Mandatory", "Skill", names)}
                 accent="indigo"
               />
               <RequirementRuleEditor category="Skill" type="Mandatory" requirements={requirementEdits} onChange={(name, patch) => updateRequirementRule("Mandatory", "Skill", name, patch)} />
@@ -419,7 +436,7 @@ export default function AssignmentDetail() {
                 label={t("assignment_preferred_skills")}
                 hint={t("assignment_preferred_hint")}
                 skills={preferredSkills}
-                onChange={setPreferredSkills}
+                onChange={(names) => updateRequirementNames("Desired", "Skill", names)}
                 accent="neutral"
               />
               <RequirementRuleEditor category="Skill" type="Desired" requirements={requirementEdits} onChange={(name, patch) => updateRequirementRule("Desired", "Skill", name, patch)} />
@@ -429,7 +446,7 @@ export default function AssignmentDetail() {
                 label="Required human languages"
                 hint="Add a language such as Swedish or English."
                 skills={requiredLanguages}
-                onChange={setRequiredLanguages}
+                onChange={(names) => updateRequirementNames("Mandatory", "HumanLanguage", names)}
                 accent="indigo"
                 category="HumanLanguage"
               />
@@ -438,7 +455,7 @@ export default function AssignmentDetail() {
                 label="Preferred human languages"
                 hint="Add languages that are useful but not mandatory."
                 skills={preferredLanguages}
-                onChange={setPreferredLanguages}
+                onChange={(names) => updateRequirementNames("Desired", "HumanLanguage", names)}
                 accent="neutral"
                 category="HumanLanguage"
               />
