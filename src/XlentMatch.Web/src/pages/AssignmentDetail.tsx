@@ -88,10 +88,14 @@ const makeRequirements = (
   assignmentId: number,
   required: string[],
   preferred: string[],
-): AssignmentRequirementApi[] => [
-  ...required.map((name) => ({ id: 0, assignmentId, name, type: "Mandatory" as const, minYears: null, minLevel: null })),
-  ...preferred.map((name) => ({ id: 0, assignmentId, name, type: "Desired" as const, minYears: null, minLevel: null })),
-];
+  existing: AssignmentRequirementApi[],
+): AssignmentRequirementApi[] => [...required.map((name) => ["Mandatory" as const, name]), ...preferred.map((name) => ["Desired" as const, name])]
+  .map(([type, name]) => {
+    const previous = existing.find((item) => item.type === type && item.name.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase());
+    return previous
+      ? { ...previous, assignmentId, name, type }
+      : { id: 0, assignmentId, name, category: "Skill" as const, type, minYears: null, minLevel: null };
+  });
 
 export default function AssignmentDetail() {
   const { t } = useI18n();
@@ -162,7 +166,7 @@ export default function AssignmentDetail() {
     try {
       const payload: AssignmentApi = {
         ...draft,
-        requirements: makeRequirements(draft.id, requiredSkills, preferredSkills),
+        requirements: makeRequirements(draft.id, requiredSkills, preferredSkills, assignment.requirements),
       };
 
       const updated = await assignmentsApi.update(draft.id, payload);
@@ -190,9 +194,8 @@ export default function AssignmentDetail() {
 
   const required = requirementNames(assignment, "Mandatory");
   const preferred = requirementNames(assignment, "Desired");
-  const isMatched = assignment.status !== "Draft";
-  const statusTone = isMatched ? "success" : "neutral";
-  const statusLabel = isMatched ? "Matched" : "Draft";
+  const statusTone = assignment.status === "Done" ? "success" : "neutral";
+  const statusLabel = assignment.status;
 
   return (
     <div className="flex flex-col h-full">
