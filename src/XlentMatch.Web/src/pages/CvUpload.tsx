@@ -241,16 +241,15 @@ export default function CvUpload() {
     setError("");
 
     try {
-      const created = await consultantsApi.create(toConsultant(activeFile.draft));
+      const created = await consultantsApi.create(toConsultant(activeFile.draft), activeFile.id);
 
-      const updatedUpload = await cvUploadsApi.update(activeFile.id, {
+      updateLocal(activeFile.id, {
         status: "Indexed",
         consultantId: created.id,
         errorMessage: null,
         draftJson: null,
+        draft: undefined,
       });
-
-      updateLocal(activeFile.id, { ...updatedUpload, draft: undefined });
       setActiveId(null);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save consultant.");
@@ -533,39 +532,107 @@ export default function CvUpload() {
               </div>
             </section>
 
-            <section className="grid grid-cols-2 gap-4">
-              <div className="rounded-lg border border-app bg-app-raised p-3">
-                <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">Experience ({draft.experiences.length})</p>
-                {draft.experiences.slice(0, 5).map((item, index) => (
-                  <div key={index} className="mb-2">
-                    <p className="text-xs text-app-primary">{item.role || "Role"} · {item.company || "Company"}</p>
-                    <p className="text-[10px] text-app-muted">{item.startDate || "?"} – {item.endDate || "Present"}</p>
+            <section className="space-y-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-app-faint">Experience and profile details</p>
+                  <p className="text-[11px] text-app-muted mt-1">Review every extracted item. Correct names, dates and levels before saving.</p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-app-primary">Languages ({draft.languages.length})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", level: null }] })}>Add language</Button>
+                </div>
+                {draft.languages.map((item, index) => (
+                  <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                    <Input aria-label="Language" placeholder="Language" value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                    <Input aria-label="Language level" placeholder="Level (e.g. C1, Fluent)" value={item.level ?? ""} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: event.target.value || null } : row) })} />
+                    <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label="Remove language"><X size={12} /></button>
                   </div>
                 ))}
-                {draft.experiences.length === 0 && <p className="text-xs text-app-faint">No experience extracted.</p>}
+                {draft.languages.length === 0 && <p className="text-[11px] text-app-faint">No languages extracted. Add them if they are listed in the CV.</p>}
               </div>
 
-              <div className="rounded-lg border border-app bg-app-raised p-3">
-                <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">Projects ({draft.projects.length})</p>
-                {draft.projects.slice(0, 5).map((item, index) => (
-                  <div key={index} className="mb-2">
-                    <p className="text-xs text-app-primary">{item.name}</p>
-                    <p className="text-[10px] text-app-muted">{item.technologies || "No technologies listed"}</p>
+              <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-app-primary">Experience ({draft.experiences.length})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...draft.experiences, { company: "", role: "", description: null, startDate: null, endDate: null }] })}>Add experience</Button>
+                </div>
+                {draft.experiences.map((item, index) => (
+                  <div key={index} className="rounded-md border border-app bg-app-surface p-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input aria-label="Role" placeholder="Role" value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
+                      <Input aria-label="Company" placeholder="Company" value={item.company} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
+                      <Input aria-label="Start date" placeholder="Start date (YYYY-MM)" value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
+                      <Input aria-label="End date" placeholder="End date (YYYY-MM or Present)" value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
+                    </div>
+                    <Textarea aria-label="Experience description" placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                    <button type="button" onClick={() => updateDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted hover:text-app-secondary">Remove experience</button>
                   </div>
                 ))}
-                {draft.projects.length === 0 && <p className="text-xs text-app-faint">No projects extracted.</p>}
+                {draft.experiences.length === 0 && <p className="text-[11px] text-app-faint">No experience extracted. Add relevant experience from the CV.</p>}
               </div>
 
-              <div className="rounded-lg border border-app bg-app-raised p-3">
-                <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">Education & certifications</p>
-                <p className="text-xs text-app-secondary">Education: {draft.education.length}</p>
-                <p className="text-xs text-app-secondary mt-1">Certifications: {draft.certifications.length}</p>
-              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-app-primary">Projects ({draft.projects.length})</p>
+                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, projects: [...draft.projects, { name: "", description: null, technologies: null }] })}>Add project</Button>
+                  </div>
+                  {draft.projects.map((item, index) => (
+                    <div key={index} className="rounded border border-app bg-app-surface p-2 space-y-2">
+                      <Input placeholder="Project name" value={item.name} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                      <Input placeholder="Technologies (comma-separated)" value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
+                      <Textarea placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted">Remove project</button>
+                    </div>
+                  ))}
+                </div>
 
-              <div className="rounded-lg border border-app bg-app-raised p-3">
-                <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">Other extracted data</p>
-                <p className="text-xs text-app-secondary">Languages: {draft.languages.map((item) => item.name).join(", ") || "—"}</p>
-                <p className="text-xs text-app-secondary mt-1">Industries: {draft.industries.join(", ") || "—"}</p>
+                <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-app-primary">Education ({draft.education.length})</p>
+                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, education: [...draft.education, { degree: "", school: null, year: null }] })}>Add education</Button>
+                  </div>
+                  {draft.education.map((item, index) => (
+                    <div key={index} className="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-center">
+                      <Input placeholder="Degree" value={item.degree} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
+                      <Input placeholder="School" value={item.school ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
+                      <Input placeholder="Year" value={item.year ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove education"><X size={12} /></button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-app-primary">Certifications ({draft.certifications.length})</p>
+                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, certifications: [...draft.certifications, { name: "", issuer: null, issuedDate: null }] })}>Add certification</Button>
+                  </div>
+                  {draft.certifications.map((item, index) => (
+                    <div key={index} className="grid grid-cols-[1fr_1fr_110px_auto] gap-2 items-center">
+                      <Input placeholder="Certification" value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                      <Input placeholder="Issuer" value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
+                      <Input placeholder="Issued YYYY-MM" value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove certification"><X size={12} /></button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-app-primary">Industries ({draft.industries.length})</p>
+                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, industries: [...draft.industries, ""] })}>Add industry</Button>
+                  </div>
+                  {draft.industries.map((item, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input placeholder="Industry" value={item} onChange={(event) => updateDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? event.target.value : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove industry"><X size={12} /></button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
 
