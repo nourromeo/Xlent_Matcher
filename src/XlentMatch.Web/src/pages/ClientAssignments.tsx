@@ -45,6 +45,7 @@ function NewAssignmentModal({
   const [briefFile, setBriefFile] = useState<File | null>(null);
   const [seniority, setSeniority] = useState("Mid");
   const [availability, setAvailability] = useState("Immediate");
+  const [location, setLocation] = useState("");
   const [minYears, setMinYears] = useState(0);
   const [requirements, setRequirements] = useState<AssignmentRequirementApi[]>([]);
   const [extracting, setExtracting] = useState(false);
@@ -79,6 +80,7 @@ function NewAssignmentModal({
       setBrief(extracted.sourceText ?? brief);
       if (extracted.seniority) setSeniority(extracted.seniority);
       if (extracted.availability) setAvailability(extracted.availability);
+      if (extracted.location) setLocation(extracted.location);
       if (extracted.minYearsExperience !== null) setMinYears(extracted.minYearsExperience);
 
       setStep("review");
@@ -131,8 +133,10 @@ function NewAssignmentModal({
       seniority: seniority.trim() || null,
       minYearsExperience: minYears,
       availability: availability.trim() || null,
+      location: location.trim() || null,
       status: "Draft",
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       requirements: cleanedRequirements,
     };
 
@@ -217,7 +221,7 @@ function NewAssignmentModal({
             </details>
           )}
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid md:grid-cols-2 gap-3">
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_seniority")}</span>
               <Input value={seniority} onChange={(event) => setSeniority(event.target.value)} />
@@ -225,6 +229,10 @@ function NewAssignmentModal({
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_availability")}</span>
               <Input value={availability} onChange={(event) => setAvailability(event.target.value)} />
+            </label>
+            <label className="block">
+              <span className="text-[11px] text-app-muted mb-1.5 block">Work location</span>
+              <Input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="e.g. Stockholm / Hybrid / Remote" />
             </label>
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">Minimum years experience</span>
@@ -365,6 +373,7 @@ export default function ClientAssignments() {
       assignment.customerName.toLowerCase().includes(search) ||
       (assignment.description ?? "").toLowerCase().includes(search) ||
       (assignment.seniority ?? "").toLowerCase().includes(search) ||
+      (assignment.location ?? "").toLowerCase().includes(search) ||
       assignment.requirements.some((requirement) => requirement.name.toLowerCase().includes(search))
     );
   });
@@ -407,7 +416,7 @@ export default function ClientAssignments() {
                     <StatusBadge tone={status.tone} icon={status.icon}>{status.label}</StatusBadge>
                   </div>
                   <p className="text-xs text-app-muted">
-                    {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {new Date(assignment.createdAt).toLocaleDateString()}
+                    {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {assignment.location || "Location not specified"} · Updated {new Date(assignment.updatedAt || assignment.createdAt).toLocaleDateString()}
                   </p>
                   <p className="text-[11px] text-app-secondary mt-1 mb-2 max-w-3xl line-clamp-2">{assignment.description || "—"}</p>
                   <p className="text-[10px] text-app-muted mb-2">{assignment.requirements.length} requirements{assignment.minYearsExperience > 0 ? ` · ${assignment.minYearsExperience}+ years experience` : ""}</p>
