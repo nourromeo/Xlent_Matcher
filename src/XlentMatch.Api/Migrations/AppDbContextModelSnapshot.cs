@@ -43,6 +43,9 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("MinYearsExperience")
                         .HasColumnType("int");
 
@@ -55,6 +58,9 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
