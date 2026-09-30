@@ -38,31 +38,6 @@ const initials = (consultant: Consultant) =>
     .join("")
     .slice(0, 2);
 
-const skillsToText = (skills: ConsultantSkill[]) =>
-  skills
-    .map((skill) => [skill.name, skill.category ?? "", skill.years, skill.level, skill.evidence ?? ""].join(" | "))
-    .join("\n");
-
-const parseSkills = (value: string, consultantId: number): ConsultantSkill[] =>
-  value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, index) => {
-      const [name, category = "", years = "0", level = "0", ...evidence] =
-        line.split("|").map((part) => part.trim());
-
-      return {
-        id: 0,
-        consultantId,
-        name,
-        category: category || null,
-        years: Number(years) || 0,
-        level: Number(level) || 0,
-        evidence: evidence.join(" | ") || null,
-      };
-    });
-
 export default function ConsultantDetail() {
   const { t } = useI18n();
   const { id } = useParams();
@@ -70,7 +45,6 @@ export default function ConsultantDetail() {
 
   const [consultant, setConsultant] = useState<Consultant | null>(null);
   const [draft, setDraft] = useState<Consultant | null>(null);
-  const [skillsText, setSkillsText] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -107,7 +81,6 @@ export default function ConsultantDetail() {
   const openEdit = () => {
     if (!consultant) return;
     setDraft(structuredClone(consultant));
-    setSkillsText(skillsToText(consultant.skills));
     setEditMode(true);
   };
 
@@ -120,7 +93,13 @@ export default function ConsultantDetail() {
     try {
       const payload: Consultant = {
         ...draft,
-        skills: parseSkills(skillsText, draft.id),
+        skills: draft.skills.filter((skill) => skill.name.trim()).map((skill) => ({ ...skill, id: 0, consultantId: 0, skillId: 0 })),
+        languages: draft.languages.filter((item) => item.name.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        experiences: draft.experiences.filter((item) => item.company.trim() || item.role.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        projects: draft.projects.filter((item) => item.name.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        education: draft.education.filter((item) => item.degree.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        industries: draft.industries.filter((item) => item.name.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
+        certifications: draft.certifications.filter((item) => item.name.trim()).map((item) => ({ ...item, id: 0, consultantId: 0 })),
       };
 
       const updated = await consultantsApi.update(draft.id, payload);
@@ -399,13 +378,19 @@ export default function ConsultantDetail() {
             </FormField>
           </FormSection>
 
-          <FormSection title={t("consultant_skills")} description="Name | Category | Years | Level 1-5 | Evidence">
-            <Textarea
-              value={skillsText}
-              onChange={(event) => setSkillsText(event.target.value)}
-              rows={7}
-              className="font-mono"
-            />
+          <FormSection title={t("consultant_skills")}>
+            <div className="space-y-2">
+              {draft.skills.map((item, index) => (
+                <div key={index} className="grid grid-cols-[minmax(140px,1fr)_90px_90px_minmax(140px,1fr)_auto] gap-2 items-center">
+                  <Input placeholder="Skill" value={item.name} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                  <Input type="number" min={0} aria-label="Years" placeholder="Years" value={item.years} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, years: Number(event.target.value) || 0 } : row) })} />
+                  <Input type="number" min={0} max={5} aria-label="Skill level from 0 to 5" placeholder="Level" value={item.level} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, level: Number(event.target.value) || 0 } : row) })} />
+                  <Input placeholder="Evidence from CV" value={item.evidence ?? ""} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, evidence: event.target.value || null } : row) })} />
+                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, i) => i !== index) })}>Remove</button>
+                </div>
+              ))}
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, skills: [...draft.skills, { id: 0, consultantId: draft.id, name: "", category: null, years: 0, level: 0, evidence: null }] })}>+ Add skill</button>
+            </div>
           </FormSection>
 
           <FormSection title="Languages">
