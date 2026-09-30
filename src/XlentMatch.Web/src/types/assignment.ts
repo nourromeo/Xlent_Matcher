@@ -38,6 +38,8 @@ export type AssignmentApi = {
   seniority: string | null;
   minYearsExperience: number;
   availability: string | null;
+  location: string | null;
+  updatedAt: string | null;
   status: AssignmentStatusApi;
   createdAt: string;
   requirements: AssignmentRequirementApi[];
