@@ -72,7 +72,7 @@ export default function Layout() {
             aria-label={t("nav_dashboard")}
           >
             <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: "var(--color-brand)" }}>
-              <Zap size={12} className="text-white" />
+              <Zap size={12} className="text-app-on-brand" />
             </div>
             <span className="text-sm font-semibold tracking-tight text-app-primary">XLENT Match</span>
           </Link>
@@ -132,7 +132,9 @@ export default function Layout() {
               {LOCALES.map((loc) => (
                 <button
                   key={loc}
+                  type="button"
                   onClick={() => setLocale(loc)}
+                  aria-pressed={locale === loc}
                   className={`text-[10px] font-mono px-2 py-1 transition-colors ${
                     locale === loc
                       ? "bg-app-brand-subtle text-app-brand font-semibold"
@@ -145,7 +147,9 @@ export default function Layout() {
             </div>
 
             <button
+              type="button"
               onClick={toggle}
+              aria-label={theme === "dark" ? t("theme_light") : t("theme_dark")}
               className="w-7 h-7 rounded flex items-center justify-center text-app-muted hover:text-app-secondary hover:bg-app-raised border border-app transition-colors"
               title={theme === "dark" ? t("theme_light") : t("theme_dark")}
             >

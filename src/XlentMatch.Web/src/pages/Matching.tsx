@@ -233,7 +233,7 @@ export default function Matching() {
                 <button
                   onClick={runMatching}
                   disabled={!assignment || matching || consultants.length === 0}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-white px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-app-on-brand px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: "var(--color-brand)" }}
                 >
                   {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
@@ -260,7 +260,7 @@ export default function Matching() {
             <button
               onClick={runMatching}
               disabled={matching || consultants.length === 0}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-white px-3 py-2 rounded-md shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-app-on-brand px-3 py-2 rounded-md shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: "var(--color-brand)" }}
             >
               {matching ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}

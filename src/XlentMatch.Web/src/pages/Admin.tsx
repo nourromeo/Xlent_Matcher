@@ -380,7 +380,7 @@ export default function Admin() {
                       className={
                         "min-w-7 h-7 px-2 rounded text-[11px] border " +
                         (page === currentSkillPage
-                          ? "bg-app-brand text-white border-transparent"
+                          ? "bg-app-brand text-app-on-brand border-transparent"
                           : "bg-app-surface text-app-secondary border-app")
                       }
                       aria-current={page === currentSkillPage ? "page" : undefined}
