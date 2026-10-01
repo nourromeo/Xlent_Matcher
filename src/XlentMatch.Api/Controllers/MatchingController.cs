@@ -34,6 +34,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
             .Include(c => c.Languages)
             .Include(c => c.Experiences)
             .Where(c => request.ConsultantIds.Contains(c.Id))
+            .AsSplitQuery()
             .AsNoTracking()
             .ToListAsync(ct);
 
