@@ -449,6 +449,7 @@ export default function Matching() {
                         <span className="text-xs font-mono text-app-primary">{detail.requirementName}</span>
                       </div>
                     ))}
+                    {matchedRequired.length > 4 && <button type="button" onClick={() => setActiveTab("Requirements")} className="mt-2 w-full border-t border-app-subtle pt-2 text-left text-[10px] text-app-brand hover:text-app-primary focus:outline-none focus:ring-1 focus:ring-app-brand">✓ +{matchedRequired.length - 4} more matched requirements →</button>}
                   </div>
                 </div>
 
@@ -465,6 +466,7 @@ export default function Matching() {
                           <span className="text-xs font-mono" style={{ color: "var(--color-warning)" }}>{detail.requirementName}</span>
                         </div>
                       ))}
+                      {missingRequired.length > 4 && <button type="button" onClick={() => setActiveTab("Requirements")} className="mt-2 w-full border-t border-app-subtle pt-2 text-left text-[10px] text-app-brand hover:text-app-primary focus:outline-none focus:ring-1 focus:ring-app-brand">✕ +{missingRequired.length - 4} more missing requirements →</button>}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -510,8 +512,6 @@ export default function Matching() {
                         <p className="text-[11px] text-app-secondary leading-relaxed mt-1">{detail.evidence}</p>
                       </div>
                     ))}
-                    {matchedRequired.length > 4 && <button type="button" onClick={() => setActiveTab("Requirements")} className="mt-2 w-full border-t border-app-subtle pt-2 text-left text-[10px] text-app-brand">✓ +{matchedRequired.length - 4} more matched requirements →</button>}
-                    {missingRequired.length > 4 && <button type="button" onClick={() => setActiveTab("Requirements")} className="mt-2 w-full border-t border-app-subtle pt-2 text-left text-[10px] text-app-brand">✕ +{missingRequired.length - 4} more missing requirements →</button>}
                   </div>
                 </div>
 
