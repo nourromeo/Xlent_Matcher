@@ -11,6 +11,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { EmptyState } from "../components/ui/EmptyState";
 import { PageHeader } from "../components/ui/PageHeader";
 import { assignmentsApi } from "../services/assignmentsApi";
+import { validateDocumentFile } from "../services/fileValidation";
 import { aiApi } from "../services/aiApi";
 import type { AssignmentApi, AssignmentRequirementApi, AssignmentStatusApi } from "../types";
 
@@ -183,8 +184,8 @@ function NewAssignmentModal({
               onChange={(event) => {
                 const file = event.target.files?.[0] ?? null;
                 setError("");
-                if (file && file.size > 10 * 1024 * 1024) { setError("File is larger than 10 MB."); event.target.value = ""; setBriefFile(null); return; }
-                if (file && !/\.(pdf|txt)$/i.test(file.name)) { setError("Unsupported file type. Use PDF or TXT."); event.target.value = ""; setBriefFile(null); return; }
+                const validationError = file ? validateDocumentFile(file) : null;
+                if (validationError) { setError(validationError); event.target.value = ""; setBriefFile(null); return; }
                 setBriefFile(file);
                 if (file) setBrief("");
               }}

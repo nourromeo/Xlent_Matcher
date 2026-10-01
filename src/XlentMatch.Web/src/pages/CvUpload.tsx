@@ -9,9 +9,8 @@ import { Modal } from "../components/ui/Modal";
 import { aiApi, type ConsultantDraft } from "../services/aiApi";
 import { consultantsApi } from "../services/consultantsApi";
 import { cvUploadsApi, type CvUploadStatus, type CvUploadView } from "../services/cvUploadsApi";
+import { validateDocumentFile } from "../services/fileValidation";
 import type { Consultant } from "../types";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -165,18 +164,9 @@ export default function CvUpload() {
   const handleFile = async (file?: File) => {
     if (!file) return;
 
-    if (!/\.(pdf|txt)$/i.test(file.name)) {
-      setError("Unsupported file type. Use PDF or TXT.");
-      return;
-    }
-
-    if (file.size <= 0) {
-      setError("The selected file is empty.");
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      setError("File is larger than 10 MB.");
+    const validationError = validateDocumentFile(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
