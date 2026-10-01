@@ -112,6 +112,13 @@ export default function Matching() {
   const selected = sortedResults.find((result) => result.id === selectedMatchId) ?? sortedResults[0];
   const selectedQualified = Boolean(selected && selected.details.every((detail) => detail.type !== "Mandatory" || detail.isMatched));
 
+  useEffect(() => {
+    setSelectedMatchId((current) => {
+      if (sortedResults.length === 0) return null;
+      return sortedResults.some((result) => result.id === current) ? current : sortedResults[0].id;
+    });
+  }, [sortedResults]);
+
   const consultantById = useMemo(
     () => new Map(consultants.map((consultant) => [consultant.id, consultant])),
     [consultants],
@@ -316,6 +323,29 @@ export default function Matching() {
             <p className="text-xs text-app-muted mt-2 leading-relaxed">{t("matching_ready_help")}</p>
           </div>
         </div>
+      ) : sortedResults.length === 0 ? (
+        <div className="flex-1 flex min-h-0">
+          <aside className="w-80 flex-none border-r border-app bg-app-surface flex flex-col">
+            <div className="px-4 py-3 border-b border-app">
+              <p className="text-sm font-semibold text-app-primary">Match Consultants</p>
+              <p className="text-[10px] text-app-muted mt-0.5">No consultants match the current filter or search.</p>
+              <div className="mt-3 flex gap-1"><button type="button" onClick={() => setListFilter("All")} className="rounded px-2 py-1 text-[10px] text-app-muted">All ({results.length})</button><button type="button" onClick={() => setListFilter("Qualified")} className="rounded px-2 py-1 text-[10px] text-app-muted">Qualified</button><button type="button" onClick={() => setListFilter("Not qualified")} className="rounded px-2 py-1 text-[10px] text-app-muted">Not qualified</button></div>
+            </div>
+            <div className="flex-1 flex items-center justify-center p-5 text-center">
+              <div>
+                <p className="text-sm font-medium text-app-primary">{listFilter === "Qualified" ? "No qualified consultants" : "No consultants found"}</p>
+                <p className="text-xs text-app-muted mt-2">{listFilter === "Qualified" ? "No consultants currently meet all mandatory requirements for this assignment." : "Try changing the filter or search."}</p>
+                <button type="button" onClick={() => { setListFilter("All"); setQuery(""); }} className="mt-3 text-xs text-app-brand hover:text-app-primary">View all consultants</button>
+              </div>
+            </div>
+          </aside>
+          <main className="flex-1 flex items-center justify-center bg-app p-6">
+            <div className="text-center">
+              <p className="text-sm font-medium text-app-primary">No consultant selected</p>
+              <p className="text-xs text-app-muted mt-2">Select a consultant to view the match analysis.</p>
+            </div>
+          </main>
+        </div>
       ) : selected ? (
         <div className="flex-1 flex min-h-0">
           <aside className="w-80 flex-none border-r border-app bg-app-surface flex flex-col">
@@ -329,7 +359,7 @@ export default function Matching() {
             <div className="flex-1 overflow-auto">
               {sortedResults.map((result) => {
                 const missing = result.details.filter((detail) => detail.type === "Mandatory" && !detail.isMatched);
-                const isSelected = selected.id === result.id;
+                const isSelected = selected?.id === result.id;
 
                 return (
                   <button
