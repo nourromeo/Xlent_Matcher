@@ -4,7 +4,7 @@ import { apiRequest } from "./api";
 export const consultantsApi = {
   getAll: () => apiRequest<Consultant[]>("/consultants"),
 
-  getById: (id: number) => apiRequest<Consultant>(`/consultants/${id}`),
+  getById: (id: number, signal?: AbortSignal) => apiRequest<Consultant>(`/consultants/${id}`, { signal }),
 
   create: (consultant: Consultant, cvUploadId?: number) =>
     apiRequest<Consultant>(

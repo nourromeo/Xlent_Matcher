@@ -69,13 +69,15 @@ export default function ConsultantDetail() {
     }
 
     let cancelled = false;
+    const controller = new AbortController();
 
     consultantsApi
-      .getById(consultantId)
+      .getById(consultantId, controller.signal)
       .then((data) => {
         if (!cancelled) setConsultant(data);
       })
       .catch((requestError: unknown) => {
+        if (!cancelled && requestError instanceof DOMException && requestError.name === "AbortError") return;
         if (!cancelled) {
           setError(requestError instanceof Error ? requestError.message : "Could not load consultant.");
         }
@@ -86,6 +88,7 @@ export default function ConsultantDetail() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [consultantId]);
 

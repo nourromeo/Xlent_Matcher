@@ -156,7 +156,8 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
             .Include(c => c.Education)
             .Include(c => c.Languages)
             .Include(c => c.Industries)
-            .Include(c => c.Certifications);
+            .Include(c => c.Certifications)
+            .AsSplitQuery();
 
         if (!track) query = query.AsNoTracking();
         return query.FirstOrDefaultAsync(c => c.Id == id, ct);
