@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, Filter, Eye } from "../design-system/icons";
+import { Search, Filter, Eye, Calendar } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Input } from "../components/ui/Input";
@@ -21,6 +21,13 @@ const initials = (consultant: Consultant) =>
     .map((part) => part[0]?.toUpperCase())
     .join("")
     .slice(0, 2);
+
+function formatAvailableAgainDate(value: string | null) {
+  if (!value) return "Available again";
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return "Available again";
+  return new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", year: "numeric" }).format(new Date(year, month - 1, day));
+}
 
 export default function Consultants() {
   const { t } = useI18n();
@@ -228,7 +235,20 @@ export default function Consultants() {
                     <option value="Available">Available</option>
                     <option value="Unavailable">Unavailable</option>
                   </select>
-                  {consultant.availability === "Unavailable" && <input aria-label={`Available again date for ${consultantName(consultant)}`} type="date" value={consultant.availableAgainDate?.slice(0, 10) ?? ""} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, "Unavailable", event.target.value || null)} className="bg-app border border-app rounded px-2 py-1 text-[11px] text-app-primary" />}
+                  {consultant.availability === "Unavailable" && (
+                    <label className="relative inline-flex items-center gap-1.5 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
+                      <span>{formatAvailableAgainDate(consultant.availableAgainDate)}</span>
+                      <Calendar size={12} className="text-app-muted" aria-hidden="true" />
+                      <input
+                        aria-label={`Available again date for ${consultantName(consultant)}`}
+                        type="date"
+                        value={consultant.availableAgainDate?.slice(0, 10) ?? ""}
+                        disabled={updatingAvailabilityId === consultant.id}
+                        onChange={(event) => void updateAvailability(consultant, "Unavailable", event.target.value || null)}
+                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      />
+                    </label>
+                  )}
                 </div>
               ),
             },
