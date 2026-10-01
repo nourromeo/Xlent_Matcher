@@ -201,7 +201,7 @@ public class SkillNormalizationService(AppDbContext db)
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task NormalizeConsultantSkillsAsync(IEnumerable<ConsultantSkill> skills, CancellationToken ct = default)
+    public async Task NormalizeConsultantSkillsAsync(IList<ConsultantSkill> skills, CancellationToken ct = default)
     {
         foreach (var consultantSkill in skills)
         {
@@ -223,6 +223,31 @@ public class SkillNormalizationService(AppDbContext db)
             consultantSkill.Name = skill.CanonicalName;
             consultantSkill.Category = skill.Category;
         }
+
+        var unique = new Dictionary<string, ConsultantSkill>(StringComparer.OrdinalIgnoreCase);
+        foreach (var consultantSkill in skills.Where(skill => !string.IsNullOrWhiteSpace(skill.Name)))
+        {
+            var key = consultantSkill.SkillId is int skillId
+                ? $"skill:{skillId}"
+                : $"raw:{NormalizeKey(consultantSkill.Name)}";
+
+            if (!unique.TryGetValue(key, out var existing))
+            {
+                unique[key] = consultantSkill;
+                continue;
+            }
+
+            if (consultantSkill.Years > existing.Years)
+                existing.Years = consultantSkill.Years;
+            if (consultantSkill.Level > existing.Level)
+                existing.Level = consultantSkill.Level;
+            if (string.IsNullOrWhiteSpace(existing.Evidence) && !string.IsNullOrWhiteSpace(consultantSkill.Evidence))
+                existing.Evidence = consultantSkill.Evidence;
+        }
+
+        skills.Clear();
+        foreach (var consultantSkill in unique.Values)
+            skills.Add(consultantSkill);
     }
 
     public async Task NormalizeRequirementsAsync(IEnumerable<AssignmentRequirement> requirements, CancellationToken ct = default)
