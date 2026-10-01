@@ -7,6 +7,7 @@ export type ConsultantSkill = {
   years: number;
   level: number;
   evidence: string | null;
+  skill?: { canonicalName: string } | null;
 };
 
 export type ConsultantExperience = {
