@@ -27,7 +27,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             You extract structured consultant profiles from CV text.
             {{NoInventionRule}}
             Extract skill names exactly enough for later normalization, but do NOT classify skills into categories.
-            Seniority: return only Junior, Mid, Senior or Staff when that exact level is explicitly stated in the CV or current title. Never infer it from age, years of experience or title synonyms. Otherwise return null.
+            Seniority: provide a suggestedSeniority using only Junior, Mid, Senior or Staff, based only on evidence actually present in the CV. Consider explicit roles/titles, technical ownership, independent delivery, architecture/design responsibility, technical leadership, mentoring and scope or cross-team responsibility. Total years may support the suggestion but must never determine it by itself. Do not invent responsibilities. If evidence is insufficient, return null. This is a suggestion for human review.
             Experience: yearsOfExperience should be null unless the CV explicitly states total professional years. The application may calculate an estimate from dated roles and will label its source.
             Do not infer or extract consultant availability. Availability is maintained manually by an admin.
             For human languages, put only the language name in name. Set proficiency only when an explicit descriptor maps to Low, Medium, High or Native; otherwise use Not specified. Do not infer proficiency. Do not use CEFR levels.
@@ -35,7 +35,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             Return a JSON object with exactly this shape:
             {
               "firstName": string, "lastName": string, "email": string|null, "title": string|null,
-              "summary": string|null, "seniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "yearsOfExperience": int|null,
+              "summary": string|null, "seniority": null, "suggestedSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "yearsOfExperience": int|null,
               "yearsOfExperienceSource": "ExplicitInCv"|null, "office": string|null,
               "skills": [{ "name": string, "level": int, "years": int, "evidence": string|null }],
               "experiences": [{ "company": string, "role": string, "description": string|null,

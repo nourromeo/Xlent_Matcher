@@ -8,6 +8,7 @@ public class ConsultantDraftDto
     public string? Title { get; set; }
     public string? Summary { get; set; }
     public string? Seniority { get; set; }
+    public string? SuggestedSeniority { get; set; }
     public int? YearsOfExperience { get; set; }
     public string? YearsOfExperienceSource { get; set; }
     public string? Office { get; set; }

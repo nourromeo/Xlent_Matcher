@@ -461,10 +461,11 @@ export default function CvUpload() {
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Seniority</span>
+                  {draft.suggestedSeniority && <span className="text-[10px] text-app-brand block mb-1">AI suggestion: {draft.suggestedSeniority}</span>}
                   <select value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Years of experience</span>
+                  <span className="text-[11px] text-app-muted block mb-1">Total experience</span>
                   <Input type="number" min={0} value={draft.yearsOfExperience ?? ""} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: event.target.value ? Number(event.target.value) : null, yearsOfExperienceSource: "ManuallyConfirmed" })} />
                 </label>
                 <label>
@@ -573,7 +574,7 @@ export default function CvUpload() {
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-app-primary">Experience ({draft.experiences.length})</p>
+                  <p className="text-xs font-medium text-app-primary">Experience and skill experience ({draft.experiences.length})</p>
                   <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...draft.experiences, { company: "", role: "", description: null, startDate: null, endDate: null }] })}>Add experience</Button>
                 </div>
                 {draft.experiences.map((item, index) => (

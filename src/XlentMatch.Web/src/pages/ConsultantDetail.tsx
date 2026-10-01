@@ -199,6 +199,11 @@ export default function ConsultantDetail() {
                   <span className="text-xs font-medium text-app-primary">{t("consultant_skills")}</span>
                 </div>
 
+                <div className="px-4 py-3 border-b border-app grid grid-cols-2 gap-4">
+                  <div><p className="text-[10px] uppercase tracking-wide text-app-faint">Seniority</p><p className="text-sm font-medium text-app-primary mt-1">{consultant.seniority || "Not specified"}</p></div>
+                  <div><p className="text-[10px] uppercase tracking-wide text-app-faint">Total Experience</p><p className="text-sm font-medium text-app-primary mt-1">{consultant.yearsOfExperience == null ? "Needs confirmation" : `${consultant.yearsOfExperience} years`}</p></div>
+                </div>
+                <div className="px-4 py-2 border-b border-app"><span className="text-[10px] uppercase tracking-wide text-app-faint">Skill Experience</span></div>
                 {consultant.skills.length === 0 ? (
                   <p className="px-4 py-3 text-[11px] text-app-faint">No skills saved.</p>
                 ) : consultant.skills.map((skill, index) => (

@@ -27,6 +27,7 @@ export type ConsultantDraft = {
   title: string | null;
   summary: string | null;
   seniority: string | null;
+  suggestedSeniority: string | null;
   yearsOfExperience: number | null;
   yearsOfExperienceSource: string | null;
   office: string | null;
@@ -74,6 +75,7 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
     title: consultant.title,
     summary: consultant.summary,
     seniority: consultant.seniority,
+    suggestedSeniority: null,
     yearsOfExperience: consultant.yearsOfExperience,
     yearsOfExperienceSource: consultant.yearsOfExperienceSource,
     office: consultant.office,
