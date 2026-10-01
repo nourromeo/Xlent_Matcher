@@ -219,7 +219,7 @@ public class SkillNormalizationService(AppDbContext db)
 
     public async Task RecordLanguageSuggestionAsync(string rawName, CancellationToken ct = default)
     {
-        var name = Regex.Replace(rawName.Trim(), @"\\s+", " ");
+        var name = Regex.Replace(rawName.Trim(), @"\s+", " ");
         if (string.IsNullOrWhiteSpace(name)) return;
         var key = NormalizeKey(name);
         var suggestion = await db.LanguageSuggestions.FirstOrDefaultAsync(item => item.NormalizedName == key, ct);
