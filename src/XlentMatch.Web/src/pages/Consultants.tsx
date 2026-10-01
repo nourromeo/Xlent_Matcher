@@ -230,27 +230,29 @@ export default function Consultants() {
               sortable: true,
               sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99,
               render: (consultant) => (
-                <div className="flex items-center gap-2">
-                  <select aria-label={`Availability for ${consultantName(consultant)}`} value={consultant.availability} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, event.target.value as Consultant["availability"], consultant.availableAgainDate)} className="bg-app border border-app rounded px-2 py-1 text-[11px] text-app-primary">
-                    <option value="Available">Available</option>
-                    <option value="Unavailable">Unavailable</option>
-                  </select>
-                  {consultant.availability === "Unavailable" && (
-                    <label className="relative inline-flex items-center gap-1.5 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
-                      <span>{formatAvailableAgainDate(consultant.availableAgainDate)}</span>
-                      <Calendar size={12} className="text-app-muted" aria-hidden="true" />
-                      <input
-                        aria-label={`Available again date for ${consultantName(consultant)}`}
-                        type="date"
-                        value={consultant.availableAgainDate?.slice(0, 10) ?? ""}
-                        disabled={updatingAvailabilityId === consultant.id}
-                        onChange={(event) => void updateAvailability(consultant, "Unavailable", event.target.value || null)}
-                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                      />
-                    </label>
-                  )}
-                </div>
+                <select aria-label={`Availability for ${consultantName(consultant)}`} value={consultant.availability} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, event.target.value as Consultant["availability"], consultant.availableAgainDate)} className="bg-app border border-app rounded px-2 py-1 text-[11px] text-app-primary">
+                  <option value="Available">Available</option>
+                  <option value="Unavailable">Unavailable</option>
+                </select>
               ),
+            },
+            {
+              key: "availableAgain",
+              header: "Available again",
+              render: (consultant) => consultant.availability === "Unavailable" ? (
+                <label className="relative inline-flex max-w-36 items-center gap-1.5 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
+                  <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate)}</span>
+                  <Calendar size={12} className="flex-none text-app-muted" aria-hidden="true" />
+                  <input
+                    aria-label={`Available again date for ${consultantName(consultant)}`}
+                    type="date"
+                    value={consultant.availableAgainDate?.slice(0, 10) ?? ""}
+                    disabled={updatingAvailabilityId === consultant.id}
+                    onChange={(event) => void updateAvailability(consultant, "Unavailable", event.target.value || null)}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  />
+                </label>
+              ) : <span className="text-app-faint">—</span>,
             },
             {
               key: "actions",
