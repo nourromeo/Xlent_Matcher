@@ -241,8 +241,8 @@ function NewAssignmentModal({
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">Work location</span>
               <Input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="e.g. Stockholm / Hybrid / Remote" />
-              <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Required start date</span><Input type="date" value={requiredStartDate} onChange={(event) => setRequiredStartDate(event.target.value)} /></label>
             </label>
+            <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Required start date</span><Input type="date" value={requiredStartDate} onChange={(event) => setRequiredStartDate(event.target.value)} /></label>
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">Minimum years experience</span>
               <Input type="number" min={0} value={minYears} onChange={(event) => setMinYears(Number(event.target.value) || 0)} />
