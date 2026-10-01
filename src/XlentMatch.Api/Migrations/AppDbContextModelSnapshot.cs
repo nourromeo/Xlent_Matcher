@@ -260,7 +260,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("Level")
                         .HasColumnType("int");
 
-                    b.Property<int>("SkillId")
+                    b.Property<int?>("SkillId")
                         .HasColumnType("int");
 
                     b.Property<int>("Years")
@@ -637,8 +637,7 @@ namespace XlentMatch.Api.Migrations
                     b.HasOne("XlentMatch.Api.Models.Skill", "Skill")
                         .WithMany()
                         .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Skill");
                 });
