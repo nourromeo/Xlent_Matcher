@@ -259,6 +259,7 @@ public class SkillNormalizationService(AppDbContext db)
 
             if (string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase))
             {
+                requirement.Proficiency = NormalizeLanguageProficiency(requirement.Proficiency);
                 var language = NormalizeHumanLanguage(requirement.Name, null).Name;
                 var key = NormalizeKey(language);
                 var knownLanguage = await db.Skills

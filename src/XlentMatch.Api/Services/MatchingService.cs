@@ -30,9 +30,11 @@ public class MatchingService(MatchingWeightsStore weightsStore)
 
         var mandatoryRatio = Ratio(mandatory);
         var desiredRatio = Ratio(desired);
-        var experienceRatio = assignment.MinYearsExperience <= 0 || consultant.YearsOfExperience is null
+        var experienceRatio = assignment.MinYearsExperience <= 0
             ? 1.0
-            : Math.Min(1.0, (double)consultant.YearsOfExperience.Value / assignment.MinYearsExperience);
+            : consultant.YearsOfExperience is null
+                ? 0.0
+                : Math.Min(1.0, (double)consultant.YearsOfExperience.Value / assignment.MinYearsExperience);
 
         var weights = weightsStore.Get();
 
