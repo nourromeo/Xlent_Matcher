@@ -9,11 +9,12 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/matching")]
-public class MatchingController(AppDbContext db, MatchingService matching) : ControllerBase
+public class MatchingController(AppDbContext db, MatchingService matching, ConsultantAvailabilityService availability) : ControllerBase
 {
     [HttpPost("run")]
     public async Task<ActionResult<List<MatchResult>>> Run(RunMatchingRequestDto request, CancellationToken ct)
     {
+        await availability.ResolveExpiredAsync(ct);
         if (request.ConsultantIds.Count == 0)
             return BadRequest("Select at least one consultant before running matching.");
 

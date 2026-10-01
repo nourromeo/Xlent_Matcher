@@ -8,18 +8,22 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/consultants")]
-public class ConsultantsController(AppDbContext db, SkillNormalizationService skills) : ControllerBase
+public class ConsultantsController(AppDbContext db, SkillNormalizationService skills, ConsultantAvailabilityService availability) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<Consultant>>> GetAll(CancellationToken ct) =>
-        await db.Consultants
+    public async Task<ActionResult<List<Consultant>>> GetAll(CancellationToken ct)
+    {
+        await availability.ResolveExpiredAsync(ct);
+        return await db.Consultants
             .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .AsNoTracking()
             .ToListAsync(ct);
+    }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Consultant>> GetById(int id, CancellationToken ct)
     {
+        await availability.ResolveExpiredAsync(ct);
         var consultant = await LoadFull(id, ct);
         return consultant is null ? NotFound() : consultant;
     }
