@@ -29,13 +29,8 @@ const levelStyle = (level: number): React.CSSProperties => {
 };
 
 function availabilityLabel(consultant: Consultant) {
-  if (!consultant.availableFromDate) return consultant.availability || "Needs confirmation";
-  const confirmedAt = consultant.availabilityConfirmedAt ? new Date(consultant.availabilityConfirmedAt) : null;
-  if (!confirmedAt || Date.now() - confirmedAt.getTime() > 90 * 24 * 60 * 60 * 1000) return "Needs confirmation";
-  const start = new Date(`${consultant.availableFromDate.slice(0, 10)}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return start > today ? `Available from ${start.toLocaleDateString()}` : "Available now";
+  if (consultant.availability === "Available") return "Available";
+  return consultant.availableAgainDate ? `Unavailable until ${new Date(`${consultant.availableAgainDate.slice(0, 10)}T00:00:00`).toLocaleDateString()}` : "Unavailable";
 }
 
 const fullName = (consultant: Consultant) =>
@@ -370,9 +365,9 @@ export default function ConsultantDetail() {
                 <select value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
               </FormField>
               <FormField label={t("consultant_availability")}>
-                <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />
+                <select value={draft.availability} onChange={(event) => setDraft({ ...draft, availability: event.target.value as Consultant["availability"], availableAgainDate: event.target.value === "Available" ? null : draft.availableAgainDate })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Available">Available</option><option value="Unavailable">Unavailable</option></select>
               </FormField>
-              <FormField label="Available from date"><Input type="date" value={draft.availableFromDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, availableFromDate: event.target.value || null })} /></FormField>
+              {draft.availability === "Unavailable" && <FormField label="Available again"><Input type="date" value={draft.availableAgainDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, availableAgainDate: event.target.value || null })} /></FormField>}
               <FormField label={t("consultant_office")}>
                 <Input value={draft.office ?? ""} onChange={(event) => setDraft({ ...draft, office: event.target.value || null })} />
               </FormField>

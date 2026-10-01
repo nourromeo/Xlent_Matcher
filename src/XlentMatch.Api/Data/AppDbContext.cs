@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
+        mb.Entity<Consultant>().Property(x => x.Availability).HasDefaultValue(ConsultantAvailability.Available);
         mb.Entity<Skill>().HasIndex(x => x.NormalizedName).IsUnique();
         mb.Entity<LanguageSuggestion>().HasIndex(x => x.NormalizedName).IsUnique();
         mb.Entity<SkillAlias>().HasIndex(x => x.NormalizedAlias).IsUnique();

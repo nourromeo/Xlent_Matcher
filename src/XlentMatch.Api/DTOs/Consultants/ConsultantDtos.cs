@@ -10,8 +10,6 @@ public class ConsultantDraftDto
     public string? Seniority { get; set; }
     public int? YearsOfExperience { get; set; }
     public string? YearsOfExperienceSource { get; set; }
-    public DateOnly? AvailableFromDate { get; set; }
-    public string? Availability { get; set; }
     public string? Office { get; set; }
     public List<SkillDraftDto> Skills { get; set; } = new();
     public List<ExperienceDraftDto> Experiences { get; set; } = new();

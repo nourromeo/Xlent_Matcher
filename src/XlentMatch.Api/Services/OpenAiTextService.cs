@@ -29,14 +29,14 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             Extract skill names exactly enough for later normalization, but do NOT classify skills into categories.
             Seniority: return only Junior, Mid, Senior or Staff when that exact level is explicitly stated in the CV or current title. Never infer it from age, years of experience or title synonyms. Otherwise return null.
             Experience: yearsOfExperience should be null unless the CV explicitly states total professional years. The application may calculate an estimate from dated roles and will label its source.
-            Availability: keep the original statement in availability. Resolve relative phrases such as “in one week” against today={{today}} and return the resulting start date as availableFromDate (yyyy-MM-dd). If the text has no explicit timing, return null. A user reviews this date before saving.
+            Do not infer or extract consultant availability. Availability is maintained manually by an admin.
             For human languages, put only the language name in name. Use level only for an explicitly stated descriptor that clearly maps to Basic, Intermediate or Fluent. CEFR codes such as B2/C1/C2 must not be converted; preserve their original wording exactly in sourceLevel. Do not infer fluency.
             The application's canonical Skill Catalog is the source of truth for skill names, aliases and categories.
             Return a JSON object with exactly this shape:
             {
               "firstName": string, "lastName": string, "email": string|null, "title": string|null,
               "summary": string|null, "seniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "yearsOfExperience": int|null,
-              "yearsOfExperienceSource": "ExplicitInCv"|null, "availability": string|null, "availableFromDate": "yyyy-MM-dd"|null, "office": string|null,
+              "yearsOfExperienceSource": "ExplicitInCv"|null, "office": string|null,
               "skills": [{ "name": string, "level": int, "years": int, "evidence": string|null }],
               "experiences": [{ "company": string, "role": string, "description": string|null,
                                  "startDate": "yyyy-MM"|null, "endDate": "yyyy-MM"|null }],

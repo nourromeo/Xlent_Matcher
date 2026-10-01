@@ -22,7 +22,7 @@ public static class SeedData
                 Summary = "Backend architecture and distributed systems.",
                 Seniority = "Senior",
                 YearsOfExperience = 8,
-                Availability = "Immediate",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -70,7 +70,7 @@ public static class SeedData
                 Summary = "Machine learning, NLP and API development.",
                 Seniority = "Mid",
                 YearsOfExperience = 5,
-                Availability = "2 weeks",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -103,7 +103,7 @@ public static class SeedData
                 Summary = "Cloud platform engineering, infrastructure and observability.",
                 Seniority = "Staff",
                 YearsOfExperience = 11,
-                Availability = "1 month",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -136,7 +136,7 @@ public static class SeedData
                 Summary = ".NET, React and Azure development.",
                 Seniority = "Mid",
                 YearsOfExperience = 6,
-                Availability = "Immediate",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -172,7 +172,7 @@ public static class SeedData
                 Summary = "React applications and design systems.",
                 Seniority = "Mid",
                 YearsOfExperience = 4,
-                Availability = "3 months",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [

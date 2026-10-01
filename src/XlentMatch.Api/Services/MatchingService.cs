@@ -8,6 +8,7 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     public List<MatchResult> MatchAndRank(Assignment assignment, IEnumerable<Consultant> consultants)
     {
         var results = consultants
+            .Where(c => string.Equals(c.Availability, ConsultantAvailability.Available, StringComparison.OrdinalIgnoreCase))
             .Select(c => Match(assignment, c))
             .OrderByDescending(r => r.Score)
             .ThenByDescending(r => r.MatchedMandatory)
@@ -94,27 +95,6 @@ public class MatchingService(MatchingWeightsStore weightsStore)
                 Evidence = requiredLevel is null || consultantLevel is null
                     ? $"Assignment: {assignment.Seniority}; consultant: {consultant.Seniority ?? "not specified"}. Confirm manually."
                     : $"Assignment requires {assignment.Seniority}; consultant profile says {consultant.Seniority}."
-            });
-        }
-
-        if (!string.IsNullOrWhiteSpace(assignment.Availability) || assignment.RequiredStartDate is not null)
-        {
-            bool? matched = null;
-            var availabilityIsFresh = consultant.AvailabilityConfirmedAt is not null &&
-                consultant.AvailabilityConfirmedAt >= DateTime.UtcNow.AddDays(-90);
-            if (assignment.RequiredStartDate is not null && consultant.AvailableFromDate is not null && availabilityIsFresh)
-                matched = consultant.AvailableFromDate <= assignment.RequiredStartDate;
-
-            details.Add(new MatchContextResult
-            {
-                Name = "Availability",
-                IsMatched = matched,
-                AffectsScore = false,
-                Evidence = assignment.RequiredStartDate is null
-                    ? $"Assignment timing “{assignment.Availability}” has no confirmed start date; confirm manually."
-                    : consultant.AvailableFromDate is null || !availabilityIsFresh
-                        ? $"Assignment starts {assignment.RequiredStartDate:yyyy-MM-dd}; consultant availability date is missing or stale and needs confirmation."
-                        : $"Assignment starts {assignment.RequiredStartDate:yyyy-MM-dd}; consultant is available from {consultant.AvailableFromDate:yyyy-MM-dd}."
             });
         }
 

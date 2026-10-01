@@ -33,9 +33,6 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Availability")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateOnly?>("RequiredStartDate")
-                        .HasColumnType("date");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -51,6 +48,9 @@ namespace XlentMatch.Api.Migrations
 
                     b.Property<int>("MinYearsExperience")
                         .HasColumnType("int");
+
+                    b.Property<DateOnly?>("RequiredStartDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("Seniority")
                         .HasColumnType("nvarchar(max)");
@@ -85,9 +85,6 @@ namespace XlentMatch.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("RequiresFluency")
-                        .HasColumnType("bit");
-
                     b.Property<int?>("MinLevel")
                         .HasColumnType("int");
 
@@ -97,6 +94,9 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("RequiresFluency")
+                        .HasColumnType("bit");
 
                     b.Property<int?>("SkillId")
                         .HasColumnType("int");
@@ -149,14 +149,14 @@ namespace XlentMatch.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateOnly?>("AvailableFromDate")
-                        .HasColumnType("date");
-
-                    b.Property<DateTime?>("AvailabilityConfirmedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Availability")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("Available");
+
+                    b.Property<DateOnly?>("AvailableAgainDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
@@ -231,11 +231,11 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Level")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SourceLevel")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceLevel")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -380,15 +380,34 @@ namespace XlentMatch.Api.Migrations
 
             modelBuilder.Entity("XlentMatch.Api.Models.LanguageSuggestion", b =>
                 {
-                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-                    b.Property<DateTime>("FirstSeenAt").HasColumnType("datetime2");
-                    b.Property<DateTime>("LastSeenAt").HasColumnType("datetime2");
-                    b.Property<string>("Name").IsRequired().HasColumnType("nvarchar(max)");
-                    b.Property<string>("NormalizedName").IsRequired().HasColumnType("nvarchar(450)");
-                    b.Property<int>("Occurrences").HasColumnType("int");
+
+                    b.Property<DateTime>("FirstSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Occurrences")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
-                    b.HasIndex("NormalizedName").IsUnique();
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
                     b.ToTable("LanguageSuggestions");
                 });
 

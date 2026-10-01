@@ -67,9 +67,8 @@ export type Consultant = {
   seniority: string | null;
   yearsOfExperience: number | null;
   yearsOfExperienceSource: string | null;
-  availableFromDate: string | null;
-  availabilityConfirmedAt: string | null;
-  availability: string | null;
+  availableAgainDate: string | null;
+  availability: "Available" | "Unavailable";
   office: string | null;
   originalCvText: string | null;
   skills: ConsultantSkill[];

@@ -55,7 +55,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         }
 
         consultant.Id = 0;
-        consultant.AvailabilityConfirmedAt = consultant.AvailableFromDate is not null || !string.IsNullOrWhiteSpace(consultant.Availability) ? DateTime.UtcNow : null;
+        consultant.Availability = NormalizeAvailability(consultant.Availability);
 
         foreach (var skill in consultant.Skills) { skill.Id = 0; skill.ConsultantId = 0; }
         foreach (var experience in consultant.Experiences) { experience.Id = 0; experience.ConsultantId = 0; }
@@ -99,8 +99,8 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.YearsOfExperience = input.YearsOfExperience;
         existing.YearsOfExperienceSource = input.YearsOfExperienceSource;
         existing.Availability = input.Availability;
-        existing.AvailableFromDate = input.AvailableFromDate;
-        existing.AvailabilityConfirmedAt = input.AvailableFromDate is not null || !string.IsNullOrWhiteSpace(input.Availability) ? DateTime.UtcNow : null;
+        existing.AvailableAgainDate = input.AvailableAgainDate;
+        existing.Availability = NormalizeAvailability(input.Availability);
         existing.Office = input.Office;
         existing.OriginalCvText = input.OriginalCvText;
 
@@ -162,4 +162,9 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         if (!track) query = query.AsNoTracking();
         return query.FirstOrDefaultAsync(c => c.Id == id, ct);
     }
+
+    private static string NormalizeAvailability(string? value) =>
+        string.Equals(value, ConsultantAvailability.Unavailable, StringComparison.OrdinalIgnoreCase)
+            ? ConsultantAvailability.Unavailable
+            : ConsultantAvailability.Available;
 }

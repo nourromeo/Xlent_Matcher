@@ -33,9 +33,8 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     seniority: draft.seniority?.trim() || null,
     yearsOfExperience: draft.yearsOfExperience,
     yearsOfExperienceSource: draft.yearsOfExperienceSource,
-    availableFromDate: draft.availableFromDate,
-    availabilityConfirmedAt: null,
-    availability: draft.availability?.trim() || null,
+    availableAgainDate: null,
+    availability: "Available",
     office: draft.office?.trim() || null,
     originalCvText: null,
     fullName: undefined,
@@ -474,9 +473,6 @@ export default function CvUpload() {
                   <Input value={draft.email ?? ""} onChange={(event) => updateDraft({ ...draft, email: event.target.value || null })} />
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Availability</span>
-                  <Input value={draft.availability ?? ""} onChange={(event) => updateDraft({ ...draft, availability: event.target.value || null })} placeholder="e.g. Available now / from a date" />
-                  <Input type="date" aria-label="Available from date" value={draft.availableFromDate ?? ""} onChange={(event) => updateDraft({ ...draft, availableFromDate: event.target.value || null })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Office</span>

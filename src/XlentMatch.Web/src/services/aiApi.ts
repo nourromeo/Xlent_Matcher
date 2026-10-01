@@ -29,8 +29,6 @@ export type ConsultantDraft = {
   seniority: string | null;
   yearsOfExperience: number | null;
   yearsOfExperienceSource: string | null;
-  availableFromDate: string | null;
-  availability: string | null;
   office: string | null;
   skills: Array<{ name: string; level: number; years: number; evidence: string | null }>;
   experiences: Array<{ company: string; role: string; description: string | null; startDate: string | null; endDate: string | null }>;
@@ -78,8 +76,6 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
     seniority: consultant.seniority,
     yearsOfExperience: consultant.yearsOfExperience,
     yearsOfExperienceSource: consultant.yearsOfExperienceSource,
-    availableFromDate: consultant.availableFromDate,
-    availability: consultant.availability,
     office: consultant.office,
     skills: consultant.skills.map((item) => ({
       name: item.name,
