@@ -157,7 +157,8 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         }
         else
         {
-        var skill = c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId);
+        // Null SkillId means the term is unapproved and must not participate in matching.
+        var skill = req.SkillId is null ? null : c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId);
 
         if (skill is not null)
         {

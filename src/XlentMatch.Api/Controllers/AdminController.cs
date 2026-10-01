@@ -294,6 +294,28 @@ public class AdminController(
                 skill.Aliases.Add(new SkillAlias { Alias = value, NormalizedAlias = key });
         }
 
+        var unlinkedConsultantSkills = await db.ConsultantSkills
+            .Where(item => item.SkillId == null)
+            .ToListAsync(ct);
+        foreach (var consultantSkill in unlinkedConsultantSkills.Where(item =>
+            SkillNormalizationService.NormalizeKey(item.Name) == suggestion.NormalizedName))
+        {
+            consultantSkill.SkillId = skill.Id;
+            consultantSkill.Name = skill.CanonicalName;
+            consultantSkill.Category = skill.Category;
+        }
+
+        var unlinkedRequirements = await db.AssignmentRequirements
+            .Where(item => item.SkillId == null)
+            .ToListAsync(ct);
+        foreach (var requirement in unlinkedRequirements.Where(item =>
+            SkillNormalizationService.NormalizeKey(item.Name) == suggestion.NormalizedName))
+        {
+            requirement.SkillId = skill.Id;
+            requirement.Name = skill.CanonicalName;
+            requirement.Category = category == "Human language" ? "HumanLanguage" : "Skill";
+        }
+
         db.SkillSuggestions.Remove(suggestion);
         await db.SaveChangesAsync(ct);
         return NoContent();

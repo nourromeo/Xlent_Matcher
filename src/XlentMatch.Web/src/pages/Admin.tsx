@@ -177,6 +177,17 @@ export default function Admin() {
     }
   };
 
+  const deleteSkill = async (skill: AdminSkill) => {
+    if (!window.confirm(`Delete taxonomy entry '${skill.canonical}'?`)) return;
+    setError("");
+    try {
+      await adminApi.deleteSkill(skill.id);
+      setOverview((current) => current ? { ...current, skills: current.skills.filter((item) => item.id !== skill.id) } : current);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not delete taxonomy entry.");
+    }
+  };
+
   const editableFactors = factors.map((factor) => ({
     ...factor,
     value: weightValues[factor.key] ?? factor.value,
@@ -367,8 +378,8 @@ export default function Admin() {
                         {t("admin_edit")}
                       </Button>
                       <button
-                        disabled
-                        className="p-2 text-app-faint opacity-40 cursor-not-allowed"
+                        onClick={() => void deleteSkill(skill)}
+                        className="p-2 text-app-faint hover:text-app-secondary"
                         aria-label={t("common_delete") + " " + skill.canonical}
                       >
                         <Trash2 size={12} />
