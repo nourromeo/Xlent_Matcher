@@ -26,8 +26,8 @@ type MatchCategory = "All" | "Strong" | "Partial" | "Low";
 const matchCategory = (score: number): Exclude<MatchCategory, "All"> =>
   score >= 70 ? "Strong" : score >= 40 ? "Partial" : "Low";
 
-function RequirementColumn({ title, items, matched = false }: { title: string; items: MatchResultApi["details"]; matched?: boolean }) {
-  return <div className="bg-app-surface border border-app rounded-lg p-4"><div className="flex items-center justify-between mb-3"><p className="text-xs font-medium text-app-primary">{title}</p><span className="text-[10px] text-app-muted">{items.length} {matched ? "matched" : "missing"}</span></div><div className="space-y-2">{items.map((detail) => <div key={detail.id || detail.requirementName} className="flex items-center justify-between gap-2 text-xs"><span className={matched ? "text-app-primary" : "text-app-secondary"}>{matched ? "✓" : "✕"} {detail.requirementName}</span><span className="text-[10px] text-app-faint">{detail.type}</span></div>)}</div></div>;
+function RequirementColumn({ title, items, matched = false, expandedId, onToggle }: { title: string; items: MatchResultApi["details"]; matched?: boolean; expandedId: string | number | null; onToggle: (id: string | number) => void }) {
+  return <div className="bg-app-surface border border-app rounded-lg p-4"><div className="flex items-center justify-between mb-3"><p className="text-xs font-medium text-app-primary">{title}</p><span className="text-[10px] text-app-muted">{items.length} {matched ? "matched" : "missing"}</span></div><div className="space-y-2">{items.map((detail) => { const id = detail.id || detail.requirementName; const open = expandedId === id; return <div key={id} className="border-b border-app-subtle last:border-0"><button type="button" onClick={() => onToggle(id)} className="w-full flex items-center justify-between gap-2 py-2 text-left text-xs"><span className={matched ? "text-app-primary" : "text-app-secondary"}>{matched ? "✓" : "✕"} {detail.requirementName}</span><span className="flex items-center gap-2 text-[10px] text-app-faint"><span>{detail.type} · {matched ? "Matched" : "Missing"}</span><span>{open ? "⌃" : "›"}</span></span></button>{open && <div className="pb-2 pl-4 text-[10px] leading-relaxed text-app-muted">{detail.evidence || "No matching evidence available."}</div>}</div>; })}</div></div>;
 }
 
 export default function Matching() {
@@ -46,9 +46,10 @@ export default function Matching() {
   const [error, setError] = useState("");
   const [matchingFactors, setMatchingFactors] = useState<AdminMatchingFactor[]>([]);
   const [missingMandatoryPenalty, setMissingMandatoryPenalty] = useState(10);
-  const [activeTab, setActiveTab] = useState<"Overview" | "Requirements" | "Experience" | "CV Evidence">("Overview");
+  const [activeTab, setActiveTab] = useState<"Overview" | "Requirements" | "Experience">("Overview");
   const [listFilter, setListFilter] = useState<MatchCategory>("All");
   const [query, setQuery] = useState("");
+  const [expandedRequirementId, setExpandedRequirementId] = useState<string | number | null>(null);
 
   const assignmentId = Number(searchParams.get("assignment"));
   const assignment = assignments.find((item) => item.id === assignmentId);
@@ -425,14 +426,12 @@ export default function Matching() {
               </section>
 
               <nav className="flex gap-5 border-b border-app" aria-label="Match details">
-                {(["Overview", "Requirements", "Experience", "CV Evidence"] as const).map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`border-b-2 px-1 py-2 text-xs ${activeTab === tab ? "border-app-brand text-app-brand" : "border-transparent text-app-muted hover:text-app-secondary"}`}>{tab}</button>)}
+                {(["Overview", "Requirements", "Experience"] as const).map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`border-b-2 px-1 py-2 text-xs ${activeTab === tab ? "border-app-brand text-app-brand" : "border-transparent text-app-muted hover:text-app-secondary"}`}>{tab}</button>)}
               </nav>
 
-              {activeTab === "Requirements" && <section className="space-y-3"><div><p className="text-sm font-medium text-app-primary">Requirements</p><p className="text-[10px] text-app-muted mt-1">{selected.matchedMandatory}/{selected.totalMandatory} mandatory matched · complete deterministic analysis</p></div><div className="grid gap-4 lg:grid-cols-2"><RequirementColumn title="Matched Requirements" items={matchedDetails} matched /><RequirementColumn title="Missing Requirements" items={missingDetails} /></div></section>}
+              {activeTab === "Requirements" && <section className="space-y-3"><div><p className="text-sm font-medium text-app-primary">Requirements</p><p className="text-[10px] text-app-muted mt-1">{selected.matchedMandatory}/{selected.totalMandatory} mandatory matched · complete deterministic analysis</p></div><div className="grid gap-4 lg:grid-cols-2"><RequirementColumn title="Matched Requirements" items={matchedDetails} matched expandedId={expandedRequirementId} onToggle={(id) => setExpandedRequirementId((current) => current === id ? null : id)} /><RequirementColumn title="Missing Requirements" items={missingDetails} expandedId={expandedRequirementId} onToggle={(id) => setExpandedRequirementId((current) => current === id ? null : id)} /></div></section>}
 
               {activeTab === "Experience" && <section className="space-y-4"><div className="bg-app-surface border border-app rounded-lg p-4"><p className="text-sm font-medium text-app-primary">Total Experience</p><p className="mt-2 text-xs text-app-secondary">Consultant: {selectedConsultant?.yearsOfExperience ?? "Not specified"} years</p><p className="text-xs text-app-muted">Assignment requires: {assignment.minYearsExperience > 0 ? assignment.minYearsExperience + "+ years" : "No minimum"}</p></div><div className="bg-app-surface border border-app rounded-lg p-4"><p className="text-sm font-medium text-app-primary mb-3">Skill Experience</p>{selectedConsultant?.skills.map((skill) => <div key={skill.id} className="flex justify-between border-b border-app-subtle py-2 text-xs"><span>{skill.skill?.canonicalName ?? skill.name}</span><span className="text-app-muted">{skill.years} yrs</span></div>)}</div></section>}
-
-              {activeTab === "CV Evidence" && <section className="bg-app-surface border border-app rounded-lg divide-y divide-app">{selected.details.map((detail) => <div key={detail.id || detail.requirementName} className="px-4 py-4"><div className="flex justify-between"><span className="text-sm text-app-primary">{detail.requirementName}</span><span className="text-xs text-app-muted">{detail.isMatched ? "Matched" : "Missing"}</span></div><p className="mt-2 text-xs text-app-muted leading-relaxed">{detail.evidence || "No CV evidence available"}</p></div>)}</section>}
 
               {activeTab !== "Overview" && <div className="hidden" />}
 
@@ -444,7 +443,7 @@ export default function Matching() {
                     <span className="text-[10px] text-app-muted">{selected.matchedMandatory}/{selected.totalMandatory} {t("common_required")}</span>
                   </div>
                   <div className="space-y-2">
-                    {matchedRequired.map((detail) => (
+                    {matchedRequired.slice(0, 4).map((detail) => (
                       <div key={detail.id || detail.requirementName} className="flex items-center gap-2">
                         <CheckCircle size={11} style={{ color: "var(--color-success)" }} />
                         <span className="text-xs font-mono text-app-primary">{detail.requirementName}</span>
@@ -511,7 +510,8 @@ export default function Matching() {
                         <p className="text-[11px] text-app-secondary leading-relaxed mt-1">{detail.evidence}</p>
                       </div>
                     ))}
-                    {missingRequired.length > 4 && <button type="button" onClick={() => setActiveTab("Requirements")} className="text-[10px] text-app-brand">+{missingRequired.length - 4} more · View all requirements →</button>}
+                    {matchedRequired.length > 4 && <button type="button" onClick={() => setActiveTab("Requirements")} className="mt-2 w-full border-t border-app-subtle pt-2 text-left text-[10px] text-app-brand">✓ +{matchedRequired.length - 4} more matched requirements →</button>}
+                    {missingRequired.length > 4 && <button type="button" onClick={() => setActiveTab("Requirements")} className="mt-2 w-full border-t border-app-subtle pt-2 text-left text-[10px] text-app-brand">✕ +{missingRequired.length - 4} more missing requirements →</button>}
                   </div>
                 </div>
 
