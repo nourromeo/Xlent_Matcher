@@ -243,7 +243,7 @@ export default function CvUpload() {
     }
 
     const currentDraft = activeFile.draft;
-    if (currentDraft.yearsOfExperience < 0 ||
+    if ((currentDraft.yearsOfExperience ?? 0) < 0 ||
         currentDraft.skills.some((skill) => skill.years < 0 || skill.level < 0 || skill.level > 5)) {
       setError("Check the experience years and skill levels. Years cannot be negative and skill level must be between 0 and 5.");
       return;
