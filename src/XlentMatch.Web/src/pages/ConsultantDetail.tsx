@@ -300,7 +300,7 @@ export default function ConsultantDetail() {
                     ? <p className="text-[11px] text-app-faint">—</p>
                     : consultant.languages.map((language) => (
                       <p key={language.id || language.name} className="text-[11px] text-app-secondary">
-                        {language.name}{language.level ? ` (${language.level})` : ""}{language.sourceLevel ? ` · CV: ${language.sourceLevel}` : ""}
+                        {language.name} {language.proficiency === "Not specified" ? "—" : language.proficiency}
                       </p>
                     ))}
                 </div>
@@ -412,11 +412,11 @@ export default function ConsultantDetail() {
               {draft.languages.map((item, index) => (
                 <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                   <Input aria-label="Language name" placeholder="Language" value={item.name} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                  <select aria-label="Language proficiency" value={item.level ?? ""} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: (event.target.value || null) as typeof row.level } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Basic">Basic</option><option value="Intermediate">Intermediate</option><option value="Fluent">Fluent</option></select>
+                  <select aria-label="Language proficiency" value={item.proficiency} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
                   <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })}>Remove</button>
                 </div>
               ))}
-              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, languages: [...draft.languages, { id: 0, consultantId: draft.id, name: "", level: null }] })}>+ Add language</button>
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, languages: [...draft.languages, { id: 0, consultantId: draft.id, name: "", proficiency: "Not specified" }] })}>+ Add language</button>
             </div>
           </FormSection>
 

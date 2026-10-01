@@ -28,7 +28,7 @@ export type AssignmentRequirementApi = {
   type: RequirementTypeApi;
   minYears: number | null;
   minLevel: number | null;
-  requiresFluency: boolean;
+  proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" | null;
 };
 
 export type AssignmentApi = {

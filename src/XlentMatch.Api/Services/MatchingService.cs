@@ -147,11 +147,12 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             var language = c.Languages.FirstOrDefault(x => SameLanguage(x.Name, requirementName));
             if (language is not null)
             {
-                var fluencyConfirmed = IsFluencyEvidence(language.Level);
-                matched = !req.RequiresFluency || fluencyConfirmed;
-                evidence.Add($"Language '{language.Name}': {language.Level ?? "level not specified"}");
-                if (req.RequiresFluency && !fluencyConfirmed)
-                    evidence.Add("Fluency is required, but the consultant profile does not explicitly confirm fluency.");
+                var consultantRank = HumanLanguageProficiency.Rank(language.Proficiency);
+                var requiredRank = HumanLanguageProficiency.Rank(req.Proficiency);
+                matched = requiredRank == 0 || consultantRank >= requiredRank;
+                evidence.Add($"Language '{language.Name}': {language.Proficiency}");
+                if (!matched)
+                    evidence.Add($"Requires {req.Proficiency}, consultant has {language.Proficiency}.");
             }
         }
         else
@@ -199,29 +200,6 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             IsMatched = matched,
             Evidence = string.Join("; ", evidence)
         };
-    }
-
-    private static bool IsFluencyEvidence(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return false;
-        var normalized = NormalizeText(value)
-            .Replace("å", "a", StringComparison.Ordinal)
-            .Replace("ä", "a", StringComparison.Ordinal)
-            .Replace("ö", "o", StringComparison.Ordinal);
-        var explicitLevelTokens = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return explicitLevelTokens.Any(token => token == "fluent")
-            || normalized.Contains("fluent", StringComparison.Ordinal)
-            || normalized.Contains("proficient", StringComparison.Ordinal)
-            || normalized.Contains("flytande", StringComparison.Ordinal)
-            || normalized.Contains("fließend", StringComparison.Ordinal)
-            || normalized.Contains("sujuva", StringComparison.Ordinal)
-            || normalized.Contains("fluido", StringComparison.Ordinal)
-            || normalized.Contains("mycket goda kunskaper", StringComparison.Ordinal)
-            || normalized.Contains("obehindrat", StringComparison.Ordinal)
-            || normalized.Contains("native", StringComparison.Ordinal)
-            || normalized.Contains("mother tongue", StringComparison.Ordinal)
-            || normalized.Contains("modersmal", StringComparison.Ordinal)
-            || normalized.Contains("matern", StringComparison.Ordinal);
     }
 
     private static bool UsesTechnology(Project p, string name) =>

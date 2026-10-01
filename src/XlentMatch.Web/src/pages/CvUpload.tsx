@@ -74,8 +74,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
       id: 0,
       consultantId: 0,
       name: item.name.trim(),
-      level: item.level,
-      sourceLevel: item.sourceLevel ?? null,
+      proficiency: item.proficiency,
     })),
     industries: draft.industries.filter((name) => name.trim()).map((name) => ({
       id: 0,
@@ -558,12 +557,12 @@ export default function CvUpload() {
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-app-primary">Languages ({draft.languages.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", level: null, sourceLevel: null }] })}>Add language</Button>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", proficiency: "Not specified" }] })}>Add language</Button>
                 </div>
                 {draft.languages.map((item, index) => (
                   <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                     <Input aria-label="Language" placeholder="Language" value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                    <select aria-label="Language proficiency" value={item.level ?? ""} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: (event.target.value || null) as typeof row.level } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Basic">Basic</option><option value="Intermediate">Intermediate</option><option value="Fluent">Fluent</option></select>{item.sourceLevel && <span className="text-[10px] text-app-muted">CV wording: {item.sourceLevel}</span>}
+                    <select aria-label="Language proficiency" value={item.proficiency} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
                     <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label="Remove language"><X size={12} /></button>
                   </div>
                 ))}

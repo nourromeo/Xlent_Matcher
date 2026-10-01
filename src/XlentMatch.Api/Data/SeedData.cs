@@ -48,8 +48,8 @@ public static class SeedData
                 ],
                 Languages =
                 [
-                    new() { Name = "English", Level = "C2" },
-                    new() { Name = "German", Level = "B2" }
+                    new() { Name = "English", Proficiency = HumanLanguageProficiency.High },
+                    new() { Name = "German", Proficiency = HumanLanguageProficiency.Medium }
                 ],
                 Industries =
                 [

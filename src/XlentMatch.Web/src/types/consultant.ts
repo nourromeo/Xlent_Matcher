@@ -39,8 +39,7 @@ export type ConsultantLanguage = {
   id: number;
   consultantId: number;
   name: string;
-  level: "Basic" | "Intermediate" | "Fluent" | null;
-  sourceLevel?: string | null;
+  proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native";
 };
 
 export type ConsultantIndustry = {

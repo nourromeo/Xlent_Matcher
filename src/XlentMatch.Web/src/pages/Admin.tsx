@@ -23,6 +23,10 @@ export default function Admin() {
   const [error, setError] = useState("");
   const [skillPage, setSkillPage] = useState(1);
   const [editingSkill, setEditingSkill] = useState<AdminSkill | null>(null);
+  const [reviewingSuggestion, setReviewingSuggestion] = useState<{ id: number; name: string; category: string; occurrences: number } | null>(null);
+  const [suggestionCanonical, setSuggestionCanonical] = useState("");
+  const [suggestionCategory, setSuggestionCategory] = useState("");
+  const [suggestionAliases, setSuggestionAliases] = useState("");
   const [skillModalMode, setSkillModalMode] = useState<"add" | "edit">("edit");
   const [editCanonical, setEditCanonical] = useState("");
   const [editCategory, setEditCategory] = useState("");
@@ -62,7 +66,7 @@ export default function Admin() {
   const skills = overview?.skills ?? [];
   const factors = overview?.matchingFactors ?? [];
   const capabilities = overview?.capabilities ?? [];
-  const pendingLanguages = overview?.pendingLanguages ?? [];
+  const suggestions = overview?.suggestions ?? [];
 
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(skills.map((skill) => skill.category))).sort()],
@@ -113,15 +117,16 @@ export default function Admin() {
     setError("");
   };
 
-  const reviewLanguage = async (id: number, approve: boolean) => {
+  const reviewSuggestion = async (approve: boolean) => {
+    if (!reviewingSuggestion) return;
     setError("");
     try {
-      if (approve) await adminApi.approveLanguage(id);
-      else await adminApi.dismissLanguage(id);
-      setOverview((current) => current ? { ...current, pendingLanguages: current.pendingLanguages.filter((item) => item.id !== id) } : current);
-      if (approve) setOverview(await adminApi.getOverview());
+      if (approve) await adminApi.approveSuggestion(reviewingSuggestion.id, { canonicalName: suggestionCanonical, category: suggestionCategory, aliases: suggestionAliases.split(",").map((item) => item.trim()).filter(Boolean) });
+      else await adminApi.dismissSuggestion(reviewingSuggestion.id);
+      setOverview(await adminApi.getOverview());
+      setReviewingSuggestion(null);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not review language.");
+          setError(requestError instanceof Error ? requestError.message : "Could not review suggestion.");
     }
   };
 
@@ -247,25 +252,36 @@ export default function Admin() {
 
         <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
-                {tab === "taxonomy" && pendingLanguages.length > 0 && (
+                {tab === "taxonomy" && (
           <section className="bg-app-surface border border-app rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--shadow-surface)" }}>
             <div>
-              <h2 className="text-xs font-semibold text-app-primary">Language suggestions for review</h2>
-              <p className="text-[11px] text-app-muted mt-1">Unrecognized CV and assignment language names stay outside the approved taxonomy until reviewed.</p>
+              <h2 className="text-xs font-semibold text-app-primary">Taxonomy suggestions ({suggestions.length})</h2>
+              <p className="text-[11px] text-app-muted mt-1">Unrecognized extracted terms remain outside the approved catalog until reviewed.</p>
             </div>
-            {pendingLanguages.map((item) => (
+            {suggestions.length === 0 && <p className="text-[11px] text-app-faint">No taxonomy suggestions to review.</p>}
+            {suggestions.map((item) => (
               <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-app pt-3">
                 <div>
                   <p className="text-xs font-medium text-app-primary">{item.name}</p>
-                  <p className="text-[10px] text-app-muted">Seen {item.occurrences} time(s)</p>
+                  <p className="text-[10px] text-app-muted">{item.category} · Seen {item.occurrences} time(s)</p>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" onClick={() => void reviewLanguage(item.id, false)}>Dismiss</Button>
-                  <Button variant="primary" onClick={() => void reviewLanguage(item.id, true)}>Approve as language</Button>
-                </div>
+                <Button variant="primary" onClick={() => { setReviewingSuggestion(item); setSuggestionCanonical(item.name); setSuggestionCategory(item.category); setSuggestionAliases(""); }}>Review</Button>
               </div>
             ))}
           </section>
+        )}
+
+        {reviewingSuggestion && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-md rounded-lg border border-app bg-app-surface p-5 space-y-4">
+              <h2 className="text-sm font-semibold text-app-primary">Review taxonomy suggestion</h2>
+              <p className="text-[11px] text-app-muted">Found {reviewingSuggestion.occurrences} times</p>
+              <input value={suggestionCanonical} onChange={(event) => setSuggestionCanonical(event.target.value)} placeholder="Canonical name" className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
+              <select value={suggestionCategory} onChange={(event) => setSuggestionCategory(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option>Unclassified</option><option>Human language</option><option>Language</option><option>Framework</option><option>Database</option><option>Messaging</option><option>Cloud</option><option>AI/ML</option><option>Backend</option></select>
+              <input value={suggestionAliases} onChange={(event) => setSuggestionAliases(event.target.value)} placeholder="Aliases, comma separated" className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
+              <div className="flex justify-between gap-2"><Button variant="ghost" onClick={() => void reviewSuggestion(false)}>Dismiss suggestion</Button><div className="flex gap-2"><Button variant="ghost" onClick={() => setReviewingSuggestion(null)}>Cancel</Button><Button variant="primary" onClick={() => void reviewSuggestion(true)}>Approve</Button></div></div>
+            </div>
+          </div>
         )}
 
 {tab === "taxonomy" && (

@@ -7,7 +7,7 @@ export type RequirementDraft = {
   type: "Mandatory" | "Desired";
   minYears: number | null;
   minLevel: number | null;
-  requiresFluency: boolean;
+  proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" | null;
 };
 
 export type RequirementExtractionResult = {
@@ -34,7 +34,7 @@ export type ConsultantDraft = {
   experiences: Array<{ company: string; role: string; description: string | null; startDate: string | null; endDate: string | null }>;
   projects: Array<{ name: string; description: string | null; technologies: string | null }>;
   education: Array<{ degree: string; school: string | null; year: string | null }>;
-  languages: Array<{ name: string; level: "Basic" | "Intermediate" | "Fluent" | null; sourceLevel: string | null }>;
+  languages: Array<{ name: string; proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" }>;
   industries: string[];
   certifications: Array<{ name: string; issuer: string | null; issuedDate: string | null }>;
   sourceText: string | null;
@@ -100,7 +100,7 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
       school: item.school,
       year: item.year,
     })),
-    languages: consultant.languages.map((item) => ({ name: item.name, level: item.level, sourceLevel: item.sourceLevel ?? null })),
+    languages: consultant.languages.map((item) => ({ name: item.name, proficiency: item.proficiency })),
     industries: consultant.industries.map((item) => item.name),
     certifications: consultant.certifications.map((item) => ({
       name: item.name,
@@ -127,7 +127,7 @@ export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssig
       type: item.type,
       minYears: item.minYears,
       minLevel: item.minLevel,
-      requiresFluency: item.requiresFluency,
+      proficiency: item.proficiency,
     })),
   };
 }

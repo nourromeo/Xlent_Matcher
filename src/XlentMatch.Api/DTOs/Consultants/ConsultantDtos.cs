@@ -55,8 +55,7 @@ public class EducationDraftDto
 public class LanguageDraftDto
 {
     public string Name { get; set; } = "";
-    public string? Level { get; set; }
-    public string? SourceLevel { get; set; }
+    public string? Proficiency { get; set; }
 }
 
 public class CertificationDraftDto

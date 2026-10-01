@@ -12,7 +12,7 @@ public class AssignmentRequirement
     public RequirementType Type { get; set; } = RequirementType.Mandatory;
     public int? MinYears { get; set; }
     public int? MinLevel { get; set; }
-    public bool RequiresFluency { get; set; }
+    public string? Proficiency { get; set; }
 
     public string Category { get; set; } = "Skill";
 }

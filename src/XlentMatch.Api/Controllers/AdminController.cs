@@ -47,7 +47,7 @@ public class AdminController(
         return new AdminOverviewDto
         {
             Skills = skills,
-            PendingLanguages = await db.LanguageSuggestions.AsNoTracking().OrderByDescending(item => item.Occurrences).Select(item => new PendingLanguageDto { Id = item.Id, Name = item.Name, Occurrences = item.Occurrences, FirstSeenAt = item.FirstSeenAt }).ToListAsync(ct),
+            Suggestions = await db.SkillSuggestions.AsNoTracking().OrderByDescending(item => item.Occurrences).Select(item => new AdminSkillSuggestionDto { Id = item.Id, Name = item.Name, Category = item.Category, Occurrences = item.Occurrences, FirstSeenAt = item.FirstSeenAt }).ToListAsync(ct),
             MatchingFactors =
             [
                 new() { Key = "mandatory", Label = "Mandatory requirements", Value = matching.MandatoryWeight, Description = "Weight used for mandatory requirement coverage." },
@@ -267,43 +267,56 @@ public class AdminController(
             ConsultantCount = consultantCount
         };
     }
-    [HttpPost("languages/{id:int}/approve")]
-    public async Task<IActionResult> ApproveLanguageSuggestion(int id, CancellationToken ct)
+    [HttpPost("suggestions/{id:int}/approve")]
+    public async Task<IActionResult> ApproveSuggestion(int id, ReviewSkillSuggestionRequest input, CancellationToken ct)
     {
-        var suggestion = await db.LanguageSuggestions.FirstOrDefaultAsync(item => item.Id == id, ct);
+        var suggestion = await db.SkillSuggestions.FirstOrDefaultAsync(item => item.Id == id, ct);
         if (suggestion is null) return NotFound();
+        var canonicalName = input.CanonicalName?.Trim();
+        var category = input.Category?.Trim();
+        if (string.IsNullOrWhiteSpace(canonicalName) || string.IsNullOrWhiteSpace(category)) return BadRequest("Canonical name and category are required.");
+        var normalized = SkillNormalizationService.NormalizeKey(canonicalName);
         var skill = await db.Skills.Include(item => item.Aliases)
-            .FirstOrDefaultAsync(item => item.NormalizedName == suggestion.NormalizedName ||
-                item.Aliases.Any(alias => alias.NormalizedAlias == suggestion.NormalizedName), ct);
+            .FirstOrDefaultAsync(item => item.NormalizedName == normalized || item.Aliases.Any(alias => alias.NormalizedAlias == normalized), ct);
         if (skill is null)
         {
-            skill = new Skill { CanonicalName = suggestion.Name, NormalizedName = suggestion.NormalizedName, Category = "Human language" };
+            skill = new Skill { CanonicalName = canonicalName, NormalizedName = normalized, Category = category };
             db.Skills.Add(skill);
             await db.SaveChangesAsync(ct);
         }
-        else skill.Category = "Human language";
+        else skill.Category = category;
 
-        var requirements = await db.AssignmentRequirements.Where(item => item.Category == "HumanLanguage").ToListAsync(ct);
-        foreach (var requirement in requirements.Where(item => SkillNormalizationService.NormalizeKey(item.Name) == suggestion.NormalizedName))
+        foreach (var alias in (input.Aliases ?? []).Where(x => !string.IsNullOrWhiteSpace(x)))
         {
-            requirement.SkillId = skill.Id;
-            requirement.Name = skill.CanonicalName;
+            var value = alias.Trim();
+            var key = SkillNormalizationService.NormalizeKey(value);
+            if (key != skill.NormalizedName && !skill.Aliases.Any(x => x.NormalizedAlias == key))
+                skill.Aliases.Add(new SkillAlias { Alias = value, NormalizedAlias = key });
         }
-        var profiles = await db.ConsultantLanguages.ToListAsync(ct);
-        foreach (var language in profiles.Where(item => SkillNormalizationService.NormalizeKey(item.Name) == suggestion.NormalizedName))
-            language.Name = skill.CanonicalName;
 
-        db.LanguageSuggestions.Remove(suggestion);
+        db.SkillSuggestions.Remove(suggestion);
         await db.SaveChangesAsync(ct);
         return NoContent();
     }
 
-    [HttpDelete("languages/{id:int}")]
-    public async Task<IActionResult> DismissLanguageSuggestion(int id, CancellationToken ct)
+    [HttpDelete("suggestions/{id:int}")]
+    public async Task<IActionResult> DismissSuggestion(int id, CancellationToken ct)
     {
-        var suggestion = await db.LanguageSuggestions.FindAsync([id], ct);
+        var suggestion = await db.SkillSuggestions.FindAsync([id], ct);
         if (suggestion is null) return NotFound();
-        db.LanguageSuggestions.Remove(suggestion);
+        db.SkillSuggestions.Remove(suggestion);
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpDelete("skills/{id:int}")]
+    public async Task<IActionResult> DeleteSkill(int id, CancellationToken ct)
+    {
+        var skill = await db.Skills.FindAsync([id], ct);
+        if (skill is null) return NotFound();
+        var used = await db.ConsultantSkills.AnyAsync(x => x.SkillId == id, ct) || await db.AssignmentRequirements.AnyAsync(x => x.SkillId == id, ct) || await db.SkillAliases.AnyAsync(x => x.SkillId == id, ct);
+        if (used) return Conflict("This taxonomy entry is referenced and cannot be deleted.");
+        db.Skills.Remove(skill);
         await db.SaveChangesAsync(ct);
         return NoContent();
     }
@@ -358,7 +371,7 @@ public class UpdateMatchingWeightsRequest
 public class AdminOverviewDto
 {
     public List<AdminSkillDto> Skills { get; set; } = new();
-    public List<PendingLanguageDto> PendingLanguages { get; set; } = new();
+    public List<AdminSkillSuggestionDto> Suggestions { get; set; } = new();
     public List<AdminMatchingFactorDto> MatchingFactors { get; set; } = new();
     public int MissingMandatoryPenalty { get; set; }
     public List<AdminCapabilityDto> Capabilities { get; set; } = new();
@@ -373,12 +386,20 @@ public class AdminSkillDto
     public int ConsultantCount { get; set; }
 }
 
-public class PendingLanguageDto
+public class AdminSkillSuggestionDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = "";
+    public string Category { get; set; } = "Unclassified";
     public int Occurrences { get; set; }
     public DateTime FirstSeenAt { get; set; }
+}
+
+public class ReviewSkillSuggestionRequest
+{
+    public string? CanonicalName { get; set; }
+    public string? Category { get; set; }
+    public List<string>? Aliases { get; set; }
 }
 
 public class AdminMatchingFactorDto

@@ -21,7 +21,7 @@ const emptyRequirement = (
   minYears: number | null = null,
   minLevel: number | null = null,
   category: "Skill" | "HumanLanguage" = "Skill",
-  requiresFluency = false,
+  proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" | null = null,
 ): AssignmentRequirementApi => ({
   id: 0,
   assignmentId: 0,
@@ -30,7 +30,7 @@ const emptyRequirement = (
   type,
   minYears,
   minLevel,
-  requiresFluency,
+  proficiency,
 });
 
 function NewAssignmentModal({
@@ -77,7 +77,7 @@ function NewAssignmentModal({
 
       setRequirements(
         extracted.requirements.map((item) =>
-          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.requiresFluency),
+          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.proficiency),
         ),
       );
 
@@ -121,7 +121,7 @@ function NewAssignmentModal({
         name: requirement.name.trim(),
         minYears: requirement.category === "HumanLanguage" ? null : requirement.minYears,
         minLevel: requirement.category === "HumanLanguage" ? null : requirement.minLevel,
-        requiresFluency: requirement.category === "HumanLanguage" && requirement.requiresFluency,
+        proficiency: requirement.category === "HumanLanguage" ? requirement.proficiency : null,
       }));
 
     if (cleanedRequirements.length === 0) {
@@ -277,8 +277,7 @@ function NewAssignmentModal({
                 </select>
                 {requirement.category === "HumanLanguage" ? (
                   <label className="flex items-center gap-1.5 text-[10px] text-app-muted">
-                    <input type="checkbox" checked={requirement.requiresFluency} onChange={(event) => updateRequirement(index, { requiresFluency: event.target.checked, minLevel: null, minYears: null })} />
-                    Fluent required
+                    <select aria-label="Language proficiency" value={requirement.proficiency ?? "Not specified"} onChange={(event) => updateRequirement(index, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null, minYears: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
                   </label>
                 ) : (
                   <Input type="number" min={0} value={requirement.minYears ?? ""} placeholder="Years" aria-label="Minimum skill years"

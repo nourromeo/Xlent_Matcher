@@ -30,7 +30,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             Seniority: return only Junior, Mid, Senior or Staff when that exact level is explicitly stated in the CV or current title. Never infer it from age, years of experience or title synonyms. Otherwise return null.
             Experience: yearsOfExperience should be null unless the CV explicitly states total professional years. The application may calculate an estimate from dated roles and will label its source.
             Do not infer or extract consultant availability. Availability is maintained manually by an admin.
-            For human languages, put only the language name in name. Use level only for an explicitly stated descriptor that clearly maps to Basic, Intermediate or Fluent. CEFR codes such as B2/C1/C2 must not be converted; preserve their original wording exactly in sourceLevel. Do not infer fluency.
+            For human languages, put only the language name in name. Set proficiency only when an explicit descriptor maps to Low, Medium, High or Native; otherwise use Not specified. Do not infer proficiency. Do not use CEFR levels.
             The application's canonical Skill Catalog is the source of truth for skill names, aliases and categories.
             Return a JSON object with exactly this shape:
             {
@@ -42,7 +42,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
                                  "startDate": "yyyy-MM"|null, "endDate": "yyyy-MM"|null }],
               "projects": [{ "name": string, "description": string|null, "technologies": "comma, separated"|null }],
               "education": [{ "degree": string, "school": string|null, "year": string|null }],
-              "languages": [{ "name": canonical language name only (for example "Swedish", "English", "Arabic"), "level": "Basic"|"Intermediate"|"Fluent"|null, "sourceLevel": original wording exactly as written in CV|null }],
+              "languages": [{ "name": canonical language name only (for example "Swedish", "English", "Arabic"), "proficiency": "Not specified"|"Low"|"Medium"|"High"|"Native" }],
               "industries": [string],
               "certifications": [{ "name": string, "issuer": string|null, "issuedDate": "yyyy-MM"|null }]
             }
@@ -73,7 +73,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             - Include explicit human language requirements (for example Swedish or English) as separate requirements with category "HumanLanguage". Do not treat programming languages such as C# or Python as human languages.
             - Do NOT create requirements such as "senior consultant", ".NET consultant", role titles, availability, location, customer name, start date, or general years-of-experience statements.
             - If a requirement has its own explicit minimum years, put that number in minYears.
-            - For human languages, set requiresFluency=true only when the assignment explicitly asks for fluent / fluent-level / native-equivalent ability. Otherwise set false. Never convert a language description into a CEFR level.
+            - For human languages, set proficiency only when the assignment explicitly requires one of Not specified, Low, Medium, High or Native. Otherwise use null.
             - Classify as "Mandatory" when the text says must, required, mandatory, shall, need, or equivalent.
             - Classify as "Desired" when the text says preferred, meriting, bonus, nice to have, or equivalent.
             - If the text lists a skill without clearly saying preferred/optional, treat it as Mandatory.
@@ -86,7 +86,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
               "availability": string|null, "requiredStartDate": "yyyy-MM-dd"|null,
               "location": string|null,
               "requirements": [
-                { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null, "requiresFluency": bool }
+                { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null, "proficiency": string|null }
               ]
             }
             """;

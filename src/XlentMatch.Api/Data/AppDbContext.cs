@@ -20,13 +20,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MatchResult> MatchResults => Set<MatchResult>();
     public DbSet<MatchRequirementResult> MatchRequirementResults => Set<MatchRequirementResult>();
     public DbSet<CvUploadRecord> CvUploads => Set<CvUploadRecord>();
-    public DbSet<LanguageSuggestion> LanguageSuggestions => Set<LanguageSuggestion>();
+    public DbSet<SkillSuggestion> SkillSuggestions => Set<SkillSuggestion>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
         mb.Entity<Consultant>().Property(x => x.Availability).HasDefaultValue(ConsultantAvailability.Available);
         mb.Entity<Skill>().HasIndex(x => x.NormalizedName).IsUnique();
-        mb.Entity<LanguageSuggestion>().HasIndex(x => x.NormalizedName).IsUnique();
+        mb.Entity<SkillSuggestion>().HasIndex(x => x.NormalizedName).IsUnique();
         mb.Entity<SkillAlias>().HasIndex(x => x.NormalizedAlias).IsUnique();
         mb.Entity<Skill>()
             .HasMany(x => x.Aliases)

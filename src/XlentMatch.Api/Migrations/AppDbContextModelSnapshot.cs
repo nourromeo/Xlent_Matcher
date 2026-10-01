@@ -95,8 +95,8 @@ namespace XlentMatch.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("RequiresFluency")
-                        .HasColumnType("bit");
+                    b.Property<string>("Proficiency")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SkillId")
                         .HasColumnType("int");
@@ -228,14 +228,12 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("ConsultantId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Level")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SourceLevel")
+                    b.Property<string>("Proficiency")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -376,39 +374,6 @@ namespace XlentMatch.Api.Migrations
                     b.HasIndex("ConsultantId");
 
                     b.ToTable("Experiences");
-                });
-
-            modelBuilder.Entity("XlentMatch.Api.Models.LanguageSuggestion", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("FirstSeenAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("LastSeenAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NormalizedName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Occurrences")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique();
-
-                    b.ToTable("LanguageSuggestions");
                 });
 
             modelBuilder.Entity("XlentMatch.Api.Models.MatchRequirementResult", b =>
@@ -579,6 +544,43 @@ namespace XlentMatch.Api.Migrations
                     b.HasIndex("SkillId");
 
                     b.ToTable("SkillAliases");
+                });
+
+            modelBuilder.Entity("XlentMatch.Api.Models.SkillSuggestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("FirstSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Occurrences")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("SkillSuggestions");
                 });
 
             modelBuilder.Entity("XlentMatch.Api.Models.AssignmentRequirement", b =>

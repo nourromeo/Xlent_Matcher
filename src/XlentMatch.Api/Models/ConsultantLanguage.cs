@@ -5,6 +5,5 @@ public class ConsultantLanguage
     public int Id { get; set; }
     public int ConsultantId { get; set; }
     public string Name { get; set; } = "";
-    public string? Level { get; set; }
-    public string? SourceLevel { get; set; }
+    public string Proficiency { get; set; } = HumanLanguageProficiency.NotSpecified;
 }
