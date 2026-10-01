@@ -7,7 +7,7 @@ import { DataTable } from "../components/ui/DataTable";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { SkillEditModal } from "../components/SkillEditModal";
-import { adminApi, type AdminOverview, type AdminSkill } from "../services/adminApi";
+import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion } from "../services/adminApi";
 
 const ADMIN_TABS = ["taxonomy", "weights", "flags"] as const;
 
@@ -16,6 +16,7 @@ export default function Admin() {
   const TABS = ADMIN_TABS.map((id) => ({ id, label: t(`tab_${id}` as any) }));
 
   const [tab, setTab] = useState("taxonomy");
+  const [taxonomyTab, setTaxonomyTab] = useState<"catalog" | "suggestions">("catalog");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -263,22 +264,30 @@ export default function Admin() {
 
         <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
-                {tab === "taxonomy" && (
+        {tab === "taxonomy" && (
+          <div className="flex gap-2 border-b border-app">
+            <button type="button" onClick={() => setTaxonomyTab("catalog")} className={`px-3 py-2 text-xs ${taxonomyTab === "catalog" ? "text-app-primary border-b-2 border-app-brand" : "text-app-muted"}`}>Catalog ({skills.length})</button>
+            <button type="button" onClick={() => setTaxonomyTab("suggestions")} className={`px-3 py-2 text-xs ${taxonomyTab === "suggestions" ? "text-app-primary border-b-2 border-app-brand" : "text-app-muted"}`}>Suggestions ({suggestions.length})</button>
+          </div>
+        )}
+
+                {tab === "taxonomy" && taxonomyTab === "suggestions" && (
           <section className="bg-app-surface border border-app rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--shadow-surface)" }}>
             <div>
               <h2 className="text-xs font-semibold text-app-primary">Taxonomy suggestions ({suggestions.length})</h2>
               <p className="text-[11px] text-app-muted mt-1">Unrecognized extracted terms remain outside the approved catalog until reviewed.</p>
             </div>
-            {suggestions.length === 0 && <p className="text-[11px] text-app-faint">No taxonomy suggestions to review.</p>}
-            {suggestions.map((item) => (
-              <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-app pt-3">
-                <div>
-                  <p className="text-xs font-medium text-app-primary">{item.name}</p>
-                  <p className="text-[10px] text-app-muted">{item.category} · Seen {item.occurrences} time(s)</p>
-                </div>
-                <Button variant="primary" onClick={() => { setReviewingSuggestion(item); setSuggestionCanonical(item.name); setSuggestionCategory(item.category); setSuggestionAliases(""); }}>Review</Button>
-              </div>
-            ))}
+            <DataTable<AdminSuggestion>
+              columns={[
+                { key: "name", header: "Suggestion", render: (item) => <span className="font-mono font-medium text-app-primary">{item.name}</span> },
+                { key: "category", header: "Suggested category", render: (item) => <span className="text-app-secondary">{item.category}</span> },
+                { key: "occurrences", header: "Seen", render: (item) => <span className="font-mono">{item.occurrences}</span> },
+                { key: "action", header: "Action", render: (item) => <Button variant="primary" onClick={() => { setReviewingSuggestion(item); setSuggestionCanonical(item.name); setSuggestionCategory(item.category); setSuggestionAliases(""); }}>Review</Button> },
+              ]}
+              rows={suggestions}
+              rowKey={(item) => String(item.id)}
+              emptyMessage="No taxonomy suggestions to review."
+            />
           </section>
         )}
 
@@ -295,7 +304,7 @@ export default function Admin() {
           </div>
         )}
 
-{tab === "taxonomy" && (
+{tab === "taxonomy" && taxonomyTab === "catalog" && (
           <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
             <div className="flex items-end justify-between gap-4 px-4 py-3 border-b border-app">
               <div className="flex items-end gap-2 flex-1">
