@@ -251,9 +251,9 @@ export default function Admin() {
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: t("admin_skills_count"), value: loading ? "—" : skills.length },
-            { label: t("admin_matching_factors"), value: loading ? "—" : factors.length },
-            { label: t("admin_feature_flags"), value: loading ? "—" : capabilities.length },
+            { label: t("admin_skills_count"), value: loading || error ? "—" : skills.length },
+            { label: t("admin_matching_factors"), value: loading || error ? "—" : factors.length },
+            { label: t("admin_feature_flags"), value: loading || error ? "—" : capabilities.length },
           ].map((item) => (
             <div key={item.label} className="bg-app-surface border border-app rounded-lg px-4 py-3" style={{ boxShadow: "var(--shadow-surface)" }}>
               <p className="text-[10px] uppercase tracking-wide text-app-faint">{item.label}</p>

@@ -87,6 +87,11 @@ export default function Dashboard() {
 
         if (cancelled) return;
 
+        const failedMatchLoads = resultSets.filter((result) => result.status === "rejected");
+        if (failedMatchLoads.length > 0) {
+          setError("Some matching results could not be loaded.");
+        }
+
         setMatches(
           resultSets
             .filter((result): result is PromiseFulfilledResult<MatchResultApi[]> => result.status === "fulfilled")

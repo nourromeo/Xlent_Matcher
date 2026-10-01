@@ -83,10 +83,11 @@ export default function Matching() {
         setResults(data);
         setSelectedMatchId(data[0]?.id ?? null);
       })
-      .catch(() => {
+      .catch((requestError: unknown) => {
         if (!cancelled) {
           setResults([]);
           setSelectedMatchId(null);
+          setError(requestError instanceof Error ? requestError.message : "Could not load matching results.");
         }
       });
 
