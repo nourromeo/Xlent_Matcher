@@ -3,7 +3,7 @@ import type { AssignmentApi, Consultant } from "../types";
 
 export type RequirementDraft = {
   name: string;
-  category: "Skill" | "HumanLanguage";
+  category: "Skill" | "HumanLanguage" | "Seniority";
   type: "Mandatory" | "Desired";
   minYears: number | null;
   minLevel: number | null;
@@ -12,6 +12,9 @@ export type RequirementDraft = {
 
 export type RequirementExtractionResult = {
   seniority: string | null;
+  seniorityMatchMode?: "Exact" | "Minimum" | "Range" | null;
+  minimumSeniority?: string | null;
+  maximumSeniority?: string | null;
   minYearsExperience: number | null;
   availability: string | null;
   requiredStartDate: string | null;

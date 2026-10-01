@@ -254,6 +254,8 @@ public class SkillNormalizationService(AppDbContext db)
     {
         foreach (var requirement in requirements)
         {
+            if (string.Equals(requirement.Category, "Seniority", StringComparison.OrdinalIgnoreCase))
+                continue;
             if (string.IsNullOrWhiteSpace(requirement.Name))
                 continue;
 

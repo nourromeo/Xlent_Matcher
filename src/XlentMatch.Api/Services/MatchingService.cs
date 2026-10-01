@@ -85,21 +85,6 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             });
         }
 
-        if (!string.IsNullOrWhiteSpace(assignment.Seniority))
-        {
-            var requiredLevel = SeniorityLevel(assignment.Seniority);
-            var consultantLevel = SeniorityLevel(consultant.Seniority);
-            details.Add(new MatchContextResult
-            {
-                Name = "Seniority",
-                IsMatched = requiredLevel is null || consultantLevel is null ? null : consultantLevel == requiredLevel,
-                AffectsScore = false,
-                Evidence = requiredLevel is null || consultantLevel is null
-                    ? $"Assignment: {assignment.Seniority}; consultant: {consultant.Seniority ?? "not specified"}. Confirm manually."
-                    : $"Assignment requires {assignment.Seniority}; consultant profile says {consultant.Seniority}."
-            });
-        }
-
         if (!string.IsNullOrWhiteSpace(assignment.Location))
         {
             var required = NormalizeText(assignment.Location);
@@ -139,6 +124,42 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     {
         var evidence = new List<string>();
         var matched = false;
+
+        if (string.Equals(req.Category, "Seniority", StringComparison.OrdinalIgnoreCase))
+        {
+            var required = SeniorityLevel(req.Name);
+            var consultant = SeniorityLevel(c.Seniority);
+            var maximum = SeniorityLevel(req.MaximumSeniority);
+            if (required is not null && consultant is not null)
+            {
+                matched = req.MatchMode switch
+                {
+                    SeniorityMatchMode.Minimum => consultant.Value >= required.Value,
+                    SeniorityMatchMode.Range => maximum is not null && consultant.Value >= required.Value && consultant.Value <= maximum.Value,
+                    _ => consultant.Value == required.Value
+                };
+            }
+
+            var requirementLabel = req.MatchMode switch
+            {
+                SeniorityMatchMode.Minimum => $"{req.Name} or higher",
+                SeniorityMatchMode.Range => $"{req.Name}–{req.MaximumSeniority}",
+                _ => req.Name
+            };
+            evidence.Add(matched
+                ? $"Seniority: {requirementLabel} required, consultant is {c.Seniority}."
+                : c.Seniority is null
+                    ? $"Seniority: {requirementLabel} required, consultant seniority is unknown."
+                    : $"Seniority: {requirementLabel} required, consultant is {c.Seniority}.");
+
+            return new MatchRequirementResult
+            {
+                RequirementName = "Seniority",
+                Type = req.Type,
+                IsMatched = matched,
+                Evidence = string.Join(" ", evidence)
+            };
+        }
 
         var requirementName = req.Skill?.CanonicalName ?? req.Name;
         var isHumanLanguage = string.Equals(req.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase) ||

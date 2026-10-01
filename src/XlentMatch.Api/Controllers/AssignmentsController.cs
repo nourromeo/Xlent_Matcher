@@ -42,6 +42,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
             .Where(r => !string.IsNullOrWhiteSpace(r.Name))
             .ToList();
 
+        EnsureLegacySeniorityRequirement(assignment);
+
         if (assignment.Requirements.Count == 0)
             return BadRequest("At least one assignment requirement is required.");
 
@@ -56,7 +58,7 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         {
             requirement.Id = 0;
             requirement.AssignmentId = 0;
-            requirement.SkillId = 0;
+            requirement.SkillId = string.Equals(requirement.Category, "Seniority", StringComparison.OrdinalIgnoreCase) ? null : 0;
             requirement.Skill = null;
         }
 
@@ -97,9 +99,13 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
                 MinYears = requirement.MinYears,
                 MinLevel = requirement.MinLevel,
                 Proficiency = requirement.Proficiency,
+                MatchMode = requirement.MatchMode,
+                MaximumSeniority = requirement.MaximumSeniority,
                 Category = requirement.Category
             })
             .ToList();
+
+        EnsureLegacySeniorityRequirement(input);
 
         if (input.Requirements.Count == 0)
             return BadRequest("At least one assignment requirement is required.");
@@ -139,6 +145,16 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         foreach (var requirement in requirements)
         {
             if (requirement.MinYears < 0) return $"Minimum years for '{requirement.Name}' cannot be negative.";
+            if (string.Equals(requirement.Category, "Seniority", StringComparison.OrdinalIgnoreCase))
+            {
+                if (requirement.MatchMode == SeniorityMatchMode.Range && string.IsNullOrWhiteSpace(requirement.MaximumSeniority))
+                    return "A Seniority range requires a maximum Seniority.";
+                if (SeniorityLevel(requirement.Name) is null || (requirement.MatchMode == SeniorityMatchMode.Range && SeniorityLevel(requirement.MaximumSeniority) is null))
+                    return $"Seniority requirement '{requirement.Name}' is invalid.";
+                if (requirement.MatchMode == SeniorityMatchMode.Range && SeniorityLevel(requirement.Name) > SeniorityLevel(requirement.MaximumSeniority))
+                    return "Minimum Seniority cannot be higher than maximum Seniority.";
+                continue;
+            }
             var isLanguage = string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase);
             var maximumLevel = 5;
             if (isLanguage && requirement.Proficiency is not null && !HumanLanguageProficiency.Values.Contains(requirement.Proficiency))
@@ -149,6 +165,30 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
                 return $"Minimum skill years cannot be set for human language '{requirement.Name}'.";
         }
         return null;
+    }
+
+    private static int? SeniorityLevel(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "junior" => 1,
+        "mid" => 2,
+        "senior" => 3,
+        "staff" => 4,
+        _ => null
+    };
+
+    private static void EnsureLegacySeniorityRequirement(Assignment assignment)
+    {
+        if (string.IsNullOrWhiteSpace(assignment.Seniority) ||
+            assignment.Requirements.Any(r => string.Equals(r.Category, "Seniority", StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        assignment.Requirements.Add(new AssignmentRequirement
+        {
+            Name = assignment.Seniority.Trim(),
+            Category = "Seniority",
+            Type = RequirementType.Mandatory,
+            MatchMode = SeniorityMatchMode.Exact
+        });
     }
 
     [HttpDelete("{id:int}")]

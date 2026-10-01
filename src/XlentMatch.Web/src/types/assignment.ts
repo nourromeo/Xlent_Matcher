@@ -16,7 +16,8 @@ export type Assignment = {
 };
 
 export type RequirementTypeApi = "Mandatory" | "Desired";
-export type RequirementCategoryApi = "Skill" | "HumanLanguage";
+export type RequirementCategoryApi = "Skill" | "HumanLanguage" | "Seniority";
+export type SeniorityMatchModeApi = "Exact" | "Minimum" | "Range";
 export type AssignmentStatusApi = "Draft" | "Matching" | "Done" | "Closed";
 
 export type AssignmentRequirementApi = {
@@ -29,6 +30,8 @@ export type AssignmentRequirementApi = {
   minYears: number | null;
   minLevel: number | null;
   proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" | null;
+  matchMode?: SeniorityMatchModeApi;
+  maximumSeniority?: string | null;
 };
 
 export type AssignmentApi = {

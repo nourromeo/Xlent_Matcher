@@ -63,7 +63,9 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             Separate assignment metadata from actual consultant requirements.
 
             Assignment metadata:
-            - seniority: only values such as Junior, Mid, Senior or Staff when explicitly stated; otherwise null.
+            - seniority: the required level when explicitly stated; otherwise null. Keep this for compatibility.
+            - seniorityMatchMode: Exact by default; use Minimum for "at least" wording and Range when both a minimum and maximum are explicitly stated.
+            - minimumSeniority and maximumSeniority: only Junior, Mid, Senior or Staff; maximumSeniority is only populated for Range. Do not infer seniority from years.
             - minYearsExperience: the overall minimum years of professional experience when explicitly stated; otherwise null.
             - availability: preserve explicit availability wording; otherwise null. Resolve relative timing against today={{today}} into requiredStartDate (yyyy-MM-dd); otherwise null.
             - location: an explicit work location or Remote/Hybrid arrangement; otherwise null.
@@ -81,7 +83,8 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
 
             Return a JSON object with exactly this shape:
             {
-              "seniority": string|null,
+              "seniority": string|null, "seniorityMatchMode": "Exact"|"Minimum"|"Range"|null,
+              "minimumSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "maximumSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null,
               "minYearsExperience": int|null,
               "availability": string|null, "requiredStartDate": "yyyy-MM-dd"|null,
               "location": string|null,

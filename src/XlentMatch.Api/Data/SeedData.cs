@@ -270,7 +270,17 @@ public static class SeedData
             };
 
             foreach (var assignment in assignments)
+            {
+                if (!string.IsNullOrWhiteSpace(assignment.Seniority))
+                    assignment.Requirements.Add(new AssignmentRequirement
+                    {
+                        Name = assignment.Seniority,
+                        Category = "Seniority",
+                        Type = RequirementType.Mandatory,
+                        MatchMode = SeniorityMatchMode.Exact
+                    });
                 await skillNormalizer.NormalizeRequirementsAsync(assignment.Requirements, ct);
+            }
 
             db.Assignments.AddRange(assignments);
             await db.SaveChangesAsync(ct);

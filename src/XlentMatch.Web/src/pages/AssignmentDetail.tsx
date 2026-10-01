@@ -145,6 +145,7 @@ export default function AssignmentDetail() {
   const [requiredLanguages, setRequiredLanguages] = useState<string[]>([]);
   const [preferredLanguages, setPreferredLanguages] = useState<string[]>([]);
   const [requirementEdits, setRequirementEdits] = useState<AssignmentRequirementApi[]>([]);
+  const [seniorityRequirement, setSeniorityRequirement] = useState<AssignmentRequirementApi | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -196,6 +197,7 @@ export default function AssignmentDetail() {
     setRequiredLanguages(requirementNames(assignment, "Mandatory", "HumanLanguage"));
     setPreferredLanguages(requirementNames(assignment, "Desired", "HumanLanguage"));
     setRequirementEdits(structuredClone(assignment.requirements));
+    setSeniorityRequirement(structuredClone(assignment.requirements.find((item) => item.category === "Seniority") ?? (assignment.seniority ? { id: 0, assignmentId: assignment.id, name: assignment.seniority, category: "Seniority", type: "Mandatory", minYears: null, minLevel: null, proficiency: null, matchMode: "Exact", maximumSeniority: null } : null)));
     setEditMode(true);
   };
 
@@ -232,10 +234,10 @@ export default function AssignmentDetail() {
     try {
       const payload: AssignmentApi = {
         ...draft,
-        requirements: makeRequirements(draft.id, requiredSkills, preferredSkills, requiredLanguages, preferredLanguages, assignment?.requirements ?? []).map((item) => {
+        requirements: [...makeRequirements(draft.id, requiredSkills, preferredSkills, requiredLanguages, preferredLanguages, assignment?.requirements ?? []).map((item) => {
           const edited = requirementEdits.find((row) => row.type === item.type && row.category === item.category && row.name.trim().toLocaleLowerCase() === item.name.trim().toLocaleLowerCase());
           return edited ? { ...item, minYears: edited.minYears, minLevel: edited.minLevel, proficiency: edited.proficiency } : item;
-        }),
+        }), ...(seniorityRequirement ? [seniorityRequirement] : [])],
       };
 
       const updated = await assignmentsApi.update(draft.id, payload);
@@ -393,7 +395,12 @@ export default function AssignmentDetail() {
                 <Input value={draft.customerName} onChange={(event) => setDraft({ ...draft, customerName: event.target.value })} />
               </FormField>
               <FormField label={t("assignment_seniority")}>
-                <Input value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} />
+                <Input value={draft.seniority ?? ""} onChange={(event) => {
+                  const value = event.target.value || null;
+                  setDraft({ ...draft, seniority: value });
+                  setSeniorityRequirement((current) => value ? { ...(current ?? { id: 0, assignmentId: draft.id, category: "Seniority", type: "Mandatory", minYears: null, minLevel: null, proficiency: null, matchMode: "Exact", maximumSeniority: null }), name: value } : null);
+                }} />
+                {seniorityRequirement && <div className="mt-2 grid grid-cols-2 gap-2"><select aria-label="Seniority matching mode" value={seniorityRequirement.matchMode ?? "Exact"} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, matchMode: event.target.value as "Exact" | "Minimum" | "Range", maximumSeniority: event.target.value === "Range" ? seniorityRequirement.maximumSeniority : null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Exact">Exact</option><option value="Minimum">Minimum</option><option value="Range">Range</option></select>{seniorityRequirement.matchMode === "Range" && <select aria-label="Maximum seniority" value={seniorityRequirement.maximumSeniority ?? ""} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, maximumSeniority: event.target.value || null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="">Maximum</option><option>Junior</option><option>Mid</option><option>Senior</option><option>Staff</option></select>}</div>}
               </FormField>
               <FormField label={t("assignment_availability")}>
                 <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />

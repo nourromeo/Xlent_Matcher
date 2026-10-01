@@ -85,6 +85,12 @@ namespace XlentMatch.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("MatchMode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MaximumSeniority")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("MinLevel")
                         .HasColumnType("int");
 
