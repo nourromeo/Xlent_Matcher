@@ -26,6 +26,10 @@ type MatchCategory = "All" | "Strong" | "Partial" | "Low";
 const matchCategory = (score: number): Exclude<MatchCategory, "All"> =>
   score >= 70 ? "Strong" : score >= 40 ? "Partial" : "Low";
 
+function RequirementColumn({ title, items, matched = false }: { title: string; items: MatchResultApi["details"]; matched?: boolean }) {
+  return <div className="bg-app-surface border border-app rounded-lg p-4"><div className="flex items-center justify-between mb-3"><p className="text-xs font-medium text-app-primary">{title}</p><span className="text-[10px] text-app-muted">{items.length} {matched ? "matched" : "missing"}</span></div><div className="space-y-2">{items.map((detail) => <div key={detail.id || detail.requirementName} className="flex items-center justify-between gap-2 text-xs"><span className={matched ? "text-app-primary" : "text-app-secondary"}>{matched ? "✓" : "✕"} {detail.requirementName}</span><span className="text-[10px] text-app-faint">{detail.type}</span></div>)}</div></div>;
+}
+
 export default function Matching() {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -104,22 +108,26 @@ export default function Matching() {
     };
   }, [assignmentId]);
 
-  const sortedResults = useMemo(
-    () => [...results].sort((a, b) => a.rank - b.rank || b.score - a.score)
-      .filter((result) => {
+  const allResults = useMemo(
+    () => [...results].sort((a, b) => a.rank - b.rank || b.score - a.score),
+    [results],
+  );
+
+  const visibleResults = useMemo(
+    () => allResults.filter((result) => {
         const matchesFilter = listFilter === "All" || matchCategory(result.score) === listFilter;
         return matchesFilter && result.consultantName.toLowerCase().includes(query.trim().toLowerCase());
       }),
-    [results, listFilter, query],
+    [allResults, listFilter, query],
   );
 
-  const selected = sortedResults.find((result) => result.id === selectedMatchId) ?? sortedResults[0];
+  const selected = allResults.find((result) => result.id === selectedMatchId) ?? allResults[0];
   useEffect(() => {
     setSelectedMatchId((current) => {
-      if (sortedResults.length === 0) return null;
-      return sortedResults.some((result) => result.id === current) ? current : sortedResults[0].id;
+      if (allResults.length === 0) return null;
+      return allResults.some((result) => result.id === current) ? current : allResults[0].id;
     });
-  }, [sortedResults]);
+  }, [allResults]);
 
   const consultantById = useMemo(
     () => new Map(consultants.map((consultant) => [consultant.id, consultant])),
@@ -166,6 +174,8 @@ export default function Matching() {
   const matchedRequired = selected?.details.filter((detail) => detail.type === "Mandatory" && detail.isMatched) ?? [];
   const missingRequired = selected?.details.filter((detail) => detail.type === "Mandatory" && !detail.isMatched) ?? [];
   const matchedDesired = selected?.details.filter((detail) => detail.type === "Desired" && detail.isMatched) ?? [];
+  const matchedDetails = selected?.details.filter((detail) => detail.isMatched) ?? [];
+  const missingDetails = selected?.details.filter((detail) => !detail.isMatched) ?? [];
 
   const weightByKey = Object.fromEntries(matchingFactors.map((factor) => [factor.key, factor.value]));
 
@@ -325,29 +335,6 @@ export default function Matching() {
             <p className="text-xs text-app-muted mt-2 leading-relaxed">{t("matching_ready_help")}</p>
           </div>
         </div>
-      ) : sortedResults.length === 0 ? (
-        <div className="flex-1 flex min-h-0">
-          <aside className="w-80 flex-none border-r border-app bg-app-surface flex flex-col">
-            <div className="px-4 py-3 border-b border-app">
-              <p className="text-sm font-semibold text-app-primary">Match Consultants</p>
-              <p className="text-[10px] text-app-muted mt-0.5">No consultants match the current filter or search.</p>
-              <div className="mt-3 flex gap-1"><button type="button" onClick={() => setListFilter("All")} className="rounded px-2 py-1 text-[10px] text-app-muted">All ({results.length})</button><button type="button" onClick={() => setListFilter("Strong")} className="rounded px-2 py-1 text-[10px] text-app-muted">Strong ({results.filter((result) => matchCategory(result.score) === "Strong").length})</button><button type="button" onClick={() => setListFilter("Partial")} className="rounded px-2 py-1 text-[10px] text-app-muted">Partial ({results.filter((result) => matchCategory(result.score) === "Partial").length})</button><button type="button" onClick={() => setListFilter("Low")} className="rounded px-2 py-1 text-[10px] text-app-muted">Low ({results.filter((result) => matchCategory(result.score) === "Low").length})</button></div>
-            </div>
-            <div className="flex-1 flex items-center justify-center p-5 text-center">
-              <div>
-                <p className="text-sm font-medium text-app-primary">{query.trim() ? "No consultants found" : `No ${listFilter.toLowerCase()} matches`}</p>
-                <p className="text-xs text-app-muted mt-2">{query.trim() ? "Try another name or clear the search." : `No consultants currently have a Match Score in the ${listFilter} range.`}</p>
-                <button type="button" onClick={() => setQuery("")} className="mt-3 text-xs text-app-brand hover:text-app-primary">Clear search</button>
-              </div>
-            </div>
-          </aside>
-          <main className="flex-1 flex items-center justify-center bg-app p-6">
-            <div className="text-center">
-              <p className="text-sm font-medium text-app-primary">No consultant selected</p>
-              <p className="text-xs text-app-muted mt-2">Select a consultant to view the match analysis.</p>
-            </div>
-          </main>
-        </div>
       ) : selected ? (
         <div className="flex-1 flex min-h-0">
           <aside className="w-80 flex-none border-r border-app bg-app-surface flex flex-col">
@@ -359,7 +346,7 @@ export default function Matching() {
             </div>
 
             <div className="flex-1 overflow-auto">
-              {sortedResults.map((result) => {
+              {visibleResults.length === 0 ? <div className="flex h-full items-center justify-center p-5 text-center"><div><p className="text-sm font-medium text-app-primary">{query.trim() ? "No consultants found" : `No ${listFilter.toLowerCase()} matches`}</p><p className="mt-2 text-xs text-app-muted">{query.trim() ? "Try another name or clear the search." : `No consultants currently have a Match Score in the ${listFilter} range.`}</p></div></div> : visibleResults.map((result) => {
                 const missing = result.details.filter((detail) => detail.type === "Mandatory" && !detail.isMatched);
                 const isSelected = selected?.id === result.id;
 
@@ -394,7 +381,7 @@ export default function Matching() {
                           ) : (
                             <div className="flex items-center gap-1 text-[10px]" style={{ color: "var(--color-warning)" }}>
                               <AlertTriangle size={9} />
-                              {t("matching_missing_prefix")} {missing.map((item) => item.requirementName).join(", ")}
+                              {t("matching_missing_prefix")} {missing.slice(0, 2).map((item) => item.requirementName).join(", ")}{missing.length > 2 ? ` +${missing.length - 2}` : ""}
                             </div>
                           )}
                         </div>
@@ -437,13 +424,11 @@ export default function Matching() {
                 </div>
               </section>
 
-              {missingRequired.length > 0 && <div className="rounded-lg border border-app-danger bg-app-danger-soft px-4 py-3 text-xs text-app-danger"><strong>{missingRequired.length} mandatory requirements missing</strong><p className="mt-1">{missingRequired.map((item) => item.requirementName + " — " + item.evidence).join("; ")}</p></div>}
-
               <nav className="flex gap-5 border-b border-app" aria-label="Match details">
                 {(["Overview", "Requirements", "Experience", "CV Evidence"] as const).map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`border-b-2 px-1 py-2 text-xs ${activeTab === tab ? "border-app-brand text-app-brand" : "border-transparent text-app-muted hover:text-app-secondary"}`}>{tab}</button>)}
               </nav>
 
-              {activeTab === "Requirements" && <section className="bg-app-surface border border-app rounded-lg overflow-hidden"><div className="px-4 py-3 border-b border-app"><p className="text-sm font-medium text-app-primary">Requirements</p><p className="text-[10px] text-app-muted mt-1">Complete deterministic requirement analysis</p></div><div className="divide-y divide-app">{selected.details.map((detail) => <div key={detail.id || detail.requirementName} className="grid grid-cols-[1fr_100px_1fr_80px] gap-3 px-4 py-3 text-xs items-center"><span className="text-app-primary">{detail.requirementName}</span><span className="text-app-muted">{detail.type}</span><span className="text-app-muted">{detail.evidence}</span><span className={detail.isMatched ? "text-app-success" : "text-app-danger"}>{detail.isMatched ? "✓ Match" : "✕ Missing"}</span></div>)}</div></section>}
+              {activeTab === "Requirements" && <section className="space-y-3"><div><p className="text-sm font-medium text-app-primary">Requirements</p><p className="text-[10px] text-app-muted mt-1">{selected.matchedMandatory}/{selected.totalMandatory} mandatory matched · complete deterministic analysis</p></div><div className="grid gap-4 lg:grid-cols-2"><RequirementColumn title="Matched Requirements" items={matchedDetails} matched /><RequirementColumn title="Missing Requirements" items={missingDetails} /></div></section>}
 
               {activeTab === "Experience" && <section className="space-y-4"><div className="bg-app-surface border border-app rounded-lg p-4"><p className="text-sm font-medium text-app-primary">Total Experience</p><p className="mt-2 text-xs text-app-secondary">Consultant: {selectedConsultant?.yearsOfExperience ?? "Not specified"} years</p><p className="text-xs text-app-muted">Assignment requires: {assignment.minYearsExperience > 0 ? assignment.minYearsExperience + "+ years" : "No minimum"}</p></div><div className="bg-app-surface border border-app rounded-lg p-4"><p className="text-sm font-medium text-app-primary mb-3">Skill Experience</p>{selectedConsultant?.skills.map((skill) => <div key={skill.id} className="flex justify-between border-b border-app-subtle py-2 text-xs"><span>{skill.skill?.canonicalName ?? skill.name}</span><span className="text-app-muted">{skill.years} yrs</span></div>)}</div></section>}
 
@@ -475,7 +460,7 @@ export default function Matching() {
                   </div>
                   {missingRequired.length > 0 ? (
                     <div className="space-y-2">
-                      {missingRequired.map((detail) => (
+                    {missingRequired.slice(0, 4).map((detail) => (
                         <div key={detail.id || detail.requirementName} className="flex items-center gap-2">
                           <AlertTriangle size={11} style={{ color: "var(--color-warning)" }} />
                           <span className="text-xs font-mono" style={{ color: "var(--color-warning)" }}>{detail.requirementName}</span>
@@ -526,6 +511,7 @@ export default function Matching() {
                         <p className="text-[11px] text-app-secondary leading-relaxed mt-1">{detail.evidence}</p>
                       </div>
                     ))}
+                    {missingRequired.length > 4 && <button type="button" onClick={() => setActiveTab("Requirements")} className="text-[10px] text-app-brand">+{missingRequired.length - 4} more · View all requirements →</button>}
                   </div>
                 </div>
 
