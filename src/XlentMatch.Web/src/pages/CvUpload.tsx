@@ -572,7 +572,7 @@ export default function CvUpload() {
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-app-primary">Languages ({draft.languages.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", level: null }] })}>Add language</Button>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", level: null, sourceLevel: null }] })}>Add language</Button>
                 </div>
                 {draft.languages.map((item, index) => (
                   <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
