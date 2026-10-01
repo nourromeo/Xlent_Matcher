@@ -21,6 +21,11 @@ const initials = (name: string) =>
     .join("")
     .slice(0, 2);
 
+type MatchCategory = "All" | "Strong" | "Partial" | "Low";
+
+const matchCategory = (score: number): Exclude<MatchCategory, "All"> =>
+  score >= 70 ? "Strong" : score >= 40 ? "Partial" : "Low";
+
 export default function Matching() {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,7 +43,7 @@ export default function Matching() {
   const [matchingFactors, setMatchingFactors] = useState<AdminMatchingFactor[]>([]);
   const [missingMandatoryPenalty, setMissingMandatoryPenalty] = useState(10);
   const [activeTab, setActiveTab] = useState<"Overview" | "Requirements" | "Experience" | "CV Evidence">("Overview");
-  const [listFilter, setListFilter] = useState<"All" | "Qualified" | "Not qualified">("All");
+  const [listFilter, setListFilter] = useState<MatchCategory>("All");
   const [query, setQuery] = useState("");
 
   const assignmentId = Number(searchParams.get("assignment"));
@@ -102,16 +107,13 @@ export default function Matching() {
   const sortedResults = useMemo(
     () => [...results].sort((a, b) => a.rank - b.rank || b.score - a.score)
       .filter((result) => {
-        const qualified = result.details.every((detail) => detail.type !== "Mandatory" || detail.isMatched);
-        const matchesFilter = listFilter === "All" || (listFilter === "Qualified" ? qualified : !qualified);
-        return matchesFilter && result.consultantName.toLowerCase().includes(query.toLowerCase());
+        const matchesFilter = listFilter === "All" || matchCategory(result.score) === listFilter;
+        return matchesFilter && result.consultantName.toLowerCase().includes(query.trim().toLowerCase());
       }),
     [results, listFilter, query],
   );
 
   const selected = sortedResults.find((result) => result.id === selectedMatchId) ?? sortedResults[0];
-  const selectedQualified = Boolean(selected && selected.details.every((detail) => detail.type !== "Mandatory" || detail.isMatched));
-
   useEffect(() => {
     setSelectedMatchId((current) => {
       if (sortedResults.length === 0) return null;
@@ -329,13 +331,13 @@ export default function Matching() {
             <div className="px-4 py-3 border-b border-app">
               <p className="text-sm font-semibold text-app-primary">Match Consultants</p>
               <p className="text-[10px] text-app-muted mt-0.5">No consultants match the current filter or search.</p>
-              <div className="mt-3 flex gap-1"><button type="button" onClick={() => setListFilter("All")} className="rounded px-2 py-1 text-[10px] text-app-muted">All ({results.length})</button><button type="button" onClick={() => setListFilter("Qualified")} className="rounded px-2 py-1 text-[10px] text-app-muted">Qualified</button><button type="button" onClick={() => setListFilter("Not qualified")} className="rounded px-2 py-1 text-[10px] text-app-muted">Not qualified</button></div>
+              <div className="mt-3 flex gap-1"><button type="button" onClick={() => setListFilter("All")} className="rounded px-2 py-1 text-[10px] text-app-muted">All ({results.length})</button><button type="button" onClick={() => setListFilter("Strong")} className="rounded px-2 py-1 text-[10px] text-app-muted">Strong ({results.filter((result) => matchCategory(result.score) === "Strong").length})</button><button type="button" onClick={() => setListFilter("Partial")} className="rounded px-2 py-1 text-[10px] text-app-muted">Partial ({results.filter((result) => matchCategory(result.score) === "Partial").length})</button><button type="button" onClick={() => setListFilter("Low")} className="rounded px-2 py-1 text-[10px] text-app-muted">Low ({results.filter((result) => matchCategory(result.score) === "Low").length})</button></div>
             </div>
             <div className="flex-1 flex items-center justify-center p-5 text-center">
               <div>
-                <p className="text-sm font-medium text-app-primary">{listFilter === "Qualified" ? "No qualified consultants" : "No consultants found"}</p>
-                <p className="text-xs text-app-muted mt-2">{listFilter === "Qualified" ? "No consultants currently meet all mandatory requirements for this assignment." : "Try changing the filter or search."}</p>
-                <button type="button" onClick={() => { setListFilter("All"); setQuery(""); }} className="mt-3 text-xs text-app-brand hover:text-app-primary">View all consultants</button>
+                <p className="text-sm font-medium text-app-primary">{query.trim() ? "No consultants found" : `No ${listFilter.toLowerCase()} matches`}</p>
+                <p className="text-xs text-app-muted mt-2">{query.trim() ? "Try another name or clear the search." : `No consultants currently have a Match Score in the ${listFilter} range.`}</p>
+                <button type="button" onClick={() => setQuery("")} className="mt-3 text-xs text-app-brand hover:text-app-primary">Clear search</button>
               </div>
             </div>
           </aside>
@@ -352,8 +354,8 @@ export default function Matching() {
             <div className="px-4 py-3 border-b border-app">
               <p className="text-sm font-semibold text-app-primary">Match Consultants</p>
               <p className="text-[10px] text-app-muted mt-0.5">{t("matching_ranked")}</p>
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search consultants..." className="mt-3 w-full rounded-md border border-app bg-app px-3 py-2 text-xs text-app-primary placeholder:text-app-faint focus:outline-none" />
-              <div className="mt-2 flex gap-1"><button onClick={() => setListFilter("All")} className={`rounded px-2 py-1 text-[10px] ${listFilter === "All" ? "bg-app-brand text-app-on-brand" : "text-app-muted"}`}>All ({results.length})</button><button onClick={() => setListFilter("Qualified")} className={`rounded px-2 py-1 text-[10px] ${listFilter === "Qualified" ? "bg-app-brand text-app-on-brand" : "text-app-muted"}`}>Qualified</button><button onClick={() => setListFilter("Not qualified")} className={`rounded px-2 py-1 text-[10px] ${listFilter === "Not qualified" ? "bg-app-brand text-app-on-brand" : "text-app-muted"}`}>Not qualified</button></div>
+              <div className="relative mt-3"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search consultants..." aria-label="Search consultants" className="w-full rounded-md border border-app bg-app px-3 py-2 pr-7 text-xs text-app-primary placeholder:text-app-faint focus:outline-none" />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-app-muted hover:text-app-primary">×</button>}</div>
+              <div className="mt-2 flex gap-1"><button onClick={() => setListFilter("All")} className={`rounded px-2 py-1 text-[10px] ${listFilter === "All" ? "bg-app-brand text-app-on-brand" : "text-app-muted"}`}>All ({results.length})</button><button onClick={() => setListFilter("Strong")} className={`rounded px-2 py-1 text-[10px] ${listFilter === "Strong" ? "bg-app-brand text-app-on-brand" : "text-app-muted"}`}>Strong ({results.filter((result) => matchCategory(result.score) === "Strong").length})</button><button onClick={() => setListFilter("Partial")} className={`rounded px-2 py-1 text-[10px] ${listFilter === "Partial" ? "bg-app-brand text-app-on-brand" : "text-app-muted"}`}>Partial ({results.filter((result) => matchCategory(result.score) === "Partial").length})</button><button onClick={() => setListFilter("Low")} className={`rounded px-2 py-1 text-[10px] ${listFilter === "Low" ? "bg-app-brand text-app-on-brand" : "text-app-muted"}`}>Low ({results.filter((result) => matchCategory(result.score) === "Low").length})</button></div>
             </div>
 
             <div className="flex-1 overflow-auto">
@@ -416,7 +418,7 @@ export default function Matching() {
                     <p className="text-xs text-app-muted truncate">
                       {selectedConsultant?.title || "Consultant"} · {selectedConsultant?.yearsOfExperience ?? 0} yrs
                     </p>
-                    <span className={`inline-flex mt-2 rounded px-2 py-1 text-[10px] font-semibold ${selectedQualified ? "bg-app-success-soft text-app-success" : "bg-app-danger-soft text-app-danger"}`}>{selectedQualified ? "QUALIFIED" : "NOT QUALIFIED"}</span>
+                    <span className="inline-flex mt-2 rounded px-2 py-1 text-[10px] font-semibold bg-app-brand-soft text-app-brand">{matchCategory(selected.score)} Match</span>
                   </div>
                 </div>
 
@@ -424,7 +426,7 @@ export default function Matching() {
                   <div className="text-right">
                     <div className="flex items-baseline justify-end gap-1">
                       <span className="text-2xl font-semibold font-mono text-app-primary">{selected.score}%</span>
-                      <span className="text-xs font-medium text-app-secondary">{selectedQualified ? "Match" : "Fit Score"}</span>
+                      <span className="text-xs font-medium text-app-secondary">Match</span>
                     </div>
                     <p className="text-[10px] text-app-faint">Deterministic Match Score</p>
                   </div>
@@ -435,7 +437,7 @@ export default function Matching() {
                 </div>
               </section>
 
-              {!selectedQualified && missingRequired.length > 0 && <div className="rounded-lg border border-app-danger bg-app-danger-soft px-4 py-3 text-xs text-app-danger"><strong>Does not meet mandatory requirements</strong><p className="mt-1">Missing: {missingRequired.map((item) => item.requirementName + " — " + item.evidence).join("; ")}</p></div>}
+              {missingRequired.length > 0 && <div className="rounded-lg border border-app-danger bg-app-danger-soft px-4 py-3 text-xs text-app-danger"><strong>{missingRequired.length} mandatory requirements missing</strong><p className="mt-1">{missingRequired.map((item) => item.requirementName + " — " + item.evidence).join("; ")}</p></div>}
 
               <nav className="flex gap-5 border-b border-app" aria-label="Match details">
                 {(["Overview", "Requirements", "Experience", "CV Evidence"] as const).map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`border-b-2 px-1 py-2 text-xs ${activeTab === tab ? "border-app-brand text-app-brand" : "border-transparent text-app-muted hover:text-app-secondary"}`}>{tab}</button>)}
