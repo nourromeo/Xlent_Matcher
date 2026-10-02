@@ -33,7 +33,7 @@ export default function Admin() {
   const [editCategory, setEditCategory] = useState("");
   const [editAliases, setEditAliases] = useState("");
   const [savingSkill, setSavingSkill] = useState(false);
-  const [weightValues, setWeightValues] = useState<Record<string, number>>({});
+  const [weightValues, setWeightValues] = useState<Record<string, string>>({});
   const [savingWeights, setSavingWeights] = useState(false);
   const skillsPerPage = 10;
 
@@ -45,7 +45,7 @@ export default function Admin() {
       .then((data) => {
         if (!cancelled) {
           setOverview(data);
-          setWeightValues(Object.fromEntries(data.matchingFactors.map((factor) => [factor.key, factor.value])));
+          setWeightValues(Object.fromEntries(data.matchingFactors.map((factor) => [factor.key, String(factor.value)])));
         }
       })
       .catch((requestError: unknown) => {
@@ -189,9 +189,14 @@ export default function Admin() {
 
   const editableFactors = factors.map((factor) => ({
     ...factor,
-    value: weightValues[factor.key] ?? factor.value,
+    value: weightValues[factor.key] ?? String(factor.value),
   }));
-  const ok = editableFactors.every((factor) => Number.isInteger(factor.value) && factor.value > 0);
+  const numericWeights = editableFactors.map((factor) => Number(factor.value));
+  const ok = editableFactors.every((factor, index) =>
+    factor.value.length > 0 && /^\d+$/.test(factor.value) && Number.isInteger(numericWeights[index]) && numericWeights[index] > 0,
+  );
+  const mandatoryWeight = Number(weightValues.mandatory);
+  const desiredWeight = Number(weightValues.desired);
 
   const saveWeights = async () => {
     if (!ok) {
@@ -204,11 +209,11 @@ export default function Admin() {
 
     try {
       const updated = await adminApi.updateMatchingWeights({
-        mandatoryRequirementWeight: weightValues.mandatory ?? 0,
-        desiredRequirementWeight: weightValues.desired ?? 0,
+        mandatoryRequirementWeight: mandatoryWeight,
+        desiredRequirementWeight: desiredWeight,
       });
       setOverview(updated);
-      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, factor.value])));
+      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, String(factor.value)])));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save matching weights.");
     } finally {
@@ -223,7 +228,7 @@ export default function Admin() {
     try {
       const updated = await adminApi.resetMatchingWeights();
       setOverview(updated);
-      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, factor.value])));
+      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, String(factor.value)])));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not reset matching weights.");
     } finally {
@@ -460,7 +465,7 @@ export default function Admin() {
                       onChange={(event) =>
                         setWeightValues((current) => ({
                           ...current,
-                          [factor.key]: Number(event.target.value),
+                          [factor.key]: event.target.value.replace(/^0+(?=\d)/, ""),
                         }))
                       }
                       disabled={savingWeights}
@@ -476,7 +481,7 @@ export default function Admin() {
               <p>Each matched Mandatory requirement receives the configured Mandatory weight. Each matched Desired requirement receives the configured Desired weight.</p>
               <p className="font-mono">Match Score = (Matched Weighted Requirements / Total Weighted Requirements) × 100</p>
               <p>Only requirements included in the assignment are used. Missing or unused categories receive no automatic points.</p>
-              <p>Example: 3 Mandatory + 2 Desired. Total = (3 × {weightValues.mandatory ?? 0}) + (2 × {weightValues.desired ?? 0}) = {(weightValues.mandatory ?? 0) * 3 + (weightValues.desired ?? 0) * 2}. Matching 2 Mandatory + 2 Desired gives {((weightValues.mandatory ?? 0) * 2 + (weightValues.desired ?? 0) * 2)} / {((weightValues.mandatory ?? 0) * 3 + (weightValues.desired ?? 0) * 2)} × 100 = {(((weightValues.mandatory ?? 0) * 2 + (weightValues.desired ?? 0) * 2) / Math.max(1, (weightValues.mandatory ?? 0) * 3 + (weightValues.desired ?? 0) * 2) * 100).toFixed(2)}%.</p>
+              <p>Example: 3 Mandatory + 2 Desired. Total = (3 × {weightValues.mandatory || 0}) + (2 × {weightValues.desired || 0}) = {mandatoryWeight * 3 + desiredWeight * 2}. Matching 2 Mandatory + 2 Desired gives {(mandatoryWeight * 2 + desiredWeight * 2)} / {(mandatoryWeight * 3 + desiredWeight * 2)} × 100 = {((mandatoryWeight * 2 + desiredWeight * 2) / Math.max(1, mandatoryWeight * 3 + desiredWeight * 2) * 100).toFixed(2)}%.</p>
             </div>
 
             <div className="flex items-center justify-between">
