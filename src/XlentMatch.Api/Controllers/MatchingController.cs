@@ -81,6 +81,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
 
         foreach (var result in results)
         {
+            result.ScoreAvailable = result.TotalWeight > 0;
             if (consultants.TryGetValue(result.ConsultantId, out var consultant))
                 result.ContextDetails = matching.BuildContextDetails(assignment, consultant);
         }

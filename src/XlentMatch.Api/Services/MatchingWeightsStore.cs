@@ -68,6 +68,11 @@ public sealed class MatchingWeightsStore
         try
         {
             var json = File.ReadAllText(_filePath);
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.TryGetProperty("ExperienceWeight", out _) ||
+                document.RootElement.TryGetProperty("MissingMandatoryPenalty", out _))
+                return Clone(_defaults);
+
             var value = JsonSerializer.Deserialize<MatchingWeights>(json);
 
             if (value is null)
@@ -84,39 +89,25 @@ public sealed class MatchingWeightsStore
 
     public static void Validate(MatchingWeights value)
     {
-        if (value.MandatoryWeight < 0 || value.MandatoryWeight > 100 ||
-            value.DesiredWeight < 0 || value.DesiredWeight > 100 ||
-            value.ExperienceWeight < 0 || value.ExperienceWeight > 100)
-            throw new ArgumentException("Matching weights must be between 0 and 100.");
-
-        if (value.MandatoryWeight + value.DesiredWeight + value.ExperienceWeight != 100)
-            throw new ArgumentException("Mandatory, desired and experience weights must total 100.");
-
-        if (value.MissingMandatoryPenalty < 0 || value.MissingMandatoryPenalty > 100)
-            throw new ArgumentException("Missing mandatory penalty must be between 0 and 100.");
+        if (value.MandatoryRequirementWeight <= 0 || value.DesiredRequirementWeight <= 0)
+            throw new ArgumentException("Requirement weights must be positive integers.");
     }
 
     private static MatchingWeights Clone(MatchingOptions value) => new()
     {
-        MandatoryWeight = value.MandatoryWeight,
-        DesiredWeight = value.DesiredWeight,
-        ExperienceWeight = value.ExperienceWeight,
-        MissingMandatoryPenalty = value.MissingMandatoryPenalty
+        MandatoryRequirementWeight = value.MandatoryRequirementWeight,
+        DesiredRequirementWeight = value.DesiredRequirementWeight
     };
 
     private static MatchingWeights Clone(MatchingWeights value) => new()
     {
-        MandatoryWeight = value.MandatoryWeight,
-        DesiredWeight = value.DesiredWeight,
-        ExperienceWeight = value.ExperienceWeight,
-        MissingMandatoryPenalty = value.MissingMandatoryPenalty
+        MandatoryRequirementWeight = value.MandatoryRequirementWeight,
+        DesiredRequirementWeight = value.DesiredRequirementWeight
     };
 }
 
 public sealed class MatchingWeights
 {
-    public int MandatoryWeight { get; set; }
-    public int DesiredWeight { get; set; }
-    public int ExperienceWeight { get; set; }
-    public int MissingMandatoryPenalty { get; set; }
+    public int MandatoryRequirementWeight { get; set; }
+    public int DesiredRequirementWeight { get; set; }
 }

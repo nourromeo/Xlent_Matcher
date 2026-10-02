@@ -28,7 +28,6 @@ export type AdminOverview = {
   skills: AdminSkill[];
   suggestions: AdminSuggestion[];
   matchingFactors: AdminMatchingFactor[];
-  missingMandatoryPenalty: number;
   capabilities: AdminCapability[];
 };
 
@@ -39,10 +38,8 @@ export type UpdateAdminSkillRequest = {
 };
 
 export type UpdateMatchingWeightsRequest = {
-  mandatoryWeight: number;
-  desiredWeight: number;
-  experienceWeight: number;
-  missingMandatoryPenalty: number;
+  mandatoryRequirementWeight: number;
+  desiredRequirementWeight: number;
 };
 
 export const adminApi = {

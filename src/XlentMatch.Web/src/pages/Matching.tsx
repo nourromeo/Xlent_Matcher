@@ -7,11 +7,7 @@ import { LinkButton } from "../components/ui/LinkButton";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { consultantsApi } from "../services/consultantsApi";
 import { matchingApi } from "../services/matchingApi";
-import { adminApi, type AdminMatchingFactor } from "../services/adminApi";
 import type { AssignmentApi, Consultant, MatchResultApi } from "../types";
-
-const ratio = (matched: number, total: number) =>
-  total === 0 ? 100 : Math.round((matched / total) * 100);
 
 const initials = (name: string) =>
   name
@@ -44,8 +40,6 @@ export default function Matching() {
   const [matching, setMatching] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
-  const [matchingFactors, setMatchingFactors] = useState<AdminMatchingFactor[]>([]);
-  const [missingMandatoryPenalty, setMissingMandatoryPenalty] = useState(10);
   const [activeTab, setActiveTab] = useState<"Overview" | "Requirements" | "Experience">("Overview");
   const [listFilter, setListFilter] = useState<MatchCategory>("All");
   const [query, setQuery] = useState("");
@@ -58,13 +52,11 @@ export default function Matching() {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([assignmentsApi.getAll(), consultantsApi.getAll(), adminApi.getOverview()])
-      .then(([assignmentData, consultantData, adminOverview]) => {
+    Promise.all([assignmentsApi.getAll(), consultantsApi.getAll()])
+      .then(([assignmentData, consultantData]) => {
         if (cancelled) return;
         setAssignments(assignmentData);
         setConsultants(consultantData);
-        setMatchingFactors(adminOverview.matchingFactors);
-        setMissingMandatoryPenalty(adminOverview.missingMandatoryPenalty);
       })
       .catch((requestError: unknown) => {
         if (!cancelled) {
@@ -178,24 +170,22 @@ export default function Matching() {
   const matchedDetails = selected?.details.filter((detail) => detail.isMatched) ?? [];
   const missingDetails = selected?.details.filter((detail) => !detail.isMatched) ?? [];
 
-  const weightByKey = Object.fromEntries(matchingFactors.map((factor) => [factor.key, factor.value]));
-
   const breakdown = selected
     ? [
         {
           label: "Mandatory requirements",
-          value: ratio(selected.matchedMandatory, selected.totalMandatory),
-          weight: `${weightByKey.mandatory ?? 60}%`,
+          value: selected.totalMandatory ? Math.round((selected.matchedMandatory / selected.totalMandatory) * 100) : 0,
+          detail: `${selected.matchedMandatory} / ${selected.totalMandatory} matched`,
         },
         {
           label: "Desired requirements",
-          value: ratio(selected.matchedDesired, selected.totalDesired),
-          weight: `${weightByKey.desired ?? 25}%`,
+          value: selected.totalDesired ? Math.round((selected.matchedDesired / selected.totalDesired) * 100) : 0,
+          detail: `${selected.matchedDesired} / ${selected.totalDesired} matched`,
         },
         {
-          label: "Experience",
-          value: selected.experienceScore,
-          weight: `${weightByKey.experience ?? 15}%`,
+          label: "Weighted requirements",
+          value: selected.scoreAvailable ? selected.score : 0,
+          detail: selected.scoreAvailable ? `${selected.matchedWeight} / ${selected.totalWeight}` : "No scoreable requirements",
         },
       ]
     : [];
@@ -413,8 +403,8 @@ export default function Matching() {
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="text-right">
                     <div className="flex items-baseline justify-end gap-1">
-                      <span className="text-2xl font-semibold font-mono text-app-primary">{selected.score}%</span>
-                      <span className="text-xs font-medium text-app-secondary">Match</span>
+                      <span className="text-2xl font-semibold font-mono text-app-primary">{selected.scoreAvailable ? `${selected.score}%` : "—"}</span>
+                      <span className="text-xs font-medium text-app-secondary">{selected.scoreAvailable ? "Match" : "No score"}</span>
                     </div>
                     <p className="text-[10px] text-app-faint">Deterministic Match Score</p>
                   </div>
@@ -485,7 +475,7 @@ export default function Matching() {
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-[11px] text-app-secondary truncate">{item.label}</span>
-                          <span className="text-[10px] text-app-faint">{item.weight} {t("common_weight")}</span>
+                          <span className="text-[10px] text-app-faint">{item.detail}</span>
                         </div>
                         <span className="text-[11px] font-mono text-app-primary">{item.value}%</span>
                       </div>
@@ -495,11 +485,7 @@ export default function Matching() {
                     </div>
                   ))}
                 </div>
-                {missingRequired.length > 0 && (
-                  <p className="text-[10px] text-app-muted mt-3">
-                    Missing mandatory penalty: -{missingMandatoryPenalty} points per missing mandatory requirement.
-                  </p>
-                )}
+                {!selected.scoreAvailable && <p className="text-[10px] text-app-muted mt-3">No scoreable requirements.</p>}
               </section>
 
               <section className="grid grid-cols-2 gap-4">

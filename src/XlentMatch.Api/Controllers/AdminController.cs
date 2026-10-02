@@ -50,11 +50,9 @@ public class AdminController(
             Suggestions = await db.SkillSuggestions.AsNoTracking().OrderByDescending(item => item.Occurrences).Select(item => new AdminSkillSuggestionDto { Id = item.Id, Name = item.Name, Category = item.Category, Occurrences = item.Occurrences, FirstSeenAt = item.FirstSeenAt }).ToListAsync(ct),
             MatchingFactors =
             [
-                new() { Key = "mandatory", Label = "Mandatory requirements", Value = matching.MandatoryWeight, Description = "Weight used for mandatory requirement coverage." },
-                new() { Key = "desired", Label = "Desired requirements", Value = matching.DesiredWeight, Description = "Weight used for desired requirement coverage." },
-                new() { Key = "experience", Label = "Experience", Value = matching.ExperienceWeight, Description = "Weight used for overall years-of-experience coverage." }
+                new() { Key = "mandatory", Label = "Mandatory requirement weight", Value = matching.MandatoryRequirementWeight, Description = "Weight assigned to each mandatory requirement." },
+                new() { Key = "desired", Label = "Desired requirement weight", Value = matching.DesiredRequirementWeight, Description = "Weight assigned to each desired requirement." }
             ],
-            MissingMandatoryPenalty = matching.MissingMandatoryPenalty,
             Capabilities =
             [
                 new()
@@ -352,10 +350,8 @@ public class AdminController(
         {
             await matchingWeightsStore.UpdateAsync(new MatchingWeights
             {
-                MandatoryWeight = input.MandatoryWeight,
-                DesiredWeight = input.DesiredWeight,
-                ExperienceWeight = input.ExperienceWeight,
-                MissingMandatoryPenalty = input.MissingMandatoryPenalty
+                MandatoryRequirementWeight = input.MandatoryRequirementWeight,
+                DesiredRequirementWeight = input.DesiredRequirementWeight
             }, ct);
         }
         catch (ArgumentException ex)
@@ -384,10 +380,8 @@ public class UpdateAdminSkillRequest
 
 public class UpdateMatchingWeightsRequest
 {
-    public int MandatoryWeight { get; set; }
-    public int DesiredWeight { get; set; }
-    public int ExperienceWeight { get; set; }
-    public int MissingMandatoryPenalty { get; set; }
+    public int MandatoryRequirementWeight { get; set; }
+    public int DesiredRequirementWeight { get; set; }
 }
 
 public class AdminOverviewDto
@@ -395,7 +389,6 @@ public class AdminOverviewDto
     public List<AdminSkillDto> Skills { get; set; } = new();
     public List<AdminSkillSuggestionDto> Suggestions { get; set; } = new();
     public List<AdminMatchingFactorDto> MatchingFactors { get; set; } = new();
-    public int MissingMandatoryPenalty { get; set; }
     public List<AdminCapabilityDto> Capabilities { get; set; } = new();
 }
 

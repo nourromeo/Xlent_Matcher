@@ -12,7 +12,10 @@ public class MatchResult
     public int TotalMandatory { get; set; }
     public int MatchedDesired { get; set; }
     public int TotalDesired { get; set; }
-    public int ExperienceScore { get; set; }
+    public int MatchedWeight { get; set; }
+    public int TotalWeight { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public bool ScoreAvailable { get; set; }
     public string Explanation { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public List<MatchRequirementResult> Details { get; set; } = new();

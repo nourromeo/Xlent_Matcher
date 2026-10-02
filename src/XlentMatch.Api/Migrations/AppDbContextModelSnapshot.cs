@@ -439,9 +439,6 @@ namespace XlentMatch.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("ExperienceScore")
-                        .HasColumnType("int");
-
                     b.Property<string>("Explanation")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -450,6 +447,9 @@ namespace XlentMatch.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("MatchedMandatory")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MatchedWeight")
                         .HasColumnType("int");
 
                     b.Property<int>("Rank")
@@ -462,6 +462,9 @@ namespace XlentMatch.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("TotalMandatory")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalWeight")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

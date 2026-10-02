@@ -63,6 +63,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         }
 
         await skills.NormalizeRequirementsAsync(assignment.Requirements, ct);
+        var duplicateError = ValidateDuplicateRequirements(assignment.Requirements);
+        if (duplicateError is not null) return BadRequest(duplicateError);
 
         db.Assignments.Add(assignment);
         await db.SaveChangesAsync(ct);
@@ -114,6 +116,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         if (validation is not null) return BadRequest(validation);
 
         await skills.NormalizeRequirementsAsync(input.Requirements, ct);
+        var duplicateError = ValidateDuplicateRequirements(input.Requirements);
+        if (duplicateError is not null) return BadRequest(duplicateError);
 
         existing.CustomerName = input.CustomerName.Trim();
         existing.Title = input.Title.Trim();
@@ -166,6 +170,28 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         }
         return null;
     }
+
+    private static string? ValidateDuplicateRequirements(IEnumerable<AssignmentRequirement> requirements)
+    {
+        var duplicate = requirements
+            .GroupBy(requirement => RequirementKey(requirement), StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        return duplicate is null
+            ? null
+            : $"Duplicate assignment requirement '{duplicate.First().Name}' is not allowed.";
+    }
+
+    private static string RequirementKey(AssignmentRequirement requirement)
+    {
+        var identity = requirement.SkillId is not null
+            ? $"skill:{requirement.SkillId}"
+            : $"{requirement.Category}:{Normalize(requirement.Name)}";
+        return string.Join("|", identity, requirement.Type, requirement.MinYears, requirement.MinLevel,
+            Normalize(requirement.Proficiency), requirement.MatchMode, Normalize(requirement.MaximumSeniority));
+    }
+
+    private static string Normalize(string? value) =>
+        string.Join(" ", (value ?? "").Trim().ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     private static int? SeniorityLevel(string? value) => value?.Trim().ToLowerInvariant() switch
     {

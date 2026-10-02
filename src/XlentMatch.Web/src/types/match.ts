@@ -54,7 +54,9 @@ export type MatchResultApi = {
   totalMandatory: number;
   matchedDesired: number;
   totalDesired: number;
-  experienceScore: number;
+  matchedWeight: number;
+  totalWeight: number;
+  scoreAvailable: boolean;
   explanation: string;
   createdAt: string;
   details: MatchRequirementResultApi[];

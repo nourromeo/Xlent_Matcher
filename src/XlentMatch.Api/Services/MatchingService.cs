@@ -23,39 +23,50 @@ public class MatchingService(MatchingWeightsStore weightsStore)
 
     public MatchResult Match(Assignment assignment, Consultant consultant)
     {
-        var details = assignment.Requirements.Select(r => Evaluate(r, consultant)).ToList();
+        var requirements = assignment.Requirements
+            .GroupBy(RequirementKey, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToList();
+        var details = requirements.Select(r => Evaluate(r, consultant)).ToList();
+
+        if (assignment.MinYearsExperience > 0)
+        {
+            details.Add(new MatchRequirementResult
+            {
+                RequirementName = "Total Experience",
+                Type = RequirementType.Mandatory,
+                IsMatched = consultant.YearsOfExperience >= assignment.MinYearsExperience,
+                Evidence = consultant.YearsOfExperience is null
+                    ? $"Required: at least {assignment.MinYearsExperience} years; consultant experience is unknown."
+                    : $"Required: at least {assignment.MinYearsExperience} years; consultant: {consultant.YearsOfExperience} years."
+            });
+        }
 
         var mandatory = details.Where(d => d.Type == RequirementType.Mandatory).ToList();
         var desired = details.Where(d => d.Type == RequirementType.Desired).ToList();
 
-        var mandatoryRatio = Ratio(mandatory);
-        var desiredRatio = Ratio(desired);
-        var experienceRatio = assignment.MinYearsExperience <= 0
-            ? 1.0
-            : consultant.YearsOfExperience is null
-                ? 0.0
-                : Math.Min(1.0, (double)consultant.YearsOfExperience.Value / assignment.MinYearsExperience);
-
         var weights = weightsStore.Get();
-
-        var score = mandatoryRatio * weights.MandatoryWeight
-                  + desiredRatio * weights.DesiredWeight
-                  + experienceRatio * weights.ExperienceWeight;
-
+        var mandatoryWeight = mandatory.Count * weights.MandatoryRequirementWeight;
+        var desiredWeight = desired.Count * weights.DesiredRequirementWeight;
+        var matchedWeight = mandatory.Count(d => d.IsMatched) * weights.MandatoryRequirementWeight
+                          + desired.Count(d => d.IsMatched) * weights.DesiredRequirementWeight;
+        var totalWeight = mandatoryWeight + desiredWeight;
+        var score = totalWeight == 0 ? 0 : (int)Math.Round((double)matchedWeight / totalWeight * 100, MidpointRounding.AwayFromZero);
         var missingMandatory = mandatory.Where(d => !d.IsMatched).ToList();
-        score -= missingMandatory.Count * weights.MissingMandatoryPenalty;
 
         var result = new MatchResult
         {
             AssignmentId = assignment.Id,
             ConsultantId = consultant.Id,
             ConsultantName = consultant.FullName,
-            Score = (int)Math.Clamp(Math.Round(score), 0, 100),
+            Score = score,
             MatchedMandatory = mandatory.Count(d => d.IsMatched),
             TotalMandatory = mandatory.Count,
             MatchedDesired = desired.Count(d => d.IsMatched),
             TotalDesired = desired.Count,
-            ExperienceScore = (int)Math.Round(experienceRatio * 100),
+            MatchedWeight = matchedWeight,
+            TotalWeight = totalWeight,
+            ScoreAvailable = totalWeight > 0,
             Details = details,
             ContextDetails = BuildContextDetails(assignment, consultant)
         };
@@ -64,8 +75,14 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         return result;
     }
 
-    private static double Ratio(List<MatchRequirementResult> items) =>
-        items.Count == 0 ? 1.0 : (double)items.Count(i => i.IsMatched) / items.Count;
+    private static string RequirementKey(AssignmentRequirement requirement)
+    {
+        var identity = requirement.SkillId is not null
+            ? $"skill:{requirement.SkillId}"
+            : $"{requirement.Category}:{NormalizeText(requirement.Name)}";
+        return string.Join("|", identity, requirement.Type, requirement.MinYears, requirement.MinLevel,
+            NormalizeText(requirement.Proficiency ?? ""), requirement.MatchMode, NormalizeText(requirement.MaximumSeniority ?? ""));
+    }
 
     public List<MatchContextResult> BuildContextDetails(Assignment assignment, Consultant consultant)
     {
@@ -247,13 +264,11 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         {
             $"{c.FullName} scored {r.Score}/100 for '{a.Title}'.",
             $"Mandatory requirements: {r.MatchedMandatory}/{r.TotalMandatory}.",
-            $"Desired requirements: {r.MatchedDesired}/{r.TotalDesired}."
+            $"Desired requirements: {r.MatchedDesired}/{r.TotalDesired}.",
+            r.ScoreAvailable
+                ? $"Weighted requirements: {r.MatchedWeight}/{r.TotalWeight}."
+                : "No scoreable requirements."
         };
-
-        if (a.MinYearsExperience > 0)
-            parts.Add(c.YearsOfExperience is null
-                ? $"Overall experience is not confirmed (minimum {a.MinYearsExperience} years required)."
-                : $"Experience: {c.YearsOfExperience} years (minimum {a.MinYearsExperience}).");
 
         if (missingMandatory.Count > 0)
             parts.Add("Missing mandatory: " + string.Join(", ", missingMandatory.Select(m => m.RequirementName)) + ".");

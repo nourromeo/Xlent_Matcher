@@ -34,7 +34,6 @@ export default function Admin() {
   const [editAliases, setEditAliases] = useState("");
   const [savingSkill, setSavingSkill] = useState(false);
   const [weightValues, setWeightValues] = useState<Record<string, number>>({});
-  const [missingPenalty, setMissingPenalty] = useState(10);
   const [savingWeights, setSavingWeights] = useState(false);
   const skillsPerPage = 10;
 
@@ -47,7 +46,6 @@ export default function Admin() {
         if (!cancelled) {
           setOverview(data);
           setWeightValues(Object.fromEntries(data.matchingFactors.map((factor) => [factor.key, factor.value])));
-          setMissingPenalty(data.missingMandatoryPenalty);
         }
       })
       .catch((requestError: unknown) => {
@@ -193,12 +191,11 @@ export default function Admin() {
     ...factor,
     value: weightValues[factor.key] ?? factor.value,
   }));
-  const total = editableFactors.reduce((sum, factor) => sum + factor.value, 0);
-  const ok = total === 100;
+  const ok = editableFactors.every((factor) => Number.isInteger(factor.value) && factor.value > 0);
 
   const saveWeights = async () => {
     if (!ok) {
-      setError("Matching weights must total 100%.");
+      setError("Requirement weights must be positive integers.");
       return;
     }
 
@@ -207,14 +204,11 @@ export default function Admin() {
 
     try {
       const updated = await adminApi.updateMatchingWeights({
-        mandatoryWeight: weightValues.mandatory ?? 0,
-        desiredWeight: weightValues.desired ?? 0,
-        experienceWeight: weightValues.experience ?? 0,
-        missingMandatoryPenalty: missingPenalty,
+        mandatoryRequirementWeight: weightValues.mandatory ?? 0,
+        desiredRequirementWeight: weightValues.desired ?? 0,
       });
       setOverview(updated);
       setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, factor.value])));
-      setMissingPenalty(updated.missingMandatoryPenalty);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save matching weights.");
     } finally {
@@ -230,7 +224,6 @@ export default function Admin() {
       const updated = await adminApi.resetMatchingWeights();
       setOverview(updated);
       setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, factor.value])));
-      setMissingPenalty(updated.missingMandatoryPenalty);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not reset matching weights.");
     } finally {
@@ -440,7 +433,7 @@ export default function Admin() {
                 color: ok ? "var(--color-success)" : "var(--color-warning)",
               }}
             >
-              <span>{t("admin_total_label")} <strong>{total}%</strong> {ok ? t("admin_ready_save") : t("admin_must_eq")}</span>
+              <span>{ok ? "Requirement weights are ready to save." : "Both requirement weights must be positive integers."}</span>
               <span className="text-app-muted">Backend configuration</span>
             </div>
 
@@ -461,9 +454,8 @@ export default function Admin() {
                     </div>
 
                     <input
-                      type="range"
-                      min={0}
-                      max={100}
+                      type="number"
+                      min={1}
                       value={factor.value}
                       onChange={(event) =>
                         setWeightValues((current) => ({
@@ -479,19 +471,12 @@ export default function Admin() {
               ))}
             </div>
 
-            <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary flex items-center justify-between gap-4">
-              <span>
-                Missing mandatory penalty: <strong>{missingPenalty} points</strong> per missing mandatory requirement.
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={missingPenalty}
-                onChange={(event) => setMissingPenalty(Math.max(0, Math.min(100, Number(event.target.value))))}
-                disabled={savingWeights}
-                className="w-20 bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand"
-              />
+            <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary space-y-2">
+              <p className="font-medium text-app-primary">How Match Score is calculated</p>
+              <p>Each matched Mandatory requirement receives the configured Mandatory weight. Each matched Desired requirement receives the configured Desired weight.</p>
+              <p className="font-mono">Match Score = (Matched Weighted Requirements / Total Weighted Requirements) × 100</p>
+              <p>Only requirements included in the assignment are used. Missing or unused categories receive no automatic points.</p>
+              <p>Example: 3 Mandatory + 2 Desired. Total = (3 × {weightValues.mandatory ?? 0}) + (2 × {weightValues.desired ?? 0}) = {(weightValues.mandatory ?? 0) * 3 + (weightValues.desired ?? 0) * 2}. Matching 2 Mandatory + 2 Desired gives {((weightValues.mandatory ?? 0) * 2 + (weightValues.desired ?? 0) * 2)} / {((weightValues.mandatory ?? 0) * 3 + (weightValues.desired ?? 0) * 2)} × 100 = {(((weightValues.mandatory ?? 0) * 2 + (weightValues.desired ?? 0) * 2) / Math.max(1, (weightValues.mandatory ?? 0) * 3 + (weightValues.desired ?? 0) * 2) * 100).toFixed(2)}%.</p>
             </div>
 
             <div className="flex items-center justify-between">
