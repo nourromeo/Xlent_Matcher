@@ -5,6 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Textarea } from "../components/ui/Textarea";
 import { consultantsApi } from "../services/consultantsApi";
 import { assignmentsApi } from "../services/assignmentsApi";
+import { validateDocumentFile } from "../services/fileValidation";
 import {
   aiApi,
   assignmentToTemporary,
@@ -16,15 +17,6 @@ import {
 import type { AssignmentApi, Consultant } from "../types";
 
 type SourceMode = "existing" | "upload" | "paste";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-function validateInputFile(file: File): string | null {
-  if (!/\.(pdf|txt)$/i.test(file.name)) return "Unsupported file type. Use PDF or TXT.";
-  if (file.size <= 0) return "The selected file is empty.";
-  if (file.size > MAX_FILE_SIZE) return "File is larger than 10 MB.";
-  return null;
-}
 
 const sourceTabs: Array<{ value: SourceMode; label: string }> = [
   { value: "existing", label: "Existing" },
@@ -356,7 +348,7 @@ export default function CvAdaptation() {
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;
                     if (file) {
-                      const validationError = validateInputFile(file);
+                      const validationError = validateDocumentFile(file);
                       if (validationError) {
                         setConsultantFile(null);
                         setError(validationError);
@@ -429,7 +421,7 @@ export default function CvAdaptation() {
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;
                     if (file) {
-                      const validationError = validateInputFile(file);
+                      const validationError = validateDocumentFile(file);
                       if (validationError) {
                         setAssignmentFile(null);
                         setError(validationError);

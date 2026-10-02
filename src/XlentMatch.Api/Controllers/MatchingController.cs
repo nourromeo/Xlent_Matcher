@@ -9,11 +9,12 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/matching")]
-public class MatchingController(AppDbContext db, MatchingService matching) : ControllerBase
+public class MatchingController(AppDbContext db, MatchingService matching, ConsultantAvailabilityService availability) : ControllerBase
 {
     [HttpPost("run")]
     public async Task<ActionResult<List<MatchResult>>> Run(RunMatchingRequestDto request, CancellationToken ct)
     {
+        await availability.ResolveExpiredAsync(ct);
         if (request.ConsultantIds.Count == 0)
             return BadRequest("Select at least one consultant before running matching.");
 
@@ -33,6 +34,7 @@ public class MatchingController(AppDbContext db, MatchingService matching) : Con
             .Include(c => c.Languages)
             .Include(c => c.Experiences)
             .Where(c => request.ConsultantIds.Contains(c.Id))
+            .AsSplitQuery()
             .AsNoTracking()
             .ToListAsync(ct);
 
@@ -79,6 +81,7 @@ public class MatchingController(AppDbContext db, MatchingService matching) : Con
 
         foreach (var result in results)
         {
+            result.ScoreAvailable = result.TotalWeight > 0;
             if (consultants.TryGetValue(result.ConsultantId, out var consultant))
                 result.ContextDetails = matching.BuildContextDetails(assignment, consultant);
         }

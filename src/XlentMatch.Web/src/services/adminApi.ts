@@ -22,13 +22,12 @@ export type AdminCapability = {
   enabled: boolean;
 };
 
-export type PendingLanguage = { id: number; name: string; occurrences: number; firstSeenAt: string };
+export type AdminSuggestion = { id: number; name: string; category: string; occurrences: number; firstSeenAt: string };
 
 export type AdminOverview = {
   skills: AdminSkill[];
-  pendingLanguages: PendingLanguage[];
+  suggestions: AdminSuggestion[];
   matchingFactors: AdminMatchingFactor[];
-  missingMandatoryPenalty: number;
   capabilities: AdminCapability[];
 };
 
@@ -39,10 +38,8 @@ export type UpdateAdminSkillRequest = {
 };
 
 export type UpdateMatchingWeightsRequest = {
-  mandatoryWeight: number;
-  desiredWeight: number;
-  experienceWeight: number;
-  missingMandatoryPenalty: number;
+  mandatoryRequirementWeight: number;
+  desiredRequirementWeight: number;
 };
 
 export const adminApi = {
@@ -60,9 +57,11 @@ export const adminApi = {
       body: JSON.stringify(input),
     }),
 
-  approveLanguage: (id: number) => apiRequest<void>(`/admin/languages/${id}/approve`, { method: "POST" }),
+  approveSuggestion: (id: number, input: { canonicalName: string; category: string; aliases: string[] }) => apiRequest<void>(`/admin/suggestions/${id}/approve`, { method: "POST", body: JSON.stringify(input) }),
 
-  dismissLanguage: (id: number) => apiRequest<void>(`/admin/languages/${id}`, { method: "DELETE" }),
+  dismissSuggestion: (id: number) => apiRequest<void>(`/admin/suggestions/${id}`, { method: "DELETE" }),
+
+  deleteSkill: (id: string) => apiRequest<void>(`/admin/skills/${id}`, { method: "DELETE" }),
 
   updateMatchingWeights: (input: UpdateMatchingWeightsRequest) =>
     apiRequest<AdminOverview>("/admin/matching-weights", {

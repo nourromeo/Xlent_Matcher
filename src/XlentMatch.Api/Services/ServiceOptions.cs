@@ -9,8 +9,6 @@ public class OpenAiOptions
 
 public class MatchingOptions
 {
-    public int MandatoryWeight { get; set; } = 60;
-    public int DesiredWeight { get; set; } = 25;
-    public int ExperienceWeight { get; set; } = 15;
-    public int MissingMandatoryPenalty { get; set; } = 10;
+    public int MandatoryRequirementWeight { get; set; } = 2;
+    public int DesiredRequirementWeight { get; set; } = 1;
 }

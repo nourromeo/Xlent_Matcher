@@ -27,22 +27,22 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             You extract structured consultant profiles from CV text.
             {{NoInventionRule}}
             Extract skill names exactly enough for later normalization, but do NOT classify skills into categories.
-            Seniority: return only Junior, Mid, Senior or Staff when that exact level is explicitly stated in the CV or current title. Never infer it from age, years of experience or title synonyms. Otherwise return null.
+            Seniority: provide a suggestedSeniority using only Junior, Mid, Senior or Staff, based only on evidence actually present in the CV. Consider explicit roles/titles, technical ownership, independent delivery, architecture/design responsibility, technical leadership, mentoring and scope or cross-team responsibility. Total years may support the suggestion but must never determine it by itself. Do not invent responsibilities. If evidence is insufficient, return null. This is a suggestion for human review.
             Experience: yearsOfExperience should be null unless the CV explicitly states total professional years. The application may calculate an estimate from dated roles and will label its source.
-            Availability: keep the original statement in availability. Resolve relative phrases such as “in one week” against today={{today}} and return the resulting start date as availableFromDate (yyyy-MM-dd). If the text has no explicit timing, return null. A user reviews this date before saving.
-            For human languages, put only the language name in name. Use level only for an explicitly stated descriptor that clearly maps to Basic, Intermediate or Fluent. CEFR codes such as B2/C1/C2 must not be converted; preserve their original wording exactly in sourceLevel. Do not infer fluency.
+            Do not infer or extract consultant availability. Availability is maintained manually by an admin.
+            For human languages, put only the language name in name. Set proficiency only when an explicit descriptor maps to Low, Medium, High or Native; otherwise use Not specified. Do not infer proficiency. Do not use CEFR levels.
             The application's canonical Skill Catalog is the source of truth for skill names, aliases and categories.
             Return a JSON object with exactly this shape:
             {
               "firstName": string, "lastName": string, "email": string|null, "title": string|null,
-              "summary": string|null, "seniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "yearsOfExperience": int|null,
-              "yearsOfExperienceSource": "ExplicitInCv"|null, "availability": string|null, "availableFromDate": "yyyy-MM-dd"|null, "office": string|null,
+              "summary": string|null, "seniority": null, "suggestedSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "yearsOfExperience": int|null,
+              "yearsOfExperienceSource": "ExplicitInCv"|null, "office": string|null,
               "skills": [{ "name": string, "level": int, "years": int, "evidence": string|null }],
               "experiences": [{ "company": string, "role": string, "description": string|null,
                                  "startDate": "yyyy-MM"|null, "endDate": "yyyy-MM"|null }],
               "projects": [{ "name": string, "description": string|null, "technologies": "comma, separated"|null }],
               "education": [{ "degree": string, "school": string|null, "year": string|null }],
-              "languages": [{ "name": canonical language name only (for example "Swedish", "English", "Arabic"), "level": "Basic"|"Intermediate"|"Fluent"|null, "sourceLevel": original wording exactly as written in CV|null }],
+              "languages": [{ "name": canonical language name only (for example "Swedish", "English", "Arabic"), "proficiency": "Not specified"|"Low"|"Medium"|"High"|"Native" }],
               "industries": [string],
               "certifications": [{ "name": string, "issuer": string|null, "issuedDate": "yyyy-MM"|null }]
             }
@@ -63,7 +63,9 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             Separate assignment metadata from actual consultant requirements.
 
             Assignment metadata:
-            - seniority: only values such as Junior, Mid, Senior or Staff when explicitly stated; otherwise null.
+            - seniority: the required level when explicitly stated; otherwise null. Keep this for compatibility.
+            - seniorityMatchMode: Exact by default; use Minimum for "at least" wording and Range when both a minimum and maximum are explicitly stated.
+            - minimumSeniority and maximumSeniority: only Junior, Mid, Senior or Staff; maximumSeniority is only populated for Range. Do not infer seniority from years.
             - minYearsExperience: the overall minimum years of professional experience when explicitly stated; otherwise null.
             - availability: preserve explicit availability wording; otherwise null. Resolve relative timing against today={{today}} into requiredStartDate (yyyy-MM-dd); otherwise null.
             - location: an explicit work location or Remote/Hybrid arrangement; otherwise null.
@@ -73,7 +75,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             - Include explicit human language requirements (for example Swedish or English) as separate requirements with category "HumanLanguage". Do not treat programming languages such as C# or Python as human languages.
             - Do NOT create requirements such as "senior consultant", ".NET consultant", role titles, availability, location, customer name, start date, or general years-of-experience statements.
             - If a requirement has its own explicit minimum years, put that number in minYears.
-            - For human languages, set requiresFluency=true only when the assignment explicitly asks for fluent / fluent-level / native-equivalent ability. Otherwise set false. Never convert a language description into a CEFR level.
+            - For human languages, set proficiency only when the assignment explicitly requires one of Not specified, Low, Medium, High or Native. Otherwise use null.
             - Classify as "Mandatory" when the text says must, required, mandatory, shall, need, or equivalent.
             - Classify as "Desired" when the text says preferred, meriting, bonus, nice to have, or equivalent.
             - If the text lists a skill without clearly saying preferred/optional, treat it as Mandatory.
@@ -81,12 +83,13 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
 
             Return a JSON object with exactly this shape:
             {
-              "seniority": string|null,
+              "seniority": string|null, "seniorityMatchMode": "Exact"|"Minimum"|"Range"|null,
+              "minimumSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "maximumSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null,
               "minYearsExperience": int|null,
               "availability": string|null, "requiredStartDate": "yyyy-MM-dd"|null,
               "location": string|null,
               "requirements": [
-                { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null, "requiresFluency": bool }
+                { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null, "proficiency": string|null }
               ]
             }
             """;

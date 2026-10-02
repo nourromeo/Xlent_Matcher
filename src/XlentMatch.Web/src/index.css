@@ -31,6 +31,21 @@ button, a { transform: none; }
   transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
 }
 
+/* Admin requirement weights use the dark design-system control without native spinners. */
+.admin-weight-input {
+  appearance: none;
+  -moz-appearance: textfield;
+}
+.admin-weight-input::-webkit-outer-spin-button,
+.admin-weight-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+.admin-weight-input:hover,
+.admin-weight-input:focus {
+  background-color: var(--color-bg);
+}
+
 
 /* Consistent pointer feedback for interactive controls. */
 a,

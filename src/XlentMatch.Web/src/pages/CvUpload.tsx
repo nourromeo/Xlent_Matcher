@@ -9,9 +9,8 @@ import { Modal } from "../components/ui/Modal";
 import { aiApi, type ConsultantDraft } from "../services/aiApi";
 import { consultantsApi } from "../services/consultantsApi";
 import { cvUploadsApi, type CvUploadStatus, type CvUploadView } from "../services/cvUploadsApi";
+import { validateDocumentFile } from "../services/fileValidation";
 import type { Consultant } from "../types";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -34,9 +33,8 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     seniority: draft.seniority?.trim() || null,
     yearsOfExperience: draft.yearsOfExperience,
     yearsOfExperienceSource: draft.yearsOfExperienceSource,
-    availableFromDate: draft.availableFromDate,
-    availabilityConfirmedAt: null,
-    availability: draft.availability?.trim() || null,
+    availableAgainDate: null,
+    availability: "Available",
     office: draft.office?.trim() || null,
     originalCvText: null,
     fullName: undefined,
@@ -76,8 +74,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
       id: 0,
       consultantId: 0,
       name: item.name.trim(),
-      level: item.level,
-      sourceLevel: item.sourceLevel ?? null,
+      proficiency: item.proficiency,
     })),
     industries: draft.industries.filter((name) => name.trim()).map((name) => ({
       id: 0,
@@ -165,18 +162,9 @@ export default function CvUpload() {
   const handleFile = async (file?: File) => {
     if (!file) return;
 
-    if (!/\.(pdf|txt)$/i.test(file.name)) {
-      setError("Unsupported file type. Use PDF or TXT.");
-      return;
-    }
-
-    if (file.size <= 0) {
-      setError("The selected file is empty.");
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      setError("File is larger than 10 MB.");
+    const validationError = validateDocumentFile(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -473,10 +461,11 @@ export default function CvUpload() {
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Seniority</span>
+                  {draft.suggestedSeniority && <span className="text-[10px] text-app-brand block mb-1">AI suggestion: {draft.suggestedSeniority}</span>}
                   <select value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Years of experience</span>
+                  <span className="text-[11px] text-app-muted block mb-1">Total experience</span>
                   <Input type="number" min={0} value={draft.yearsOfExperience ?? ""} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: event.target.value ? Number(event.target.value) : null, yearsOfExperienceSource: "ManuallyConfirmed" })} />
                 </label>
                 <label>
@@ -484,9 +473,6 @@ export default function CvUpload() {
                   <Input value={draft.email ?? ""} onChange={(event) => updateDraft({ ...draft, email: event.target.value || null })} />
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Availability</span>
-                  <Input value={draft.availability ?? ""} onChange={(event) => updateDraft({ ...draft, availability: event.target.value || null })} placeholder="e.g. Available now / from a date" />
-                  <Input type="date" aria-label="Available from date" value={draft.availableFromDate ?? ""} onChange={(event) => updateDraft({ ...draft, availableFromDate: event.target.value || null })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">Office</span>
@@ -572,12 +558,12 @@ export default function CvUpload() {
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-app-primary">Languages ({draft.languages.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", level: null, sourceLevel: null }] })}>Add language</Button>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", proficiency: "Not specified" }] })}>Add language</Button>
                 </div>
                 {draft.languages.map((item, index) => (
                   <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                     <Input aria-label="Language" placeholder="Language" value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                    <select aria-label="Language proficiency" value={item.level ?? ""} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, level: (event.target.value || null) as typeof row.level } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Basic">Basic</option><option value="Intermediate">Intermediate</option><option value="Fluent">Fluent</option></select>{item.sourceLevel && <span className="text-[10px] text-app-muted">CV wording: {item.sourceLevel}</span>}
+                    <select aria-label="Language proficiency" value={item.proficiency} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
                     <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label="Remove language"><X size={12} /></button>
                   </div>
                 ))}
@@ -588,7 +574,7 @@ export default function CvUpload() {
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-app-primary">Experience ({draft.experiences.length})</p>
+                  <p className="text-xs font-medium text-app-primary">Experience and skill experience ({draft.experiences.length})</p>
                   <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...draft.experiences, { company: "", role: "", description: null, startDate: null, endDate: null }] })}>Add experience</Button>
                 </div>
                 {draft.experiences.map((item, index) => (

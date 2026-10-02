@@ -98,12 +98,9 @@ function RequirementRuleEditor({ category, type, requirements, onChange }: {
     <div className="mt-3 space-y-2">
       {items.map((item) => (
         <div key={item.id + ":" + item.name} className="grid grid-cols-[1fr_130px] items-center gap-2">
-          <span className="text-[10px] text-app-muted">{item.name} · {category === "HumanLanguage" ? "fluency required" : "minimum years"}</span>
+          <span className="text-[10px] text-app-muted">{item.name} · {category === "HumanLanguage" ? "proficiency" : "minimum years"}</span>
           {category === "HumanLanguage" ? (
-            <label className="flex items-center justify-end gap-1.5 text-[10px] text-app-muted">
-              <input type="checkbox" aria-label={item.name + " fluent required"} checked={item.requiresFluency} onChange={(event) => onChange(item.name, { requiresFluency: event.target.checked, minLevel: null })} />
-              Fluent
-            </label>
+            <select aria-label={item.name + " proficiency"} value={item.proficiency ?? "Not specified"} onChange={(event) => onChange(item.name, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
           ) : (
             <Input type="number" min={0} aria-label={item.name + " minimum years"} value={item.minYears ?? ""} placeholder="No minimum"
               onChange={(event) => onChange(item.name, { minYears: event.target.value ? Number(event.target.value) : null })} />
@@ -126,7 +123,7 @@ const makeRequirements = (
     const previous = existing.find((item) => item.type === type && item.category === category && item.name.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase());
     return previous
       ? { ...previous, assignmentId, name, type, category }
-      : { id: 0, assignmentId, name, category, type, minYears: null, minLevel: null, requiresFluency: false };
+      : { id: 0, assignmentId, name, category, type, minYears: null, minLevel: null, proficiency: (category === "HumanLanguage" ? "Not specified" : null) as AssignmentRequirementApi["proficiency"] };
   });
   return [
     ...make("Mandatory", required, "Skill"),
@@ -148,6 +145,7 @@ export default function AssignmentDetail() {
   const [requiredLanguages, setRequiredLanguages] = useState<string[]>([]);
   const [preferredLanguages, setPreferredLanguages] = useState<string[]>([]);
   const [requirementEdits, setRequirementEdits] = useState<AssignmentRequirementApi[]>([]);
+  const [seniorityRequirement, setSeniorityRequirement] = useState<AssignmentRequirementApi | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -199,6 +197,7 @@ export default function AssignmentDetail() {
     setRequiredLanguages(requirementNames(assignment, "Mandatory", "HumanLanguage"));
     setPreferredLanguages(requirementNames(assignment, "Desired", "HumanLanguage"));
     setRequirementEdits(structuredClone(assignment.requirements));
+    setSeniorityRequirement(structuredClone(assignment.requirements.find((item) => item.category === "Seniority") ?? (assignment.seniority ? { id: 0, assignmentId: assignment.id, name: assignment.seniority, category: "Seniority", type: "Mandatory", minYears: null, minLevel: null, proficiency: null, matchMode: "Exact", maximumSeniority: null } : null)));
     setEditMode(true);
   };
 
@@ -213,7 +212,7 @@ export default function AssignmentDetail() {
       const retained = current.filter((item) => !matches(item) || names.some((name) => name.toLocaleLowerCase() === item.name.toLocaleLowerCase()));
       const added = names
         .filter((name) => !retained.some((item) => matches(item) && item.name.toLocaleLowerCase() === name.toLocaleLowerCase()))
-        .map((name) => ({ id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null, requiresFluency: false }));
+        .map((name) => ({ id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null, proficiency: (category === "HumanLanguage" ? "Not specified" : null) as AssignmentRequirementApi["proficiency"] }));
       return [...retained, ...added];
     });
   };
@@ -221,7 +220,7 @@ export default function AssignmentDetail() {
   const updateRequirementRule = (type: "Mandatory" | "Desired", category: "Skill" | "HumanLanguage", name: string, patch: Partial<AssignmentRequirementApi>) => {
     setRequirementEdits((current) => {
       const index = current.findIndex((item) => item.type === type && item.category === category && item.name.trim().toLocaleLowerCase() === name.trim().toLocaleLowerCase());
-      if (index < 0) return [...current, { id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null, requiresFluency: false, ...patch }];
+      if (index < 0) return [...current, { id: 0, assignmentId: assignment?.id ?? 0, name, category, type, minYears: null, minLevel: null, proficiency: (category === "HumanLanguage" ? "Not specified" : null) as AssignmentRequirementApi["proficiency"], ...patch }];
       return current.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item);
     });
   };
@@ -235,10 +234,10 @@ export default function AssignmentDetail() {
     try {
       const payload: AssignmentApi = {
         ...draft,
-        requirements: makeRequirements(draft.id, requiredSkills, preferredSkills, requiredLanguages, preferredLanguages, assignment?.requirements ?? []).map((item) => {
+        requirements: [...makeRequirements(draft.id, requiredSkills, preferredSkills, requiredLanguages, preferredLanguages, assignment?.requirements ?? []).map((item) => {
           const edited = requirementEdits.find((row) => row.type === item.type && row.category === item.category && row.name.trim().toLocaleLowerCase() === item.name.trim().toLocaleLowerCase());
-          return edited ? { ...item, minYears: edited.minYears, minLevel: edited.minLevel, requiresFluency: edited.requiresFluency } : item;
-        }),
+          return edited ? { ...item, minYears: edited.minYears, minLevel: edited.minLevel, proficiency: edited.proficiency } : item;
+        }), ...(seniorityRequirement ? [seniorityRequirement] : [])],
       };
 
       const updated = await assignmentsApi.update(draft.id, payload);
@@ -363,7 +362,7 @@ export default function AssignmentDetail() {
                 {assignment.requirements.filter((requirement) => requirement.category === "HumanLanguage").map((requirement) => (
                   <div key={requirement.id} className="flex items-center justify-between text-sm">
                     <span className="text-app-secondary">{requirement.name}</span>
-                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? "Required" : "Preferred"}{requirement.requiresFluency ? " · Fluent" : ""}</span>
+                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? "Required" : "Preferred"}{requirement.proficiency && requirement.proficiency !== "Not specified" ? ` · ${requirement.proficiency}` : ""}</span>
                   </div>
                 ))}
               </div>
@@ -396,7 +395,12 @@ export default function AssignmentDetail() {
                 <Input value={draft.customerName} onChange={(event) => setDraft({ ...draft, customerName: event.target.value })} />
               </FormField>
               <FormField label={t("assignment_seniority")}>
-                <Input value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} />
+                <Input value={draft.seniority ?? ""} onChange={(event) => {
+                  const value = event.target.value || null;
+                  setDraft({ ...draft, seniority: value });
+                  setSeniorityRequirement((current) => value ? { ...(current ?? { id: 0, assignmentId: draft.id, category: "Seniority", type: "Mandatory", minYears: null, minLevel: null, proficiency: null, matchMode: "Exact", maximumSeniority: null }), name: value } : null);
+                }} />
+                {seniorityRequirement && <div className="mt-2 grid grid-cols-2 gap-2"><select aria-label="Seniority matching mode" value={seniorityRequirement.matchMode ?? "Exact"} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, matchMode: event.target.value as "Exact" | "Minimum" | "Range", maximumSeniority: event.target.value === "Range" ? seniorityRequirement.maximumSeniority : null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Exact">Exact</option><option value="Minimum">Minimum</option><option value="Range">Range</option></select>{seniorityRequirement.matchMode === "Range" && <select aria-label="Maximum seniority" value={seniorityRequirement.maximumSeniority ?? ""} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, maximumSeniority: event.target.value || null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="">Maximum</option><option>Junior</option><option>Mid</option><option>Senior</option><option>Staff</option></select>}</div>}
               </FormField>
               <FormField label={t("assignment_availability")}>
                 <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />

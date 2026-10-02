@@ -25,12 +25,13 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
         try
         {
             var draft = await ai.ExtractConsultantProfileAsync(input.Text!, ct);
+            draft.Seniority ??= draft.SuggestedSeniority;
             SetExperienceYears(draft);
             foreach (var language in draft.Languages)
             {
-                var normalized = SkillNormalizationService.NormalizeHumanLanguage(language.Name, language.Level);
+                var normalized = SkillNormalizationService.NormalizeHumanLanguage(language.Name, language.Proficiency);
                 language.Name = normalized.Name;
-                language.Level = normalized.Level;
+                language.Proficiency = normalized.Proficiency;
             }
             draft.SourceText = input.Text;
             return draft;

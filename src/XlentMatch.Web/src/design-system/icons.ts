@@ -6,6 +6,7 @@ export {
   ArrowUpRight,
   BookOpen,
   Briefcase,
+  Calendar,
   CheckCircle,
   ChevronDown,
   ChevronLeft,

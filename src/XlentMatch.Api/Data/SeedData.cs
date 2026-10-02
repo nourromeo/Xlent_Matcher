@@ -22,7 +22,7 @@ public static class SeedData
                 Summary = "Backend architecture and distributed systems.",
                 Seniority = "Senior",
                 YearsOfExperience = 8,
-                Availability = "Immediate",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -48,8 +48,8 @@ public static class SeedData
                 ],
                 Languages =
                 [
-                    new() { Name = "English", Level = "C2" },
-                    new() { Name = "German", Level = "B2" }
+                    new() { Name = "English", Proficiency = HumanLanguageProficiency.High },
+                    new() { Name = "German", Proficiency = HumanLanguageProficiency.Medium }
                 ],
                 Industries =
                 [
@@ -70,7 +70,7 @@ public static class SeedData
                 Summary = "Machine learning, NLP and API development.",
                 Seniority = "Mid",
                 YearsOfExperience = 5,
-                Availability = "2 weeks",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -103,7 +103,7 @@ public static class SeedData
                 Summary = "Cloud platform engineering, infrastructure and observability.",
                 Seniority = "Staff",
                 YearsOfExperience = 11,
-                Availability = "1 month",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -136,7 +136,7 @@ public static class SeedData
                 Summary = ".NET, React and Azure development.",
                 Seniority = "Mid",
                 YearsOfExperience = 6,
-                Availability = "Immediate",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -172,7 +172,7 @@ public static class SeedData
                 Summary = "React applications and design systems.",
                 Seniority = "Mid",
                 YearsOfExperience = 4,
-                Availability = "3 months",
+                Availability = ConsultantAvailability.Available,
                 Office = "XLENT Stockholm",
                 Skills =
                 [
@@ -270,7 +270,17 @@ public static class SeedData
             };
 
             foreach (var assignment in assignments)
+            {
+                if (!string.IsNullOrWhiteSpace(assignment.Seniority))
+                    assignment.Requirements.Add(new AssignmentRequirement
+                    {
+                        Name = assignment.Seniority,
+                        Category = "Seniority",
+                        Type = RequirementType.Mandatory,
+                        MatchMode = SeniorityMatchMode.Exact
+                    });
                 await skillNormalizer.NormalizeRequirementsAsync(assignment.Requirements, ct);
+            }
 
             db.Assignments.AddRange(assignments);
             await db.SaveChangesAsync(ct);

@@ -8,10 +8,9 @@ public class ConsultantDraftDto
     public string? Title { get; set; }
     public string? Summary { get; set; }
     public string? Seniority { get; set; }
+    public string? SuggestedSeniority { get; set; }
     public int? YearsOfExperience { get; set; }
     public string? YearsOfExperienceSource { get; set; }
-    public DateOnly? AvailableFromDate { get; set; }
-    public string? Availability { get; set; }
     public string? Office { get; set; }
     public List<SkillDraftDto> Skills { get; set; } = new();
     public List<ExperienceDraftDto> Experiences { get; set; } = new();
@@ -57,8 +56,7 @@ public class EducationDraftDto
 public class LanguageDraftDto
 {
     public string Name { get; set; } = "";
-    public string? Level { get; set; }
-    public string? SourceLevel { get; set; }
+    public string? Proficiency { get; set; }
 }
 
 public class CertificationDraftDto

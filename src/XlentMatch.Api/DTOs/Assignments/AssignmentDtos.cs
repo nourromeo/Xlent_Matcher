@@ -8,13 +8,18 @@ public class RequirementDraftDto
     public RequirementType Type { get; set; } = RequirementType.Mandatory;
     public int? MinYears { get; set; }
     public int? MinLevel { get; set; }
-    public bool RequiresFluency { get; set; }
+    public string? Proficiency { get; set; }
+    public SeniorityMatchMode MatchMode { get; set; } = SeniorityMatchMode.Exact;
+    public string? MaximumSeniority { get; set; }
     public string Category { get; set; } = "Skill";
 }
 
 public class RequirementExtractionResultDto
 {
     public string? Seniority { get; set; }
+    public string? SeniorityMatchMode { get; set; }
+    public string? MinimumSeniority { get; set; }
+    public string? MaximumSeniority { get; set; }
     public int? MinYearsExperience { get; set; }
     public string? Availability { get; set; }
     public DateOnly? RequiredStartDate { get; set; }

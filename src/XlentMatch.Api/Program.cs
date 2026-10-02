@@ -18,6 +18,7 @@ builder.Services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
 builder.Services.AddSingleton<MatchingWeightsStore>();
 builder.Services.AddScoped<MatchingService>();
 builder.Services.AddScoped<SkillNormalizationService>();
+builder.Services.AddScoped<ConsultantAvailabilityService>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {

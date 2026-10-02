@@ -7,6 +7,7 @@ export type ConsultantSkill = {
   years: number;
   level: number;
   evidence: string | null;
+  skill?: { canonicalName: string } | null;
 };
 
 export type ConsultantExperience = {
@@ -39,8 +40,7 @@ export type ConsultantLanguage = {
   id: number;
   consultantId: number;
   name: string;
-  level: "Basic" | "Intermediate" | "Fluent" | null;
-  sourceLevel?: string | null;
+  proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native";
 };
 
 export type ConsultantIndustry = {
@@ -67,9 +67,8 @@ export type Consultant = {
   seniority: string | null;
   yearsOfExperience: number | null;
   yearsOfExperienceSource: string | null;
-  availableFromDate: string | null;
-  availabilityConfirmedAt: string | null;
-  availability: string | null;
+  availableAgainDate: string | null;
+  availability: "Available" | "Unavailable";
   office: string | null;
   originalCvText: string | null;
   skills: ConsultantSkill[];

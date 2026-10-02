@@ -11,6 +11,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { EmptyState } from "../components/ui/EmptyState";
 import { PageHeader } from "../components/ui/PageHeader";
 import { assignmentsApi } from "../services/assignmentsApi";
+import { validateDocumentFile } from "../services/fileValidation";
 import { aiApi } from "../services/aiApi";
 import type { AssignmentApi, AssignmentRequirementApi, AssignmentStatusApi } from "../types";
 
@@ -19,8 +20,10 @@ const emptyRequirement = (
   type: "Mandatory" | "Desired",
   minYears: number | null = null,
   minLevel: number | null = null,
-  category: "Skill" | "HumanLanguage" = "Skill",
-  requiresFluency = false,
+  category: "Skill" | "HumanLanguage" | "Seniority" = "Skill",
+  proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" | null = null,
+  matchMode: "Exact" | "Minimum" | "Range" = "Exact",
+  maximumSeniority: string | null = null,
 ): AssignmentRequirementApi => ({
   id: 0,
   assignmentId: 0,
@@ -29,7 +32,9 @@ const emptyRequirement = (
   type,
   minYears,
   minLevel,
-  requiresFluency,
+  proficiency,
+  matchMode,
+  maximumSeniority,
 });
 
 function NewAssignmentModal({
@@ -46,6 +51,8 @@ function NewAssignmentModal({
   const [brief, setBrief] = useState("");
   const [briefFile, setBriefFile] = useState<File | null>(null);
   const [seniority, setSeniority] = useState("Mid");
+  const [seniorityMatchMode, setSeniorityMatchMode] = useState<"Exact" | "Minimum" | "Range">("Exact");
+  const [maximumSeniority, setMaximumSeniority] = useState("");
   const [availability, setAvailability] = useState("Available now");
   const [requiredStartDate, setRequiredStartDate] = useState("");
   const [location, setLocation] = useState("");
@@ -76,12 +83,14 @@ function NewAssignmentModal({
 
       setRequirements(
         extracted.requirements.map((item) =>
-          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.requiresFluency),
+          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.proficiency),
         ),
       );
 
       setBrief(extracted.sourceText ?? brief);
-      if (extracted.seniority) setSeniority(extracted.seniority);
+      if (extracted.minimumSeniority || extracted.seniority) setSeniority(extracted.minimumSeniority ?? extracted.seniority ?? "");
+      if (extracted.seniorityMatchMode) setSeniorityMatchMode(extracted.seniorityMatchMode);
+      if (extracted.maximumSeniority) setMaximumSeniority(extracted.maximumSeniority);
       if (extracted.availability) setAvailability(extracted.availability);
       if (extracted.requiredStartDate) setRequiredStartDate(extracted.requiredStartDate);
       if (extracted.location) setLocation(extracted.location);
@@ -120,10 +129,15 @@ function NewAssignmentModal({
         name: requirement.name.trim(),
         minYears: requirement.category === "HumanLanguage" ? null : requirement.minYears,
         minLevel: requirement.category === "HumanLanguage" ? null : requirement.minLevel,
-        requiresFluency: requirement.category === "HumanLanguage" && requirement.requiresFluency,
+        proficiency: requirement.category === "HumanLanguage" ? requirement.proficiency : null,
       }));
 
-    if (cleanedRequirements.length === 0) {
+    const seniorityRequirement = seniority.trim()
+      ? emptyRequirement(seniority.trim(), "Mandatory", null, null, "Seniority", null, seniorityMatchMode, seniorityMatchMode === "Range" ? maximumSeniority || null : null)
+      : null;
+    const finalRequirements = seniorityRequirement ? [...cleanedRequirements, seniorityRequirement] : cleanedRequirements;
+
+    if (finalRequirements.length === 0) {
       setError("Add at least one requirement before creating the assignment.");
       return;
     }
@@ -144,7 +158,7 @@ function NewAssignmentModal({
       status: "Draft",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      requirements: cleanedRequirements,
+      requirements: finalRequirements,
     };
 
     try {
@@ -183,8 +197,8 @@ function NewAssignmentModal({
               onChange={(event) => {
                 const file = event.target.files?.[0] ?? null;
                 setError("");
-                if (file && file.size > 10 * 1024 * 1024) { setError("File is larger than 10 MB."); event.target.value = ""; setBriefFile(null); return; }
-                if (file && !/\.(pdf|txt)$/i.test(file.name)) { setError("Unsupported file type. Use PDF or TXT."); event.target.value = ""; setBriefFile(null); return; }
+                const validationError = file ? validateDocumentFile(file) : null;
+                if (validationError) { setError(validationError); event.target.value = ""; setBriefFile(null); return; }
                 setBriefFile(file);
                 if (file) setBrief("");
               }}
@@ -233,6 +247,8 @@ function NewAssignmentModal({
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_seniority")}</span>
               <select value={seniority} onChange={(event) => setSeniority(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
             </label>
+            {seniority && <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Seniority matching</span><select value={seniorityMatchMode} onChange={(event) => setSeniorityMatchMode(event.target.value as typeof seniorityMatchMode)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Exact">Exact</option><option value="Minimum">Minimum</option><option value="Range">Range</option></select></label>}
+            {seniority && seniorityMatchMode === "Range" && <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Maximum seniority</span><select value={maximumSeniority} onChange={(event) => setMaximumSeniority(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Select maximum</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select></label>}
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_availability")}</span>
               <Input value={availability} onChange={(event) => setAvailability(event.target.value)} />
@@ -240,8 +256,8 @@ function NewAssignmentModal({
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">Work location</span>
               <Input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="e.g. Stockholm / Hybrid / Remote" />
-              <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Required start date</span><Input type="date" value={requiredStartDate} onChange={(event) => setRequiredStartDate(event.target.value)} /></label>
             </label>
+            <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Required start date</span><Input type="date" value={requiredStartDate} onChange={(event) => setRequiredStartDate(event.target.value)} /></label>
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">Minimum years experience</span>
               <Input type="number" min={0} value={minYears} onChange={(event) => setMinYears(Number(event.target.value) || 0)} />
@@ -276,8 +292,7 @@ function NewAssignmentModal({
                 </select>
                 {requirement.category === "HumanLanguage" ? (
                   <label className="flex items-center gap-1.5 text-[10px] text-app-muted">
-                    <input type="checkbox" checked={requirement.requiresFluency} onChange={(event) => updateRequirement(index, { requiresFluency: event.target.checked, minLevel: null, minYears: null })} />
-                    Fluent required
+                    <select aria-label="Language proficiency" value={requirement.proficiency ?? "Not specified"} onChange={(event) => updateRequirement(index, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null, minYears: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
                   </label>
                 ) : (
                   <Input type="number" min={0} value={requirement.minYears ?? ""} placeholder="Years" aria-label="Minimum skill years"

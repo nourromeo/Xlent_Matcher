@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, Filter, Eye } from "../design-system/icons";
+import { Search, Filter, Eye, Calendar } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Input } from "../components/ui/Input";
@@ -10,7 +10,7 @@ import { consultantsApi } from "../services/consultantsApi";
 import type { Consultant } from "../types";
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
-const AVAIL_OPTIONS = ["All", "Available now", "Needs confirmation"];
+const AVAIL_OPTIONS = ["All", "Available", "Unavailable"];
 
 const consultantName = (consultant: Consultant) =>
   consultant.fullName?.trim() || `${consultant.firstName} ${consultant.lastName}`.trim();
@@ -22,13 +22,11 @@ const initials = (consultant: Consultant) =>
     .join("")
     .slice(0, 2);
 
-function availabilityLabel(consultant: Consultant) {
-  if (!consultant.availableFromDate) return "Needs confirmation";
-  const confirmedAt = consultant.availabilityConfirmedAt ? new Date(consultant.availabilityConfirmedAt) : null;
-  if (!confirmedAt || Date.now() - confirmedAt.getTime() > 90 * 24 * 60 * 60 * 1000) return "Needs confirmation";
-  const start = new Date(`${consultant.availableFromDate.slice(0, 10)}T00:00:00`);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return start > today ? `Available from ${start.toLocaleDateString()}` : "Available now";
+function formatAvailableAgainDate(value: string | null) {
+  if (!value) return "Available again";
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return "Available again";
+  return new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", year: "numeric" }).format(new Date(year, month - 1, day));
 }
 
 export default function Consultants() {
@@ -40,6 +38,7 @@ export default function Consultants() {
   const [seniority, setSeniority] = useState("All");
   const [avail, setAvail] = useState("All");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [updatingAvailabilityId, setUpdatingAvailabilityId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,24 +79,31 @@ export default function Consultants() {
     }
   };
 
+  const updateAvailability = async (consultant: Consultant, availability: Consultant["availability"], availableAgainDate: string | null) => {
+    setUpdatingAvailabilityId(consultant.id);
+    setError("");
+    try {
+      const updated = await consultantsApi.update(consultant.id, { ...consultant, availability, availableAgainDate: availability === "Available" ? null : availableAgainDate });
+      setConsultants((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not update availability.");
+    } finally {
+      setUpdatingAvailabilityId(null);
+    }
+  };
+
   const displaySeniority = (value: string) =>
     value === "Junior" ? t("seniority_junior") :
     value === "Mid" ? t("seniority_mid") :
     value === "Senior" ? t("seniority_senior") :
     value === "Staff" ? t("seniority_staff") : value;
 
-  const displayAvailability = (value: string) =>
-    value === "Immediate" ? t("immediate") :
-    value === "2 weeks" ? t("availability_2_weeks") :
-    value === "1 month" ? t("availability_1_month") :
-    value === "3 months" ? t("availability_3_months") : value;
-
   const seniorityRank: Record<string, number> = { Junior: 1, Mid: 2, Senior: 3, Staff: 4 };
-  const availabilityRank: Record<string, number> = { Immediate: 0, "2 weeks": 1, "1 month": 2, "3 months": 3 };
+  const availabilityRank: Record<string, number> = { Available: 0, Unavailable: 1 };
 
   const filtered = consultants.filter((consultant) => {
     const consultantSeniority = consultant.seniority ?? "";
-    const consultantAvailability = availabilityLabel(consultant);
+    const consultantAvailability = consultant.availability;
 
     if (seniority !== "All" && consultantSeniority !== seniority) return false;
     if (avail !== "All" && consultantAvailability !== avail) return false;
@@ -160,7 +166,7 @@ export default function Consultants() {
         >
           {AVAIL_OPTIONS.map((option) => (
             <option key={option} value={option}>
-              {option === "All" ? t("consultants_all") : displayAvailability(option)}
+              {option === "All" ? t("consultants_all") : option}
             </option>
           ))}
         </select>
@@ -222,12 +228,31 @@ export default function Consultants() {
               key: "availability",
               header: t("col_avail"),
               sortable: true,
-              sortValue: (consultant) => availabilityRank[consultant.availability ?? ""] ?? 99,
+              sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99,
               render: (consultant) => (
-                <span style={{ color: consultant.availability === "Immediate" ? "var(--color-success)" : "var(--color-text-secondary)" }}>
-                  {displayAvailability(consultant.availability ?? "—")}
-                </span>
+                <select aria-label={`Availability for ${consultantName(consultant)}`} value={consultant.availability} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, event.target.value as Consultant["availability"], consultant.availableAgainDate)} className="bg-app border border-app rounded px-2 py-1 text-[11px] text-app-primary">
+                  <option value="Available">Available</option>
+                  <option value="Unavailable">Unavailable</option>
+                </select>
               ),
+            },
+            {
+              key: "availableAgain",
+              header: "Available again",
+              render: (consultant) => consultant.availability === "Unavailable" ? (
+                <label className="relative inline-flex max-w-36 items-center gap-1.5 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
+                  <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate)}</span>
+                  <Calendar size={12} className="flex-none text-app-muted" aria-hidden="true" />
+                  <input
+                    aria-label={`Available again date for ${consultantName(consultant)}`}
+                    type="date"
+                    value={consultant.availableAgainDate?.slice(0, 10) ?? ""}
+                    disabled={updatingAvailabilityId === consultant.id}
+                    onChange={(event) => void updateAvailability(consultant, "Unavailable", event.target.value || null)}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  />
+                </label>
+              ) : <span className="text-app-faint">—</span>,
             },
             {
               key: "actions",

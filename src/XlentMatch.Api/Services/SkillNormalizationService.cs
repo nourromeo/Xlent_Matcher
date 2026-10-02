@@ -16,16 +16,17 @@ public class SkillNormalizationService(AppDbContext db)
         return collapsed.ToUpperInvariant();
     }
 
-    public static (string Name, string? Level) NormalizeHumanLanguage(string? rawName, string? level)
+    public static (string Name, string Proficiency) NormalizeHumanLanguage(string? rawName, string? level)
     {
         var name = Regex.Replace((rawName ?? "").Trim(), @"\s+", " ");
-        var proficiency = string.IsNullOrWhiteSpace(level) ? null : level.Trim();
+        var proficiency = NormalizeLanguageProficiency(level);
 
         var suffix = TrailingParenthetical.Match(name);
         if (suffix.Success && IsProficiencyDescription(suffix.Groups["level"].Value))
         {
             name = suffix.Groups["name"].Value.Trim();
-            proficiency ??= suffix.Groups["level"].Value.Trim();
+            if (string.Equals(proficiency, HumanLanguageProficiency.NotSpecified, StringComparison.Ordinal))
+                proficiency = NormalizeLanguageProficiency(suffix.Groups["level"].Value);
         }
 
         var normalized = NormalizeKey(name);
@@ -40,7 +41,7 @@ public class SkillNormalizationService(AppDbContext db)
     private static bool IsProficiencyDescription(string value)
     {
         var normalized = NormalizeKey(value);
-        return normalized is "C1" or "C2" or "BASIC" or "BEGINNER" or "CONVERSATIONAL" or "INTERMEDIATE" or "ADVANCED" or "FLUENT" or "NATIVE" ||
+        return normalized is "BASIC" or "BEGINNER" or "CONVERSATIONAL" or "INTERMEDIATE" or "FLUENT" or "NATIVE" ||
                normalized.Contains("FLUENT", StringComparison.Ordinal) ||
                normalized.Contains("FLYTANDE", StringComparison.Ordinal) ||
                normalized.Contains("MODERSMAL", StringComparison.Ordinal) ||
@@ -54,6 +55,10 @@ public class SkillNormalizationService(AppDbContext db)
 
     public async Task EnsureCatalogAsync(CancellationToken ct = default)
     {
+        // Seed the approved catalog only on an empty catalog. Admin edits and deletions
+        // are authoritative after initial bootstrap and must survive restarts.
+        if (await db.Skills.AnyAsync(ct)) return;
+
         await CatalogSyncGate.WaitAsync(ct);
         try
         {
@@ -136,61 +141,21 @@ public class SkillNormalizationService(AppDbContext db)
         });
     }
 
-    public async Task<Skill> ResolveAsync(string rawName, CancellationToken ct = default, string? category = null)
-    {
-        var normalized = NormalizeKey(rawName);
-
-        var skill = await db.Skills
-            .Include(x => x.Aliases)
-            .FirstOrDefaultAsync(x => x.NormalizedName == normalized, ct);
-
-        skill ??= await db.Skills
-            .Include(x => x.Aliases)
-            .FirstOrDefaultAsync(x => x.Aliases.Any(alias => alias.NormalizedAlias == normalized), ct);
-
-        if (skill is not null)
-        {
-            var commonHumanLanguage = SkillCatalogSeed.Items
-                .Where(item => string.Equals(item.Category, "Human language", StringComparison.OrdinalIgnoreCase))
-                .Any(item => NormalizeKey(item.Name) == normalized ||
-                             item.Aliases.Any(alias => NormalizeKey(alias) == normalized));
-            var categoryNeedsCorrection = string.Equals(skill.Category, "Unclassified", StringComparison.OrdinalIgnoreCase) ||
-                (commonHumanLanguage && string.Equals(skill.Category, "Language", StringComparison.OrdinalIgnoreCase));
-            if (string.Equals(category, "Human language", StringComparison.OrdinalIgnoreCase) && categoryNeedsCorrection)
-                skill.Category = "Human language";
-            return skill;
-        }
-
-        skill = new Skill
-        {
-            CanonicalName = Regex.Replace(rawName.Trim(), @"\s+", " "),
-            NormalizedName = normalized,
-            Category = string.IsNullOrWhiteSpace(category) ? "Unclassified" : category
-        };
-
-        db.Skills.Add(skill);
-        await db.SaveChangesAsync(ct);
-        return skill;
-    }
-
     public async Task NormalizeConsultantLanguagesAsync(IEnumerable<ConsultantLanguage> languages, CancellationToken ct = default)
     {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var language in languages)
         {
-            var normalized = NormalizeHumanLanguage(language.Name, language.Level);
+            var normalized = NormalizeHumanLanguage(language.Name, language.Proficiency);
             language.Name = normalized.Name;
-            var explicitLevel = NormalizeLanguageLevel(language.Level);
-            if (explicitLevel is null && !string.IsNullOrWhiteSpace(language.Level))
-            {
-                language.SourceLevel ??= language.Level.Trim();
-                language.Level = null;
-            }
-            else
-            {
-                language.Level = explicitLevel;
-            }
+            language.Proficiency = normalized.Proficiency;
 
             var key = NormalizeKey(language.Name);
+            if (!seen.Add(key))
+            {
+                language.Name = "";
+                continue;
+            }
             var canonical = await db.Skills
                 .Include(skill => skill.Aliases)
                 .FirstOrDefaultAsync(skill =>
@@ -200,32 +165,33 @@ public class SkillNormalizationService(AppDbContext db)
             if (canonical is not null)
                 language.Name = canonical.CanonicalName;
             else
-                await RecordLanguageSuggestionAsync(language.Name, ct);
+                await RecordSkillSuggestionAsync(language.Name, "Human language", ct);
         }
     }
 
-    public static string? NormalizeLanguageLevel(string? value)
+    public static string NormalizeLanguageProficiency(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return null;
+        if (string.IsNullOrWhiteSpace(value)) return HumanLanguageProficiency.NotSpecified;
         var key = NormalizeKey(value)
             .Replace("Å", "A", StringComparison.Ordinal)
             .Replace("Ä", "A", StringComparison.Ordinal)
             .Replace("Ö", "O", StringComparison.Ordinal);
-        if (key is "BASIC" or "BEGINNER" or "ELEMENTARY" or "GRUNDLAGGANDE") return "Basic";
-        if (key is "INTERMEDIATE" or "CONVERSATIONAL" or "MEDEL" or "MEDELNIVA" or "GODA KUNSKAPER") return "Intermediate";
-        if (key is "FLUENT" or "FLYTANDE" or "NATIVE" or "MODERSMAL" or "MOTHER TONGUE" or "PROFICIENT") return "Fluent";
-        return null;
+        if (key is "BASIC" or "BEGINNER" or "ELEMENTARY" or "GRUNDLAGGANDE") return HumanLanguageProficiency.Low;
+        if (key is "INTERMEDIATE" or "CONVERSATIONAL" or "MEDEL" or "MEDELNIVA" or "GODA KUNSKAPER") return HumanLanguageProficiency.Medium;
+        if (key is "FLUENT" or "FLYTANDE" or "PROFICIENT") return HumanLanguageProficiency.High;
+        if (key is "NATIVE" or "MODERSMAL" or "MOTHER TONGUE") return HumanLanguageProficiency.Native;
+        return HumanLanguageProficiency.NotSpecified;
     }
 
-    public async Task RecordLanguageSuggestionAsync(string rawName, CancellationToken ct = default)
+    public async Task RecordSkillSuggestionAsync(string rawName, string category, CancellationToken ct = default)
     {
-        var name = Regex.Replace(rawName.Trim(), @"\\s+", " ");
+        var name = Regex.Replace(rawName.Trim(), @"\s+", " ");
         if (string.IsNullOrWhiteSpace(name)) return;
         var key = NormalizeKey(name);
-        var suggestion = await db.LanguageSuggestions.FirstOrDefaultAsync(item => item.NormalizedName == key, ct);
+        var suggestion = await db.SkillSuggestions.FirstOrDefaultAsync(item => item.NormalizedName == key, ct);
         if (suggestion is null)
         {
-            db.LanguageSuggestions.Add(new LanguageSuggestion { Name = name, NormalizedName = key });
+            db.SkillSuggestions.Add(new SkillSuggestion { Name = name, NormalizedName = key, Category = category });
         }
         else
         {
@@ -235,30 +201,67 @@ public class SkillNormalizationService(AppDbContext db)
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task NormalizeConsultantSkillsAsync(IEnumerable<ConsultantSkill> skills, CancellationToken ct = default)
+    public async Task NormalizeConsultantSkillsAsync(IList<ConsultantSkill> skills, CancellationToken ct = default)
     {
         foreach (var consultantSkill in skills)
         {
             if (string.IsNullOrWhiteSpace(consultantSkill.Name))
                 continue;
 
-            var skill = await ResolveAsync(consultantSkill.Name, ct);
+            var normalized = NormalizeKey(consultantSkill.Name);
+            var skill = await db.Skills.Include(x => x.Aliases)
+                .FirstOrDefaultAsync(x => x.NormalizedName == normalized || x.Aliases.Any(a => a.NormalizedAlias == normalized), ct);
+            if (skill is null)
+            {
+                await RecordSkillSuggestionAsync(consultantSkill.Name, consultantSkill.Category ?? "Unclassified", ct);
+                consultantSkill.SkillId = null;
+                continue;
+            }
+
             consultantSkill.SkillId = skill.Id;
             consultantSkill.Skill = null;
             consultantSkill.Name = skill.CanonicalName;
             consultantSkill.Category = skill.Category;
         }
+
+        var unique = new Dictionary<string, ConsultantSkill>(StringComparer.OrdinalIgnoreCase);
+        foreach (var consultantSkill in skills.Where(skill => !string.IsNullOrWhiteSpace(skill.Name)))
+        {
+            var key = consultantSkill.SkillId is int skillId
+                ? $"skill:{skillId}"
+                : $"raw:{NormalizeKey(consultantSkill.Name)}";
+
+            if (!unique.TryGetValue(key, out var existing))
+            {
+                unique[key] = consultantSkill;
+                continue;
+            }
+
+            if (consultantSkill.Years > existing.Years)
+                existing.Years = consultantSkill.Years;
+            if (consultantSkill.Level > existing.Level)
+                existing.Level = consultantSkill.Level;
+            if (string.IsNullOrWhiteSpace(existing.Evidence) && !string.IsNullOrWhiteSpace(consultantSkill.Evidence))
+                existing.Evidence = consultantSkill.Evidence;
+        }
+
+        skills.Clear();
+        foreach (var consultantSkill in unique.Values)
+            skills.Add(consultantSkill);
     }
 
     public async Task NormalizeRequirementsAsync(IEnumerable<AssignmentRequirement> requirements, CancellationToken ct = default)
     {
         foreach (var requirement in requirements)
         {
+            if (string.Equals(requirement.Category, "Seniority", StringComparison.OrdinalIgnoreCase))
+                continue;
             if (string.IsNullOrWhiteSpace(requirement.Name))
                 continue;
 
             if (string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase))
             {
+                requirement.Proficiency = NormalizeLanguageProficiency(requirement.Proficiency);
                 var language = NormalizeHumanLanguage(requirement.Name, null).Name;
                 var key = NormalizeKey(language);
                 var knownLanguage = await db.Skills
@@ -273,7 +276,7 @@ public class SkillNormalizationService(AppDbContext db)
                     requirement.Skill = null;
                     requirement.Name = language;
                     requirement.Category = "HumanLanguage";
-                    await RecordLanguageSuggestionAsync(language, ct);
+                    await RecordSkillSuggestionAsync(language, "Human language", ct);
                     continue;
                 }
 
@@ -284,7 +287,19 @@ public class SkillNormalizationService(AppDbContext db)
                 continue;
             }
 
-            var skill = await ResolveAsync(requirement.Name, ct);
+            var normalizedRequirement = NormalizeKey(requirement.Name);
+            var skill = await db.Skills.Include(x => x.Aliases)
+                .FirstOrDefaultAsync(x => x.NormalizedName == normalizedRequirement || x.Aliases.Any(a => a.NormalizedAlias == normalizedRequirement), ct);
+            if (skill is null)
+            {
+                requirement.SkillId = null;
+                requirement.Skill = null;
+                requirement.Name = Regex.Replace(requirement.Name.Trim(), @"\s+", " ");
+                requirement.Category = "Skill";
+                await RecordSkillSuggestionAsync(requirement.Name, "Unclassified", ct);
+                continue;
+            }
+
             requirement.SkillId = skill.Id;
             requirement.Skill = null;
             requirement.Name = skill.CanonicalName;

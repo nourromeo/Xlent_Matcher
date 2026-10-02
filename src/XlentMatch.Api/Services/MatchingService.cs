@@ -8,6 +8,7 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     public List<MatchResult> MatchAndRank(Assignment assignment, IEnumerable<Consultant> consultants)
     {
         var results = consultants
+            .Where(c => string.Equals(c.Availability, ConsultantAvailability.Available, StringComparison.OrdinalIgnoreCase))
             .Select(c => Match(assignment, c))
             .OrderByDescending(r => r.Score)
             .ThenByDescending(r => r.MatchedMandatory)
@@ -22,37 +23,50 @@ public class MatchingService(MatchingWeightsStore weightsStore)
 
     public MatchResult Match(Assignment assignment, Consultant consultant)
     {
-        var details = assignment.Requirements.Select(r => Evaluate(r, consultant)).ToList();
+        var requirements = assignment.Requirements
+            .GroupBy(RequirementKey, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToList();
+        var details = requirements.Select(r => Evaluate(r, consultant)).ToList();
+
+        if (assignment.MinYearsExperience > 0)
+        {
+            details.Add(new MatchRequirementResult
+            {
+                RequirementName = "Total Experience",
+                Type = RequirementType.Mandatory,
+                IsMatched = consultant.YearsOfExperience >= assignment.MinYearsExperience,
+                Evidence = consultant.YearsOfExperience is null
+                    ? $"Required: at least {assignment.MinYearsExperience} years; consultant experience is unknown."
+                    : $"Required: at least {assignment.MinYearsExperience} years; consultant: {consultant.YearsOfExperience} years."
+            });
+        }
 
         var mandatory = details.Where(d => d.Type == RequirementType.Mandatory).ToList();
         var desired = details.Where(d => d.Type == RequirementType.Desired).ToList();
 
-        var mandatoryRatio = Ratio(mandatory);
-        var desiredRatio = Ratio(desired);
-        var experienceRatio = assignment.MinYearsExperience <= 0 || consultant.YearsOfExperience is null
-            ? 1.0
-            : Math.Min(1.0, (double)consultant.YearsOfExperience.Value / assignment.MinYearsExperience);
-
         var weights = weightsStore.Get();
-
-        var score = mandatoryRatio * weights.MandatoryWeight
-                  + desiredRatio * weights.DesiredWeight
-                  + experienceRatio * weights.ExperienceWeight;
-
+        var mandatoryWeight = mandatory.Count * weights.MandatoryRequirementWeight;
+        var desiredWeight = desired.Count * weights.DesiredRequirementWeight;
+        var matchedWeight = mandatory.Count(d => d.IsMatched) * weights.MandatoryRequirementWeight
+                          + desired.Count(d => d.IsMatched) * weights.DesiredRequirementWeight;
+        var totalWeight = mandatoryWeight + desiredWeight;
+        var score = totalWeight == 0 ? 0 : (int)Math.Round((double)matchedWeight / totalWeight * 100, MidpointRounding.AwayFromZero);
         var missingMandatory = mandatory.Where(d => !d.IsMatched).ToList();
-        score -= missingMandatory.Count * weights.MissingMandatoryPenalty;
 
         var result = new MatchResult
         {
             AssignmentId = assignment.Id,
             ConsultantId = consultant.Id,
             ConsultantName = consultant.FullName,
-            Score = (int)Math.Clamp(Math.Round(score), 0, 100),
+            Score = score,
             MatchedMandatory = mandatory.Count(d => d.IsMatched),
             TotalMandatory = mandatory.Count,
             MatchedDesired = desired.Count(d => d.IsMatched),
             TotalDesired = desired.Count,
-            ExperienceScore = (int)Math.Round(experienceRatio * 100),
+            MatchedWeight = matchedWeight,
+            TotalWeight = totalWeight,
+            ScoreAvailable = totalWeight > 0,
             Details = details,
             ContextDetails = BuildContextDetails(assignment, consultant)
         };
@@ -61,8 +75,14 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         return result;
     }
 
-    private static double Ratio(List<MatchRequirementResult> items) =>
-        items.Count == 0 ? 1.0 : (double)items.Count(i => i.IsMatched) / items.Count;
+    private static string RequirementKey(AssignmentRequirement requirement)
+    {
+        var identity = requirement.SkillId is not null
+            ? $"skill:{requirement.SkillId}"
+            : $"{requirement.Category}:{NormalizeText(requirement.Name)}";
+        return string.Join("|", identity, requirement.Type, requirement.MinYears, requirement.MinLevel,
+            NormalizeText(requirement.Proficiency ?? ""), requirement.MatchMode, NormalizeText(requirement.MaximumSeniority ?? ""));
+    }
 
     public List<MatchContextResult> BuildContextDetails(Assignment assignment, Consultant consultant)
     {
@@ -79,42 +99,6 @@ public class MatchingService(MatchingWeightsStore weightsStore)
                 Evidence = consultant.YearsOfExperience is null
                     ? $"Consultant experience is not confirmed; assignment requires at least {assignment.MinYearsExperience} years."
                     : $"Consultant has {consultant.YearsOfExperience} years; assignment requires at least {assignment.MinYearsExperience}."
-            });
-        }
-
-        if (!string.IsNullOrWhiteSpace(assignment.Seniority))
-        {
-            var requiredLevel = SeniorityLevel(assignment.Seniority);
-            var consultantLevel = SeniorityLevel(consultant.Seniority);
-            details.Add(new MatchContextResult
-            {
-                Name = "Seniority",
-                IsMatched = requiredLevel is null || consultantLevel is null ? null : consultantLevel == requiredLevel,
-                AffectsScore = false,
-                Evidence = requiredLevel is null || consultantLevel is null
-                    ? $"Assignment: {assignment.Seniority}; consultant: {consultant.Seniority ?? "not specified"}. Confirm manually."
-                    : $"Assignment requires {assignment.Seniority}; consultant profile says {consultant.Seniority}."
-            });
-        }
-
-        if (!string.IsNullOrWhiteSpace(assignment.Availability) || assignment.RequiredStartDate is not null)
-        {
-            bool? matched = null;
-            var availabilityIsFresh = consultant.AvailabilityConfirmedAt is not null &&
-                consultant.AvailabilityConfirmedAt >= DateTime.UtcNow.AddDays(-90);
-            if (assignment.RequiredStartDate is not null && consultant.AvailableFromDate is not null && availabilityIsFresh)
-                matched = consultant.AvailableFromDate <= assignment.RequiredStartDate;
-
-            details.Add(new MatchContextResult
-            {
-                Name = "Availability",
-                IsMatched = matched,
-                AffectsScore = false,
-                Evidence = assignment.RequiredStartDate is null
-                    ? $"Assignment timing “{assignment.Availability}” has no confirmed start date; confirm manually."
-                    : consultant.AvailableFromDate is null || !availabilityIsFresh
-                        ? $"Assignment starts {assignment.RequiredStartDate:yyyy-MM-dd}; consultant availability date is missing or stale and needs confirmation."
-                        : $"Assignment starts {assignment.RequiredStartDate:yyyy-MM-dd}; consultant is available from {consultant.AvailableFromDate:yyyy-MM-dd}."
             });
         }
 
@@ -158,6 +142,42 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         var evidence = new List<string>();
         var matched = false;
 
+        if (string.Equals(req.Category, "Seniority", StringComparison.OrdinalIgnoreCase))
+        {
+            var required = SeniorityLevel(req.Name);
+            var consultant = SeniorityLevel(c.Seniority);
+            var maximum = SeniorityLevel(req.MaximumSeniority);
+            if (required is not null && consultant is not null)
+            {
+                matched = req.MatchMode switch
+                {
+                    SeniorityMatchMode.Minimum => consultant.Value >= required.Value,
+                    SeniorityMatchMode.Range => maximum is not null && consultant.Value >= required.Value && consultant.Value <= maximum.Value,
+                    _ => consultant.Value == required.Value
+                };
+            }
+
+            var requirementLabel = req.MatchMode switch
+            {
+                SeniorityMatchMode.Minimum => $"{req.Name} or higher",
+                SeniorityMatchMode.Range => $"{req.Name}–{req.MaximumSeniority}",
+                _ => req.Name
+            };
+            evidence.Add(matched
+                ? $"Seniority: {requirementLabel} required, consultant is {c.Seniority}."
+                : c.Seniority is null
+                    ? $"Seniority: {requirementLabel} required, consultant seniority is unknown."
+                    : $"Seniority: {requirementLabel} required, consultant is {c.Seniority}.");
+
+            return new MatchRequirementResult
+            {
+                RequirementName = "Seniority",
+                Type = req.Type,
+                IsMatched = matched,
+                Evidence = string.Join(" ", evidence)
+            };
+        }
+
         var requirementName = req.Skill?.CanonicalName ?? req.Name;
         var isHumanLanguage = string.Equals(req.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase) ||
                               string.Equals(req.Skill?.Category, "Human language", StringComparison.OrdinalIgnoreCase);
@@ -167,16 +187,18 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             var language = c.Languages.FirstOrDefault(x => SameLanguage(x.Name, requirementName));
             if (language is not null)
             {
-                var fluencyConfirmed = IsFluencyEvidence(language.Level);
-                matched = !req.RequiresFluency || fluencyConfirmed;
-                evidence.Add($"Language '{language.Name}': {language.Level ?? "level not specified"}");
-                if (req.RequiresFluency && !fluencyConfirmed)
-                    evidence.Add("Fluency is required, but the consultant profile does not explicitly confirm fluency.");
+                var consultantRank = HumanLanguageProficiency.Rank(language.Proficiency);
+                var requiredRank = HumanLanguageProficiency.Rank(req.Proficiency);
+                matched = requiredRank == 0 || consultantRank >= requiredRank;
+                evidence.Add($"Language '{language.Name}': {language.Proficiency}");
+                if (!matched)
+                    evidence.Add($"Requires {req.Proficiency}, consultant has {language.Proficiency}.");
             }
         }
         else
         {
-        var skill = c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId);
+        // Null SkillId means the term is unapproved and must not participate in matching.
+        var skill = req.SkillId is null ? null : c.Skills.FirstOrDefault(s => s.SkillId == req.SkillId);
 
         if (skill is not null)
         {
@@ -221,29 +243,6 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         };
     }
 
-    private static bool IsFluencyEvidence(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return false;
-        var normalized = NormalizeText(value)
-            .Replace("å", "a", StringComparison.Ordinal)
-            .Replace("ä", "a", StringComparison.Ordinal)
-            .Replace("ö", "o", StringComparison.Ordinal);
-        var explicitLevelTokens = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return explicitLevelTokens.Any(token => token == "fluent")
-            || normalized.Contains("fluent", StringComparison.Ordinal)
-            || normalized.Contains("proficient", StringComparison.Ordinal)
-            || normalized.Contains("flytande", StringComparison.Ordinal)
-            || normalized.Contains("fließend", StringComparison.Ordinal)
-            || normalized.Contains("sujuva", StringComparison.Ordinal)
-            || normalized.Contains("fluido", StringComparison.Ordinal)
-            || normalized.Contains("mycket goda kunskaper", StringComparison.Ordinal)
-            || normalized.Contains("obehindrat", StringComparison.Ordinal)
-            || normalized.Contains("native", StringComparison.Ordinal)
-            || normalized.Contains("mother tongue", StringComparison.Ordinal)
-            || normalized.Contains("modersmal", StringComparison.Ordinal)
-            || normalized.Contains("matern", StringComparison.Ordinal);
-    }
-
     private static bool UsesTechnology(Project p, string name) =>
         (p.Technologies ?? "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -265,13 +264,11 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         {
             $"{c.FullName} scored {r.Score}/100 for '{a.Title}'.",
             $"Mandatory requirements: {r.MatchedMandatory}/{r.TotalMandatory}.",
-            $"Desired requirements: {r.MatchedDesired}/{r.TotalDesired}."
+            $"Desired requirements: {r.MatchedDesired}/{r.TotalDesired}.",
+            r.ScoreAvailable
+                ? $"Weighted requirements: {r.MatchedWeight}/{r.TotalWeight}."
+                : "No scoreable requirements."
         };
-
-        if (a.MinYearsExperience > 0)
-            parts.Add(c.YearsOfExperience is null
-                ? $"Overall experience is not confirmed (minimum {a.MinYearsExperience} years required)."
-                : $"Experience: {c.YearsOfExperience} years (minimum {a.MinYearsExperience}).");
 
         if (missingMandatory.Count > 0)
             parts.Add("Missing mandatory: " + string.Join(", ", missingMandatory.Select(m => m.RequirementName)) + ".");

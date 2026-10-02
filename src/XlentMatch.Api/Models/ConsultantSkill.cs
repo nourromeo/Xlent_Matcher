@@ -4,19 +4,18 @@ namespace XlentMatch.Api.Models;
 
 public class ConsultantSkill
 {
-    private string _inputName = "";
+    private string _name = "";
     private string? _inputCategory;
 
     public int Id { get; set; }
     public int ConsultantId { get; set; }
-    public int SkillId { get; set; }
+    public int? SkillId { get; set; }
     public Skill? Skill { get; set; }
 
-    [NotMapped]
     public string Name
     {
-        get => Skill?.CanonicalName ?? _inputName;
-        set => _inputName = value;
+        get => Skill?.CanonicalName ?? _name;
+        set => _name = value;
     }
 
     [NotMapped]

@@ -3,15 +3,18 @@ import type { AssignmentApi, Consultant } from "../types";
 
 export type RequirementDraft = {
   name: string;
-  category: "Skill" | "HumanLanguage";
+  category: "Skill" | "HumanLanguage" | "Seniority";
   type: "Mandatory" | "Desired";
   minYears: number | null;
   minLevel: number | null;
-  requiresFluency: boolean;
+  proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" | null;
 };
 
 export type RequirementExtractionResult = {
   seniority: string | null;
+  seniorityMatchMode?: "Exact" | "Minimum" | "Range" | null;
+  minimumSeniority?: string | null;
+  maximumSeniority?: string | null;
   minYearsExperience: number | null;
   availability: string | null;
   requiredStartDate: string | null;
@@ -27,16 +30,15 @@ export type ConsultantDraft = {
   title: string | null;
   summary: string | null;
   seniority: string | null;
+  suggestedSeniority: string | null;
   yearsOfExperience: number | null;
   yearsOfExperienceSource: string | null;
-  availableFromDate: string | null;
-  availability: string | null;
   office: string | null;
   skills: Array<{ name: string; level: number; years: number; evidence: string | null }>;
   experiences: Array<{ company: string; role: string; description: string | null; startDate: string | null; endDate: string | null }>;
   projects: Array<{ name: string; description: string | null; technologies: string | null }>;
   education: Array<{ degree: string; school: string | null; year: string | null }>;
-  languages: Array<{ name: string; level: "Basic" | "Intermediate" | "Fluent" | null; sourceLevel: string | null }>;
+  languages: Array<{ name: string; proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" }>;
   industries: string[];
   certifications: Array<{ name: string; issuer: string | null; issuedDate: string | null }>;
   sourceText: string | null;
@@ -76,10 +78,9 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
     title: consultant.title,
     summary: consultant.summary,
     seniority: consultant.seniority,
+    suggestedSeniority: null,
     yearsOfExperience: consultant.yearsOfExperience,
     yearsOfExperienceSource: consultant.yearsOfExperienceSource,
-    availableFromDate: consultant.availableFromDate,
-    availability: consultant.availability,
     office: consultant.office,
     skills: consultant.skills.map((item) => ({
       name: item.name,
@@ -104,7 +105,7 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
       school: item.school,
       year: item.year,
     })),
-    languages: consultant.languages.map((item) => ({ name: item.name, level: item.level, sourceLevel: item.sourceLevel ?? null })),
+    languages: consultant.languages.map((item) => ({ name: item.name, proficiency: item.proficiency })),
     industries: consultant.industries.map((item) => item.name),
     certifications: consultant.certifications.map((item) => ({
       name: item.name,
@@ -131,7 +132,7 @@ export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssig
       type: item.type,
       minYears: item.minYears,
       minLevel: item.minLevel,
-      requiresFluency: item.requiresFluency,
+      proficiency: item.proficiency,
     })),
   };
 }

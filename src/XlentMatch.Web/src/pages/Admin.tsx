@@ -7,7 +7,7 @@ import { DataTable } from "../components/ui/DataTable";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { SkillEditModal } from "../components/SkillEditModal";
-import { adminApi, type AdminOverview, type AdminSkill } from "../services/adminApi";
+import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion } from "../services/adminApi";
 
 const ADMIN_TABS = ["taxonomy", "weights", "flags"] as const;
 
@@ -16,6 +16,7 @@ export default function Admin() {
   const TABS = ADMIN_TABS.map((id) => ({ id, label: t(`tab_${id}` as any) }));
 
   const [tab, setTab] = useState("taxonomy");
+  const [taxonomyTab, setTaxonomyTab] = useState<"catalog" | "suggestions">("catalog");
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -23,13 +24,16 @@ export default function Admin() {
   const [error, setError] = useState("");
   const [skillPage, setSkillPage] = useState(1);
   const [editingSkill, setEditingSkill] = useState<AdminSkill | null>(null);
+  const [reviewingSuggestion, setReviewingSuggestion] = useState<{ id: number; name: string; category: string; occurrences: number } | null>(null);
+  const [suggestionCanonical, setSuggestionCanonical] = useState("");
+  const [suggestionCategory, setSuggestionCategory] = useState("");
+  const [suggestionAliases, setSuggestionAliases] = useState("");
   const [skillModalMode, setSkillModalMode] = useState<"add" | "edit">("edit");
   const [editCanonical, setEditCanonical] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editAliases, setEditAliases] = useState("");
   const [savingSkill, setSavingSkill] = useState(false);
-  const [weightValues, setWeightValues] = useState<Record<string, number>>({});
-  const [missingPenalty, setMissingPenalty] = useState(10);
+  const [weightValues, setWeightValues] = useState<Record<string, string>>({});
   const [savingWeights, setSavingWeights] = useState(false);
   const skillsPerPage = 10;
 
@@ -41,8 +45,7 @@ export default function Admin() {
       .then((data) => {
         if (!cancelled) {
           setOverview(data);
-          setWeightValues(Object.fromEntries(data.matchingFactors.map((factor) => [factor.key, factor.value])));
-          setMissingPenalty(data.missingMandatoryPenalty);
+          setWeightValues(Object.fromEntries(data.matchingFactors.map((factor) => [factor.key, String(factor.value)])));
         }
       })
       .catch((requestError: unknown) => {
@@ -62,7 +65,7 @@ export default function Admin() {
   const skills = overview?.skills ?? [];
   const factors = overview?.matchingFactors ?? [];
   const capabilities = overview?.capabilities ?? [];
-  const pendingLanguages = overview?.pendingLanguages ?? [];
+  const suggestions = overview?.suggestions ?? [];
 
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(skills.map((skill) => skill.category))).sort()],
@@ -113,15 +116,16 @@ export default function Admin() {
     setError("");
   };
 
-  const reviewLanguage = async (id: number, approve: boolean) => {
+  const reviewSuggestion = async (approve: boolean) => {
+    if (!reviewingSuggestion) return;
     setError("");
     try {
-      if (approve) await adminApi.approveLanguage(id);
-      else await adminApi.dismissLanguage(id);
-      setOverview((current) => current ? { ...current, pendingLanguages: current.pendingLanguages.filter((item) => item.id !== id) } : current);
-      if (approve) setOverview(await adminApi.getOverview());
+      if (approve) await adminApi.approveSuggestion(reviewingSuggestion.id, { canonicalName: suggestionCanonical, category: suggestionCategory, aliases: suggestionAliases.split(",").map((item) => item.trim()).filter(Boolean) });
+      else await adminApi.dismissSuggestion(reviewingSuggestion.id);
+      setOverview(await adminApi.getOverview());
+      setReviewingSuggestion(null);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not review language.");
+          setError(requestError instanceof Error ? requestError.message : "Could not review suggestion.");
     }
   };
 
@@ -172,16 +176,31 @@ export default function Admin() {
     }
   };
 
+  const deleteSkill = async (skill: AdminSkill) => {
+    if (!window.confirm(`Delete taxonomy entry '${skill.canonical}'?`)) return;
+    setError("");
+    try {
+      await adminApi.deleteSkill(skill.id);
+      setOverview((current) => current ? { ...current, skills: current.skills.filter((item) => item.id !== skill.id) } : current);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not delete taxonomy entry.");
+    }
+  };
+
   const editableFactors = factors.map((factor) => ({
     ...factor,
-    value: weightValues[factor.key] ?? factor.value,
+    value: weightValues[factor.key] ?? String(factor.value),
   }));
-  const total = editableFactors.reduce((sum, factor) => sum + factor.value, 0);
-  const ok = total === 100;
+  const numericWeights = editableFactors.map((factor) => Number(factor.value));
+  const ok = editableFactors.every((factor, index) =>
+    factor.value.length > 0 && /^\d+$/.test(factor.value) && Number.isInteger(numericWeights[index]) && numericWeights[index] > 0,
+  );
+  const mandatoryWeight = Number(weightValues.mandatory);
+  const desiredWeight = Number(weightValues.desired);
 
   const saveWeights = async () => {
     if (!ok) {
-      setError("Matching weights must total 100%.");
+      setError("Requirement weights must be positive integers.");
       return;
     }
 
@@ -190,14 +209,11 @@ export default function Admin() {
 
     try {
       const updated = await adminApi.updateMatchingWeights({
-        mandatoryWeight: weightValues.mandatory ?? 0,
-        desiredWeight: weightValues.desired ?? 0,
-        experienceWeight: weightValues.experience ?? 0,
-        missingMandatoryPenalty: missingPenalty,
+        mandatoryRequirementWeight: mandatoryWeight,
+        desiredRequirementWeight: desiredWeight,
       });
       setOverview(updated);
-      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, factor.value])));
-      setMissingPenalty(updated.missingMandatoryPenalty);
+      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, String(factor.value)])));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save matching weights.");
     } finally {
@@ -212,8 +228,7 @@ export default function Admin() {
     try {
       const updated = await adminApi.resetMatchingWeights();
       setOverview(updated);
-      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, factor.value])));
-      setMissingPenalty(updated.missingMandatoryPenalty);
+      setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, String(factor.value)])));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not reset matching weights.");
     } finally {
@@ -234,9 +249,9 @@ export default function Admin() {
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: t("admin_skills_count"), value: loading ? "—" : skills.length },
-            { label: t("admin_matching_factors"), value: loading ? "—" : factors.length },
-            { label: t("admin_feature_flags"), value: loading ? "—" : capabilities.length },
+            { label: t("admin_skills_count"), value: loading || error ? "—" : skills.length },
+            { label: t("admin_matching_factors"), value: loading || error ? "—" : factors.length },
+            { label: t("admin_feature_flags"), value: loading || error ? "—" : capabilities.length },
           ].map((item) => (
             <div key={item.label} className="bg-app-surface border border-app rounded-lg px-4 py-3" style={{ boxShadow: "var(--shadow-surface)" }}>
               <p className="text-[10px] uppercase tracking-wide text-app-faint">{item.label}</p>
@@ -247,28 +262,47 @@ export default function Admin() {
 
         <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
-                {tab === "taxonomy" && pendingLanguages.length > 0 && (
+        {tab === "taxonomy" && (
+          <div className="flex gap-2 border-b border-app">
+            <button type="button" onClick={() => setTaxonomyTab("catalog")} className={`px-3 py-2 text-xs ${taxonomyTab === "catalog" ? "text-app-primary border-b-2 border-app-brand" : "text-app-muted"}`}>Catalog ({skills.length})</button>
+            <button type="button" onClick={() => setTaxonomyTab("suggestions")} className={`px-3 py-2 text-xs ${taxonomyTab === "suggestions" ? "text-app-primary border-b-2 border-app-brand" : "text-app-muted"}`}>Suggestions ({suggestions.length})</button>
+          </div>
+        )}
+
+                {tab === "taxonomy" && taxonomyTab === "suggestions" && (
           <section className="bg-app-surface border border-app rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--shadow-surface)" }}>
             <div>
-              <h2 className="text-xs font-semibold text-app-primary">Language suggestions for review</h2>
-              <p className="text-[11px] text-app-muted mt-1">Unrecognized CV and assignment language names stay outside the approved taxonomy until reviewed.</p>
+              <h2 className="text-xs font-semibold text-app-primary">Taxonomy suggestions ({suggestions.length})</h2>
+              <p className="text-[11px] text-app-muted mt-1">Unrecognized extracted terms remain outside the approved catalog until reviewed.</p>
             </div>
-            {pendingLanguages.map((item) => (
-              <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-t border-app pt-3">
-                <div>
-                  <p className="text-xs font-medium text-app-primary">{item.name}</p>
-                  <p className="text-[10px] text-app-muted">Seen {item.occurrences} time(s)</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" onClick={() => void reviewLanguage(item.id, false)}>Dismiss</Button>
-                  <Button variant="primary" onClick={() => void reviewLanguage(item.id, true)}>Approve as language</Button>
-                </div>
-              </div>
-            ))}
+            <DataTable<AdminSuggestion>
+              columns={[
+                { key: "name", header: "Suggestion", render: (item) => <span className="font-mono font-medium text-app-primary">{item.name}</span> },
+                { key: "category", header: "Suggested category", render: (item) => <span className="text-app-secondary">{item.category}</span> },
+                { key: "occurrences", header: "Seen", render: (item) => <span className="font-mono">{item.occurrences}</span> },
+                { key: "action", header: "Action", render: (item) => <Button variant="primary" onClick={() => { setReviewingSuggestion(item); setSuggestionCanonical(item.name); setSuggestionCategory(item.category); setSuggestionAliases(""); }}>Review</Button> },
+              ]}
+              rows={suggestions}
+              rowKey={(item) => String(item.id)}
+              emptyMessage="No taxonomy suggestions to review."
+            />
           </section>
         )}
 
-{tab === "taxonomy" && (
+        {reviewingSuggestion && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-md rounded-lg border border-app bg-app-surface p-5 space-y-4">
+              <h2 className="text-sm font-semibold text-app-primary">Review taxonomy suggestion</h2>
+              <p className="text-[11px] text-app-muted">Found {reviewingSuggestion.occurrences} times</p>
+              <input value={suggestionCanonical} onChange={(event) => setSuggestionCanonical(event.target.value)} placeholder="Canonical name" className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
+              <select value={suggestionCategory} onChange={(event) => setSuggestionCategory(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option>Unclassified</option><option>Human language</option><option>Language</option><option>Framework</option><option>Database</option><option>Messaging</option><option>Cloud</option><option>AI/ML</option><option>Backend</option></select>
+              <input value={suggestionAliases} onChange={(event) => setSuggestionAliases(event.target.value)} placeholder="Aliases, comma separated" className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
+              <div className="flex justify-between gap-2"><Button variant="ghost" onClick={() => void reviewSuggestion(false)}>Dismiss suggestion</Button><div className="flex gap-2"><Button variant="ghost" onClick={() => setReviewingSuggestion(null)}>Cancel</Button><Button variant="primary" onClick={() => void reviewSuggestion(true)}>Approve</Button></div></div>
+            </div>
+          </div>
+        )}
+
+{tab === "taxonomy" && taxonomyTab === "catalog" && (
           <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
             <div className="flex items-end justify-between gap-4 px-4 py-3 border-b border-app">
               <div className="flex items-end gap-2 flex-1">
@@ -351,8 +385,8 @@ export default function Admin() {
                         {t("admin_edit")}
                       </Button>
                       <button
-                        disabled
-                        className="p-2 text-app-faint opacity-40 cursor-not-allowed"
+                        onClick={() => void deleteSkill(skill)}
+                        className="p-2 text-app-faint hover:text-app-secondary"
                         aria-label={t("common_delete") + " " + skill.canonical}
                       >
                         <Trash2 size={12} />
@@ -380,7 +414,7 @@ export default function Admin() {
                       className={
                         "min-w-7 h-7 px-2 rounded text-[11px] border " +
                         (page === currentSkillPage
-                          ? "bg-app-brand text-white border-transparent"
+                          ? "bg-app-brand text-app-on-brand border-transparent"
                           : "bg-app-surface text-app-secondary border-app")
                       }
                       aria-current={page === currentSkillPage ? "page" : undefined}
@@ -404,7 +438,7 @@ export default function Admin() {
                 color: ok ? "var(--color-success)" : "var(--color-warning)",
               }}
             >
-              <span>{t("admin_total_label")} <strong>{total}%</strong> {ok ? t("admin_ready_save") : t("admin_must_eq")}</span>
+              <span>{ok ? "Requirement weights are ready to save." : "Both requirement weights must be positive integers."}</span>
               <span className="text-app-muted">Backend configuration</span>
             </div>
 
@@ -425,37 +459,29 @@ export default function Admin() {
                     </div>
 
                     <input
-                      type="range"
-                      min={0}
-                      max={100}
+                      type="number"
+                      min={1}
                       value={factor.value}
                       onChange={(event) =>
                         setWeightValues((current) => ({
                           ...current,
-                          [factor.key]: Number(event.target.value),
+                          [factor.key]: event.target.value.replace(/^0+(?=\d)/, ""),
                         }))
                       }
                       disabled={savingWeights}
-                      className="w-40 accent-indigo-500"
+                      className="admin-weight-input w-20 rounded-md border border-app bg-app px-3 py-2 text-xs text-app-primary outline-none transition-colors focus:border-app-brand focus:ring-1 focus:ring-app-brand"
                     />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary flex items-center justify-between gap-4">
-              <span>
-                Missing mandatory penalty: <strong>{missingPenalty} points</strong> per missing mandatory requirement.
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={missingPenalty}
-                onChange={(event) => setMissingPenalty(Math.max(0, Math.min(100, Number(event.target.value))))}
-                disabled={savingWeights}
-                className="w-20 bg-app border border-app rounded-md px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand"
-              />
+            <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary space-y-2">
+              <p className="font-medium text-app-primary">How Match Score is calculated</p>
+              <p>Each matched Mandatory requirement receives the configured Mandatory weight. Each matched Desired requirement receives the configured Desired weight.</p>
+              <p className="font-mono">Match Score = (Matched Weighted Requirements / Total Weighted Requirements) × 100</p>
+              <p>Only requirements included in the assignment are used. Missing or unused categories receive no automatic points.</p>
+              <p>Example: 3 Mandatory + 2 Desired. Total = (3 × {weightValues.mandatory || 0}) + (2 × {weightValues.desired || 0}) = {mandatoryWeight * 3 + desiredWeight * 2}. Matching 2 Mandatory + 2 Desired gives {(mandatoryWeight * 2 + desiredWeight * 2)} / {(mandatoryWeight * 3 + desiredWeight * 2)} × 100 = {((mandatoryWeight * 2 + desiredWeight * 2) / Math.max(1, mandatoryWeight * 3 + desiredWeight * 2) * 100).toFixed(2)}%.</p>
             </div>
 
             <div className="flex items-center justify-between">

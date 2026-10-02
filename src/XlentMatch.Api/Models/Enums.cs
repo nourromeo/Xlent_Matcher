@@ -6,6 +6,13 @@ public enum RequirementType
     Desired = 2
 }
 
+public enum SeniorityMatchMode
+{
+    Exact = 1,
+    Minimum = 2,
+    Range = 3
+}
+
 public enum AssignmentStatus
 {
     Draft = 1,

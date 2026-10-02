@@ -42,6 +42,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
             .Where(r => !string.IsNullOrWhiteSpace(r.Name))
             .ToList();
 
+        EnsureLegacySeniorityRequirement(assignment);
+
         if (assignment.Requirements.Count == 0)
             return BadRequest("At least one assignment requirement is required.");
 
@@ -56,11 +58,13 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         {
             requirement.Id = 0;
             requirement.AssignmentId = 0;
-            requirement.SkillId = 0;
+            requirement.SkillId = string.Equals(requirement.Category, "Seniority", StringComparison.OrdinalIgnoreCase) ? null : 0;
             requirement.Skill = null;
         }
 
         await skills.NormalizeRequirementsAsync(assignment.Requirements, ct);
+        var duplicateError = ValidateDuplicateRequirements(assignment.Requirements);
+        if (duplicateError is not null) return BadRequest(duplicateError);
 
         db.Assignments.Add(assignment);
         await db.SaveChangesAsync(ct);
@@ -96,10 +100,14 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
                 Type = requirement.Type,
                 MinYears = requirement.MinYears,
                 MinLevel = requirement.MinLevel,
-                RequiresFluency = requirement.RequiresFluency,
+                Proficiency = requirement.Proficiency,
+                MatchMode = requirement.MatchMode,
+                MaximumSeniority = requirement.MaximumSeniority,
                 Category = requirement.Category
             })
             .ToList();
+
+        EnsureLegacySeniorityRequirement(input);
 
         if (input.Requirements.Count == 0)
             return BadRequest("At least one assignment requirement is required.");
@@ -108,6 +116,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         if (validation is not null) return BadRequest(validation);
 
         await skills.NormalizeRequirementsAsync(input.Requirements, ct);
+        var duplicateError = ValidateDuplicateRequirements(input.Requirements);
+        if (duplicateError is not null) return BadRequest(duplicateError);
 
         existing.CustomerName = input.CustomerName.Trim();
         existing.Title = input.Title.Trim();
@@ -139,16 +149,72 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         foreach (var requirement in requirements)
         {
             if (requirement.MinYears < 0) return $"Minimum years for '{requirement.Name}' cannot be negative.";
+            if (string.Equals(requirement.Category, "Seniority", StringComparison.OrdinalIgnoreCase))
+            {
+                if (requirement.MatchMode == SeniorityMatchMode.Range && string.IsNullOrWhiteSpace(requirement.MaximumSeniority))
+                    return "A Seniority range requires a maximum Seniority.";
+                if (SeniorityLevel(requirement.Name) is null || (requirement.MatchMode == SeniorityMatchMode.Range && SeniorityLevel(requirement.MaximumSeniority) is null))
+                    return $"Seniority requirement '{requirement.Name}' is invalid.";
+                if (requirement.MatchMode == SeniorityMatchMode.Range && SeniorityLevel(requirement.Name) > SeniorityLevel(requirement.MaximumSeniority))
+                    return "Minimum Seniority cannot be higher than maximum Seniority.";
+                continue;
+            }
             var isLanguage = string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase);
             var maximumLevel = 5;
-            if (isLanguage && requirement.MinLevel is not null)
-                return $"Language '{requirement.Name}' cannot use a numeric proficiency level. Use RequiresFluency instead.";
+            if (isLanguage && requirement.Proficiency is not null && !HumanLanguageProficiency.Values.Contains(requirement.Proficiency))
+                return $"Language '{requirement.Name}' has an invalid proficiency level.";
             if (requirement.MinLevel is < 1 || requirement.MinLevel > maximumLevel)
                 return $"Minimum level for '{requirement.Name}' must be between 1 and {maximumLevel}.";
             if (string.Equals(requirement.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase) && requirement.MinYears is not null)
                 return $"Minimum skill years cannot be set for human language '{requirement.Name}'.";
         }
         return null;
+    }
+
+    private static string? ValidateDuplicateRequirements(IEnumerable<AssignmentRequirement> requirements)
+    {
+        var duplicate = requirements
+            .GroupBy(requirement => RequirementKey(requirement), StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        return duplicate is null
+            ? null
+            : $"Duplicate assignment requirement '{duplicate.First().Name}' is not allowed.";
+    }
+
+    private static string RequirementKey(AssignmentRequirement requirement)
+    {
+        var identity = requirement.SkillId is not null
+            ? $"skill:{requirement.SkillId}"
+            : $"{requirement.Category}:{Normalize(requirement.Name)}";
+        return string.Join("|", identity, requirement.Type, requirement.MinYears, requirement.MinLevel,
+            Normalize(requirement.Proficiency), requirement.MatchMode, Normalize(requirement.MaximumSeniority));
+    }
+
+    private static string Normalize(string? value) =>
+        string.Join(" ", (value ?? "").Trim().ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+    private static int? SeniorityLevel(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "junior" => 1,
+        "mid" => 2,
+        "senior" => 3,
+        "staff" => 4,
+        _ => null
+    };
+
+    private static void EnsureLegacySeniorityRequirement(Assignment assignment)
+    {
+        if (string.IsNullOrWhiteSpace(assignment.Seniority) ||
+            assignment.Requirements.Any(r => string.Equals(r.Category, "Seniority", StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        assignment.Requirements.Add(new AssignmentRequirement
+        {
+            Name = assignment.Seniority.Trim(),
+            Category = "Seniority",
+            Type = RequirementType.Mandatory,
+            MatchMode = SeniorityMatchMode.Exact
+        });
     }
 
     [HttpDelete("{id:int}")]

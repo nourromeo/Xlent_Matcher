@@ -11,9 +11,8 @@ public class Consultant
     public string? Seniority { get; set; }
     public int? YearsOfExperience { get; set; }
     public string? YearsOfExperienceSource { get; set; }
-    public DateOnly? AvailableFromDate { get; set; }
-    public DateTime? AvailabilityConfirmedAt { get; set; }
-    public string? Availability { get; set; }
+    public DateOnly? AvailableAgainDate { get; set; }
+    public string Availability { get; set; } = ConsultantAvailability.Available;
     public string? Office { get; set; }
     public string? OriginalCvText { get; set; }
 
@@ -26,4 +25,10 @@ public class Consultant
     public List<Certification> Certifications { get; set; } = new();
 
     public string FullName => $"{FirstName} {LastName}".Trim();
+}
+
+public static class ConsultantAvailability
+{
+    public const string Available = "Available";
+    public const string Unavailable = "Unavailable";
 }

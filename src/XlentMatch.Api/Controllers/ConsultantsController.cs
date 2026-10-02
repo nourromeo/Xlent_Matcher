@@ -8,18 +8,22 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/consultants")]
-public class ConsultantsController(AppDbContext db, SkillNormalizationService skills) : ControllerBase
+public class ConsultantsController(AppDbContext db, SkillNormalizationService skills, ConsultantAvailabilityService availability) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<Consultant>>> GetAll(CancellationToken ct) =>
-        await db.Consultants
+    public async Task<ActionResult<List<Consultant>>> GetAll(CancellationToken ct)
+    {
+        await availability.ResolveExpiredAsync(ct);
+        return await db.Consultants
             .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .AsNoTracking()
             .ToListAsync(ct);
+    }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Consultant>> GetById(int id, CancellationToken ct)
     {
+        await availability.ResolveExpiredAsync(ct);
         var consultant = await LoadFull(id, ct);
         return consultant is null ? NotFound() : consultant;
     }
@@ -55,7 +59,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         }
 
         consultant.Id = 0;
-        consultant.AvailabilityConfirmedAt = consultant.AvailableFromDate is not null || !string.IsNullOrWhiteSpace(consultant.Availability) ? DateTime.UtcNow : null;
+        consultant.Availability = NormalizeAvailability(consultant.Availability);
 
         foreach (var skill in consultant.Skills) { skill.Id = 0; skill.ConsultantId = 0; }
         foreach (var experience in consultant.Experiences) { experience.Id = 0; experience.ConsultantId = 0; }
@@ -99,8 +103,8 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.YearsOfExperience = input.YearsOfExperience;
         existing.YearsOfExperienceSource = input.YearsOfExperienceSource;
         existing.Availability = input.Availability;
-        existing.AvailableFromDate = input.AvailableFromDate;
-        existing.AvailabilityConfirmedAt = input.AvailableFromDate is not null || !string.IsNullOrWhiteSpace(input.Availability) ? DateTime.UtcNow : null;
+        existing.AvailableAgainDate = input.AvailableAgainDate;
+        existing.Availability = NormalizeAvailability(input.Availability);
         existing.Office = input.Office;
         existing.OriginalCvText = input.OriginalCvText;
 
@@ -156,9 +160,15 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
             .Include(c => c.Education)
             .Include(c => c.Languages)
             .Include(c => c.Industries)
-            .Include(c => c.Certifications);
+            .Include(c => c.Certifications)
+            .AsSplitQuery();
 
         if (!track) query = query.AsNoTracking();
         return query.FirstOrDefaultAsync(c => c.Id == id, ct);
     }
+
+    private static string NormalizeAvailability(string? value) =>
+        string.Equals(value, ConsultantAvailability.Unavailable, StringComparison.OrdinalIgnoreCase)
+            ? ConsultantAvailability.Unavailable
+            : ConsultantAvailability.Available;
 }

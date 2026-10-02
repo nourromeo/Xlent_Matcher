@@ -11,10 +11,10 @@ type LinkButtonProps = Omit<LinkProps, "className"> & {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-app-brand text-white hover:opacity-90",
+  primary: "bg-app-brand text-app-on-brand hover:opacity-90",
   secondary: "border border-app text-app-secondary hover:text-app-primary",
   ghost: "text-app-secondary hover:text-app-primary hover:bg-app-raised",
-  danger: "bg-red-600 text-white hover:opacity-90",
+  danger: "bg-app-danger text-app-on-brand hover:opacity-90",
 };
 
 export function LinkButton({ variant = "secondary", icon, children, className = "", ...props }: LinkButtonProps) {
