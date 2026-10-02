@@ -464,7 +464,7 @@ export default function Admin() {
                         }))
                       }
                       disabled={savingWeights}
-                      className="w-40 accent-indigo-500"
+                      className="admin-weight-input w-20 rounded-md border border-app bg-app px-3 py-2 text-xs text-app-primary outline-none transition-colors focus:border-app-brand focus:ring-1 focus:ring-app-brand"
                     />
                   </div>
                 </div>
