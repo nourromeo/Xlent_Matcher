@@ -21,6 +21,19 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void AdaptationSchemaKeepsAllGeneratedFieldsAndArraysStringTyped()
+    {
+        var schema = OpenAiTextService.AdaptationSchemaInstruction;
+
+        Assert.Contains("summary (string)", schema);
+        Assert.Contains("highlightedExperiences (array of strings)", schema);
+        Assert.Contains("adaptedCvText (string)", schema);
+        Assert.Contains("notes (array of strings)", schema);
+        Assert.Contains("Do not rename properties", schema);
+        Assert.Contains("Do not return objects inside highlightedExperiences or notes", schema);
+    }
+
+    [Fact]
     public async Task BootstrapCreatesOneActiveInitialVersion()
     {
         await using var fixture = await Fixture.CreateAsync();

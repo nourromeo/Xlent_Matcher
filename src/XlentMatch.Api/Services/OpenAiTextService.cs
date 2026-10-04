@@ -35,7 +35,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
 
     public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
     {
-        var system = await GetPromptAsync(PromptKeys.CvAdaptation, ct) + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale);
+        var system = await GetPromptAsync(PromptKeys.CvAdaptation, ct) + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
         var user = JsonSerializer.Serialize(new { assignment, consultant }, Json);
         return await AskForJsonAsync<CvAdaptationSuggestionDto>(system, user, ct);
     }
@@ -46,6 +46,10 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "es" => "Generate all user-facing prose fields in Spanish. Preserve names, companies, technologies, certifications and other factual CV data exactly; do not invent or translate technical data.",
         _ => "Generate all user-facing prose fields in English. Preserve names, companies, technologies, certifications and other factual CV data exactly; do not invent or translate technical data."
     };
+
+    public const string AdaptationSchemaInstruction =
+        "Return exactly one JSON object with exactly these properties: summary (string), highlightedExperiences (array of strings), adaptedCvText (string), and notes (array of strings). " +
+        "Do not rename properties. Do not return objects inside highlightedExperiences or notes; every item in both arrays must be a string. Change only textual values to the requested language, never the JSON structure or types.";
 
     private async Task<string> GetPromptAsync(string key, CancellationToken ct)
     {
@@ -82,6 +86,13 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
 
         using var doc = JsonDocument.Parse(raw);
         var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "{}";
-        return JsonSerializer.Deserialize<T>(content, Json) ?? new T();
+        try
+        {
+            return JsonSerializer.Deserialize<T>(content, Json) ?? new T();
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidOperationException("The AI service returned an invalid response format.", exception);
+        }
     }
 }
