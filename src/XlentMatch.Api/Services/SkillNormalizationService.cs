@@ -176,9 +176,10 @@ public class SkillNormalizationService(AppDbContext db)
             .Replace("Å", "A", StringComparison.Ordinal)
             .Replace("Ä", "A", StringComparison.Ordinal)
             .Replace("Ö", "O", StringComparison.Ordinal);
-        if (key is "BASIC" or "BEGINNER" or "ELEMENTARY" or "GRUNDLAGGANDE") return HumanLanguageProficiency.Low;
-        if (key is "INTERMEDIATE" or "CONVERSATIONAL" or "MEDEL" or "MEDELNIVA" or "GODA KUNSKAPER") return HumanLanguageProficiency.Medium;
-        if (key is "FLUENT" or "FLYTANDE" or "PROFICIENT") return HumanLanguageProficiency.High;
+        if (key is "NOT SPECIFIED" or "NOTSPECIFIED") return HumanLanguageProficiency.NotSpecified;
+        if (key is "LOW" or "BASIC" or "BEGINNER" or "ELEMENTARY" or "GRUNDLAGGANDE") return HumanLanguageProficiency.Low;
+        if (key is "MEDIUM" or "INTERMEDIATE" or "CONVERSATIONAL" or "MEDEL" or "MEDELNIVA" or "GODA KUNSKAPER") return HumanLanguageProficiency.Medium;
+        if (key is "HIGH" or "FLUENT" or "FLYTANDE" or "PROFICIENT") return HumanLanguageProficiency.High;
         if (key is "NATIVE" or "MODERSMAL" or "MOTHER TONGUE") return HumanLanguageProficiency.Native;
         return HumanLanguageProficiency.NotSpecified;
     }

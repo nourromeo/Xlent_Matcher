@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using XlentMatch.Api.Data;
+using XlentMatch.Api.Controllers;
+using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.Services;
 
 namespace XlentMatch.Api.Tests;
@@ -31,6 +33,52 @@ public class PromptServiceTests
         Assert.Contains("notes (array of strings)", schema);
         Assert.Contains("Do not rename properties", schema);
         Assert.Contains("Do not return objects inside highlightedExperiences or notes", schema);
+    }
+
+    [Fact]
+    public void AssignmentExtractionContractPreservesExplicitOverallMinimumAndUnspecifiedLanguages()
+    {
+        var schema = OpenAiTextService.AssignmentExtractionSchemaInstruction;
+
+        Assert.Contains("minYearsExperience", schema);
+        Assert.Contains("at least 5 years", schema);
+        Assert.Contains("skill-specific minYears", schema);
+        Assert.Contains("Not specified, Low, Medium, High, Native", schema);
+    }
+
+    [Fact]
+    public void AssignmentLanguageDisplayTextIsNormalizedToDomainValue()
+    {
+        var draft = new RequirementExtractionResultDto
+        {
+            MinYearsExperience = 5,
+            Requirements =
+            [
+                new() { Name = "Svenska", Category = "HumanLanguage", Proficiency = "Ej angivet" },
+                new() { Name = "English", Category = "HumanLanguage", Proficiency = "High" },
+                new() { Name = "React", Category = "Skill", Proficiency = "arbitrary" }
+            ]
+        };
+
+        ExtractionController.NormalizeLanguageRequirementProficiencies(draft);
+
+        Assert.Equal(5, draft.MinYearsExperience);
+        Assert.Equal("Not specified", draft.Requirements[0].Proficiency);
+        Assert.Equal("High", draft.Requirements[1].Proficiency);
+        Assert.Equal("arbitrary", draft.Requirements[2].Proficiency);
+    }
+
+    [Fact]
+    public void UnspecifiedLanguageProficiencyMayRemainNull()
+    {
+        var draft = new RequirementExtractionResultDto
+        {
+            Requirements = [new() { Name = "English", Category = "HumanLanguage", Proficiency = null }]
+        };
+
+        ExtractionController.NormalizeLanguageRequirementProficiencies(draft);
+
+        Assert.Null(draft.Requirements[0].Proficiency);
     }
 
     [Fact]

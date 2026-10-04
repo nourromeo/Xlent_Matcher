@@ -57,6 +57,7 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
         try
         {
             var draft = await ai.ExtractRequirementsAsync(input.Text!, ct);
+            NormalizeLanguageRequirementProficiencies(draft);
             draft.SourceText = input.Text;
             return draft;
         }
@@ -66,6 +67,16 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
                 statusCode: StatusCodes.Status502BadGateway,
                 title: "AI service unavailable",
                 detail: "The AI service could not process the assignment requirements right now. Try again shortly.");
+        }
+    }
+
+    public static void NormalizeLanguageRequirementProficiencies(RequirementExtractionResultDto draft)
+    {
+        foreach (var requirement in draft.Requirements.Where(item => string.Equals(item.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase)))
+        {
+            requirement.Proficiency = string.IsNullOrWhiteSpace(requirement.Proficiency)
+                ? null
+                : SkillNormalizationService.NormalizeLanguageProficiency(requirement.Proficiency);
         }
     }
 

@@ -29,9 +29,12 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     {
         var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
         var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
-        var system = (await GetPromptAsync(PromptKeys.AssignmentExtraction, ct)).Replace("{{today}}", today, StringComparison.Ordinal);
+        var system = (await GetPromptAsync(PromptKeys.AssignmentExtraction, ct)).Replace("{{today}}", today, StringComparison.Ordinal) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + AssignmentExtractionSchemaInstruction;
         return await AskForJsonAsync<RequirementExtractionResultDto>(system, text, ct);
     }
+
+    public const string AssignmentExtractionSchemaInstruction =
+        "For minYearsExperience, extract an explicit overall minimum experience requirement when the source states one, such as 'at least 5 years of experience', and return the numeric value 5. If no explicit overall minimum is stated, return null. Keep skill-specific minYears on the corresponding skill requirement and do not copy it to minYearsExperience. For HumanLanguage requirements, proficiency must be exactly null or one of: Not specified, Low, Medium, High, Native. Use null or Not specified when the source does not provide a proficiency that can be represented by those values; never return display translations or CEFR levels.";
 
     public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
     {

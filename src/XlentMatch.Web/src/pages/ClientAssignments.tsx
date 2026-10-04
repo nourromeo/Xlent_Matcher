@@ -41,7 +41,8 @@ const emptyRequirement = (
 export function NewAssignmentPage() {
   const navigate = useNavigate();
   const { t, locale } = useI18n();
-  const [step, setStep] = useState<"input" | "review">("input");
+  const [step, setStep] = useState<"input" | "basic" | "requirements" | "review">("input");
+  const [aiExtracted, setAiExtracted] = useState(false);
   const [title, setTitle] = useState("");
   const [client, setClient] = useState("");
   const [brief, setBrief] = useState("");
@@ -93,7 +94,8 @@ export function NewAssignmentPage() {
       if (extracted.location) setLocation(extracted.location);
       if (extracted.minYearsExperience !== null) setMinYears(extracted.minYearsExperience);
 
-      setStep("review");
+      setAiExtracted(true);
+      setStep("basic");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : t("client_extract_error"));
     } finally {
@@ -172,6 +174,14 @@ export function NewAssignmentPage() {
     <div className="h-full overflow-auto">
       <div className="p-6 space-y-5">
         <PageHeader title={t("assignment_create_title")} description={t("assignment_create_description")} actions={<Button onClick={() => navigate("/client-assignments")} variant="ghost">{t("assignment_modal_cancel")}</Button>} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {["input", "basic", "requirements", "review"].map((stepKey, index) => {
+            const active = step === stepKey;
+            const completed = ["basic", "requirements", "review"].indexOf(step) > index - 1;
+            const label = stepKey === "input" ? t("assignment_step_source") : stepKey === "basic" ? t("assignment_step_basic") : stepKey === "requirements" ? t("assignment_step_requirements") : t("assignment_step_review");
+            return <div key={stepKey} className={`rounded-lg border px-3 py-2 text-xs ${active ? "border-app-brand bg-app-brand-soft text-app-primary" : completed ? "border-app text-app-secondary" : "border-app text-app-muted"}`}><span className="font-semibold">{index + 1}</span><span className="ml-2">{label}</span></div>;
+          })}
+        </div>
       {step === "input" ? (
         <div className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
           <label className="block">
@@ -212,7 +222,7 @@ export function NewAssignmentPage() {
           <div className="flex justify-end gap-2">
             <Button onClick={() => navigate("/client-assignments")} variant="ghost">{t("assignment_modal_cancel")}</Button>
             <Button
-              onClick={() => { setRequirements([]); setStep("review"); setError(""); }}
+              onClick={() => { setRequirements([]); setAiExtracted(false); setStep("basic"); setError(""); }}
               variant="secondary"
               disabled={!title.trim() || !client.trim() || extracting}
             >
@@ -237,7 +247,10 @@ export function NewAssignmentPage() {
             </details>
           )}
 
-          <div className="grid md:grid-cols-2 gap-3">
+          {step === "basic" && <>
+          {aiExtracted && <div className="rounded-lg border border-app bg-app-raised px-3 py-2 text-xs text-app-secondary">{t("assignment_ai_review_indicator")}</div>}
+          <h2 className="text-sm font-medium text-app-primary">{t("assignment_step_basic")}</h2>
+          <div className="grid md:grid-cols-2 gap-4">
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_seniority")}</span>
               <select value={seniority} onChange={(event) => setSeniority(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("common_not_specified")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>
@@ -258,8 +271,16 @@ export function NewAssignmentPage() {
               <Input type="number" min={0} value={minYears} onChange={(event) => setMinYears(Number(event.target.value) || 0)} />
             </label>
           </div>
+          <div className="flex justify-end gap-2"><Button onClick={() => setStep("input")} variant="ghost">{t("assignment_modal_back")}</Button><Button onClick={() => setStep("requirements")} variant="primary">{t("common_next")}</Button></div>
+          </>}
 
-          <div className="space-y-2 max-h-72 overflow-auto">
+          {step === "requirements" && <>
+          <h2 className="text-sm font-medium text-app-primary">{t("assignment_step_requirements")}</h2>
+          <p className="text-xs text-app-muted">{t("assignment_requirements_review_help")}</p>
+          {aiExtracted && <div className="rounded-lg border border-app bg-app-raised px-3 py-2 text-xs text-app-secondary">{t("assignment_ai_review_indicator")}</div>}
+          {brief.trim() && <details className="rounded-lg border border-app bg-app-surface px-3 py-2"><summary className="cursor-pointer text-xs text-app-secondary">{t("client_view_source")}</summary><pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words text-[11px] text-app-muted">{brief}</pre></details>}
+          <div className="hidden md:grid grid-cols-[minmax(130px,1fr)_100px_110px_minmax(100px,auto)_30px] gap-2 text-[10px] uppercase tracking-wide text-app-faint"><span>{t("client_requirement_name")}</span><span>{t("client_requirement_category")}</span><span>{t("client_requirement_priority")}</span><span>{t("assignment_years")}</span><span /></div>
+          <div className="space-y-2">
             {requirements.map((requirement, index) => (
               <div key={index} className="grid grid-cols-[minmax(130px,1fr)_100px_110px_minmax(100px,auto)_30px] gap-2 items-center">
                 <Input
@@ -305,15 +326,17 @@ export function NewAssignmentPage() {
           >
             {t("client_add_requirement")}
           </Button>
+          <div className="flex justify-end gap-2"><Button onClick={() => setStep("basic")} variant="ghost">{t("assignment_modal_back")}</Button><Button onClick={() => setStep("review")} variant="primary">{t("common_next")}</Button></div>
+          </>}
 
+          {step === "review" && <>
+            <h2 className="text-sm font-medium text-app-primary">{t("assignment_step_review")}</h2>
+            <p className="text-xs text-app-muted">{t("assignment_review_description")}</p>
+            <div className="rounded-lg border border-app bg-app-raised p-4"><h3 className="text-sm font-medium text-app-primary">{title}</h3><p className="text-xs text-app-muted mt-1">{client}</p></div>
+            <div className="grid md:grid-cols-2 gap-4"><div className="rounded-lg border border-app bg-app-raised p-4"><h3 className="text-xs font-medium text-app-primary mb-3">{t("assignment_step_basic")}</h3><div className="space-y-1 text-xs text-app-secondary"><p>{t("assignment_seniority")}: {seniority || t("common_not_specified")}</p><p>{t("client_seniority_matching")}: {seniorityMatchMode}</p><p>{t("assignment_availability")}: {availability || t("common_not_specified")}</p><p>{t("client_work_location")}: {location || t("common_not_specified")}</p><p>{t("client_required_start_date")}: {requiredStartDate || t("common_not_specified")}</p><p>{t("client_minimum_experience")}: {minYears} {t("assignment_years")}</p></div></div><div className="rounded-lg border border-app bg-app-raised p-4"><h3 className="text-xs font-medium text-app-primary mb-3">{t("assignment_step_requirements")}</h3><div className="space-y-2"><p className="text-[10px] uppercase tracking-wide text-app-faint">{t("client_mandatory")}</p>{requirements.filter((item) => item.type === "Mandatory").map((item, index) => <p key={`required-${item.name}-${index}`} className="text-xs text-app-secondary">{item.name}</p>)}<p className="text-[10px] uppercase tracking-wide text-app-faint mt-3">{t("client_desired")}</p>{requirements.filter((item) => item.type === "Desired").map((item, index) => <p key={`desired-${item.name}-${index}`} className="text-xs text-app-secondary">{item.name}</p>)}</div></div></div>
+            <div className="flex justify-end gap-2"><Button onClick={() => setStep("requirements")} variant="ghost">{t("assignment_modal_back")}</Button><Button onClick={createAssignment} variant="primary" disabled={saving}>{saving ? t("client_saving") : t("client_create")}</Button></div>
+          </>}
           {error && <p className="text-xs text-app-secondary">{error}</p>}
-
-          <div className="flex justify-end gap-2">
-            <Button onClick={() => setStep("input")} variant="ghost">{t("assignment_modal_back")}</Button>
-            <Button onClick={createAssignment} variant="primary" disabled={saving}>
-              {saving ? t("client_saving") : t("client_create")}
-            </Button>
-          </div>
         </div>
       )}
       </div>

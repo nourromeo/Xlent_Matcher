@@ -6,6 +6,7 @@ const translations = {
   en: {
     // Nav
     nav_dashboard: "Dashboard",
+    assignment_step_source: "Source", assignment_step_basic: "Basic information", assignment_step_requirements: "Requirements", assignment_step_review: "Review & create", assignment_requirements_review_help: "Review and adjust the requirements before creating the assignment.", assignment_review_description: "Check and adjust the information before creating the assignment.", assignment_ai_review_indicator: "AI-extracted content. Review the information before creating the assignment.",
     assignment_paste_mode: "Paste text", assignment_upload_mode: "Upload file",
     assignment_create_title: "Create client assignment", assignment_create_description: "Add the customer's needs and requirements.",
     consultant_show_more: "Show more", consultant_show_less: "Show less", consultant_show_fewer: "Show fewer", consultant_show_all_languages: "Show all {count} languages", consultant_show_all_education: "Show all {count} education entries", consultant_show_all_industries: "Show all {count} industries", consultant_show_all_certifications: "Show all {count} certifications", consultant_show_all_experience: "Show all {count} experiences", consultant_show_all_projects: "Show all {count} projects",
@@ -397,6 +398,7 @@ const translations = {
   },
   es: {
     nav_dashboard: "Panel",
+    assignment_step_source: "Fuente", assignment_step_basic: "Datos básicos", assignment_step_requirements: "Requisitos", assignment_step_review: "Revisar y crear", assignment_requirements_review_help: "Revisa y ajusta los requisitos antes de crear la asignación.", assignment_review_description: "Comprueba y ajusta la información antes de crear la asignación.", assignment_ai_review_indicator: "Contenido extraído mediante IA. Revisa la información antes de crear la asignación.",
     assignment_paste_mode: "Pegar texto", assignment_upload_mode: "Cargar archivo",
     assignment_create_title: "Crear asignación de cliente", assignment_create_description: "Añade las necesidades y requisitos del cliente.",
     consultant_show_more: "Mostrar más", consultant_show_less: "Mostrar menos", consultant_show_fewer: "Mostrar menos", consultant_show_all_languages: "Mostrar los {count} idiomas", consultant_show_all_education: "Mostrar las {count} formaciones", consultant_show_all_industries: "Mostrar los {count} sectores", consultant_show_all_certifications: "Mostrar las {count} certificaciones", consultant_show_all_experience: "Mostrar las {count} experiencias", consultant_show_all_projects: "Mostrar los {count} proyectos",
@@ -777,6 +779,7 @@ const translations = {
   },
   sv: {
     nav_dashboard: "Översikt",
+    assignment_step_source: "Underlag", assignment_step_basic: "Grunduppgifter", assignment_step_requirements: "Krav", assignment_step_review: "Granska och skapa", assignment_requirements_review_help: "Granska och justera kraven innan kunduppdraget skapas.", assignment_review_description: "Kontrollera och justera informationen innan kunduppdraget skapas.", assignment_ai_review_indicator: "AI-extraherat innehåll. Granska uppgifterna innan kunduppdraget skapas.",
     assignment_paste_mode: "Klistra in", assignment_upload_mode: "Ladda upp",
     assignment_create_title: "Skapa kunduppdrag", assignment_create_description: "Lägg till kundens behov och krav.",
     consultant_show_more: "Visa mer", consultant_show_less: "Visa mindre", consultant_show_fewer: "Visa färre", consultant_show_all_languages: "Visa alla {count} språk", consultant_show_all_education: "Visa alla {count} utbildningar", consultant_show_all_industries: "Visa alla {count} branscher", consultant_show_all_certifications: "Visa alla {count} certifieringar", consultant_show_all_experience: "Visa alla {count} erfarenheter", consultant_show_all_projects: "Visa alla {count} projekt",
