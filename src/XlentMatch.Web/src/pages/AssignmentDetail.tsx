@@ -267,7 +267,7 @@ export default function AssignmentDetail() {
   const required = requirementNames(assignment, "Mandatory", "Skill");
   const preferred = requirementNames(assignment, "Desired", "Skill");
   const statusTone = assignment.status === "Done" ? "success" : "neutral";
-  const statusLabel = assignment.status;
+  const statusLabel = assignment.status === "Done" ? t("assignment_done") : assignment.status === "Closed" ? t("assignment_closed") : assignment.status === "Draft" ? t("assignment_draft") : assignment.status === "Matching" ? t("assignment_matching") : assignment.status;
 
   return (
     <div className="flex flex-col h-full">
@@ -358,12 +358,12 @@ export default function AssignmentDetail() {
 
           {assignment.requirements.some((requirement) => requirement.category === "HumanLanguage") && (
             <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-              <h2 className="text-sm font-medium text-app-primary mb-3">Human languages</h2>
+              <h2 className="text-sm font-medium text-app-primary mb-3">{t("assignment_human_languages")}</h2>
               <div className="space-y-2">
                 {assignment.requirements.filter((requirement) => requirement.category === "HumanLanguage").map((requirement) => (
                   <div key={requirement.id} className="flex items-center justify-between text-sm">
                     <span className="text-app-secondary">{requirement.name}</span>
-                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? "Required" : "Preferred"}{requirement.proficiency && requirement.proficiency !== "Not specified" ? ` · ${requirement.proficiency}` : ""}</span>
+                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? t("common_required") : t("assignment_preferred")}{requirement.proficiency && requirement.proficiency !== "Not specified" ? ` · ${requirement.proficiency}` : ""}</span>
                   </div>
                 ))}
               </div>

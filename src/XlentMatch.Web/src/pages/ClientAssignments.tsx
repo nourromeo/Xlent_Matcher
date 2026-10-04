@@ -70,7 +70,7 @@ function NewAssignmentModal({
 
   const extractRequirements = async () => {
     if (!canExtract) {
-      setError("Assignment title, customer and description are required before AI extraction.");
+      setError(t("client_fill_before_extract"));
       return;
     }
 
@@ -99,7 +99,7 @@ function NewAssignmentModal({
 
       setStep("review");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "AI extraction failed.");
+      setError(requestError instanceof Error ? requestError.message : t("client_extract_error"));
     } finally {
       setExtracting(false);
     }
@@ -119,7 +119,7 @@ function NewAssignmentModal({
 
   const createAssignment = async () => {
     if (!title.trim() || !client.trim()) {
-      setError("Assignment title and customer are required.");
+      setError(t("assignment_required_fields"));
       return;
     }
 
@@ -139,7 +139,7 @@ function NewAssignmentModal({
     const finalRequirements = seniorityRequirement ? [...cleanedRequirements, seniorityRequirement] : cleanedRequirements;
 
     if (finalRequirements.length === 0) {
-      setError("Add at least one requirement before creating the assignment.");
+      setError(t("assignment_requirements_required"));
       return;
     }
 
@@ -167,7 +167,7 @@ function NewAssignmentModal({
       onCreated(created);
       onClose();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not create assignment.");
+      setError(requestError instanceof Error ? requestError.message : t("client_create_error"));
     } finally {
       setSaving(false);
     }
@@ -179,18 +179,18 @@ function NewAssignmentModal({
         <div className="p-5 space-y-4">
           <label className="block">
             <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_name")} <span className="text-app-brand">*</span></span>
-            <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Payments Platform Modernisation" />
+            <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("client_assignment_title_placeholder")} />
           </label>
           <label className="block">
             <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_client")} <span className="text-app-brand">*</span></span>
-            <Input value={client} onChange={(event) => setClient(event.target.value)} placeholder="e.g. Nordic Financial Services" />
+            <Input value={client} onChange={(event) => setClient(event.target.value)} placeholder={t("client_assignment_client_placeholder")} />
           </label>
           <label className="block">
             <span className="text-[11px] text-app-muted mb-1.5 block">
-              {t("assignment_modal_brief")} <span className="text-app-brand">*</span> <span className="text-app-brand ml-1">AI extraction</span>
+              {t("assignment_modal_brief")} <span className="text-app-brand">*</span> <span className="text-app-brand ml-1">{t("client_ai_extraction")}</span>
             </span>
             <Textarea value={brief} onChange={(event) => { setBrief(event.target.value); setBriefFile(null); }} rows={6} placeholder={t("assignment_modal_brief_placeholder")} />
-            <span className="text-[10px] text-app-muted block mt-2">Or upload a PDF/TXT brief (max 10 MB)</span>
+            <span className="text-[10px] text-app-muted block mt-2">{t("client_upload_brief")}</span>
             <input
               type="file"
               accept=".pdf,.txt,application/pdf,text/plain"
@@ -204,12 +204,12 @@ function NewAssignmentModal({
                 if (file) setBrief("");
               }}
             />
-            {briefFile && <p className="text-[11px] text-app-secondary">Selected: {briefFile.name}</p>}
+            {briefFile && <p className="text-[11px] text-app-secondary">{t("client_selected")}: {briefFile.name}</p>}
           </label>
 
           {!canExtract && !error && (
             <p className="text-[10px] text-app-faint">
-              Fill in Assignment Title, Customer and Description before extracting requirements.
+              {t("client_fill_before_extract")}
             </p>
           )}
 
@@ -222,10 +222,10 @@ function NewAssignmentModal({
               variant="secondary"
               disabled={!title.trim() || !client.trim() || extracting}
             >
-              Enter requirements manually
+              {t("client_manual_requirements")}
             </Button>
             <Button onClick={extractRequirements} variant="primary" disabled={extracting || !canExtract} icon={<Sparkles size={12} />}>
-              {extracting ? "Extracting with AI..." : "Extract requirements"}
+              {extracting ? t("client_extracting") : t("client_extract_requirements")}
             </Button>
           </div>
         </div>
@@ -233,12 +233,12 @@ function NewAssignmentModal({
         <div className="p-5 space-y-4">
           <div className="rounded-lg border border-app bg-app-raised px-3 py-2">
             <p className="text-xs text-app-secondary">
-              Review and edit the extracted requirements before saving.
+              {t("client_review_requirements")}
             </p>
           </div>
           {brief.trim() && (
             <details className="rounded-lg border border-app bg-app-surface px-3 py-2">
-              <summary className="cursor-pointer text-xs text-app-secondary">View source brief</summary>
+              <summary className="cursor-pointer text-xs text-app-secondary">{t("client_view_source")}</summary>
               <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words text-[11px] text-app-muted">{brief}</pre>
             </details>
           )}
@@ -246,21 +246,21 @@ function NewAssignmentModal({
           <div className="grid md:grid-cols-2 gap-3">
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_seniority")}</span>
-              <select value={seniority} onChange={(event) => setSeniority(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
+              <select value={seniority} onChange={(event) => setSeniority(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("common_not_specified")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>
             </label>
-            {seniority && <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Seniority matching</span><select value={seniorityMatchMode} onChange={(event) => setSeniorityMatchMode(event.target.value as typeof seniorityMatchMode)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Exact">Exact</option><option value="Minimum">Minimum</option><option value="Range">Range</option></select></label>}
-            {seniority && seniorityMatchMode === "Range" && <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Maximum seniority</span><select value={maximumSeniority} onChange={(event) => setMaximumSeniority(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Select maximum</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select></label>}
+            {seniority && <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("client_seniority_matching")}</span><select value={seniorityMatchMode} onChange={(event) => setSeniorityMatchMode(event.target.value as typeof seniorityMatchMode)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Exact">{t("assignment_exact")}</option><option value="Minimum">{t("assignment_minimum")}</option><option value="Range">{t("assignment_range")}</option></select></label>}
+            {seniority && seniorityMatchMode === "Range" && <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("client_maximum_seniority")}</span><select value={maximumSeniority} onChange={(event) => setMaximumSeniority(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("client_select_maximum")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select></label>}
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_availability")}</span>
               <Input value={availability} onChange={(event) => setAvailability(event.target.value)} />
             </label>
             <label className="block">
-              <span className="text-[11px] text-app-muted mb-1.5 block">Work location</span>
-              <Input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="e.g. Stockholm / Hybrid / Remote" />
+              <span className="text-[11px] text-app-muted mb-1.5 block">{t("client_work_location")}</span>
+              <Input value={location} onChange={(event) => setLocation(event.target.value)} placeholder={t("client_location_placeholder")} />
             </label>
-            <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Required start date</span><Input type="date" value={requiredStartDate} onChange={(event) => setRequiredStartDate(event.target.value)} /></label>
+            <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("client_required_start_date")}</span><Input type="date" value={requiredStartDate} onChange={(event) => setRequiredStartDate(event.target.value)} /></label>
             <label className="block">
-              <span className="text-[11px] text-app-muted mb-1.5 block">Minimum years experience</span>
+              <span className="text-[11px] text-app-muted mb-1.5 block">{t("client_minimum_experience")}</span>
               <Input type="number" min={0} value={minYears} onChange={(event) => setMinYears(Number(event.target.value) || 0)} />
             </label>
           </div>
@@ -269,34 +269,34 @@ function NewAssignmentModal({
             {requirements.map((requirement, index) => (
               <div key={index} className="grid grid-cols-[minmax(130px,1fr)_100px_110px_minmax(100px,auto)_30px] gap-2 items-center">
                 <Input
-                  aria-label="Requirement name"
+                  aria-label={t("client_requirement_name")}
                   value={requirement.name}
                   onChange={(event) => updateRequirement(index, { name: event.target.value })}
                 />
                 <select
-                  aria-label="Requirement category"
+                  aria-label={t("client_requirement_category")}
                   value={requirement.category}
                   onChange={(event) => updateRequirement(index, { category: event.target.value as "Skill" | "HumanLanguage", minYears: event.target.value === "HumanLanguage" ? null : requirement.minYears })}
                   className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
                 >
-                  <option value="Skill">Skill</option>
-                  <option value="HumanLanguage">Language</option>
+                  <option value="Skill">{t("client_skill")}</option>
+                  <option value="HumanLanguage">{t("client_language")}</option>
                 </select>
                 <select
-                  aria-label="Requirement priority"
+                  aria-label={t("client_requirement_priority")}
                   value={requirement.type}
                   onChange={(event) => updateRequirement(index, { type: event.target.value as "Mandatory" | "Desired" })}
                   className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
                 >
-                  <option value="Mandatory">Mandatory</option>
-                  <option value="Desired">Desired</option>
+                  <option value="Mandatory">{t("client_mandatory")}</option>
+                  <option value="Desired">{t("client_desired")}</option>
                 </select>
                 {requirement.category === "HumanLanguage" ? (
                   <label className="flex items-center gap-1.5 text-[10px] text-app-muted">
-                    <select aria-label="Language proficiency" value={requirement.proficiency ?? "Not specified"} onChange={(event) => updateRequirement(index, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null, minYears: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
+                    <select aria-label={t("assignment_language_proficiency")} value={requirement.proficiency ?? "Not specified"} onChange={(event) => updateRequirement(index, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null, minYears: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
                   </label>
                 ) : (
-                  <Input type="number" min={0} value={requirement.minYears ?? ""} placeholder="Years" aria-label="Minimum skill years"
+                  <Input type="number" min={0} value={requirement.minYears ?? ""} placeholder={t("assignment_years")} aria-label={t("client_minimum_skill_years")}
                     onChange={(event) => updateRequirement(index, { minYears: event.target.value ? Number(event.target.value) : null })} />
                 )}
                 <button type="button" onClick={() => removeRequirement(index)} className="text-app-faint hover:text-app-secondary">×</button>
@@ -309,7 +309,7 @@ function NewAssignmentModal({
             onClick={() => setRequirements((current) => [...current, emptyRequirement("", "Mandatory")])}
             icon={<Plus size={11} />}
           >
-            Add requirement
+            {t("client_add_requirement")}
           </Button>
 
           {error && <p className="text-xs text-app-secondary">{error}</p>}
@@ -317,7 +317,7 @@ function NewAssignmentModal({
           <div className="flex justify-end gap-2">
             <Button onClick={() => setStep("input")} variant="ghost">{t("assignment_modal_back")}</Button>
             <Button onClick={createAssignment} variant="primary" disabled={saving}>
-              {saving ? "Saving..." : "Create assignment"}
+              {saving ? t("client_saving") : t("client_create")}
             </Button>
           </div>
         </div>
@@ -344,7 +344,7 @@ export default function ClientAssignments() {
         if (!cancelled) setAssignments(data);
       })
       .catch((requestError: unknown) => {
-        if (!cancelled) setError(requestError instanceof Error ? requestError.message : "Could not load assignments.");
+        if (!cancelled) setError(requestError instanceof Error ? requestError.message : t("client_load_error"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -356,7 +356,7 @@ export default function ClientAssignments() {
   }, []);
 
   const deleteAssignment = async (assignment: AssignmentApi) => {
-    if (!window.confirm(`Delete "${assignment.title}"? This will permanently remove the assignment from the database.`)) return;
+    if (!window.confirm(t("client_delete_confirm").replace("{title}", assignment.title))) return;
 
     setDeletingId(assignment.id);
     setError("");
@@ -365,7 +365,7 @@ export default function ClientAssignments() {
       await assignmentsApi.remove(assignment.id);
       setAssignments((current) => current.filter((item) => item.id !== assignment.id));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not delete assignment.");
+      setError(requestError instanceof Error ? requestError.message : t("client_delete_error"));
     } finally {
       setDeletingId(null);
     }
@@ -373,10 +373,10 @@ export default function ClientAssignments() {
 
   const statusConfig = (status: AssignmentStatusApi) => {
     switch (status) {
-      case "Draft": return { label: "Draft", tone: "neutral" as const, icon: <Clock size={9} /> };
-      case "Matching": return { label: "Matching", tone: "neutral" as const, icon: <Clock size={9} /> };
-      case "Closed": return { label: "Closed", tone: "neutral" as const, icon: <Clock size={9} /> };
-      default: return { label: "Done", tone: "success" as const, icon: <CheckCircle size={9} /> };
+      case "Draft": return { label: t("assignment_draft"), tone: "neutral" as const, icon: <Clock size={9} /> };
+      case "Matching": return { label: t("assignment_matching"), tone: "neutral" as const, icon: <Clock size={9} /> };
+      case "Closed": return { label: t("assignment_closed"), tone: "neutral" as const, icon: <Clock size={9} /> };
+      default: return { label: t("assignment_done"), tone: "success" as const, icon: <CheckCircle size={9} /> };
     }
   };
 
@@ -421,7 +421,7 @@ export default function ClientAssignments() {
         </div>
       </div>
 
-      {error && <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">Backend connection failed: {error}</div>}
+      {error && <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">{t("client_backend_error")}: {error}</div>}
 
       <div className="space-y-2">
         {filtered.map((assignment) => {
@@ -441,10 +441,10 @@ export default function ClientAssignments() {
                     {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {assignment.location || t("assignment_location_unspecified")} · {t("common_updated")} {formatDate(assignment.updatedAt || assignment.createdAt, locale)}
                   </p>
                   <p className="text-[11px] text-app-secondary mt-1 mb-2 max-w-3xl line-clamp-2">{assignment.description || "—"}</p>
-                  <p className="text-[10px] text-app-muted mb-2">{assignment.requirements.length} requirements{assignment.minYearsExperience > 0 ? ` · ${assignment.minYearsExperience}+ years experience` : ""}</p>
+                  <p className="text-[10px] text-app-muted mb-2">{assignment.requirements.length} {t("client_requirements")}{assignment.minYearsExperience > 0 ? ` · ${assignment.minYearsExperience}+ ${t("client_years_experience")}` : ""}</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {required.map((requirement) => <SkillTag key={requirement.id || requirement.name} variant="required">{requirement.category === "HumanLanguage" ? `Language: ${requirement.name}` : requirement.name}</SkillTag>)}
-                    {preferred.map((requirement) => <SkillTag key={requirement.id || requirement.name}>{requirement.category === "HumanLanguage" ? `Language: ${requirement.name}` : requirement.name}</SkillTag>)}
+                    {required.map((requirement) => <SkillTag key={requirement.id || requirement.name} variant="required">{requirement.category === "HumanLanguage" ? `${t("client_language_prefix")}${requirement.name}` : requirement.name}</SkillTag>)}
+                    {preferred.map((requirement) => <SkillTag key={requirement.id || requirement.name}>{requirement.category === "HumanLanguage" ? `${t("client_language_prefix")}${requirement.name}` : requirement.name}</SkillTag>)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -458,7 +458,7 @@ export default function ClientAssignments() {
                     className="text-[11px] px-2.5 py-1.5 rounded border disabled:opacity-50"
                     style={{ color: "var(--color-danger)", borderColor: "var(--color-danger)", background: "transparent" }}
                   >
-                    {deletingId === assignment.id ? "Deleting..." : "Delete"}
+                    {deletingId === assignment.id ? t("client_deleting") : t("client_delete")}
                   </button>
                 </div>
               </div>
