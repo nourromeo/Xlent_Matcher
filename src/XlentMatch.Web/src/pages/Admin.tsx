@@ -14,6 +14,28 @@ const ADMIN_TABS = ["taxonomy", "weights", "flags", "prompts"] as const;
 
 export default function Admin() {
   const { t, locale } = useI18n();
+  const categoryLabel = (value: string) => ({
+    All: t("common_all"),
+    Unclassified: t("taxonomy_category_unclassified"),
+    "Human language": t("taxonomy_category_human_language"),
+    Language: t("taxonomy_category_language"),
+    Framework: t("taxonomy_category_framework"),
+    Database: t("taxonomy_category_database"),
+    Messaging: t("taxonomy_category_messaging"),
+    Cloud: t("taxonomy_category_cloud"),
+    "AI/ML": t("taxonomy_category_ai_ml"),
+    Backend: t("taxonomy_category_backend"),
+  }[value] ?? value);
+  const featureFlagCopy = (capability: { key: string; label: string; description: string }) => {
+    const copy: Record<string, { label: string; description: string }> = {
+      AzureOpenAiConfigured: { label: t("feature_azure_openai_label"), description: t("feature_azure_openai_description") },
+      CanonicalSkillTaxonomy: { label: t("feature_taxonomy_label"), description: t("feature_taxonomy_description") },
+      DeterministicMatching: { label: t("feature_matching_label"), description: t("feature_matching_description") },
+      PdfTextExtraction: { label: t("feature_pdf_label"), description: t("feature_pdf_description") },
+      OriginalPdfStorage: { label: t("feature_storage_label"), description: t("feature_storage_description") },
+    };
+    return copy[capability.key] ?? { label: capability.label, description: capability.description };
+  };
   const TABS = ADMIN_TABS.map((id) => ({ id, label: id === "prompts" ? t("prompt_title") : t(`tab_${id}` as any) }));
 
   const [tab, setTab] = useState("taxonomy");
@@ -59,7 +81,7 @@ export default function Admin() {
       })
       .catch((requestError: unknown) => {
         if (!cancelled) {
-          setError(requestError instanceof Error ? requestError.message : "Could not load admin data.");
+          setError(requestError instanceof Error ? requestError.message : t("admin_load_error"));
         }
       })
       .finally(() => {
@@ -76,7 +98,7 @@ export default function Admin() {
     setPromptLoading(true);
     adminApi.getPrompts().then((items) => {
       setPrompts(items);
-    }).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Could not load prompts.")).finally(() => setPromptLoading(false));
+    }).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : t("admin_prompts_load_error"))).finally(() => setPromptLoading(false));
   }, [tab]);
 
   useEffect(() => {
@@ -85,7 +107,7 @@ export default function Admin() {
     adminApi.getPromptVersions(promptKey).then((items) => {
       setPromptVersions(items);
       setSelectedPromptVersion((current) => items.find((item) => item.version === current?.version) ?? items[0] ?? null);
-    }).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Could not load prompt versions.")).finally(() => setPromptLoading(false));
+    }).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : t("admin_prompt_versions_load_error"))).finally(() => setPromptLoading(false));
   }, [promptKey]);
 
   const savePromptVersion = async () => {
@@ -97,12 +119,12 @@ export default function Admin() {
       setPrompts((current) => current.map((item) => item.promptKey === promptKey ? { ...item, activeVersion: created.version, versionCount: item.versionCount + 1, updatedAt: created.createdAt } : item));
       setEditingPrompt(false);
       setPromptChangeNote("");
-    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Could not save prompt version."); }
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : t("admin_prompt_save_error")); }
   };
 
   const activatePromptVersion = async () => {
     if (!promptKey || !selectedPromptVersion || selectedPromptVersion.isActive) return;
-    if (!window.confirm(`Set prompt v${selectedPromptVersion.version} as active?`)) return;
+    if (!window.confirm(`${t("prompt_set_active")} v${selectedPromptVersion.version}?`)) return;
     try {
       await adminApi.activatePromptVersion(promptKey, selectedPromptVersion.version);
       const versions = await adminApi.getPromptVersions(promptKey);
@@ -110,7 +132,7 @@ export default function Admin() {
       setSelectedPromptVersion(versions.find((item) => item.version === selectedPromptVersion.version) ?? null);
       const updatedPrompts = await adminApi.getPrompts();
       setPrompts(updatedPrompts);
-    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Could not activate prompt version."); }
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : t("admin_prompt_activate_error")); }
   };
 
   const skills = overview?.skills ?? [];
@@ -176,7 +198,7 @@ export default function Admin() {
       setOverview(await adminApi.getOverview());
       setReviewingSuggestion(null);
     } catch (requestError) {
-          setError(requestError instanceof Error ? requestError.message : "Could not review suggestion.");
+          setError(requestError instanceof Error ? requestError.message : t("admin_suggestion_review_error"));
     }
   };
 
@@ -187,7 +209,7 @@ export default function Admin() {
     const categoryName = editCategory.trim();
 
     if (!canonicalName || !categoryName) {
-      setError("Canonical name and category are required.");
+      setError(t("admin_skill_required"));
       return;
     }
 
@@ -221,20 +243,20 @@ export default function Admin() {
       );
       setEditingSkill(null);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not update skill.");
+      setError(requestError instanceof Error ? requestError.message : t("admin_skill_update_error"));
     } finally {
       setSavingSkill(false);
     }
   };
 
   const deleteSkill = async (skill: AdminSkill) => {
-    if (!window.confirm(`Delete taxonomy entry '${skill.canonical}'?`)) return;
+    if (!window.confirm(t("admin_skill_delete_confirm").replace("{name}", skill.canonical))) return;
     setError("");
     try {
       await adminApi.deleteSkill(skill.id);
       setOverview((current) => current ? { ...current, skills: current.skills.filter((item) => item.id !== skill.id) } : current);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not delete taxonomy entry.");
+      setError(requestError instanceof Error ? requestError.message : t("admin_skill_delete_error"));
     }
   };
 
@@ -251,7 +273,7 @@ export default function Admin() {
 
   const saveWeights = async () => {
     if (!ok) {
-      setError("Requirement weights must be positive integers.");
+      setError(t("admin_weight_invalid"));
       return;
     }
 
@@ -266,7 +288,7 @@ export default function Admin() {
       setOverview(updated);
       setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, String(factor.value)])));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not save matching weights.");
+      setError(requestError instanceof Error ? requestError.message : t("admin_weight_save_error"));
     } finally {
       setSavingWeights(false);
     }
@@ -281,7 +303,7 @@ export default function Admin() {
       setOverview(updated);
       setWeightValues(Object.fromEntries(updated.matchingFactors.map((factor) => [factor.key, String(factor.value)])));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not reset matching weights.");
+      setError(requestError instanceof Error ? requestError.message : t("admin_weight_reset_error"));
     } finally {
       setSavingWeights(false);
     }
@@ -324,7 +346,7 @@ export default function Admin() {
         {tab === "prompts" && promptKey && (
           <section className="space-y-3">
             {!selectedPromptVersion ? (
-              <div className="bg-app-surface border border-app rounded-lg p-4 text-xs text-app-muted">Loading prompt versions...</div>
+              <div className="bg-app-surface border border-app rounded-lg p-4 text-xs text-app-muted">{t("prompt_loading")}</div>
             ) : (
               <>
                 <div className="flex items-center gap-3">
@@ -353,27 +375,27 @@ export default function Admin() {
 
         {tab === "taxonomy" && (
           <div className="flex gap-2 border-b border-app">
-            <button type="button" onClick={() => setTaxonomyTab("catalog")} className={`px-3 py-2 text-xs ${taxonomyTab === "catalog" ? "text-app-primary border-b-2 border-app-brand" : "text-app-muted"}`}>Catalog ({skills.length})</button>
-            <button type="button" onClick={() => setTaxonomyTab("suggestions")} className={`px-3 py-2 text-xs ${taxonomyTab === "suggestions" ? "text-app-primary border-b-2 border-app-brand" : "text-app-muted"}`}>Suggestions ({suggestions.length})</button>
+            <button type="button" onClick={() => setTaxonomyTab("catalog")} className={`px-3 py-2 text-xs ${taxonomyTab === "catalog" ? "text-app-primary border-b-2 border-app-brand" : "text-app-muted"}`}>{t("admin_catalog")} ({skills.length})</button>
+            <button type="button" onClick={() => setTaxonomyTab("suggestions")} className={`px-3 py-2 text-xs ${taxonomyTab === "suggestions" ? "text-app-primary border-b-2 border-app-brand" : "text-app-muted"}`}>{t("admin_suggestions")} ({suggestions.length})</button>
           </div>
         )}
 
                 {tab === "taxonomy" && taxonomyTab === "suggestions" && (
           <section className="bg-app-surface border border-app rounded-lg p-4 space-y-3" style={{ boxShadow: "var(--shadow-surface)" }}>
             <div>
-              <h2 className="text-xs font-semibold text-app-primary">Taxonomy suggestions ({suggestions.length})</h2>
-              <p className="text-[11px] text-app-muted mt-1">Unrecognized extracted terms remain outside the approved catalog until reviewed.</p>
+              <h2 className="text-xs font-semibold text-app-primary">{t("admin_taxonomy_suggestions")} ({suggestions.length})</h2>
+              <p className="text-[11px] text-app-muted mt-1">{t("admin_suggestions_help")}</p>
             </div>
             <DataTable<AdminSuggestion>
               columns={[
-                { key: "name", header: "Suggestion", render: (item) => <span className="font-mono font-medium text-app-primary">{item.name}</span> },
-                { key: "category", header: "Suggested category", render: (item) => <span className="text-app-secondary">{item.category}</span> },
-                { key: "occurrences", header: "Seen", render: (item) => <span className="font-mono">{item.occurrences}</span> },
-                { key: "action", header: "Action", render: (item) => <Button variant="primary" onClick={() => { setReviewingSuggestion(item); setSuggestionCanonical(item.name); setSuggestionCategory(item.category); setSuggestionAliases(""); }}>Review</Button> },
+                { key: "name", header: t("admin_suggestion"), render: (item) => <span className="font-mono font-medium text-app-primary">{item.name}</span> },
+                { key: "category", header: t("admin_suggested_category"), render: (item) => <span className="text-app-secondary">{categoryLabel(item.category)}</span> },
+                { key: "occurrences", header: t("admin_seen"), render: (item) => <span className="font-mono">{item.occurrences}</span> },
+                { key: "action", header: t("admin_actions"), render: (item) => <Button variant="primary" onClick={() => { setReviewingSuggestion(item); setSuggestionCanonical(item.name); setSuggestionCategory(item.category); setSuggestionAliases(""); }}>{t("admin_review")}</Button> },
               ]}
               rows={suggestions}
               rowKey={(item) => String(item.id)}
-              emptyMessage="No taxonomy suggestions to review."
+              emptyMessage={t("admin_no_suggestions")}
             />
           </section>
         )}
@@ -381,12 +403,12 @@ export default function Admin() {
         {reviewingSuggestion && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
             <div className="w-full max-w-md rounded-lg border border-app bg-app-surface p-5 space-y-4">
-              <h2 className="text-sm font-semibold text-app-primary">Review taxonomy suggestion</h2>
-              <p className="text-[11px] text-app-muted">Found {reviewingSuggestion.occurrences} times</p>
-              <input value={suggestionCanonical} onChange={(event) => setSuggestionCanonical(event.target.value)} placeholder="Canonical name" className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
-              <select value={suggestionCategory} onChange={(event) => setSuggestionCategory(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option>Unclassified</option><option>Human language</option><option>Language</option><option>Framework</option><option>Database</option><option>Messaging</option><option>Cloud</option><option>AI/ML</option><option>Backend</option></select>
-              <input value={suggestionAliases} onChange={(event) => setSuggestionAliases(event.target.value)} placeholder="Aliases, comma separated" className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
-              <div className="flex justify-between gap-2"><Button variant="ghost" onClick={() => void reviewSuggestion(false)}>Dismiss suggestion</Button><div className="flex gap-2"><Button variant="ghost" onClick={() => setReviewingSuggestion(null)}>Cancel</Button><Button variant="primary" onClick={() => void reviewSuggestion(true)}>Approve</Button></div></div>
+              <h2 className="text-sm font-semibold text-app-primary">{t("admin_review_suggestion")}</h2>
+              <p className="text-[11px] text-app-muted">{t("admin_found_times")} {reviewingSuggestion.occurrences} {t("admin_times")}</p>
+              <input value={suggestionCanonical} onChange={(event) => setSuggestionCanonical(event.target.value)} placeholder={t("admin_canonical_name")} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
+              <select value={suggestionCategory} onChange={(event) => setSuggestionCategory(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Unclassified">{t("taxonomy_category_unclassified")}</option><option value="Human language">{t("taxonomy_category_human_language")}</option><option value="Language">{t("taxonomy_category_language")}</option><option value="Framework">{t("taxonomy_category_framework")}</option><option value="Database">{t("taxonomy_category_database")}</option><option value="Messaging">{t("taxonomy_category_messaging")}</option><option value="Cloud">{t("taxonomy_category_cloud")}</option><option value="AI/ML">{t("taxonomy_category_ai_ml")}</option><option value="Backend">{t("taxonomy_category_backend")}</option></select>
+              <input value={suggestionAliases} onChange={(event) => setSuggestionAliases(event.target.value)} placeholder={t("admin_aliases_placeholder")} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
+              <div className="flex justify-between gap-2"><Button variant="ghost" onClick={() => void reviewSuggestion(false)}>{t("admin_dismiss_suggestion")}</Button><div className="flex gap-2"><Button variant="ghost" onClick={() => setReviewingSuggestion(null)}>{t("common_cancel")}</Button><Button variant="primary" onClick={() => void reviewSuggestion(true)}>{t("admin_approve")}</Button></div></div>
             </div>
           </div>
         )}
@@ -412,7 +434,7 @@ export default function Admin() {
                 >
                   {categories.map((item) => (
                     <option key={item} value={item}>
-                      {item === "All" ? t("common_all") : item}
+                      {categoryLabel(item)}
                     </option>
                   ))}
                 </select>
@@ -445,7 +467,7 @@ export default function Admin() {
                   sortValue: (skill: AdminSkill) => skill.category,
                   render: (skill: AdminSkill) => (
                     <span className="text-[11px] text-app-secondary px-2 py-1 rounded bg-app-raised">
-                      {skill.category}
+                      {categoryLabel(skill.category)}
                     </span>
                   ),
                 },
@@ -469,7 +491,7 @@ export default function Admin() {
                   header: t("admin_actions"),
                   render: (skill: AdminSkill) => (
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-app-muted mr-2">{skill.consultantCount} consultants</span>
+                      <span className="text-[10px] text-app-muted mr-2">{skill.consultantCount} {t("admin_consultants")}</span>
                       <Button variant="ghost" icon={<Edit3 size={11} />} onClick={() => openSkillEditor(skill)}>
                         {t("admin_edit")}
                       </Button>
@@ -486,13 +508,13 @@ export default function Admin() {
               ]}
               rows={pagedSkills}
               rowKey={(skill: AdminSkill) => skill.id}
-              emptyMessage={loading ? "Loading skills..." : t("admin_empty_skills")}
+              emptyMessage={loading ? t("admin_loading_skills") : t("admin_empty_skills")}
             />
 
             {!loading && filteredSkills.length > skillsPerPage && (
               <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-app">
                 <p className="text-[10px] text-app-muted">
-                  Showing {(currentSkillPage - 1) * skillsPerPage + 1}–{Math.min(currentSkillPage * skillsPerPage, filteredSkills.length)} of {filteredSkills.length} skills
+                  {t("admin_showing")} {(currentSkillPage - 1) * skillsPerPage + 1}–{Math.min(currentSkillPage * skillsPerPage, filteredSkills.length)} {t("admin_of")} {filteredSkills.length} {t("admin_skills")}
                 </p>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: skillPageCount }, (_, index) => index + 1).map((page) => (
@@ -527,8 +549,8 @@ export default function Admin() {
                 color: ok ? "var(--color-success)" : "var(--color-warning)",
               }}
             >
-              <span>{ok ? "Requirement weights are ready to save." : "Both requirement weights must be positive integers."}</span>
-              <span className="text-app-muted">Backend configuration</span>
+              <span>{ok ? t("admin_weights_ready") : t("admin_weights_positive")}</span>
+              <span className="text-app-muted">{t("admin_backend_configuration")}</span>
             </div>
 
             <div className="bg-app-surface border border-app rounded-lg" style={{ boxShadow: "var(--shadow-surface)" }}>
@@ -566,11 +588,11 @@ export default function Admin() {
             </div>
 
             <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary space-y-2">
-              <p className="font-medium text-app-primary">How Match Score is calculated</p>
-              <p>Each matched Mandatory requirement receives the configured Mandatory weight. Each matched Desired requirement receives the configured Desired weight.</p>
-              <p className="font-mono">Match Score = (Matched Weighted Requirements / Total Weighted Requirements) × 100</p>
-              <p>Only requirements included in the assignment are used. Missing or unused categories receive no automatic points.</p>
-              <p>Example: 3 Mandatory + 2 Desired. Total = (3 × {weightValues.mandatory || 0}) + (2 × {weightValues.desired || 0}) = {mandatoryWeight * 3 + desiredWeight * 2}. Matching 2 Mandatory + 2 Desired gives {(mandatoryWeight * 2 + desiredWeight * 2)} / {(mandatoryWeight * 3 + desiredWeight * 2)} × 100 = {((mandatoryWeight * 2 + desiredWeight * 2) / Math.max(1, mandatoryWeight * 3 + desiredWeight * 2) * 100).toFixed(2)}%.</p>
+              <p className="font-medium text-app-primary">{t("admin_score_calculated")}</p>
+              <p>{t("admin_mandatory_weight_explanation")}</p>
+              <p className="font-mono">{t("admin_score_formula")}</p>
+              <p>{t("admin_score_scope")}</p>
+              <p>{t("admin_score_example")}: 3 Mandatory + 2 Desired. Total = (3 × {weightValues.mandatory || 0}) + (2 × {weightValues.desired || 0}) = {mandatoryWeight * 3 + desiredWeight * 2}. Matching 2 Mandatory + 2 Desired gives {(mandatoryWeight * 2 + desiredWeight * 2)} / {(mandatoryWeight * 3 + desiredWeight * 2)} × 100 = {((mandatoryWeight * 2 + desiredWeight * 2) / Math.max(1, mandatoryWeight * 3 + desiredWeight * 2) * 100).toFixed(2)}%.</p>
             </div>
 
             <div className="flex items-center justify-between">
@@ -578,7 +600,7 @@ export default function Admin() {
                 {t("admin_reset")}
               </Button>
               <Button variant="primary" icon={<Save size={11} />} onClick={() => void saveWeights()} disabled={savingWeights || !ok}>
-                {savingWeights ? "Saving..." : t("admin_save_w")}
+                {savingWeights ? t("common_saving") : t("admin_save_w")}
               </Button>
             </div>
           </div>
@@ -589,7 +611,7 @@ export default function Admin() {
             <div className="px-5 py-3 border-b border-app">
               <p className="text-xs font-medium text-app-primary">{t("tab_flags")}</p>
               <p className="text-[11px] text-app-muted mt-0.5">
-                Live system capabilities reported by the backend. These are status values, not mock toggles.
+                {t("admin_feature_flags_help")}
               </p>
             </div>
 
@@ -599,14 +621,18 @@ export default function Admin() {
                 className="flex items-center justify-between gap-5 px-5 py-4"
                 style={{ borderBottom: index < capabilities.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
               >
+                {(() => {
+                  const display = featureFlagCopy(capability);
+                  return (
+                    <>
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-xs font-medium text-app-primary">{capability.label}</p>
+                    <p className="text-xs font-medium text-app-primary">{display.label}</p>
                     <StatusBadge tone={capability.enabled ? "success" : "neutral"}>
                       {capability.enabled ? t("common_enabled") : t("common_disabled")}
                     </StatusBadge>
                   </div>
-                  <p className="text-[11px] text-app-muted mt-1">{capability.description}</p>
+                  <p className="text-[11px] text-app-muted mt-1">{display.description}</p>
                   <p className="text-[10px] text-app-faint font-mono mt-1">{capability.key}</p>
                 </div>
 
@@ -614,13 +640,16 @@ export default function Admin() {
                   disabled
                   className="relative w-10 h-5 rounded-full flex-none cursor-not-allowed opacity-80"
                   style={{ background: capability.enabled ? "var(--color-brand)" : "var(--color-border)" }}
-                  aria-label={capability.label}
+                  aria-label={display.label}
                 >
                   <span
                     className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white"
                     style={{ transform: capability.enabled ? "translateX(20px)" : "translateX(0)" }}
                   />
                 </button>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>

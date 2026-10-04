@@ -19,12 +19,6 @@ import { useI18n } from "../i18n";
 
 type SourceMode = "existing" | "upload" | "paste";
 
-const sourceTabs: Array<{ value: SourceMode; label: string }> = [
-  { value: "existing", label: "Existing" },
-  { value: "upload", label: "Upload" },
-  { value: "paste", label: "Paste" },
-];
-
 function SourceTabs({
   value,
   onChange,
@@ -32,6 +26,12 @@ function SourceTabs({
   value: SourceMode;
   onChange: (value: SourceMode) => void;
 }) {
+  const { t } = useI18n();
+  const sourceTabs: Array<{ value: SourceMode; label: string }> = [
+    { value: "existing", label: t("adaptation_existing") },
+    { value: "upload", label: t("adaptation_upload") },
+    { value: "paste", label: t("adaptation_paste") },
+  ];
   return (
     <div className="inline-flex rounded-lg border border-app bg-app p-1">
       {sourceTabs.map((tab) => (
@@ -86,7 +86,7 @@ export default function CvAdaptation() {
         setAssignments(assignmentData);
       })
       .catch((requestError: unknown) => {
-        if (!cancelled) setError(requestError instanceof Error ? requestError.message : "Could not load data.");
+        if (!cancelled) setError(requestError instanceof Error ? requestError.message : t("consultant_load_error"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -121,39 +121,39 @@ export default function CvAdaptation() {
   const resolveConsultant = async (): Promise<ConsultantDraft> => {
     if (consultantMode === "existing") {
       const id = Number(consultantId);
-      if (!id) throw new Error("Select an existing consultant.");
+      if (!id) throw new Error(t("adaptation_select_consultant"));
       return consultantToDraft(await consultantsApi.getById(id));
     }
 
     if (consultantMode === "upload") {
-      if (!consultantFile) throw new Error("Upload a consultant CV.");
+      if (!consultantFile) throw new Error(t("adaptation_choose_cv_file"));
       return aiApi.extractConsultantFromFile(consultantFile);
     }
 
-    if (!consultantText.trim()) throw new Error("Paste the consultant CV text.");
+    if (!consultantText.trim()) throw new Error(t("adaptation_paste_cv"));
     return aiApi.extractConsultantFromText(consultantText.trim());
   };
 
   const resolveAssignment = async (): Promise<TemporaryAssignmentDraft> => {
     if (assignmentMode === "existing") {
       const id = Number(assignmentId);
-      if (!id) throw new Error("Select an existing client assignment.");
+      if (!id) throw new Error(t("adaptation_select_assignment"));
       return assignmentToTemporary(await assignmentsApi.getById(id));
     }
 
     const extracted = assignmentMode === "upload"
       ? assignmentFile
         ? await aiApi.extractRequirementsFromFile(assignmentFile)
-        : (() => { throw new Error("Upload an assignment requirements file."); })()
+        : (() => { throw new Error(t("adaptation_choose_requirements_file")); })()
       : assignmentText.trim()
         ? await aiApi.extractRequirementsFromText(assignmentText.trim())
-        : (() => { throw new Error("Paste the assignment requirements."); })();
+        : (() => { throw new Error(t("adaptation_paste_assignment")); })();
 
     return {
       customerName: "",
       title: assignmentMode === "upload"
-        ? assignmentFile?.name.replace(/\.[^.]+$/, "") || "Uploaded assignment"
-        : "Pasted assignment",
+        ? assignmentFile?.name.replace(/\.[^.]+$/, "") || t("adaptation_assignment")
+        : t("adaptation_assignment"),
       description: extracted.sourceText,
       seniority: extracted.seniority,
       minYearsExperience: extracted.minYearsExperience ?? 0,
@@ -176,7 +176,7 @@ export default function CvAdaptation() {
 
   const generate = async () => {
     if (!consultantReady || !assignmentReady) {
-      setError("Provide both a consultant CV and client assignment before generating suggestions.");
+      setError(`${t("adaptation_choose_cv")} ${t("adaptation_choose_assignment")}`);
       return;
     }
 
@@ -196,7 +196,7 @@ export default function CvAdaptation() {
       setResult(response);
       setAdaptedText(response.adaptedCvText);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not generate CV suggestions.");
+      setError(requestError instanceof Error ? requestError.message : t("adaptation_generate"));
     } finally {
       setAnalysing(false);
     }
@@ -210,7 +210,7 @@ export default function CvAdaptation() {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      setError("Could not copy the text. Select the text and copy it manually.");
+      setError(t("adaptation_edit_result"));
     }
   };
 
@@ -300,16 +300,16 @@ export default function CvAdaptation() {
 
       <div className="cv-adaptation-screen p-6 space-y-5 overflow-auto h-full">
         <PageHeader
-          title="CV Adaptation"
-          description="Choose, upload or paste a CV and assignment. AI suggests improvements temporarily; nothing from this page is saved to the database."
+          title={t("adaptation_title")}
+          description={t("adaptation_description")}
         />
 
         <div className="grid xl:grid-cols-2 gap-5">
           <section className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm font-medium text-app-primary">Consultant CV</h2>
-                <p className="text-[10px] text-app-muted mt-1">Choose how you want to provide the consultant CV.</p>
+                <h2 className="text-sm font-medium text-app-primary">{t("adaptation_consultant_cv")}</h2>
+                <p className="text-[10px] text-app-muted mt-1">{t("adaptation_choose_cv")}</p>
               </div>
               <SourceTabs
                 value={consultantMode}
@@ -329,7 +329,7 @@ export default function CvAdaptation() {
                 }}
                 className="w-full text-xs rounded px-3 py-2.5 bg-app-surface border border-app text-app-primary"
               >
-                <option value="">Select consultant</option>
+                <option value="">{t("adaptation_select_consultant")}</option>
                 {consultants.map((consultant) => (
                   <option key={consultant.id} value={consultant.id}>
                     {consultant.fullName || `${consultant.firstName} ${consultant.lastName}`} · {consultant.title || "Consultant"}
@@ -341,7 +341,7 @@ export default function CvAdaptation() {
             {consultantMode === "upload" && (
               <label className="block rounded-lg border border-dashed border-app p-5 text-center cursor-pointer">
                 <span className="text-xs text-app-secondary">
-                  {consultantFile ? consultantFile.name : "Choose consultant CV (PDF or TXT)"}
+                  {consultantFile ? consultantFile.name : t("adaptation_choose_cv_file")}
                 </span>
                 <input
                   type="file"
@@ -373,7 +373,7 @@ export default function CvAdaptation() {
                   clearResult();
                 }}
                 rows={9}
-                placeholder="Paste the consultant CV text here..."
+                placeholder={t("adaptation_paste_cv")}
               />
             )}
           </section>
@@ -381,8 +381,8 @@ export default function CvAdaptation() {
           <section className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm font-medium text-app-primary">Client Assignment</h2>
-                <p className="text-[10px] text-app-muted mt-1">Choose how you want to provide the assignment requirements.</p>
+                <h2 className="text-sm font-medium text-app-primary">{t("adaptation_assignment")}</h2>
+                <p className="text-[10px] text-app-muted mt-1">{t("adaptation_choose_assignment")}</p>
               </div>
               <SourceTabs
                 value={assignmentMode}
@@ -402,7 +402,7 @@ export default function CvAdaptation() {
                 }}
                 className="w-full text-xs rounded px-3 py-2.5 bg-app-surface border border-app text-app-primary"
               >
-                <option value="">Select assignment</option>
+                <option value="">{t("adaptation_select_assignment")}</option>
                 {assignments.map((assignment) => (
                   <option key={assignment.id} value={assignment.id}>
                     {assignment.title} · {assignment.customerName}
@@ -414,7 +414,7 @@ export default function CvAdaptation() {
             {assignmentMode === "upload" && (
               <label className="block rounded-lg border border-dashed border-app p-5 text-center cursor-pointer">
                 <span className="text-xs text-app-secondary">
-                  {assignmentFile ? assignmentFile.name : "Choose requirements file (PDF or TXT)"}
+                  {assignmentFile ? assignmentFile.name : t("adaptation_choose_requirements_file")}
                 </span>
                 <input
                   type="file"
@@ -446,7 +446,7 @@ export default function CvAdaptation() {
                   clearResult();
                 }}
                 rows={9}
-                placeholder="Paste the customer assignment or requirement specification here..."
+                placeholder={t("adaptation_paste_assignment")}
               />
             )}
           </section>
@@ -455,9 +455,9 @@ export default function CvAdaptation() {
         <section className="bg-app-surface border border-app rounded-xl p-4 shadow-app-surface">
           <div className="flex items-center justify-between gap-5">
             <div>
-              <p className="text-xs text-app-primary font-medium">Temporary analysis only</p>
+              <p className="text-xs text-app-primary font-medium">{t("adaptation_temporary")}</p>
               <p className="text-[10px] text-app-muted mt-1 max-w-3xl">
-                This page does not update consultants, assignments or CV records. AI may only rephrase, reorder and emphasize information already present in the CV.
+                {t("adaptation_analysis_note")}
               </p>
             </div>
             <Button
@@ -466,7 +466,7 @@ export default function CvAdaptation() {
               disabled={analysing || !consultantReady || !assignmentReady}
               icon={analysing ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
             >
-              {analysing ? "Analysing..." : "Generate suggestions"}
+              {analysing ? t("adaptation_analysing") : t("adaptation_generate")}
             </Button>
           </div>
         </section>
@@ -480,16 +480,16 @@ export default function CvAdaptation() {
         {result && (
           <div className="space-y-4">
             <section className="rounded-lg p-4" style={{ background: "var(--color-brand-soft)", border: "1px solid var(--color-brand-subtle)" }}>
-              <p className="text-[10px] text-app-faint uppercase tracking-wide mb-2">AI summary</p>
+              <p className="text-[10px] text-app-faint uppercase tracking-wide mb-2">{t("adaptation_summary")}</p>
               <p className="text-xs text-app-secondary leading-relaxed">{result.summary}</p>
             </section>
 
             <section className="grid md:grid-cols-2 gap-4">
               <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
-                <p className="text-xs font-medium text-app-primary mb-3">What to emphasize</p>
+                <p className="text-xs font-medium text-app-primary mb-3">{t("adaptation_highlights")}</p>
                 <div className="space-y-2">
                   {result.highlightedExperiences.length === 0
-                    ? <p className="text-xs text-app-faint">No specific highlights returned.</p>
+                    ? <p className="text-xs text-app-faint">{t("adaptation_no_highlights")}</p>
                     : result.highlightedExperiences.map((item, index) => (
                       <p key={index} className="text-xs text-app-secondary">• {item}</p>
                     ))}
@@ -497,10 +497,10 @@ export default function CvAdaptation() {
               </div>
 
               <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
-                <p className="text-xs font-medium text-app-primary mb-3">Suggestions / gaps</p>
+                <p className="text-xs font-medium text-app-primary mb-3">{t("adaptation_gaps")}</p>
                 <div className="space-y-2">
                   {result.notes.length === 0
-                    ? <p className="text-xs text-app-faint">No additional notes.</p>
+                    ? <p className="text-xs text-app-faint">{t("adaptation_no_notes")}</p>
                     : result.notes.map((item, index) => (
                       <p key={index} className="text-xs text-app-secondary">• {item}</p>
                     ))}
@@ -511,15 +511,15 @@ export default function CvAdaptation() {
             <section className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
-                  <p className="text-xs font-medium text-app-primary">Adapted CV draft</p>
-                  <p className="text-[10px] text-app-muted mt-0.5">Edit the temporary result before copying or printing it.</p>
+                  <p className="text-xs font-medium text-app-primary">{t("adaptation_adapted_draft")}</p>
+                  <p className="text-[10px] text-app-muted mt-0.5">{t("adaptation_edit_result")}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button variant="secondary" onClick={copyText}>{copied ? "Copied" : "Copy text"}</Button>
-                  <Button variant="secondary" onClick={printResult}>Print</Button>
-                  <Button variant="ghost" onClick={clearResult}>Close result</Button>
-                  <Button variant="ghost" onClick={resetAll}>Start over</Button>
+                  <Button variant="secondary" onClick={copyText}>{copied ? t("adaptation_copied") : t("adaptation_copy")}</Button>
+                  <Button variant="secondary" onClick={printResult}>{t("adaptation_print")}</Button>
+                  <Button variant="ghost" onClick={clearResult}>{t("adaptation_close")}</Button>
+                  <Button variant="ghost" onClick={resetAll}>{t("adaptation_start_over")}</Button>
                 </div>
               </div>
 
@@ -537,13 +537,13 @@ export default function CvAdaptation() {
         <article className="cv-adaptation-print">
           <header className="cv-print-header">
             <h1 className="cv-print-name">
-              {[usedConsultant.firstName, usedConsultant.lastName].filter(Boolean).join(" ") || "Consultant CV"}
+              {[usedConsultant.firstName, usedConsultant.lastName].filter(Boolean).join(" ") || t("adaptation_consultant_cv")}
             </h1>
             <div className="cv-print-title">
               {[usedConsultant.title, usedConsultant.seniority].filter(Boolean).join(" · ")}
             </div>
             <div className="cv-print-target">
-              <strong>Adapted for:</strong> {usedAssignment.title || "Client assignment"}
+              <strong>{t("adaptation_adapted_for")}</strong> {usedAssignment.title || t("adaptation_client_assignment")}
               {usedAssignment.customerName ? ` · ${usedAssignment.customerName}` : ""}
             </div>
           </header>
@@ -551,7 +551,7 @@ export default function CvAdaptation() {
           <div className="cv-print-body">{adaptedText}</div>
 
           <footer className="cv-print-footer">
-            CV adaptation draft generated from the consultant information provided for this assignment. Review before use.
+            {t("adaptation_print_footer")}
           </footer>
         </article>
       )}

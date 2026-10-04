@@ -23,10 +23,10 @@ const initials = (consultant: Consultant) =>
     .join("")
     .slice(0, 2);
 
-function formatAvailableAgainDate(value: string | null, locale: "en" | "es" | "sv") {
-  if (!value) return "Available again";
+function formatAvailableAgainDate(value: string | null, locale: "en" | "es" | "sv", fallback: string) {
+  if (!value) return fallback;
   const [year, month, day] = value.slice(0, 10).split("-").map(Number);
-  if (!year || !month || !day) return "Available again";
+  if (!year || !month || !day) return fallback;
   return formatDate(new Date(year, month - 1, day), locale);
 }
 
@@ -51,7 +51,7 @@ export default function Consultants() {
       })
       .catch((requestError: unknown) => {
         if (!cancelled) {
-          setError(requestError instanceof Error ? requestError.message : "Could not load consultants.");
+          setError(t("consultant_load_list_error"));
         }
       })
       .finally(() => {
@@ -65,7 +65,7 @@ export default function Consultants() {
 
   const deleteConsultant = async (consultant: Consultant) => {
     const name = consultantName(consultant);
-    if (!window.confirm(`Delete ${name}? This will permanently remove the consultant from the database.`)) return;
+    if (!window.confirm(t("consultant_delete_confirm").replace("{name}", name))) return;
 
     setDeletingId(consultant.id);
     setError("");
@@ -74,7 +74,7 @@ export default function Consultants() {
       await consultantsApi.remove(consultant.id);
       setConsultants((current) => current.filter((item) => item.id !== consultant.id));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not delete consultant.");
+      setError(t("consultant_delete_error"));
     } finally {
       setDeletingId(null);
     }
@@ -87,7 +87,7 @@ export default function Consultants() {
       const updated = await consultantsApi.update(consultant.id, { ...consultant, availability, availableAgainDate: availability === "Available" ? null : availableAgainDate });
       setConsultants((current) => current.map((item) => item.id === updated.id ? updated : item));
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not update availability.");
+      setError(t("consultant_availability_error"));
     } finally {
       setUpdatingAvailabilityId(null);
     }
@@ -167,7 +167,7 @@ export default function Consultants() {
         >
           {AVAIL_OPTIONS.map((option) => (
             <option key={option} value={option}>
-              {option === "All" ? t("consultants_all") : option}
+              {option === "All" ? t("consultants_all") : option === "Available" ? t("consultants_available") : t("consultants_unavailable")}
             </option>
           ))}
         </select>
@@ -175,7 +175,7 @@ export default function Consultants() {
 
       {error && (
         <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
-          Backend connection failed: {error}
+          {t("client_backend_error")}: {error}
         </div>
       )}
 
@@ -232,20 +232,20 @@ export default function Consultants() {
               sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99,
               render: (consultant) => (
                 <select aria-label={`Availability for ${consultantName(consultant)}`} value={consultant.availability} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, event.target.value as Consultant["availability"], consultant.availableAgainDate)} className="bg-app border border-app rounded px-2 py-1 text-[11px] text-app-primary">
-                  <option value="Available">Available</option>
-                  <option value="Unavailable">Unavailable</option>
+                  <option value="Available">{t("consultants_available")}</option>
+                  <option value="Unavailable">{t("consultants_unavailable")}</option>
                 </select>
               ),
             },
             {
               key: "availableAgain",
-              header: "Available again",
+              header: t("consultant_available_again"),
               render: (consultant) => consultant.availability === "Unavailable" ? (
                 <label className="relative inline-flex max-w-36 items-center gap-1.5 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
-                  <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate, locale)}</span>
+                  <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate, locale, t("consultant_available_again"))}</span>
                   <Calendar size={12} className="flex-none text-app-muted" aria-hidden="true" />
                   <input
-                    aria-label={`Available again date for ${consultantName(consultant)}`}
+                    aria-label={`${t("consultants_available_again_for")} ${consultantName(consultant)}`}
                     type="date"
                     value={consultant.availableAgainDate?.slice(0, 10) ?? ""}
                     disabled={updatingAvailabilityId === consultant.id}
@@ -270,7 +270,7 @@ export default function Consultants() {
                     className="text-[11px] px-2.5 py-1.5 rounded border disabled:opacity-50"
                     style={{ color: "var(--color-danger)", borderColor: "var(--color-danger)", background: "transparent" }}
                   >
-                    {deletingId === consultant.id ? "Deleting..." : "Delete"}
+                    {deletingId === consultant.id ? t("client_deleting") : t("common_delete")}
                   </button>
                 </div>
               ),

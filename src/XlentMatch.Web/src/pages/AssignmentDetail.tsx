@@ -93,17 +93,18 @@ function RequirementRuleEditor({ category, type, requirements, onChange }: {
   requirements: AssignmentRequirementApi[];
   onChange: (name: string, patch: Partial<AssignmentRequirementApi>) => void;
 }) {
+  const { t } = useI18n();
   const items = requirements.filter((item) => item.category === category && item.type === type);
   if (items.length === 0) return null;
   return (
     <div className="mt-3 space-y-2">
       {items.map((item) => (
         <div key={item.id + ":" + item.name} className="grid grid-cols-[1fr_130px] items-center gap-2">
-          <span className="text-[10px] text-app-muted">{item.name} · {category === "HumanLanguage" ? "proficiency" : "minimum years"}</span>
+          <span className="text-[10px] text-app-muted">{item.name} · {category === "HumanLanguage" ? t("assignment_language_proficiency") : t("assignment_minimum_years")}</span>
           {category === "HumanLanguage" ? (
-            <select aria-label={item.name + " proficiency"} value={item.proficiency ?? "Not specified"} onChange={(event) => onChange(item.name, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
+            <select aria-label={`${item.name} ${t("assignment_language_proficiency")}`} value={item.proficiency ?? "Not specified"} onChange={(event) => onChange(item.name, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
           ) : (
-            <Input type="number" min={0} aria-label={item.name + " minimum years"} value={item.minYears ?? ""} placeholder="No minimum"
+            <Input type="number" min={0} aria-label={`${item.name} ${t("assignment_minimum_years")}`} value={item.minYears ?? ""} placeholder={t("matching_no_minimum")}
               onChange={(event) => onChange(item.name, { minYears: event.target.value ? Number(event.target.value) : null })} />
           )}
         </div>
@@ -154,7 +155,7 @@ export default function AssignmentDetail() {
 
   useEffect(() => {
     if (!Number.isInteger(assignmentId) || assignmentId <= 0) {
-      setError("Invalid assignment id.");
+      setError(t("assignment_invalid_id"));
       setLoading(false);
       return;
     }
@@ -167,7 +168,7 @@ export default function AssignmentDetail() {
         if (!cancelled) setAssignment(data);
       })
       .catch((requestError: unknown) => {
-        if (!cancelled) setError(requestError instanceof Error ? requestError.message : "Could not load assignment.");
+        if (!cancelled) setError(t("assignment_load_error"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -245,21 +246,21 @@ export default function AssignmentDetail() {
       setAssignment(updated);
       setEditMode(false);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not save assignment.");
+      setError(t("assignment_save_error"));
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="p-6 text-sm text-app-muted">Loading assignment...</div>;
+    return <div className="p-6 text-sm text-app-muted">{t("assignment_loading")}</div>;
   }
 
   if (!assignment) {
     return (
       <div className="p-6 space-y-3">
         <Link to="/client-assignments" className="text-xs text-app-brand">← {t("assignments_title")}</Link>
-        <p className="text-sm text-app-secondary">{error || "Assignment not found."}</p>
+        <p className="text-sm text-app-secondary">{error || t("assignment_not_found")}</p>
       </div>
     );
   }
@@ -363,7 +364,7 @@ export default function AssignmentDetail() {
                 {assignment.requirements.filter((requirement) => requirement.category === "HumanLanguage").map((requirement) => (
                   <div key={requirement.id} className="flex items-center justify-between text-sm">
                     <span className="text-app-secondary">{requirement.name}</span>
-                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? t("common_required") : t("assignment_preferred")}{requirement.proficiency && requirement.proficiency !== "Not specified" ? ` · ${requirement.proficiency}` : ""}</span>
+                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? t("common_required") : t("assignment_preferred")}{requirement.proficiency && requirement.proficiency !== "Not specified" ? ` · ${requirement.proficiency === "Low" ? t("proficiency_low") : requirement.proficiency === "Medium" ? t("proficiency_medium") : requirement.proficiency === "High" ? t("proficiency_high") : t("proficiency_native")}` : ""}</span>
                   </div>
                 ))}
               </div>
@@ -372,7 +373,7 @@ export default function AssignmentDetail() {
 
           {assignment.minYearsExperience > 0 && (
             <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-              <p className="text-xs font-medium text-app-primary">Minimum experience</p>
+              <p className="text-xs font-medium text-app-primary">{t("assignment_minimum_experience")}</p>
               <p className="text-sm text-app-secondary mt-1">{assignment.minYearsExperience} years</p>
             </section>
           )}
@@ -401,21 +402,21 @@ export default function AssignmentDetail() {
                   setDraft({ ...draft, seniority: value });
                   setSeniorityRequirement((current) => value ? { ...(current ?? { id: 0, assignmentId: draft.id, category: "Seniority", type: "Mandatory", minYears: null, minLevel: null, proficiency: null, matchMode: "Exact", maximumSeniority: null }), name: value } : null);
                 }} className="w-full rounded-md border border-app bg-app-surface px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand">
-                  <option value="">Not specified</option>
-                  <option value="Junior">Junior</option>
-                  <option value="Mid">Mid</option>
-                  <option value="Senior">Senior</option>
-                  <option value="Staff">Staff</option>
+                  <option value="">{t("common_not_specified")}</option>
+                  <option value="Junior">{t("seniority_junior")}</option>
+                  <option value="Mid">{t("seniority_mid")}</option>
+                  <option value="Senior">{t("seniority_senior")}</option>
+                  <option value="Staff">{t("seniority_staff")}</option>
                 </select>
-                {seniorityRequirement && <div className="mt-2 grid grid-cols-2 gap-2"><select aria-label="Seniority matching mode" value={seniorityRequirement.matchMode ?? "Exact"} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, matchMode: event.target.value as "Exact" | "Minimum" | "Range", maximumSeniority: event.target.value === "Range" ? seniorityRequirement.maximumSeniority : null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Exact">Exact</option><option value="Minimum">Minimum</option><option value="Range">Range</option></select>{seniorityRequirement.matchMode === "Range" && <select aria-label="Maximum seniority" value={seniorityRequirement.maximumSeniority ?? ""} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, maximumSeniority: event.target.value || null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="">Maximum</option><option>Junior</option><option>Mid</option><option>Senior</option><option>Staff</option></select>}</div>}
+                {seniorityRequirement && <div className="mt-2 grid grid-cols-2 gap-2"><select aria-label={t("assignment_seniority_mode")} value={seniorityRequirement.matchMode ?? "Exact"} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, matchMode: event.target.value as "Exact" | "Minimum" | "Range", maximumSeniority: event.target.value === "Range" ? seniorityRequirement.maximumSeniority : null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Exact">{t("assignment_exact")}</option><option value="Minimum">{t("assignment_minimum")}</option><option value="Range">{t("assignment_range")}</option></select>{seniorityRequirement.matchMode === "Range" && <select aria-label={t("assignment_maximum_seniority")} value={seniorityRequirement.maximumSeniority ?? ""} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, maximumSeniority: event.target.value || null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="">{t("assignment_maximum")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>}</div>}
               </FormField>
               <FormField label={t("assignment_availability")}>
                 <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />
               </FormField>
-              <FormField label="Work location">
-                <Input value={draft.location ?? ""} onChange={(event) => setDraft({ ...draft, location: event.target.value || null })} placeholder="e.g. Stockholm / Hybrid / Remote" />
+                  <FormField label={t("assignment_work_location")}>
+                <Input value={draft.location ?? ""} onChange={(event) => setDraft({ ...draft, location: event.target.value || null })} placeholder={t("assignment_work_location_placeholder")} />
               </FormField>
-              <FormField label="Minimum years experience">
+              <FormField label={t("assignment_minimum_years")}>
                 <Input type="number" min={0} value={draft.minYearsExperience} onChange={(event) => setDraft({ ...draft, minYearsExperience: Number(event.target.value) || 0 })} />
               </FormField>
             </div>
@@ -451,8 +452,8 @@ export default function AssignmentDetail() {
             </div>
             <div className="grid md:grid-cols-2 gap-5 mt-5">
               <SkillEditor
-                label="Required human languages"
-                hint="Add a language such as Swedish or English."
+                label={t("assignment_required_languages")}
+                hint={t("assignment_language_hint")}
                 skills={requiredLanguages}
                 onChange={(names) => updateRequirementNames("Mandatory", "HumanLanguage", names)}
                 accent="indigo"
@@ -460,8 +461,8 @@ export default function AssignmentDetail() {
               />
               <RequirementRuleEditor category="HumanLanguage" type="Mandatory" requirements={requirementEdits} onChange={(name, patch) => updateRequirementRule("Mandatory", "HumanLanguage", name, patch)} />
               <SkillEditor
-                label="Preferred human languages"
-                hint="Add languages that are useful but not mandatory."
+                label={t("assignment_preferred_languages")}
+                hint={t("assignment_preferred_language_hint")}
                 skills={preferredLanguages}
                 onChange={(names) => updateRequirementNames("Desired", "HumanLanguage", names)}
                 accent="neutral"
@@ -471,7 +472,7 @@ export default function AssignmentDetail() {
             </div>
           </FormSection>
 
-          {saving && <p className="text-xs text-app-muted">Saving...</p>}
+          {saving && <p className="text-xs text-app-muted">{t("assignment_saving")}</p>}
         </EditFormModal>
       )}
     </div>
