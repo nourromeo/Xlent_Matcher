@@ -7,6 +7,7 @@ public class TemporaryCvSuggestionRequestDto
 {
     public ConsultantDraftDto Consultant { get; set; } = new();
     public TemporaryAssignmentDraftDto Assignment { get; set; } = new();
+    public string? Locale { get; set; }
 }
 
 public class TemporaryAssignmentDraftDto

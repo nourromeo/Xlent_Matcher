@@ -52,7 +52,7 @@ function SourceTabs({
 }
 
 export default function CvAdaptation() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,7 +190,7 @@ export default function CvAdaptation() {
         resolveAssignment(),
       ]);
 
-      const response = await aiApi.suggestTemporaryCvAdaptation(consultant, assignment);
+      const response = await aiApi.suggestTemporaryCvAdaptation(consultant, assignment, locale);
       setUsedConsultant(consultant);
       setUsedAssignment(assignment);
       setResult(response);

@@ -6,6 +6,20 @@ namespace XlentMatch.Api.Tests;
 
 public class PromptServiceTests
 {
+    [Theory]
+    [InlineData("sv", "Swedish")]
+    [InlineData("en", "English")]
+    [InlineData("es", "Spanish")]
+    [InlineData(null, "English")]
+    [InlineData("de", "English")]
+    public void LanguageInstructionUsesOnlySupportedLocales(string? locale, string expectedLanguage)
+    {
+        var instruction = OpenAiTextService.LanguageInstruction(locale);
+
+        Assert.Contains($"in {expectedLanguage}", instruction);
+        Assert.Contains("Preserve names, companies, technologies", instruction);
+    }
+
     [Fact]
     public async Task BootstrapCreatesOneActiveInitialVersion()
     {

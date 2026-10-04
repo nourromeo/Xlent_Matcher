@@ -33,12 +33,19 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         return await AskForJsonAsync<RequirementExtractionResultDto>(system, text, ct);
     }
 
-    public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, CancellationToken ct)
+    public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
     {
-        var system = await GetPromptAsync(PromptKeys.CvAdaptation, ct);
+        var system = await GetPromptAsync(PromptKeys.CvAdaptation, ct) + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale);
         var user = JsonSerializer.Serialize(new { assignment, consultant }, Json);
         return await AskForJsonAsync<CvAdaptationSuggestionDto>(system, user, ct);
     }
+
+    public static string LanguageInstruction(string? locale) => locale?.Trim().ToLowerInvariant() switch
+    {
+        "sv" => "Generate all user-facing prose fields in Swedish. Preserve names, companies, technologies, certifications and other factual CV data exactly; do not invent or translate technical data.",
+        "es" => "Generate all user-facing prose fields in Spanish. Preserve names, companies, technologies, certifications and other factual CV data exactly; do not invent or translate technical data.",
+        _ => "Generate all user-facing prose fields in English. Preserve names, companies, technologies, certifications and other factual CV data exactly; do not invent or translate technical data."
+    };
 
     private async Task<string> GetPromptAsync(string key, CancellationToken ct)
     {

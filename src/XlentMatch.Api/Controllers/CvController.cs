@@ -29,7 +29,7 @@ public class CvController(IAiTextService ai) : ControllerBase
 
         try
         {
-            return await ai.SuggestCvAdaptationAsync(request.Consultant, request.Assignment, ct);
+            return await ai.SuggestCvAdaptationAsync(request.Consultant, request.Assignment, request.Locale, ct);
         }
         catch (InvalidOperationException)
         {
