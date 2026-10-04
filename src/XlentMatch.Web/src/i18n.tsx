@@ -218,6 +218,8 @@ const translations = {
     assignments_empty_search: "No assignments match your search.",
     assignments_empty: "No active client assignments.",
     assignment_back: "Back to Client Assignments",
+    assignment_required_languages: "Required languages",
+    assignment_preferred_languages: "Preferred languages",
     assignment_details_title: "Assignment Details",
     assignment_details_description: "View requirements and information for this client assignment.",
     assignment_view_matches: "View Matches",

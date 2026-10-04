@@ -277,8 +277,6 @@ export default function AssignmentDetail() {
         <PageHeader
           title={t("assignment_details_title")}
           description={t("assignment_details_description")}
-          backTo="/client-assignments"
-          backLabel={t("assignment_back")}
         />
       </div>
       <div className="px-6 py-4 bg-app-surface flex items-start gap-4 flex-none">

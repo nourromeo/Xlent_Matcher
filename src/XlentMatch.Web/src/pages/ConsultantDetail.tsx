@@ -145,8 +145,6 @@ export default function ConsultantDetail() {
         <PageHeader
           title={t("consultant_details_title")}
           description={t("consultant_details_description")}
-          backTo="/consultants"
-          backLabel={t("consultants_title")}
         />
       </div>
       <div className="px-6 py-4 bg-app-surface flex items-start gap-4 flex-none">

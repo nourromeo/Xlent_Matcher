@@ -311,7 +311,7 @@ export default function Admin() {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="p-6 space-y-5 max-w-6xl mx-auto">
+      <div className="p-6 space-y-5">
         <PageHeader title={t("admin_title")} description={t("admin_description")} />
 
         {error && (
