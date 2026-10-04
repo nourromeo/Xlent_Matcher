@@ -10,6 +10,8 @@ import { aiApi, type ConsultantDraft } from "../services/aiApi";
 import { consultantsApi } from "../services/consultantsApi";
 import { cvUploadsApi, type CvUploadStatus, type CvUploadView } from "../services/cvUploadsApi";
 import { validateDocumentFile } from "../services/fileValidation";
+import { useI18n } from "../i18n";
+import { formatDateTime } from "../services/localeFormat";
 import type { Consultant } from "../types";
 
 function formatBytes(bytes: number) {
@@ -102,6 +104,7 @@ function parseUpload(record: Awaited<ReturnType<typeof cvUploadsApi.getAll>>[num
 }
 
 export default function CvUpload() {
+  const { t, locale } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<CvUploadView[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -121,7 +124,7 @@ export default function CvUpload() {
         if (!cancelled) setFiles(records.map(parseUpload));
       })
       .catch((requestError: unknown) => {
-        if (!cancelled) setError(requestError instanceof Error ? requestError.message : "Could not load CV uploads.");
+        if (!cancelled) setError(requestError instanceof Error ? requestError.message : t("upload_load_error"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -188,7 +191,7 @@ export default function CvUpload() {
       updateLocal(created.id, { ...updated, draft: result });
       setActiveId(created.id);
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Could not extract the CV.";
+      const message = requestError instanceof Error ? requestError.message : t("upload_extract_error");
       setError(message);
 
       if (uploadId !== null) {
@@ -216,7 +219,7 @@ export default function CvUpload() {
       setFiles((current) => current.filter((file) => file.id !== id));
       if (activeId === id) setActiveId(null);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not clear CV history record.");
+      setError(requestError instanceof Error ? requestError.message : t("upload_clear_error"));
     } finally {
       setDeletingId(null);
     }
@@ -226,14 +229,14 @@ export default function CvUpload() {
     if (!activeFile?.draft) return;
 
     if (!activeFile.draft.firstName.trim() || !activeFile.draft.lastName.trim()) {
-      setError("First name and last name are required before saving.");
+      setError(t("upload_required_names"));
       return;
     }
 
     const currentDraft = activeFile.draft;
     if ((currentDraft.yearsOfExperience ?? 0) < 0 ||
         currentDraft.skills.some((skill) => skill.years < 0 || skill.level < 0 || skill.level > 5)) {
-      setError("Check the experience years and skill levels. Years cannot be negative and skill level must be between 0 and 5.");
+      setError(t("upload_invalid_experience"));
       return;
     }
 
@@ -242,13 +245,13 @@ export default function CvUpload() {
       return dateOnly(item.startDate)! > dateOnly(item.endDate)!;
     });
     if (invalidDateRange) {
-      setError("An experience start date cannot be later than its end date.");
+      setError(t("upload_invalid_date_range"));
       return;
     }
 
     const normalizedLanguageNames = currentDraft.languages.map((item) => item.name.trim().toLocaleLowerCase()).filter(Boolean);
     if (new Set(normalizedLanguageNames).size !== normalizedLanguageNames.length) {
-      setError("Remove duplicate language entries before saving.");
+      setError(t("upload_duplicate_languages"));
       return;
     }
 
@@ -267,7 +270,7 @@ export default function CvUpload() {
       });
       setActiveId(null);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not save consultant.");
+      setError(requestError instanceof Error ? requestError.message : t("upload_save_error"));
     } finally {
       setSaving(false);
     }
@@ -293,16 +296,16 @@ export default function CvUpload() {
   return (
     <div className="p-6 space-y-5">
       <PageHeader
-        title="CV Upload"
-        description="Upload consultant CVs, extract structured data with AI, review the result, and save approved consultants."
+        title={t("upload_title")}
+        description={t("upload_description")}
       />
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "Total CVs", value: total },
-          { label: "Processing / Review", value: processing },
-          { label: "Saved / Indexed", value: indexed },
-          { label: "Errors", value: errors },
+          { label: t("upload_total_cvs"), value: total },
+          { label: t("upload_processing_review"), value: processing },
+          { label: t("upload_saved_indexed"), value: indexed },
+          { label: t("upload_errors"), value: errors },
         ].map((item) => (
           <div key={item.label} className="bg-app-surface border border-app rounded-lg px-4 py-3 shadow-app-surface">
             <p className="text-xl font-semibold font-mono text-app-primary">{item.value}</p>
@@ -340,12 +343,12 @@ export default function CvUpload() {
           }}
         />
         <UploadIcon size={28} className="mx-auto mb-3 text-app-faint" />
-        <p className="text-sm text-app-secondary">Drop a PDF/TXT here or click to choose a CV</p>
-        <p className="text-xs text-app-faint mt-1">Upload → AI extraction → review → save to Consultants.</p>
+        <p className="text-sm text-app-secondary">{t("upload_drop_cv")}</p>
+        <p className="text-xs text-app-faint mt-1">{t("upload_flow")}</p>
       </div>
 
       <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-[11px] text-app-muted">
-        Upload history is stored in the database and remains after navigation, refresh, and restart. The original PDF file itself is not stored in the MVP.
+        {t("upload_history_note")}
       </div>
 
       {error && (
@@ -356,12 +359,12 @@ export default function CvUpload() {
 
       <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
         <div className="px-4 py-2.5 border-b border-app flex items-center justify-between">
-          <span className="text-xs font-medium text-app-primary">CV processing history</span>
-          <span className="text-[10px] text-app-faint">{loading ? "Loading..." : `${files.length} files`}</span>
+          <span className="text-xs font-medium text-app-primary">{t("upload_processing_history")}</span>
+          <span className="text-[10px] text-app-faint">{loading ? t("common_loading") : `${files.length} ${t("upload_files")}`}</span>
         </div>
 
         {!loading && files.length === 0 && (
-          <p className="px-4 py-6 text-xs text-app-faint text-center">No CVs uploaded yet.</p>
+          <p className="px-4 py-6 text-xs text-app-faint text-center">{t("upload_no_history")}</p>
         )}
 
         {files.map((file, index) => (
@@ -394,7 +397,7 @@ export default function CvUpload() {
                 </span>
               </div>
 
-              <p className="text-[10px] text-app-faint mt-1">{new Date(file.uploadedAt).toLocaleString()}</p>
+              <p className="text-[10px] text-app-faint mt-1">{formatDateTime(file.uploadedAt, locale)}</p>
               {file.errorMessage && <p className="text-[10px] mt-1" style={{ color: "var(--color-danger)" }}>{file.errorMessage}</p>}
             </div>
 
@@ -404,7 +407,7 @@ export default function CvUpload() {
                 onClick={() => { setReviewStep(0); setActiveId(file.id); }}
                 className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
               >
-                <Eye size={11} /> Review
+                  <Eye size={11} /> {t("upload_review")}
               </button>
             )}
 
@@ -413,7 +416,7 @@ export default function CvUpload() {
                 to={"/consultants/" + file.consultantId}
                 className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
               >
-                <Eye size={11} /> View Consultant
+                <Eye size={11} /> {t("consultants_view")}
               </Link>
             )}
 
@@ -422,8 +425,8 @@ export default function CvUpload() {
               onClick={() => void clearUploadRecord(file.id)}
               disabled={deletingId === file.id}
               className="p-1.5 rounded text-app-faint hover:text-app-secondary disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Clear this CV history record"
-              aria-label={"Clear " + file.fileName + " from CV history"}
+              title={t("upload_clear_history")}
+              aria-label={`${t("upload_clear")} ${file.fileName} ${t("upload_from_history")}`}
             >
               {deletingId === file.id ? <Loader size={12} className="animate-spin" /> : <X size={12} />}
             </button>
@@ -435,8 +438,8 @@ export default function CvUpload() {
       {draft && activeFile && (
         <Modal
           open
-          title="Review extracted consultant"
-          description="AI extracted this data from the CV. Correct anything that is wrong before saving."
+          title={t("upload_review_title")}
+          description={t("upload_review_description")}
           onClose={() => setActiveId(null)}
         >
           <div className="p-5 space-y-5 max-h-[75vh] overflow-auto">
@@ -445,50 +448,50 @@ export default function CvUpload() {
             </div>
 
             <section className={reviewStep === 0 ? "space-y-3" : "hidden"}>
-              <p className="text-[10px] uppercase tracking-wide text-app-faint">Step 1 of 4 · Basic information</p>
+              <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_basic")}</p>
               <div className="grid grid-cols-2 gap-3">
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">First name <span className="text-app-brand">*</span></span>
+                  <span className="text-[11px] text-app-muted block mb-1">{t("upload_first_name")} <span className="text-app-brand">*</span></span>
                   <Input value={draft.firstName} onChange={(event) => updateDraft({ ...draft, firstName: event.target.value })} />
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Last name <span className="text-app-brand">*</span></span>
+                  <span className="text-[11px] text-app-muted block mb-1">{t("upload_last_name")} <span className="text-app-brand">*</span></span>
                   <Input value={draft.lastName} onChange={(event) => updateDraft({ ...draft, lastName: event.target.value })} />
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Title</span>
+                  <span className="text-[11px] text-app-muted block mb-1">{t("upload_job_title")}</span>
                   <Input value={draft.title ?? ""} onChange={(event) => updateDraft({ ...draft, title: event.target.value || null })} />
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Seniority</span>
-                  {draft.suggestedSeniority && <span className="text-[10px] text-app-brand block mb-1">AI suggestion: {draft.suggestedSeniority}</span>}
-                  <select value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">Not specified</option><option value="Junior">Junior</option><option value="Mid">Mid</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select>
+                  <span className="text-[11px] text-app-muted block mb-1">{t("consultant_seniority_label")}</span>
+                  {draft.suggestedSeniority && <span className="text-[10px] text-app-brand block mb-1">{t("upload_ai_suggestion")} {draft.suggestedSeniority}</span>}
+                  <select value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("common_not_specified")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Total experience</span>
+                  <span className="text-[11px] text-app-muted block mb-1">{t("consultant_total_experience")}</span>
                   <Input type="number" min={0} value={draft.yearsOfExperience ?? ""} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: event.target.value ? Number(event.target.value) : null, yearsOfExperienceSource: "ManuallyConfirmed" })} />
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Email</span>
+                  <span className="text-[11px] text-app-muted block mb-1">{t("upload_email")}</span>
                   <Input value={draft.email ?? ""} onChange={(event) => updateDraft({ ...draft, email: event.target.value || null })} />
                 </label>
                 <label>
                 </label>
                 <label>
-                  <span className="text-[11px] text-app-muted block mb-1">Office</span>
+                  <span className="text-[11px] text-app-muted block mb-1">{t("consultant_office")}</span>
                   <Input value={draft.office ?? ""} onChange={(event) => updateDraft({ ...draft, office: event.target.value || null })} />
                 </label>
               </div>
 
               <label className="block">
-                <span className="text-[11px] text-app-muted block mb-1">Summary</span>
+                <span className="text-[11px] text-app-muted block mb-1">{t("consultant_summary")}</span>
                 <Textarea value={draft.summary ?? ""} onChange={(event) => updateDraft({ ...draft, summary: event.target.value || null })} rows={4} />
               </label>
             </section>
 
             <section className={reviewStep === 1 ? "space-y-3" : "hidden"}>
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wide text-app-faint">Step 2 of 4 · Skills ({draft.skills.length})</p>
+                <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_skills")} ({draft.skills.length})</p>
                 <Button
                   variant="ghost"
                   icon={<Plus size={11} />}
@@ -497,7 +500,7 @@ export default function CvUpload() {
                     skills: [...draft.skills, { name: "", level: 0, years: 0, evidence: null }],
                   })}
                 >
-                  Add skill
+                  {t("common_add")} {t("upload_field_skill").toLowerCase()}
                 </Button>
               </div>
 
@@ -506,7 +509,7 @@ export default function CvUpload() {
                   <div key={index} className="grid grid-cols-[1fr_80px_80px_30px] gap-2 items-center">
                     <Input
                       value={skill.name}
-                      aria-label="Skill name" placeholder="Skill"
+                      aria-label={t("upload_field_skill")} placeholder={t("upload_field_skill")}
                       onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, name: event.target.value } : item),
@@ -516,7 +519,7 @@ export default function CvUpload() {
                       type="number"
                       min={0}
                       value={skill.years}
-                      aria-label="Years using this skill" placeholder="Years"
+                      aria-label={t("upload_field_years")} placeholder={t("upload_field_years")}
                       onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, years: Number(event.target.value) || 0 } : item),
@@ -527,7 +530,7 @@ export default function CvUpload() {
                       min={0}
                       max={5}
                       value={skill.level}
-                      aria-label="Skill proficiency, 0 to 5" placeholder="Level"
+                      aria-label={t("upload_field_level")} placeholder={t("upload_field_level")}
                       onChange={(event) => updateDraft({
                         ...draft,
                         skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, level: Number(event.target.value) || 0 } : item),
@@ -537,7 +540,7 @@ export default function CvUpload() {
                       type="button"
                       onClick={() => updateDraft({ ...draft, skills: draft.skills.filter((_, currentIndex) => currentIndex !== index) })}
                       className="text-app-faint hover:text-app-secondary"
-                      aria-label="Remove skill"
+                      aria-label={t("upload_remove_skill")}
                     >
                       <X size={12} />
                     </button>
@@ -549,47 +552,47 @@ export default function CvUpload() {
             <section className={reviewStep >= 2 ? "space-y-5" : "hidden"}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide text-app-faint">Step {reviewStep + 1} of 4 · Experience and profile details</p>
-                  <p className="text-[11px] text-app-muted mt-1">Review every extracted item. Correct names, dates and levels before saving.</p>
+                  <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_profile").replace("{step}", String(reviewStep + 1))}</p>
+                  <p className="text-[11px] text-app-muted mt-1">{t("upload_review_help")}</p>
                 </div>
               </div>
 
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-app-primary">Languages ({draft.languages.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", proficiency: "Not specified" }] })}>Add language</Button>
+                  <p className="text-xs font-medium text-app-primary">{t("upload_languages")} ({draft.languages.length})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", proficiency: "Not specified" }] })}>{t("upload_add_language")}</Button>
                 </div>
                 {draft.languages.map((item, index) => (
                   <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                    <Input aria-label="Language" placeholder="Language" value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                    <select aria-label="Language proficiency" value={item.proficiency} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option>Not specified</option><option>Low</option><option>Medium</option><option>High</option><option>Native</option></select>
-                    <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label="Remove language"><X size={12} /></button>
+                    <Input aria-label={t("consultant_language")} placeholder={t("consultant_language")} value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                    <select aria-label={t("upload_language_proficiency")} value={item.proficiency} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
+                    <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label={t("upload_remove_language")}><X size={12} /></button>
                   </div>
                 ))}
-                {draft.languages.length === 0 && <p className="text-[11px] text-app-faint">No languages extracted. Add them if they are listed in the CV.</p>}
+                {draft.languages.length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_languages")}</p>}
               </div>
 
 </div>
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-app-primary">Experience and skill experience ({draft.experiences.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...draft.experiences, { company: "", role: "", description: null, startDate: null, endDate: null }] })}>Add experience</Button>
+                  <p className="text-xs font-medium text-app-primary">{t("upload_experience_section")} ({draft.experiences.length})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...draft.experiences, { company: "", role: "", description: null, startDate: null, endDate: null }] })}>{t("upload_add_experience")}</Button>
                 </div>
                 {draft.experiences.map((item, index) => (
                   <div key={index} className="rounded-md border border-app bg-app-surface p-3 space-y-2">
                     <div className="grid grid-cols-2 gap-2">
-                      <Input aria-label="Role or title" placeholder="Role" value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
-                      <Input aria-label="Company" placeholder="Company" value={item.company} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
-                      <Input type="month" aria-label="Start date" value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
-                      <Input type="month" aria-label="End date" value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
+                      <Input aria-label={t("upload_role")} placeholder={t("upload_role")} value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
+                      <Input aria-label={t("consultant_company")} placeholder={t("consultant_company")} value={item.company} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
+                      <Input type="month" aria-label={t("upload_start_date")} value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
+                      <Input type="month" aria-label={t("upload_end_date")} value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
                     </div>
-                    <Textarea aria-label="Description" placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
-                    <button type="button" onClick={() => updateDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted hover:text-app-secondary">Remove experience</button>
+                    <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                    <button type="button" onClick={() => updateDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted hover:text-app-secondary">{t("consultant_remove_experience")}</button>
                   </div>
                 ))}
-                {draft.experiences.length === 0 && <p className="text-[11px] text-app-faint">No experience extracted. Add relevant experience from the CV.</p>}
+                {draft.experiences.length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_experience")}</p>}
               </div>
 
 </div>
@@ -597,58 +600,58 @@ export default function CvUpload() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">Projects ({draft.projects.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, projects: [...draft.projects, { name: "", description: null, technologies: null }] })}>Add project</Button>
+                    <p className="text-xs font-medium text-app-primary">{t("upload_projects")} ({draft.projects.length})</p>
+                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, projects: [...draft.projects, { name: "", description: null, technologies: null }] })}>{t("common_add")} {t("upload_projects").toLowerCase()}</Button>
                   </div>
                   {draft.projects.map((item, index) => (
                     <div key={index} className="rounded border border-app bg-app-surface p-2 space-y-2">
-                      <Input aria-label="Project name" placeholder="Project name" value={item.name} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                      <Input aria-label="Technologies" placeholder="Technologies (comma-separated)" value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
-                      <Textarea aria-label="Description" placeholder="Description" rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted">Remove project</button>
+                      <Input aria-label={t("upload_project_name")} placeholder={t("upload_project_name")} value={item.name} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                      <Input aria-label={t("upload_technologies")} placeholder={t("upload_technologies")} value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
+                      <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted">{t("consultant_remove_project")}</button>
                     </div>
                   ))}
                 </div>
 
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">Education ({draft.education.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, education: [...draft.education, { degree: "", school: null, year: null }] })}>Add education</Button>
+                    <p className="text-xs font-medium text-app-primary">{t("upload_education")} ({draft.education.length})</p>
+                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, education: [...draft.education, { degree: "", school: null, year: null }] })}>{t("common_add")} {t("upload_education").toLowerCase()}</Button>
                   </div>
                   {draft.education.map((item, index) => (
                     <div key={index} className="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-center">
-                      <Input aria-label="Degree" placeholder="Degree" value={item.degree} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
-                      <Input aria-label="School" placeholder="School" value={item.school ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
-                      <Input aria-label="Graduation year" placeholder="Year" value={item.year ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove education"><X size={12} /></button>
+                      <Input aria-label={t("upload_degree")} placeholder={t("upload_degree")} value={item.degree} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
+                      <Input aria-label={t("consultant_school")} placeholder={t("consultant_school")} value={item.school ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
+                      <Input aria-label={t("upload_year")} placeholder={t("upload_year")} value={item.year ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_education")}><X size={12} /></button>
                     </div>
                   ))}
                 </div>
 
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">Certifications ({draft.certifications.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, certifications: [...draft.certifications, { name: "", issuer: null, issuedDate: null }] })}>Add certification</Button>
+                    <p className="text-xs font-medium text-app-primary">{t("upload_certifications")} ({draft.certifications.length})</p>
+                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, certifications: [...draft.certifications, { name: "", issuer: null, issuedDate: null }] })}>{t("common_add")} {t("upload_certifications").toLowerCase()}</Button>
                   </div>
                   {draft.certifications.map((item, index) => (
                     <div key={index} className="grid grid-cols-[1fr_1fr_110px_auto] gap-2 items-center">
-                      <Input aria-label="Certification" placeholder="Certification" value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                      <Input aria-label="Certification issuer" placeholder="Issuer" value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
-                      <Input type="month" aria-label="Issued date" value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove certification"><X size={12} /></button>
+                      <Input aria-label={t("upload_certification")} placeholder={t("upload_certification")} value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                      <Input aria-label={t("upload_issuer")} placeholder={t("upload_issuer")} value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
+                      <Input type="month" aria-label={t("upload_issued_date")} value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_certification")}><X size={12} /></button>
                     </div>
                   ))}
                 </div>
 
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">Industries ({draft.industries.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, industries: [...draft.industries, ""] })}>Add industry</Button>
+                    <p className="text-xs font-medium text-app-primary">{t("upload_industries")} ({draft.industries.length})</p>
+                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, industries: [...draft.industries, ""] })}>{t("common_add")} {t("upload_industries").toLowerCase()}</Button>
                   </div>
                   {draft.industries.map((item, index) => (
                     <div key={index} className="flex gap-2">
-                      <Input aria-label="Industry" placeholder="Industry" value={item} onChange={(event) => updateDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? event.target.value : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })} className="text-app-faint" aria-label="Remove industry"><X size={12} /></button>
+                      <Input aria-label={t("upload_industry")} placeholder={t("upload_industry")} value={item} onChange={(event) => updateDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? event.target.value : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_industry")}><X size={12} /></button>
                     </div>
                   ))}
                 </div>
@@ -656,13 +659,13 @@ export default function CvUpload() {
               </div>
             </section>
 
-            {!canSave && <p className="text-[10px] text-app-faint">First name and last name must be filled in before saving.</p>}
+            {!canSave && <p className="text-[10px] text-app-faint">{t("upload_save_validation")}</p>}
 
             <div className="flex justify-between gap-2">
-              <Button variant="ghost" onClick={() => setActiveId(null)}>Close</Button>
+              <Button variant="ghost" onClick={() => setActiveId(null)}>{t("common_close")}</Button>
               <div className="flex gap-2">
-                {reviewStep > 0 && <Button variant="ghost" onClick={() => setReviewStep((current) => current - 1)}>Back</Button>}
-                {reviewStep < 3 ? <Button variant="primary" onClick={() => setReviewStep((current) => current + 1)}>Next</Button> : <Button variant="primary" onClick={saveConsultant} disabled={saving || !canSave}>{saving ? "Saving..." : "Approve and save consultant"}</Button>}
+                {reviewStep > 0 && <Button variant="ghost" onClick={() => setReviewStep((current) => current - 1)}>{t("common_back")}</Button>}
+                {reviewStep < 3 ? <Button variant="primary" onClick={() => setReviewStep((current) => current + 1)}>{t("common_next")}</Button> : <Button variant="primary" onClick={saveConsultant} disabled={saving || !canSave}>{saving ? t("common_saving") : t("upload_approve_save")}</Button>}
               </div>
             </div>
           </div>
