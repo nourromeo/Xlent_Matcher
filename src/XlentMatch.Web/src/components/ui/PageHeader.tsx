@@ -17,7 +17,7 @@ export function PageHeader({ title, description, eyebrow, meta, backTo, backLabe
   const { t } = useI18n();
   const resolvedBackLabel = backLabel ?? t("common_back");
   return (
-    <header className="flex items-start justify-between gap-4 pb-4 border-b border-app">
+    <header className="flex flex-col gap-3 pb-4 border-b border-app sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         {backTo && (
           <Link to={backTo} className="inline-flex items-center gap-1.5 text-xs text-app-muted hover:text-app-secondary mb-3">

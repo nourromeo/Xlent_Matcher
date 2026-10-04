@@ -202,7 +202,7 @@ export default function Matching() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-none px-6 py-4 bg-app-surface border-b border-app">
+      <div className="flex-none px-6 py-4 bg-app-surface">
         <PageHeader
           title={t("matching_title")}
           description={assignment ? t("matching_review_selected") : t("matching_select_then_run")}

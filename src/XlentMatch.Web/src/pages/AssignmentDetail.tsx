@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Briefcase, ChevronLeft, Edit3, Eye, Plus, X } from "../design-system/icons";
+import { Briefcase, Edit3, Eye, Plus, X } from "../design-system/icons";
+import { PageHeader } from "../components/ui/PageHeader";
 import { useI18n } from "../i18n";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { Button } from "../components/ui/Button";
@@ -272,11 +273,15 @@ export default function AssignmentDetail() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-6 py-4 border-b border-app bg-app-surface flex items-start gap-4 flex-none">
-        <Link to="/client-assignments" aria-label={t("assignment_back")} className="text-app-faint hover:text-app-secondary transition-colors mt-1">
-          <ChevronLeft size={16} />
-        </Link>
-
+      <div className="px-6 pt-6 bg-app-surface flex-none">
+        <PageHeader
+          title={t("assignment_details_title")}
+          description={t("assignment_details_description")}
+          backTo="/client-assignments"
+          backLabel={t("assignment_back")}
+        />
+      </div>
+      <div className="px-6 py-4 bg-app-surface flex items-start gap-4 flex-none">
         <div className="w-9 h-9 rounded-lg bg-app-brand-subtle flex items-center justify-center text-app-brand flex-none">
           <Briefcase size={15} />
         </div>
@@ -309,7 +314,7 @@ export default function AssignmentDetail() {
             {t("assignment_edit")}
           </Button>
         </div>
-      </header>
+      </div>
 
       {error && (
         <div className="mx-6 mt-4 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">

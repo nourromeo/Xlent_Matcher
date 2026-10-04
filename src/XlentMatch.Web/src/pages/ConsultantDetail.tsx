@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronLeft, Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
+import { Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
+import { PageHeader } from "../components/ui/PageHeader";
 import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
@@ -140,11 +141,15 @@ export default function ConsultantDetail() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-4 border-b border-app bg-app-surface flex items-start gap-4 flex-none">
-        <Link to="/consultants" className="text-app-faint hover:text-app-secondary transition-colors mt-0.5">
-          <ChevronLeft size={16} />
-        </Link>
-
+      <div className="px-6 pt-6 bg-app-surface flex-none">
+        <PageHeader
+          title={t("consultant_details_title")}
+          description={t("consultant_details_description")}
+          backTo="/consultants"
+          backLabel={t("consultants_title")}
+        />
+      </div>
+      <div className="px-6 py-4 bg-app-surface flex items-start gap-4 flex-none">
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand">
