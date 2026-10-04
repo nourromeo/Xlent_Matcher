@@ -8,11 +8,12 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { SkillEditModal } from "../components/SkillEditModal";
 import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion, type PromptSummary, type PromptVersion } from "../services/adminApi";
+import { formatDate, formatDateTime } from "../services/localeFormat";
 
 const ADMIN_TABS = ["taxonomy", "weights", "flags", "prompts"] as const;
 
 export default function Admin() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const TABS = ADMIN_TABS.map((id) => ({ id, label: id === "prompts" ? t("prompt_title") : t(`tab_${id}` as any) }));
 
   const [tab, setTab] = useState("taxonomy");
@@ -333,10 +334,10 @@ export default function Admin() {
                 <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
                   <div className="bg-app-surface border border-app rounded-lg p-3 space-y-1">
                     <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">{t("prompt_history")}</p>
-                    {promptVersions.map((version) => <button key={version.version} type="button" onClick={() => { setSelectedPromptVersion(version); setEditingPrompt(false); }} className={`w-full rounded-md px-3 py-2 text-left text-xs ${selectedPromptVersion.version === version.version ? "bg-app-brand-soft text-app-primary" : "text-app-muted hover:bg-app"}`}><span className="font-medium">v{version.version}</span>{version.isActive && <span className="ml-2 text-[10px] text-app-brand">{t("prompt_active")}</span>}<span className="block text-[10px] text-app-faint mt-1">{new Date(version.createdAt).toLocaleDateString()}</span></button>)}
+                    {promptVersions.map((version) => <button key={version.version} type="button" onClick={() => { setSelectedPromptVersion(version); setEditingPrompt(false); }} className={`w-full rounded-md px-3 py-2 text-left text-xs ${selectedPromptVersion.version === version.version ? "bg-app-brand-soft text-app-primary" : "text-app-muted hover:bg-app"}`}><span className="font-medium">v{version.version}</span>{version.isActive && <span className="ml-2 text-[10px] text-app-brand">{t("prompt_active")}</span>}<span className="block text-[10px] text-app-faint mt-1">{formatDate(version.createdAt, locale)}</span></button>)}
                   </div>
                   <div className="bg-app-surface border border-app rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3"><div><span className="text-xs font-semibold text-app-primary">v{selectedPromptVersion.version}</span>{selectedPromptVersion.isActive && <StatusBadge tone="success">{t("prompt_active")}</StatusBadge>} {!selectedPromptVersion.isActive && <span className="ml-2 text-[10px] text-app-muted">{t("prompt_previous")}</span>}</div><span className="text-[10px] text-app-faint">{new Date(selectedPromptVersion.createdAt).toLocaleString()}</span></div>
+                    <div className="flex items-center justify-between gap-3"><div><span className="text-xs font-semibold text-app-primary">v{selectedPromptVersion.version}</span>{selectedPromptVersion.isActive && <StatusBadge tone="success">{t("prompt_active")}</StatusBadge>} {!selectedPromptVersion.isActive && <span className="ml-2 text-[10px] text-app-muted">{t("prompt_previous")}</span>}</div><span className="text-[10px] text-app-faint">{formatDateTime(selectedPromptVersion.createdAt, locale)}</span></div>
                     {selectedPromptVersion.changeNote && <p className="text-xs text-app-muted">{selectedPromptVersion.changeNote}</p>}
                     {editingPrompt ? <><p className="text-[11px] text-app-brand">{t("prompt_editing_based")} v{selectedPromptVersion.version}</p><textarea value={promptContent} onChange={(event) => setPromptContent(event.target.value)} rows={18} className="w-full rounded-md border border-app bg-app px-3 py-2 text-xs font-mono text-app-primary outline-none focus:border-app-brand" /><input value={promptChangeNote} onChange={(event) => setPromptChangeNote(event.target.value)} placeholder={t("prompt_change_note")} className="w-full rounded-md border border-app bg-app px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" /><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingPrompt(false)}>{t("common_cancel")}</Button><Button variant="primary" onClick={() => void savePromptVersion()}>{t("prompt_save_version")}</Button></div></> : <><pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-md border border-app bg-app px-3 py-3 text-[11px] leading-relaxed text-app-secondary">{selectedPromptVersion.content}</pre><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setPromptContent(selectedPromptVersion.content); setPromptChangeNote(""); setEditingPrompt(true); }}>{t("common_edit")}</Button>{!selectedPromptVersion.isActive && <Button variant="primary" onClick={() => void activatePromptVersion()}>{t("prompt_set_active")}</Button>}</div></>}
                   </div>
@@ -347,7 +348,7 @@ export default function Admin() {
         )}
 
         {tab === "prompts" && !selectedPromptVersion && promptKey === null && prompts.length > 0 && (
-          <section className="bg-app-surface border border-app rounded-lg p-4"><DataTable<PromptSummary> columns={[{ key: "displayName", header: t("prompt_prompt"), render: (item) => <span className="font-medium text-app-primary">{item.displayName}</span> }, { key: "activeVersion", header: t("prompt_active_version"), render: (item) => <span className="text-app-brand">v{item.activeVersion}</span> }, { key: "versionCount", header: t("prompt_versions"), render: (item) => <span>{item.versionCount}</span> }, { key: "updatedAt", header: t("prompt_updated"), render: (item) => <span>{new Date(item.updatedAt).toLocaleDateString()}</span> }, { key: "action", header: t("prompt_action"), render: (item) => <Button variant="primary" onClick={() => setPromptKey(item.promptKey)}>{t("prompt_view")}</Button> }]} rows={prompts} rowKey={(item) => item.promptKey} /></section>
+          <section className="bg-app-surface border border-app rounded-lg p-4"><DataTable<PromptSummary> columns={[{ key: "displayName", header: t("prompt_prompt"), render: (item) => <span className="font-medium text-app-primary">{item.displayName}</span> }, { key: "activeVersion", header: t("prompt_active_version"), render: (item) => <span className="text-app-brand">v{item.activeVersion}</span> }, { key: "versionCount", header: t("prompt_versions"), render: (item) => <span>{item.versionCount}</span> }, { key: "updatedAt", header: t("prompt_updated"), render: (item) => <span>{formatDate(item.updatedAt, locale)}</span> }, { key: "action", header: t("prompt_action"), render: (item) => <Button variant="primary" onClick={() => setPromptKey(item.promptKey)}>{t("prompt_view")}</Button> }]} rows={prompts} rowKey={(item) => item.promptKey} /></section>
         )}
 
         {tab === "taxonomy" && (

@@ -13,6 +13,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { validateDocumentFile } from "../services/fileValidation";
 import { aiApi } from "../services/aiApi";
+import { formatDate } from "../services/localeFormat";
 import type { AssignmentApi, AssignmentRequirementApi, AssignmentStatusApi } from "../types";
 
 const emptyRequirement = (
@@ -44,7 +45,7 @@ function NewAssignmentModal({
   onClose: () => void;
   onCreated: (assignment: AssignmentApi) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [step, setStep] = useState<"input" | "review">("input");
   const [title, setTitle] = useState("");
   const [client, setClient] = useState("");
@@ -326,7 +327,7 @@ function NewAssignmentModal({
 }
 
 export default function ClientAssignments() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [query, setQuery] = useState("");
@@ -437,7 +438,7 @@ export default function ClientAssignments() {
                     <StatusBadge tone={status.tone} icon={status.icon}>{status.label}</StatusBadge>
                   </div>
                   <p className="text-xs text-app-muted">
-                    {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {assignment.location || "Location not specified"} · Updated {new Date(assignment.updatedAt || assignment.createdAt).toLocaleDateString()}
+                    {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {assignment.location || t("assignment_location_unspecified")} · {t("common_updated")} {formatDate(assignment.updatedAt || assignment.createdAt, locale)}
                   </p>
                   <p className="text-[11px] text-app-secondary mt-1 mb-2 max-w-3xl line-clamp-2">{assignment.description || "—"}</p>
                   <p className="text-[10px] text-app-muted mb-2">{assignment.requirements.length} requirements{assignment.minYearsExperience > 0 ? ` · ${assignment.minYearsExperience}+ years experience` : ""}</p>

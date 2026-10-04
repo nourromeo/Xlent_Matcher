@@ -13,6 +13,7 @@ import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
 import { assignmentsApi } from "../services/assignmentsApi";
 import type { AssignmentApi, AssignmentRequirementApi } from "../types";
+import { formatDate } from "../services/localeFormat";
 
 function SkillEditor({
   label,
@@ -29,7 +30,7 @@ function SkillEditor({
   accent: "indigo" | "neutral";
   category?: "Skill" | "HumanLanguage";
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [value, setValue] = useState("");
 
   const addSkill = () => {
@@ -134,7 +135,7 @@ const makeRequirements = (
 };
 
 export default function AssignmentDetail() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { id } = useParams();
   const assignmentId = Number(id);
 
@@ -285,12 +286,12 @@ export default function AssignmentDetail() {
             <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
             {(assignment.availability || assignment.requiredStartDate) && (
               <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>
-                {assignment.requiredStartDate ? new Date(assignment.requiredStartDate).toLocaleDateString() : displayAvailability(assignment.availability ?? "")}
+                {assignment.requiredStartDate ? formatDate(assignment.requiredStartDate, locale) : displayAvailability(assignment.availability ?? "")}
               </StatusBadge>
             )}
           </div>
           <p className="text-xs text-app-muted mt-1">
-            {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {assignment.location || "Location not specified"} · Updated {new Date(assignment.updatedAt || assignment.createdAt).toLocaleDateString()}
+            {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {assignment.location || t("assignment_location_unspecified")} · {t("common_updated")} {formatDate(assignment.updatedAt || assignment.createdAt, locale)}
           </p>
         </div>
 

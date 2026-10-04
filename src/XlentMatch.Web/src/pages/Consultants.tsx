@@ -8,6 +8,7 @@ import { SkillTag } from "../components/ui/SkillTag";
 import { PageHeader } from "../components/ui/PageHeader";
 import { consultantsApi } from "../services/consultantsApi";
 import type { Consultant } from "../types";
+import { formatDate } from "../services/localeFormat";
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
 const AVAIL_OPTIONS = ["All", "Available", "Unavailable"];
@@ -22,15 +23,15 @@ const initials = (consultant: Consultant) =>
     .join("")
     .slice(0, 2);
 
-function formatAvailableAgainDate(value: string | null) {
+function formatAvailableAgainDate(value: string | null, locale: "en" | "es" | "sv") {
   if (!value) return "Available again";
   const [year, month, day] = value.slice(0, 10).split("-").map(Number);
   if (!year || !month || !day) return "Available again";
-  return new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", year: "numeric" }).format(new Date(year, month - 1, day));
+  return formatDate(new Date(year, month - 1, day), locale);
 }
 
 export default function Consultants() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -241,7 +242,7 @@ export default function Consultants() {
               header: "Available again",
               render: (consultant) => consultant.availability === "Unavailable" ? (
                 <label className="relative inline-flex max-w-36 items-center gap-1.5 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
-                  <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate)}</span>
+                  <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate, locale)}</span>
                   <Calendar size={12} className="flex-none text-app-muted" aria-hidden="true" />
                   <input
                     aria-label={`Available again date for ${consultantName(consultant)}`}

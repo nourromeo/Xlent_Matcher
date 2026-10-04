@@ -8,6 +8,7 @@ import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { matchingApi } from "../services/matchingApi";
 import type { AssignmentApi, Consultant, MatchResultApi } from "../types";
 import { useI18n } from "../i18n";
+import { formatDateTime } from "../services/localeFormat";
 
 function StatCard({
   label,
@@ -49,7 +50,7 @@ const uploadIcon = (status: CvUploadRecord["status"]) =>
       : <Clock size={10} style={{ color: "var(--color-brand)" }} />;
 
 export default function Dashboard() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [uploads, setUploads] = useState<CvUploadRecord[]>([]);
@@ -174,7 +175,7 @@ export default function Dashboard() {
                 <FileText size={12} className="text-app-faint flex-none" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-app-primary truncate font-mono">{item.fileName}</p>
-                  <p className="text-[10px] text-app-faint">{new Date(item.uploadedAt).toLocaleString()}</p>
+              <p className="text-[10px] text-app-faint">{formatDateTime(item.uploadedAt, locale)}</p>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[10px] text-app-muted">
                   {uploadIcon(item.status)}
