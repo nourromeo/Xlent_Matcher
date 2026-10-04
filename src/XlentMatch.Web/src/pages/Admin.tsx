@@ -107,7 +107,8 @@ export default function Admin() {
       const versions = await adminApi.getPromptVersions(promptKey);
       setPromptVersions(versions);
       setSelectedPromptVersion(versions.find((item) => item.version === selectedPromptVersion.version) ?? null);
-      setPrompts((current) => current.map((item) => item.promptKey === promptKey ? { ...item, activeVersion: selectedPromptVersion.version, updatedAt: new Date().toISOString() } : item));
+      const updatedPrompts = await adminApi.getPrompts();
+      setPrompts(updatedPrompts);
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Could not activate prompt version."); }
   };
 
@@ -311,8 +312,12 @@ export default function Admin() {
 
         <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
 
-        {tab === "prompts" && !promptKey && (
+        {tab === "prompts" && !promptKey && promptLoading && prompts.length === 0 && (
           <section className="bg-app-surface border border-app rounded-lg p-4 text-xs text-app-muted">{promptLoading ? "Loading prompts..." : "No prompts available."}</section>
+        )}
+
+        {tab === "prompts" && !promptKey && !promptLoading && prompts.length === 0 && (
+          <section className="bg-app-surface border border-app rounded-lg p-4 text-xs text-app-muted">No prompts available.</section>
         )}
 
         {tab === "prompts" && promptKey && (
