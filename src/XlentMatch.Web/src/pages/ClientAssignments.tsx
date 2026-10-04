@@ -115,6 +115,16 @@ export function NewAssignmentPage() {
     setRequirements((current) => current.filter((_, currentIndex) => currentIndex !== index));
   };
 
+  const skillRequirements = requirements
+    .map((requirement, index) => ({ requirement, index }))
+    .filter(({ requirement }) => requirement.category === "Skill");
+  const languageRequirements = requirements
+    .map((requirement, index) => ({ requirement, index }))
+    .filter(({ requirement }) => requirement.category === "HumanLanguage");
+  const otherRequirements = requirements
+    .map((requirement, index) => ({ requirement, index }))
+    .filter(({ requirement }) => requirement.category !== "Skill" && requirement.category !== "HumanLanguage");
+
   const createAssignment = async () => {
     if (!title.trim() || !client.trim()) {
       setError(t("assignment_required_fields"));
@@ -235,18 +245,6 @@ export function NewAssignmentPage() {
         </div>
       ) : (
         <div className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
-          <div className="rounded-lg border border-app bg-app-raised px-3 py-2">
-            <p className="text-xs text-app-secondary">
-              {t("client_review_requirements")}
-            </p>
-          </div>
-          {brief.trim() && (
-            <details className="rounded-lg border border-app bg-app-surface px-3 py-2">
-              <summary className="cursor-pointer text-xs text-app-secondary">{t("client_view_source")}</summary>
-              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words text-[11px] text-app-muted">{brief}</pre>
-            </details>
-          )}
-
           {step === "basic" && <>
           {aiExtracted && <div className="rounded-lg border border-app bg-app-raised px-3 py-2 text-xs text-app-secondary">{t("assignment_ai_review_indicator")}</div>}
           <h2 className="text-sm font-medium text-app-primary">{t("assignment_step_basic")}</h2>
@@ -279,53 +277,35 @@ export function NewAssignmentPage() {
           <p className="text-xs text-app-muted">{t("assignment_requirements_review_help")}</p>
           {aiExtracted && <div className="rounded-lg border border-app bg-app-raised px-3 py-2 text-xs text-app-secondary">{t("assignment_ai_review_indicator")}</div>}
           {brief.trim() && <details className="rounded-lg border border-app bg-app-surface px-3 py-2"><summary className="cursor-pointer text-xs text-app-secondary">{t("client_view_source")}</summary><pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words text-[11px] text-app-muted">{brief}</pre></details>}
-          <div className="hidden md:grid grid-cols-[minmax(130px,1fr)_100px_110px_minmax(100px,auto)_30px] gap-2 text-[10px] uppercase tracking-wide text-app-faint"><span>{t("client_requirement_name")}</span><span>{t("client_requirement_category")}</span><span>{t("client_requirement_priority")}</span><span>{t("assignment_years")}</span><span /></div>
-          <div className="space-y-2">
-            {requirements.map((requirement, index) => (
-              <div key={index} className="grid grid-cols-[minmax(130px,1fr)_100px_110px_minmax(100px,auto)_30px] gap-2 items-center">
-                <Input
-                  aria-label={t("client_requirement_name")}
-                  value={requirement.name}
-                  onChange={(event) => updateRequirement(index, { name: event.target.value })}
-                />
-                <select
-                  aria-label={t("client_requirement_category")}
-                  value={requirement.category}
-                  onChange={(event) => updateRequirement(index, { category: event.target.value as "Skill" | "HumanLanguage", minYears: event.target.value === "HumanLanguage" ? null : requirement.minYears })}
-                  className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
-                >
-                  <option value="Skill">{t("client_skill")}</option>
-                  <option value="HumanLanguage">{t("client_language")}</option>
-                </select>
-                <select
-                  aria-label={t("client_requirement_priority")}
-                  value={requirement.type}
-                  onChange={(event) => updateRequirement(index, { type: event.target.value as "Mandatory" | "Desired" })}
-                  className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
-                >
-                  <option value="Mandatory">{t("client_mandatory")}</option>
-                  <option value="Desired">{t("client_desired")}</option>
-                </select>
-                {requirement.category === "HumanLanguage" ? (
-                  <label className="flex items-center gap-1.5 text-[10px] text-app-muted">
-                    <select aria-label={t("assignment_language_proficiency")} value={requirement.proficiency ?? "Not specified"} onChange={(event) => updateRequirement(index, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null, minYears: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
-                  </label>
-                ) : (
-                  <Input type="number" min={0} value={requirement.minYears ?? ""} placeholder={t("assignment_years")} aria-label={t("client_minimum_skill_years")}
-                    onChange={(event) => updateRequirement(index, { minYears: event.target.value ? Number(event.target.value) : null })} />
-                )}
-                <button type="button" onClick={() => removeRequirement(index)} className="text-app-faint hover:text-app-secondary">×</button>
+          <div className="space-y-5">
+            <section className="space-y-2">
+              <h3 className="text-xs font-medium text-app-primary">{t("client_skill")}</h3>
+              <div className="hidden md:grid grid-cols-[minmax(180px,1.6fr)_minmax(150px,1fr)_minmax(150px,1fr)_32px] gap-2 text-[10px] uppercase tracking-wide text-app-faint"><span>{t("client_requirement_name")}</span><span>{t("client_requirement_priority")}</span><span>{t("client_minimum_skill_years")}</span><span /></div>
+              <div className="space-y-2">
+                {skillRequirements.map(({ requirement, index }) => <div key={index} className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1.6fr)_minmax(150px,1fr)_minmax(150px,1fr)_32px] md:items-center">
+                  <label className="space-y-1"><span className="md:hidden text-[10px] text-app-muted">{t("client_requirement_name")}</span><Input aria-label={t("client_requirement_name")} value={requirement.name} onChange={(event) => updateRequirement(index, { name: event.target.value })} /></label>
+                  <label className="space-y-1"><span className="md:hidden text-[10px] text-app-muted">{t("client_requirement_priority")}</span><select aria-label={t("client_requirement_priority")} value={requirement.type} onChange={(event) => updateRequirement(index, { type: event.target.value as "Mandatory" | "Desired" })} className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Mandatory">{t("client_mandatory")}</option><option value="Desired">{t("client_desired")}</option></select></label>
+                  <label className="space-y-1"><span className="md:hidden text-[10px] text-app-muted">{t("client_minimum_skill_years")}</span><Input type="number" min={0} value={requirement.minYears ?? ""} placeholder={t("common_not_specified")} aria-label={t("client_minimum_skill_years")} onChange={(event) => updateRequirement(index, { minYears: event.target.value ? Number(event.target.value) : null })} /></label>
+                  <button type="button" aria-label={t("client_delete")} onClick={() => removeRequirement(index)} className="text-app-faint hover:text-app-secondary">×</button>
+                </div>)}
               </div>
-            ))}
+              <Button variant="ghost" onClick={() => setRequirements((current) => [...current, emptyRequirement("", "Mandatory", null, null, "Skill")])} icon={<Plus size={11} />}>{t("client_add_competence")}</Button>
+            </section>
+            <section className="space-y-2">
+              <h3 className="text-xs font-medium text-app-primary">{t("client_language")}</h3>
+              <div className="hidden md:grid grid-cols-[minmax(180px,1.6fr)_minmax(150px,1fr)_minmax(150px,1fr)_32px] gap-2 text-[10px] uppercase tracking-wide text-app-faint"><span>{t("client_requirement_name")}</span><span>{t("client_requirement_priority")}</span><span>{t("client_requirement_level")}</span><span /></div>
+              <div className="space-y-2">
+                {languageRequirements.map(({ requirement, index }) => <div key={index} className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1.6fr)_minmax(150px,1fr)_minmax(150px,1fr)_32px] md:items-center">
+                  <label className="space-y-1"><span className="md:hidden text-[10px] text-app-muted">{t("client_requirement_name")}</span><Input aria-label={t("client_requirement_name")} value={requirement.name} onChange={(event) => updateRequirement(index, { name: event.target.value })} /></label>
+                  <label className="space-y-1"><span className="md:hidden text-[10px] text-app-muted">{t("client_requirement_priority")}</span><select aria-label={t("client_requirement_priority")} value={requirement.type} onChange={(event) => updateRequirement(index, { type: event.target.value as "Mandatory" | "Desired" })} className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Mandatory">{t("client_mandatory")}</option><option value="Desired">{t("client_desired")}</option></select></label>
+                  <label className="space-y-1"><span className="md:hidden text-[10px] text-app-muted">{t("client_requirement_level")}</span><select aria-label={t("assignment_language_proficiency")} value={requirement.proficiency ?? "Not specified"} onChange={(event) => updateRequirement(index, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null, minYears: null })} className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select></label>
+                  <button type="button" aria-label={t("client_delete")} onClick={() => removeRequirement(index)} className="text-app-faint hover:text-app-secondary">×</button>
+                </div>)}
+              </div>
+              <Button variant="ghost" onClick={() => setRequirements((current) => [...current, emptyRequirement("", "Mandatory", null, null, "HumanLanguage")])} icon={<Plus size={11} />}>{t("client_add_language_requirement")}</Button>
+            </section>
+            {otherRequirements.length > 0 && <section className="space-y-2"><h3 className="text-xs font-medium text-app-primary">{t("client_other_requirements")}</h3>{otherRequirements.map(({ requirement, index }) => <div key={index} className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1fr)_minmax(150px,1fr)_32px] md:items-center"><Input aria-label={t("client_requirement_name")} value={requirement.name} onChange={(event) => updateRequirement(index, { name: event.target.value })} /><select aria-label={t("client_requirement_priority")} value={requirement.type} onChange={(event) => updateRequirement(index, { type: event.target.value as "Mandatory" | "Desired" })} className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Mandatory">{t("client_mandatory")}</option><option value="Desired">{t("client_desired")}</option></select><button type="button" aria-label={t("client_delete")} onClick={() => removeRequirement(index)} className="text-app-faint hover:text-app-secondary">×</button></div>)}</section>}
           </div>
-
-          <Button
-            variant="ghost"
-            onClick={() => setRequirements((current) => [...current, emptyRequirement("", "Mandatory")])}
-            icon={<Plus size={11} />}
-          >
-            {t("client_add_requirement")}
-          </Button>
           <div className="flex justify-end gap-2"><Button onClick={() => setStep("basic")} variant="ghost">{t("assignment_modal_back")}</Button><Button onClick={() => setStep("review")} variant="primary">{t("common_next")}</Button></div>
           </>}
 

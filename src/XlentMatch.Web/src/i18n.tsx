@@ -6,6 +6,7 @@ const translations = {
   en: {
     // Nav
     nav_dashboard: "Dashboard",
+    client_requirement_level: "Level", client_add_competence: "Add competence", client_add_language_requirement: "Add language", client_other_requirements: "Other requirements",
     assignment_step_source: "Source", assignment_step_basic: "Basic information", assignment_step_requirements: "Requirements", assignment_step_review: "Review & create", assignment_requirements_review_help: "Review and adjust the requirements before creating the assignment.", assignment_review_description: "Check and adjust the information before creating the assignment.", assignment_ai_review_indicator: "AI-extracted content. Review the information before creating the assignment.",
     assignment_paste_mode: "Paste text", assignment_upload_mode: "Upload file",
     assignment_create_title: "Create client assignment", assignment_create_description: "Add the customer's needs and requirements.",
@@ -398,6 +399,7 @@ const translations = {
   },
   es: {
     nav_dashboard: "Panel",
+    client_requirement_level: "Nivel", client_add_competence: "Añadir competencia", client_add_language_requirement: "Añadir idioma", client_other_requirements: "Otros requisitos",
     assignment_step_source: "Fuente", assignment_step_basic: "Datos básicos", assignment_step_requirements: "Requisitos", assignment_step_review: "Revisar y crear", assignment_requirements_review_help: "Revisa y ajusta los requisitos antes de crear la asignación.", assignment_review_description: "Comprueba y ajusta la información antes de crear la asignación.", assignment_ai_review_indicator: "Contenido extraído mediante IA. Revisa la información antes de crear la asignación.",
     assignment_paste_mode: "Pegar texto", assignment_upload_mode: "Cargar archivo",
     assignment_create_title: "Crear asignación de cliente", assignment_create_description: "Añade las necesidades y requisitos del cliente.",
@@ -779,6 +781,7 @@ const translations = {
   },
   sv: {
     nav_dashboard: "Översikt",
+    client_requirement_level: "Nivå", client_add_competence: "Lägg till kompetens", client_add_language_requirement: "Lägg till språk", client_other_requirements: "Övriga krav",
     assignment_step_source: "Underlag", assignment_step_basic: "Grunduppgifter", assignment_step_requirements: "Krav", assignment_step_review: "Granska och skapa", assignment_requirements_review_help: "Granska och justera kraven innan kunduppdraget skapas.", assignment_review_description: "Kontrollera och justera informationen innan kunduppdraget skapas.", assignment_ai_review_indicator: "AI-extraherat innehåll. Granska uppgifterna innan kunduppdraget skapas.",
     assignment_paste_mode: "Klistra in", assignment_upload_mode: "Ladda upp",
     assignment_create_title: "Skapa kunduppdrag", assignment_create_description: "Lägg till kundens behov och krav.",
