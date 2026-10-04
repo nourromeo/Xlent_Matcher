@@ -123,7 +123,7 @@ export default function ConsultantDetail() {
   };
 
   if (loading) {
-    return <div className="p-6 text-sm text-app-muted">Loading consultant...</div>;
+    return <div className="p-6 text-sm text-app-muted">{t("consultant_loading")}</div>;
   }
 
   if (!consultant) {

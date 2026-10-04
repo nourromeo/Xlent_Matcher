@@ -15,6 +15,7 @@ import {
   type TemporaryAssignmentDraft,
 } from "../services/aiApi";
 import type { AssignmentApi, Consultant } from "../types";
+import { useI18n } from "../i18n";
 
 type SourceMode = "existing" | "upload" | "paste";
 
@@ -51,6 +52,7 @@ function SourceTabs({
 }
 
 export default function CvAdaptation() {
+  const { t } = useI18n();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,7 +220,7 @@ export default function CvAdaptation() {
   };
 
   if (loading) {
-    return <div className="p-6 text-sm text-app-muted">Loading CV adaptation...</div>;
+    return <div className="p-6 text-sm text-app-muted">{t("adaptation_loading")}</div>;
   }
 
   return (

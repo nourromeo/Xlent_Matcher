@@ -277,12 +277,12 @@ export default function Consultants() {
           ]}
           rows={filtered}
           rowKey={(consultant) => String(consultant.id)}
-          emptyMessage={loading ? "Loading consultants..." : t("consultants_empty")}
+          emptyMessage={loading ? t("consultants_loading") : t("consultants_empty")}
         />
 
         <div className="border-t border-app px-4 py-2.5 bg-app-surface">
           <span className="text-[10px] text-app-faint">
-            {loading ? "Loading..." : `${t("consultants_showing")} ${filtered.length} ${t("consultants_of")} ${consultants.length} ${t("consultants_label")}`}
+            {loading ? t("consultants_loading_short") : `${t("consultants_showing")} ${filtered.length} ${t("consultants_of")} ${consultants.length} ${t("consultants_label")}`}
           </span>
         </div>
       </div>

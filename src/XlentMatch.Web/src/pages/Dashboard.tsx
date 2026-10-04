@@ -7,6 +7,7 @@ import { assignmentsApi } from "../services/assignmentsApi";
 import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { matchingApi } from "../services/matchingApi";
 import type { AssignmentApi, Consultant, MatchResultApi } from "../types";
+import { useI18n } from "../i18n";
 
 function StatCard({
   label,
@@ -48,6 +49,7 @@ const uploadIcon = (status: CvUploadRecord["status"]) =>
       : <Clock size={10} style={{ color: "var(--color-brand)" }} />;
 
 export default function Dashboard() {
+  const { t } = useI18n();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [uploads, setUploads] = useState<CvUploadRecord[]>([]);
@@ -156,7 +158,7 @@ export default function Dashboard() {
         <section className="xl:col-span-1 bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <div>
-              <p className="text-xs font-medium text-app-primary">Recent CV uploads</p>
+              <p className="text-xs font-medium text-app-primary">{t("dashboard_recent_uploads")}</p>
               <p className="text-[10px] text-app-muted mt-0.5">Latest database-backed CV processing activity</p>
             </div>
             <Link to="/cv-upload" className="text-[10px] text-app-brand flex items-center gap-1">
@@ -165,7 +167,7 @@ export default function Dashboard() {
           </div>
 
           {recentUploads.length === 0 && !loading ? (
-            <p className="px-4 py-6 text-xs text-app-faint text-center">No CV uploads yet.</p>
+            <p className="px-4 py-6 text-xs text-app-faint text-center">{t("dashboard_no_uploads")}</p>
           ) : (
             recentUploads.map((item) => (
               <div key={item.id} className="flex items-center gap-3 px-4 py-3 border-b border-app-subtle last:border-b-0">
@@ -186,7 +188,7 @@ export default function Dashboard() {
         <section className="xl:col-span-2 bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <div>
-              <p className="text-xs font-medium text-app-primary">Recent Consultant Matches</p>
+            <p className="text-xs font-medium text-app-primary">{t("dashboard_recent_matches")}</p>
               <p className="text-[10px] text-app-muted mt-0.5">
                 Latest saved consultant scores from completed matching runs
               </p>
@@ -212,7 +214,7 @@ export default function Dashboard() {
             <span>Consultant</span>
             <span>Assignment</span>
             <span>Match Score</span>
-            <span className="text-right">Result</span>
+              <span className="text-right">{t("dashboard_result")}</span>
           </div>
 
           {recentMatches.length === 0 && !loading ? (

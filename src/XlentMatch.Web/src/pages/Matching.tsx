@@ -194,7 +194,7 @@ export default function Matching() {
     value >= 85 ? "var(--color-success)" : value >= 65 ? "var(--color-brand)" : "var(--color-warning)";
 
   if (loading) {
-    return <div className="p-6 text-sm text-app-muted">Loading matching data...</div>;
+    return <div className="p-6 text-sm text-app-muted">{t("matching_loading")}</div>;
   }
 
   return (

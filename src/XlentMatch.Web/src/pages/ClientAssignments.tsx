@@ -466,7 +466,7 @@ export default function ClientAssignments() {
         })}
       </div>
 
-      {filtered.length === 0 && <EmptyState title={loading ? "Loading assignments..." : query ? t("assignments_empty_search") : t("assignments_empty")} />}
+      {filtered.length === 0 && <EmptyState title={loading ? t("assignments_loading") : query ? t("assignments_empty_search") : t("assignments_empty")} />}
 
       {showModal && (
         <NewAssignmentModal

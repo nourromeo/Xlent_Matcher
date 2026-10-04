@@ -46,13 +46,13 @@ export default function Layout() {
       ? [
           { label: "XLENT Match", to: "/" },
           { label: t("nav_consultants"), to: "/consultants" },
-          { label: "Consultant profile" },
+          { label: t("breadcrumb_consultant") },
         ]
       : isAssignmentDetail
         ? [
             { label: "XLENT Match", to: "/" },
             { label: t("nav_assignments"), to: "/client-assignments" },
-            { label: "Assignment details" },
+            { label: t("breadcrumb_assignment") },
           ]
         : [
             { label: "XLENT Match", to: "/" },
@@ -100,14 +100,14 @@ export default function Layout() {
         </nav>
 
         <div className="border-t border-app px-3 py-3">
-          <p className="text-[10px] uppercase tracking-wide text-app-faint">XLENT internal tool</p>
-          <p className="text-[10px] text-app-muted mt-1">Consultant ↔ client assignment matching</p>
+          <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("layout_internal_tool")}</p>
+          <p className="text-[10px] text-app-muted mt-1">{t("layout_matching")}</p>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-app">
         <header className="h-12 flex items-center px-5 border-b border-app bg-app-surface flex-none">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-app-faint min-w-0">
+          <nav aria-label={t("aria_breadcrumb")} className="flex items-center gap-1.5 text-sm text-app-faint min-w-0">
             {breadcrumbs.map((item, index) => (
               <div key={item.label + index} className="flex items-center gap-1.5 min-w-0">
                 {index > 0 && <ChevronRight size={12} className="flex-none" />}
