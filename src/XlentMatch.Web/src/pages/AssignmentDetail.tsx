@@ -395,11 +395,17 @@ export default function AssignmentDetail() {
                 <Input value={draft.customerName} onChange={(event) => setDraft({ ...draft, customerName: event.target.value })} />
               </FormField>
               <FormField label={t("assignment_seniority")}>
-                <Input value={draft.seniority ?? ""} onChange={(event) => {
+                <select value={draft.seniority ?? ""} onChange={(event) => {
                   const value = event.target.value || null;
                   setDraft({ ...draft, seniority: value });
                   setSeniorityRequirement((current) => value ? { ...(current ?? { id: 0, assignmentId: draft.id, category: "Seniority", type: "Mandatory", minYears: null, minLevel: null, proficiency: null, matchMode: "Exact", maximumSeniority: null }), name: value } : null);
-                }} />
+                }} className="w-full rounded-md border border-app bg-app-surface px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand">
+                  <option value="">Not specified</option>
+                  <option value="Junior">Junior</option>
+                  <option value="Mid">Mid</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Staff">Staff</option>
+                </select>
                 {seniorityRequirement && <div className="mt-2 grid grid-cols-2 gap-2"><select aria-label="Seniority matching mode" value={seniorityRequirement.matchMode ?? "Exact"} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, matchMode: event.target.value as "Exact" | "Minimum" | "Range", maximumSeniority: event.target.value === "Range" ? seniorityRequirement.maximumSeniority : null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Exact">Exact</option><option value="Minimum">Minimum</option><option value="Range">Range</option></select>{seniorityRequirement.matchMode === "Range" && <select aria-label="Maximum seniority" value={seniorityRequirement.maximumSeniority ?? ""} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, maximumSeniority: event.target.value || null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="">Maximum</option><option>Junior</option><option>Mid</option><option>Senior</option><option>Staff</option></select>}</div>}
               </FormField>
               <FormField label={t("assignment_availability")}>

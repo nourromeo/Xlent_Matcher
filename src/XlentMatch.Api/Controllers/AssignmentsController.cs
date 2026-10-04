@@ -148,6 +148,16 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         if (minYearsExperience < 0) return "Minimum experience cannot be negative.";
         foreach (var requirement in requirements)
         {
+            if (!Enum.IsDefined(requirement.Type))
+                return $"Requirement '{requirement.Name}' has an invalid type.";
+
+            if (!new[] { "Skill", "HumanLanguage", "Seniority" }
+                .Contains(requirement.Category, StringComparer.OrdinalIgnoreCase))
+                return $"Requirement '{requirement.Name}' has an invalid category.";
+
+            if (!Enum.IsDefined(requirement.MatchMode))
+                return $"Requirement '{requirement.Name}' has an invalid Seniority matching mode.";
+
             if (requirement.MinYears < 0) return $"Minimum years for '{requirement.Name}' cannot be negative.";
             if (string.Equals(requirement.Category, "Seniority", StringComparison.OrdinalIgnoreCase))
             {

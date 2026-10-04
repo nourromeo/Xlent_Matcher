@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, Development-Branch]
   pull_request:
-    branches: [main]
+    branches: [main, Development-Branch]
 
 jobs:
   api:
@@ -20,6 +20,8 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
+      - run: dotnet restore ../../tests/XlentMatch.Api.Tests/XlentMatch.Api.Tests.csproj
+      - run: dotnet test ../../tests/XlentMatch.Api.Tests/XlentMatch.Api.Tests.csproj --configuration Release --no-restore
       - run: dotnet tool install --global dotnet-ef --version 10.0.0
       - run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
 
