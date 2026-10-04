@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -59,6 +59,16 @@ export default function ConsultantDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showAllSkills, setShowAllSkills] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [summaryOverflow, setSummaryOverflow] = useState(false);
+  const summaryRef = useRef<HTMLParagraphElement>(null);
+  const [languagesExpanded, setLanguagesExpanded] = useState(false);
+  const [educationExpanded, setEducationExpanded] = useState(false);
+  const [industriesExpanded, setIndustriesExpanded] = useState(false);
+  const [certificationsExpanded, setCertificationsExpanded] = useState(false);
+  const [experienceExpanded, setExperienceExpanded] = useState(false);
+  const [projectsExpanded, setProjectsExpanded] = useState(false);
   const [editStep, setEditStep] = useState(0);
 
   useEffect(() => {
@@ -91,6 +101,17 @@ export default function ConsultantDetail() {
       controller.abort();
     };
   }, [consultantId]);
+
+  useEffect(() => {
+    if (summaryExpanded || !consultant?.summary || !summaryRef.current) return;
+
+    const element = summaryRef.current;
+    const measure = () => setSummaryOverflow(element.scrollHeight > element.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [consultant?.summary, summaryExpanded]);
 
   const openEdit = () => {
     if (!consultant) return;
@@ -140,6 +161,15 @@ export default function ConsultantDetail() {
     );
   }
 
+  const hasMoreSkills = consultant.skills.length > 6;
+  const visibleSkills = showAllSkills ? consultant.skills : consultant.skills.slice(0, 6);
+  const visibleLanguages = languagesExpanded ? consultant.languages : consultant.languages.slice(0, 3);
+  const visibleEducation = educationExpanded ? consultant.education : consultant.education.slice(0, 3);
+  const visibleIndustries = industriesExpanded ? consultant.industries : consultant.industries.slice(0, 6);
+  const visibleCertifications = certificationsExpanded ? consultant.certifications : consultant.certifications.slice(0, 3);
+  const visibleExperiences = experienceExpanded ? consultant.experiences : consultant.experiences.slice(0, 3);
+  const visibleProjects = projectsExpanded ? consultant.projects : consultant.projects.slice(0, 3);
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 pt-6 bg-app-surface flex-none">
@@ -164,16 +194,16 @@ export default function ConsultantDetail() {
       )}
 
       <div className="flex-1 overflow-auto bg-app">
-        <div className="p-6 grid grid-cols-3 gap-5">
-            <div className="col-span-2 space-y-4">
-              {consultant.summary && (
-                <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
-                <p className="text-xs font-medium text-app-primary mb-2">{t("consultant_summary")}</p>
-                  <p className="text-[11px] text-app-secondary leading-relaxed">{consultant.summary}</p>
-                </div>
-              )}
+        <div className="p-6 space-y-5">
+          {consultant.summary && (
+            <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+              <p className="text-sm font-medium text-app-primary mb-3">{t("consultant_summary")}</p>
+              <p ref={summaryRef} className={`text-sm text-app-secondary leading-7 max-w-5xl ${!summaryExpanded ? "line-clamp-4" : ""}`}>{consultant.summary}</p>
+              {(summaryOverflow || summaryExpanded) && <button type="button" onClick={() => setSummaryExpanded((current) => !current)} className="mt-3 text-xs text-app-brand hover:text-app-primary">{summaryExpanded ? `${t("consultant_show_less")} ↑` : `${t("consultant_show_more")} ↓`}</button>}
+            </section>
+          )}
 
-              <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
+          <section className="bg-app-surface border border-app rounded-xl overflow-hidden shadow-app-surface">
                 <div className="px-4 py-3 border-b border-app flex items-center gap-2">
                   <Code size={12} className="text-app-faint" />
                   <span className="text-xs font-medium text-app-primary">{t("consultant_skills")}</span>
@@ -186,7 +216,7 @@ export default function ConsultantDetail() {
                 <div className="px-4 py-2 border-b border-app"><span className="text-[10px] uppercase tracking-wide text-app-faint">{t("consultant_skill_experience")}</span></div>
                 {consultant.skills.length === 0 ? (
                   <p className="px-4 py-3 text-[11px] text-app-faint">{t("consultant_no_skills")}</p>
-                ) : consultant.skills.map((skill, index) => (
+                ) : visibleSkills.map((skill, index) => (
                   <div
                     key={skill.id || `${skill.name}-${index}`}
                     className="px-4 py-3"
@@ -209,120 +239,61 @@ export default function ConsultantDetail() {
                     </div>
                   </div>
                 ))}
+                {hasMoreSkills && <button type="button" onClick={() => setShowAllSkills((current) => !current)} className="px-4 py-3 text-xs text-app-brand hover:text-app-primary">{showAllSkills ? `${t("consultant_show_fewer_skills")} ↑` : `${t("consultant_show_all_skills").replace("{count}", String(consultant.skills.length))} ↓`}</button>}
+          </section>
+
+          <div className="grid md:grid-cols-2 gap-5 items-start">
+            {consultant.languages.length > 0 && <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface md:min-h-[172px]">
+              <div className="flex items-center gap-2 mb-4">
+                <Globe size={12} className="text-app-faint" />
+                <span className="text-sm font-medium text-app-primary">{t("consultant_languages")}</span>
               </div>
-
-              <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
-                <div className="px-4 py-3 border-b border-app flex items-center gap-2">
-                  <Briefcase size={12} className="text-app-faint" />
-                  <span className="text-xs font-medium text-app-primary">{t("consultant_experience")}</span>
-                </div>
-
-                {consultant.experiences.length === 0 ? (
-                  <p className="px-4 py-3 text-[11px] text-app-faint">{t("consultant_no_experience")}</p>
-                ) : consultant.experiences.map((experience, index) => (
-                  <div
-                    key={experience.id || index}
-                    className="px-4 py-3 space-y-2"
-                    style={{ borderBottom: index < consultant.experiences.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-xs font-medium text-app-primary">{experience.role}</p>
-                        <p className="text-[11px] text-app-muted">{experience.company}</p>
-                      </div>
-                      <span className="text-[10px] font-mono text-app-faint">
-                        {experience.startDate || "—"} – {experience.endDate || t("consultant_present")}
-                      </span>
-                    </div>
-
-                    {experience.description && (
-                      <p className="text-[11px] text-app-muted leading-relaxed">{experience.description}</p>
-                    )}
+              <div className="space-y-2">
+                {visibleLanguages.map((language) => (
+                  <div key={language.id || language.name} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-app-secondary">{language.name}</span>
+                    <span className="text-xs text-app-muted">{language.proficiency === "Not specified" ? t("common_not_specified") : language.proficiency === "Low" ? t("proficiency_low") : language.proficiency === "Medium" ? t("proficiency_medium") : language.proficiency === "High" ? t("proficiency_high") : language.proficiency === "Native" ? t("proficiency_native") : language.proficiency}</span>
                   </div>
                 ))}
               </div>
+              {consultant.languages.length > 3 && <button type="button" onClick={() => setLanguagesExpanded((current) => !current)} className="mt-4 text-xs text-app-brand hover:text-app-primary">{languagesExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_languages").replace("{count}", String(consultant.languages.length))} ↓`}</button>}
+            </section>}
 
-              <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
-                <div className="px-4 py-3 border-b border-app flex items-center gap-2">
-                  <Code size={12} className="text-app-faint" />
-                  <span className="text-xs font-medium text-app-primary">{t("consultant_projects")}</span>
-                </div>
-                {consultant.projects.length === 0 ? (
-                  <p className="px-4 py-3 text-[11px] text-app-faint">{t("consultant_no_projects")}</p>
-                ) : consultant.projects.map((project, index) => (
-                  <div key={project.id || index} className="px-4 py-3 space-y-1.5" style={{ borderBottom: index < consultant.projects.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}>
-                    <p className="text-xs font-medium text-app-primary">{project.name}</p>
-                    {project.technologies && <p className="text-[10px] font-mono text-app-muted">{project.technologies}</p>}
-                    {project.description && <p className="text-[11px] text-app-muted leading-relaxed">{project.description}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-app-surface border border-app rounded-lg p-4 space-y-3 shadow-app-surface">
+            {consultant.education.length > 0 && <section className="bg-app-surface border border-app rounded-xl p-5 space-y-3 shadow-app-surface md:min-h-[172px]">
                 <div className="flex items-center gap-2 mb-1">
                   <GraduationCap size={12} className="text-app-faint" />
-                  <span className="text-xs font-medium text-app-primary">{t("consultant_education")}</span>
+                  <span className="text-sm font-medium text-app-primary">{t("consultant_education")}</span>
                 </div>
-                {consultant.education.length === 0
-                  ? <p className="text-[11px] text-app-faint">—</p>
-                  : consultant.education.map((education) => (
-                    <div key={education.id || education.degree}>
-                      <p className="text-xs text-app-primary">{education.degree}</p>
-                      <p className="text-[11px] text-app-muted">{education.school || "—"} · {education.year || "—"}</p>
-                    </div>
-                  ))}
-              </div>
+                {visibleEducation.map((education) => <div key={education.id || education.degree}><p className="text-xs text-app-primary">{education.degree}</p><p className="text-[11px] text-app-muted">{education.school || "—"} · {education.year || "—"}</p></div>)}
+                {consultant.education.length > 3 && <button type="button" onClick={() => setEducationExpanded((current) => !current)} className="text-xs text-app-brand hover:text-app-primary">{educationExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_education").replace("{count}", String(consultant.education.length))} ↓`}</button>}
+            </section>}
 
-              <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
-                <div className="flex items-center gap-2 mb-3">
-                  <Globe size={12} className="text-app-faint" />
-                  <span className="text-xs font-medium text-app-primary">{t("consultant_languages")}</span>
-                </div>
-                <div className="space-y-1.5">
-                  {consultant.languages.length === 0
-                    ? <p className="text-[11px] text-app-faint">—</p>
-                    : consultant.languages.map((language) => (
-                      <p key={language.id || language.name} className="text-[11px] text-app-secondary">
-                        {language.name} {language.proficiency === "Not specified" ? "—" : language.proficiency === "Low" ? t("proficiency_low") : language.proficiency === "Medium" ? t("proficiency_medium") : language.proficiency === "High" ? t("proficiency_high") : language.proficiency === "Native" ? t("proficiency_native") : language.proficiency}
-                      </p>
-                    ))}
-                </div>
-              </div>
+            {consultant.certifications.length > 0 && <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface md:min-h-[172px]">
+              <p className="text-sm font-medium text-app-primary mb-4">{t("consultant_certifications")}</p>
+              <div className="space-y-2">{visibleCertifications.map((certification) => <p key={certification.id || certification.name} className="text-sm text-app-secondary">{certification.name}{certification.issuer ? ` — ${certification.issuer}` : ""}</p>)}</div>
+              {consultant.certifications.length > 3 && <button type="button" onClick={() => setCertificationsExpanded((current) => !current)} className="mt-4 text-xs text-app-brand hover:text-app-primary">{certificationsExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_certifications").replace("{count}", String(consultant.certifications.length))} ↓`}</button>}
+            </section>}
 
-              <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
-                <p className="text-xs font-medium text-app-primary mb-3">{t("consultant_industries")}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {consultant.industries.length === 0
-                    ? <p className="text-[11px] text-app-faint">—</p>
-                    : consultant.industries.map((industry) => (
-                      <span
-                        key={industry.id || industry.name}
-                        className="text-[10px] text-app-secondary px-1.5 py-0.5 rounded"
-                        style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}
-                      >
-                        {industry.name}
-                      </span>
-                    ))}
-                </div>
-              </div>
-
-              <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
-                <p className="text-xs font-medium text-app-primary mb-3">{t("consultant_certifications")}</p>
-                <div className="space-y-1.5">
-                  {consultant.certifications.length === 0
-                    ? <p className="text-[11px] text-app-faint">—</p>
-                    : consultant.certifications.map((certification) => (
-                      <p key={certification.id || certification.name} className="text-[11px] text-app-secondary">
-                        {certification.name}{certification.issuer ? ` — ${certification.issuer}` : ""}
-                      </p>
-                    ))}
-                </div>
-              </div>
-            </div>
+            {consultant.industries.length > 0 && <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface md:min-h-[172px]">
+            <p className="text-sm font-medium text-app-primary mb-4">{t("consultant_industries")}</p>
+            <div className="flex flex-wrap gap-2">{visibleIndustries.map((industry) => <span key={industry.id || industry.name} className="text-[11px] text-app-secondary px-2 py-1 rounded" style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)" }}>{industry.name}</span>)}</div>
+            {consultant.industries.length > 6 && <button type="button" onClick={() => setIndustriesExpanded((current) => !current)} className="mt-4 text-xs text-app-brand hover:text-app-primary">{industriesExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_industries").replace("{count}", String(consultant.industries.length))} ↓`}</button>}
+            </section>}
           </div>
+
+          <section className="bg-app-surface border border-app rounded-xl overflow-hidden shadow-app-surface">
+            <div className="px-5 py-4 border-b border-app flex items-center gap-2"><Briefcase size={12} className="text-app-faint" /><span className="text-sm font-medium text-app-primary">{t("consultant_experience")}</span></div>
+            {consultant.experiences.length === 0 ? <p className="px-5 py-4 text-[11px] text-app-faint">{t("consultant_no_experience")}</p> : visibleExperiences.map((experience, index) => <div key={experience.id || index} className="px-5 py-4 space-y-2" style={{ borderBottom: index < visibleExperiences.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}><div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-sm font-medium text-app-primary">{experience.role}</p><p className="text-xs text-app-muted">{experience.company}</p></div><span className="text-[10px] font-mono text-app-faint">{experience.startDate || "—"} – {experience.endDate || t("consultant_present")}</span></div>{experience.description && <p className="text-[11px] text-app-muted leading-relaxed line-clamp-3">{experience.description}</p>}</div>)}
+            {consultant.experiences.length > 3 && <button type="button" onClick={() => setExperienceExpanded((current) => !current)} className="mx-5 mb-4 text-xs text-app-brand hover:text-app-primary">{experienceExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_experience").replace("{count}", String(consultant.experiences.length))} ↓`}</button>}
+          </section>
+
+          <section className="bg-app-surface border border-app rounded-xl overflow-hidden shadow-app-surface">
+            <div className="px-5 py-4 border-b border-app flex items-center gap-2"><Code size={12} className="text-app-faint" /><span className="text-sm font-medium text-app-primary">{t("consultant_projects")}</span></div>
+            {consultant.projects.length === 0 ? <p className="px-5 py-4 text-[11px] text-app-faint">{t("consultant_no_projects")}</p> : visibleProjects.map((project, index) => <div key={project.id || index} className="px-5 py-4 space-y-1.5" style={{ borderBottom: index < visibleProjects.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}><p className="text-sm font-medium text-app-primary">{project.name}</p>{project.technologies && <p className="text-[10px] font-mono text-app-muted">{project.technologies}</p>}{project.description && <p className="text-[11px] text-app-muted leading-relaxed line-clamp-3">{project.description}</p>}</div>)}
+            {consultant.projects.length > 3 && <button type="button" onClick={() => setProjectsExpanded((current) => !current)} className="mx-5 mb-4 text-xs text-app-brand hover:text-app-primary">{projectsExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_projects").replace("{count}", String(consultant.projects.length))} ↓`}</button>}
+          </section>
         </div>
+      </div>
 
       {draft && (
         <EditFormModal

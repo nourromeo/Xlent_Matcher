@@ -6,6 +6,8 @@ const translations = {
   en: {
     // Nav
     nav_dashboard: "Dashboard",
+    consultant_show_more: "Show more", consultant_show_less: "Show less", consultant_show_fewer: "Show fewer", consultant_show_all_languages: "Show all {count} languages", consultant_show_all_education: "Show all {count} education entries", consultant_show_all_industries: "Show all {count} industries", consultant_show_all_certifications: "Show all {count} certifications", consultant_show_all_experience: "Show all {count} experiences", consultant_show_all_projects: "Show all {count} projects",
+    consultant_show_all_skills: "Show all {count} skills", consultant_show_fewer_skills: "Show fewer",
     nav_consultants: "Consultants",
     nav_assignments: "Client Assignments",
     nav_matching: "Matching",
@@ -393,6 +395,8 @@ const translations = {
   },
   es: {
     nav_dashboard: "Panel",
+    consultant_show_more: "Mostrar más", consultant_show_less: "Mostrar menos", consultant_show_fewer: "Mostrar menos", consultant_show_all_languages: "Mostrar los {count} idiomas", consultant_show_all_education: "Mostrar las {count} formaciones", consultant_show_all_industries: "Mostrar los {count} sectores", consultant_show_all_certifications: "Mostrar las {count} certificaciones", consultant_show_all_experience: "Mostrar las {count} experiencias", consultant_show_all_projects: "Mostrar los {count} proyectos",
+    consultant_show_all_skills: "Mostrar las {count} habilidades", consultant_show_fewer_skills: "Mostrar menos",
     nav_consultants: "Consultores",
     nav_assignments: "Asignaciones de Cliente",
     nav_matching: "Matching",
@@ -769,6 +773,8 @@ const translations = {
   },
   sv: {
     nav_dashboard: "Översikt",
+    consultant_show_more: "Visa mer", consultant_show_less: "Visa mindre", consultant_show_fewer: "Visa färre", consultant_show_all_languages: "Visa alla {count} språk", consultant_show_all_education: "Visa alla {count} utbildningar", consultant_show_all_industries: "Visa alla {count} branscher", consultant_show_all_certifications: "Visa alla {count} certifieringar", consultant_show_all_experience: "Visa alla {count} erfarenheter", consultant_show_all_projects: "Visa alla {count} projekt",
+    consultant_show_all_skills: "Visa alla {count} kompetenser", consultant_show_fewer_skills: "Visa färre",
     nav_consultants: "Konsulter",
     nav_assignments: "Kunduppdrag",
     nav_matching: "Matchning",
