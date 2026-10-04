@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Briefcase, Edit3, Eye, Plus, X } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
+import { EntitySummary } from "../components/ui/EntitySummary";
 import { useI18n } from "../i18n";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { Button } from "../components/ui/Button";
@@ -153,6 +154,7 @@ export default function AssignmentDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [overviewExpanded, setOverviewExpanded] = useState(false);
 
   useEffect(() => {
     if (!Number.isInteger(assignmentId) || assignmentId <= 0) {
@@ -268,6 +270,10 @@ export default function AssignmentDetail() {
 
   const required = requirementNames(assignment, "Mandatory", "Skill");
   const preferred = requirementNames(assignment, "Desired", "Skill");
+  const languageRequirements = assignment.requirements.filter((requirement) => requirement.category === "HumanLanguage");
+  const viewSeniorityRequirement = assignment.requirements.find((requirement) => requirement.category === "Seniority");
+  const otherRequirements = assignment.requirements.filter((requirement) => !["Skill", "HumanLanguage", "Seniority"].includes(requirement.category));
+  const hasLongOverview = (assignment.description?.length ?? 0) > 280;
   const statusTone = assignment.status === "Done" ? "success" : "neutral";
   const statusLabel = assignment.status === "Done" ? t("assignment_done") : assignment.status === "Closed" ? t("assignment_closed") : assignment.status === "Draft" ? t("assignment_draft") : assignment.status === "Matching" ? t("assignment_matching") : assignment.status;
 
@@ -279,40 +285,13 @@ export default function AssignmentDetail() {
           description={t("assignment_details_description")}
         />
       </div>
-      <div className="px-6 py-4 bg-app-surface flex items-start gap-4 flex-none">
-        <div className="w-9 h-9 rounded-lg bg-app-brand-subtle flex items-center justify-center text-app-brand flex-none">
-          <Briefcase size={15} />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-sm font-semibold text-app-primary">{assignment.title}</h1>
-            <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
-            {(assignment.availability || assignment.requiredStartDate) && (
-              <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>
-                {assignment.requiredStartDate ? formatDate(assignment.requiredStartDate, locale) : displayAvailability(assignment.availability ?? "")}
-              </StatusBadge>
-            )}
-          </div>
-          <p className="text-xs text-app-muted mt-1">
-            {assignment.customerName || "—"} · {displaySeniority(assignment.seniority ?? "—")} · {assignment.location || t("assignment_location_unspecified")} · {t("common_updated")} {formatDate(assignment.updatedAt || assignment.createdAt, locale)}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <LinkButton
-            to={"/matching?assignment=" + assignment.id}
-            state={{ fromAssignment: true }}
-            variant="secondary"
-            icon={<Eye size={12} />}
-          >
-            {t("assignment_view_matches")}
-          </LinkButton>
-          <Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>
-            {t("assignment_edit")}
-          </Button>
-        </div>
-      </div>
+      <EntitySummary
+        leading={<div className="w-9 h-9 rounded-lg bg-app-brand-subtle flex items-center justify-center text-app-brand"><Briefcase size={15} /></div>}
+        title={assignment.title}
+        metadata={`${assignment.customerName || "—"} · ${displaySeniority(assignment.seniority ?? "—")} · ${assignment.location || t("assignment_location_unspecified")} · ${t("common_updated")} ${formatDate(assignment.updatedAt || assignment.createdAt, locale)}`}
+        badges={<><StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>{(assignment.availability || assignment.requiredStartDate) && <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>{assignment.requiredStartDate ? formatDate(assignment.requiredStartDate, locale) : displayAvailability(assignment.availability ?? "")}</StatusBadge>}</>}
+        actions={<><LinkButton to={"/matching?assignment=" + assignment.id} state={{ fromAssignment: true }} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view_matches")}</LinkButton><Button onClick={openEdit} variant="secondary" icon={<Edit3 size={12} />}>{t("assignment_edit")}</Button></>}
+      />
 
       {error && (
         <div className="mx-6 mt-4 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
@@ -327,7 +306,12 @@ export default function AssignmentDetail() {
               <h2 className="text-sm font-medium text-app-primary">{t("assignment_overview")}</h2>
               <span className="text-[10px] text-app-muted">{t("assignment_client_brief")}</span>
             </div>
-            <p className="text-sm text-app-secondary leading-7 max-w-4xl">{assignment.description || "—"}</p>
+            <p className={`text-sm text-app-secondary leading-7 max-w-4xl ${!overviewExpanded && hasLongOverview ? "line-clamp-6" : ""}`}>{assignment.description || "—"}</p>
+            {hasLongOverview && (
+              <button type="button" onClick={() => setOverviewExpanded((current) => !current)} className="mt-3 text-xs text-app-brand hover:text-app-primary">
+                {overviewExpanded ? t("assignment_show_less") : t("assignment_show_more")} {overviewExpanded ? "↑" : "↓"}
+              </button>
+            )}
           </section>
 
           <section className="grid md:grid-cols-2 gap-5">
@@ -360,24 +344,38 @@ export default function AssignmentDetail() {
             </div>
           </section>
 
-          {assignment.requirements.some((requirement) => requirement.category === "HumanLanguage") && (
-            <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-              <h2 className="text-sm font-medium text-app-primary mb-3">{t("assignment_human_languages")}</h2>
-              <div className="space-y-2">
-                {assignment.requirements.filter((requirement) => requirement.category === "HumanLanguage").map((requirement) => (
-                  <div key={requirement.id} className="flex items-center justify-between text-sm">
-                    <span className="text-app-secondary">{requirement.name}</span>
-                    <span className="text-app-muted text-xs">{requirement.type === "Mandatory" ? t("common_required") : t("assignment_preferred")}{requirement.proficiency && requirement.proficiency !== "Not specified" ? ` · ${requirement.proficiency === "Low" ? t("proficiency_low") : requirement.proficiency === "Medium" ? t("proficiency_medium") : requirement.proficiency === "High" ? t("proficiency_high") : t("proficiency_native")}` : ""}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          <section className="grid md:grid-cols-2 gap-5">
+            {(assignment.seniority || assignment.minYearsExperience > 0 || viewSeniorityRequirement) && (
+              <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+                <h2 className="text-sm font-medium text-app-primary mb-4">{t("assignment_experience_seniority")}</h2>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  {assignment.seniority && <div><p className="text-[10px] text-app-muted">{t("assignment_seniority")}</p><p className="text-sm text-app-secondary mt-1">{displaySeniority(assignment.seniority)}</p></div>}
+                  {assignment.minYearsExperience > 0 && <div><p className="text-[10px] text-app-muted">{t("assignment_minimum_experience")}</p><p className="text-sm text-app-secondary mt-1">{assignment.minYearsExperience} {t("assignment_years")}</p></div>}
+                  {viewSeniorityRequirement?.matchMode && <div><p className="text-[10px] text-app-muted">{t("assignment_matching_mode")}</p><p className="text-sm text-app-secondary mt-1">{viewSeniorityRequirement.matchMode === "Exact" ? t("assignment_exact") : viewSeniorityRequirement.matchMode === "Minimum" ? t("assignment_minimum") : t("assignment_range")}</p></div>}
+                  {viewSeniorityRequirement?.maximumSeniority && <div><p className="text-[10px] text-app-muted">{t("assignment_maximum_seniority")}</p><p className="text-sm text-app-secondary mt-1">{displaySeniority(viewSeniorityRequirement.maximumSeniority)}</p></div>}
+                </div>
+              </section>
+            )}
 
-          {assignment.minYearsExperience > 0 && (
+            {languageRequirements.length > 0 && (
+              <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+                <h2 className="text-sm font-medium text-app-primary mb-4">{t("assignment_human_languages")}</h2>
+                <div className="space-y-2">
+                  {languageRequirements.map((requirement) => (
+                    <div key={requirement.id + ":" + requirement.name} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-app-secondary">{requirement.name}</span>
+                      <span className="text-app-muted text-xs text-right">{requirement.type === "Mandatory" ? t("common_required") : t("assignment_preferred")}{requirement.proficiency && requirement.proficiency !== "Not specified" ? ` · ${requirement.proficiency === "Low" ? t("proficiency_low") : requirement.proficiency === "Medium" ? t("proficiency_medium") : requirement.proficiency === "High" ? t("proficiency_high") : t("proficiency_native")}` : ""}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </section>
+
+          {otherRequirements.length > 0 && (
             <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-              <p className="text-xs font-medium text-app-primary">{t("assignment_minimum_experience")}</p>
-              <p className="text-sm text-app-secondary mt-1">{assignment.minYearsExperience} years</p>
+              <h2 className="text-sm font-medium text-app-primary mb-3">{t("assignment_other_requirements")}</h2>
+              <div className="flex flex-wrap gap-2">{otherRequirements.map((requirement) => <SkillTag key={requirement.id + ":" + requirement.name}>{requirement.name}</SkillTag>)}</div>
             </section>
           )}
         </div>

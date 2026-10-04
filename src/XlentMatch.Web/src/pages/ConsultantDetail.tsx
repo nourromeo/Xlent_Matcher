@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
+import { EntitySummary } from "../components/ui/EntitySummary";
 import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
@@ -147,41 +148,14 @@ export default function ConsultantDetail() {
           description={t("consultant_details_description")}
         />
       </div>
-      <div className="px-6 py-4 bg-app-surface flex items-start gap-4 flex-none">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand">
-              {initials(consultant)}
-            </div>
-
-            <div>
-              <h1 className="text-sm font-semibold text-app-primary">
-                {fullName(consultant)} — {t("consultant_profile")}
-              </h1>
-              <p className="text-xs text-app-muted">
-                {consultant.title || t("consultant_role")} · {consultant.office || "—"} · {consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}
-              </p>
-            </div>
-
-            {consultant.availability && (
-              <span
-                className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-medium"
-                style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}
-              >
-                {availabilityLabel(consultant, t, locale)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <button
-          onClick={openEdit}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors"
-          style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
-        >
-          <Edit3 size={12} /> {t("consultant_edit")}
-        </button>
-      </div>
+      <EntitySummary
+        leading={<div className="w-9 h-9 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand">{initials(consultant)}</div>}
+        title={fullName(consultant)}
+        subtitle={consultant.title || t("consultant_role")}
+        metadata={`${consultant.office || "—"} · ${consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}`}
+        badges={consultant.availability ? <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}>{availabilityLabel(consultant, t, locale)}</span> : undefined}
+        actions={<button onClick={openEdit} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}><Edit3 size={12} /> {t("consultant_edit")}</button>}
+      />
 
       {error && (
         <div className="mx-6 mt-4 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
