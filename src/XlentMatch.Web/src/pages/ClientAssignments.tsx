@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, Search, Clock, CheckCircle, Eye, Sparkles } from "../design-system/icons";
 import { useI18n } from "../i18n";
-import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { Button } from "../components/ui/Button";
@@ -38,19 +38,15 @@ const emptyRequirement = (
   maximumSeniority,
 });
 
-function NewAssignmentModal({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: (assignment: AssignmentApi) => void;
-}) {
+export function NewAssignmentPage() {
+  const navigate = useNavigate();
   const { t, locale } = useI18n();
   const [step, setStep] = useState<"input" | "review">("input");
   const [title, setTitle] = useState("");
   const [client, setClient] = useState("");
   const [brief, setBrief] = useState("");
   const [briefFile, setBriefFile] = useState<File | null>(null);
+  const [sourceMode, setSourceMode] = useState<"paste" | "upload">("paste");
   const [seniority, setSeniority] = useState("Mid");
   const [seniorityMatchMode, setSeniorityMatchMode] = useState<"Exact" | "Minimum" | "Range">("Exact");
   const [maximumSeniority, setMaximumSeniority] = useState("");
@@ -164,8 +160,7 @@ function NewAssignmentModal({
 
     try {
       const created = await assignmentsApi.create(payload);
-      onCreated(created);
-      onClose();
+      navigate(`/client-assignments/${created.id}`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : t("client_create_error"));
     } finally {
@@ -174,9 +169,11 @@ function NewAssignmentModal({
   };
 
   return (
-    <Modal open title={t("assignment_modal_title")} onClose={onClose}>
+    <div className="h-full overflow-auto">
+      <div className="p-6 space-y-5">
+        <PageHeader title={t("assignment_create_title")} description={t("assignment_create_description")} actions={<Button onClick={() => navigate("/client-assignments")} variant="ghost">{t("assignment_modal_cancel")}</Button>} />
       {step === "input" ? (
-        <div className="p-5 space-y-4">
+        <div className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
           <label className="block">
             <span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_modal_name")} <span className="text-app-brand">*</span></span>
             <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("client_assignment_title_placeholder")} />
@@ -189,22 +186,19 @@ function NewAssignmentModal({
             <span className="text-[11px] text-app-muted mb-1.5 block">
               {t("assignment_modal_brief")} <span className="text-app-brand">*</span> <span className="text-app-brand ml-1">{t("client_ai_extraction")}</span>
             </span>
-            <Textarea value={brief} onChange={(event) => { setBrief(event.target.value); setBriefFile(null); }} rows={6} placeholder={t("assignment_modal_brief_placeholder")} />
-            <span className="text-[10px] text-app-muted block mt-2">{t("client_upload_brief")}</span>
-            <input
-              type="file"
-              accept=".pdf,.txt,application/pdf,text/plain"
-              className="mt-2 block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app file:bg-app-surface file:px-3 file:py-2"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null;
-                setError("");
-                const validationError = file ? validateDocumentFile(file) : null;
-                if (validationError) { setError(validationError); event.target.value = ""; setBriefFile(null); return; }
-                setBriefFile(file);
-                if (file) setBrief("");
-              }}
-            />
-            {briefFile && <p className="text-[11px] text-app-secondary">{t("client_selected")}: {briefFile.name}</p>}
+            <div className="flex gap-1 rounded-lg border border-app bg-app p-1 w-fit">
+              <button type="button" onClick={() => setSourceMode("paste")} className={`rounded px-3 py-1.5 text-xs ${sourceMode === "paste" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}>{t("assignment_paste_mode")}</button>
+              <button type="button" onClick={() => setSourceMode("upload")} className={`rounded px-3 py-1.5 text-xs ${sourceMode === "upload" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}>{t("assignment_upload_mode")}</button>
+            </div>
+            {sourceMode === "paste" ? (
+              <Textarea value={brief} onChange={(event) => { setBrief(event.target.value); setBriefFile(null); }} rows={10} placeholder={t("assignment_modal_brief_placeholder")} />
+            ) : (
+              <>
+                <span className="text-[10px] text-app-muted block">{t("client_upload_brief")}</span>
+                <input type="file" accept=".pdf,.txt,application/pdf,text/plain" className="block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app file:bg-app-surface file:px-3 file:py-2" onChange={(event) => { const file = event.target.files?.[0] ?? null; setError(""); const validationError = file ? validateDocumentFile(file) : null; if (validationError) { setError(validationError); event.target.value = ""; setBriefFile(null); return; } setBriefFile(file); if (file) setBrief(""); }} />
+                {briefFile && <p className="text-[11px] text-app-secondary">{t("client_selected")}: {briefFile.name}</p>}
+              </>
+            )}
           </label>
 
           {!canExtract && !error && (
@@ -216,7 +210,7 @@ function NewAssignmentModal({
           {error && <p className="text-xs text-app-secondary">{error}</p>}
 
           <div className="flex justify-end gap-2">
-            <Button onClick={onClose} variant="ghost">{t("assignment_modal_cancel")}</Button>
+            <Button onClick={() => navigate("/client-assignments")} variant="ghost">{t("assignment_modal_cancel")}</Button>
             <Button
               onClick={() => { setRequirements([]); setStep("review"); setError(""); }}
               variant="secondary"
@@ -230,7 +224,7 @@ function NewAssignmentModal({
           </div>
         </div>
       ) : (
-        <div className="p-5 space-y-4">
+        <div className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
           <div className="rounded-lg border border-app bg-app-raised px-3 py-2">
             <p className="text-xs text-app-secondary">
               {t("client_review_requirements")}
@@ -322,14 +316,15 @@ function NewAssignmentModal({
           </div>
         </div>
       )}
-    </Modal>
+      </div>
+    </div>
   );
 }
 
 export default function ClientAssignments() {
   const { t, locale } = useI18n();
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
-  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -405,7 +400,7 @@ export default function ClientAssignments() {
       <PageHeader
         title={t("assignments_title")}
         meta={String(assignments.length) + " " + t("assignments_sub")}
-        actions={<Button onClick={() => setShowModal(true)} variant="primary" icon={<Plus size={12} />}>{t("assignments_new")}</Button>}
+        actions={<Button onClick={() => navigate("/client-assignments/new")} variant="primary" icon={<Plus size={12} />}>{t("assignments_new")}</Button>}
       />
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -469,12 +464,6 @@ export default function ClientAssignments() {
 
       {filtered.length === 0 && <EmptyState title={loading ? t("assignments_loading") : query ? t("assignments_empty_search") : t("assignments_empty")} />}
 
-      {showModal && (
-        <NewAssignmentModal
-          onClose={() => setShowModal(false)}
-          onCreated={(created) => setAssignments((current) => [created, ...current])}
-        />
-      )}
     </div>
   );
 }
