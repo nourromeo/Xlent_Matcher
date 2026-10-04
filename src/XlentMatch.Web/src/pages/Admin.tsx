@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Edit3, Plus, RefreshCw, Save, Search, Trash2 } from "../design-system/icons";
+import { ArrowLeft, Edit3, Plus, RefreshCw, Save, Search, Trash2 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Button } from "../components/ui/Button";
 import { Tabs } from "../components/ui/Tabs";
@@ -7,13 +7,13 @@ import { DataTable } from "../components/ui/DataTable";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { SkillEditModal } from "../components/SkillEditModal";
-import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion } from "../services/adminApi";
+import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion, type PromptSummary, type PromptVersion } from "../services/adminApi";
 
-const ADMIN_TABS = ["taxonomy", "weights", "flags"] as const;
+const ADMIN_TABS = ["taxonomy", "weights", "flags", "prompts"] as const;
 
 export default function Admin() {
   const { t } = useI18n();
-  const TABS = ADMIN_TABS.map((id) => ({ id, label: t(`tab_${id}` as any) }));
+  const TABS = ADMIN_TABS.map((id) => ({ id, label: id === "prompts" ? "Prompt Management" : t(`tab_${id}` as any) }));
 
   const [tab, setTab] = useState("taxonomy");
   const [taxonomyTab, setTaxonomyTab] = useState<"catalog" | "suggestions">("catalog");
@@ -35,6 +35,14 @@ export default function Admin() {
   const [savingSkill, setSavingSkill] = useState(false);
   const [weightValues, setWeightValues] = useState<Record<string, string>>({});
   const [savingWeights, setSavingWeights] = useState(false);
+  const [prompts, setPrompts] = useState<PromptSummary[]>([]);
+  const [promptKey, setPromptKey] = useState<string | null>(null);
+  const [promptVersions, setPromptVersions] = useState<PromptVersion[]>([]);
+  const [selectedPromptVersion, setSelectedPromptVersion] = useState<PromptVersion | null>(null);
+  const [editingPrompt, setEditingPrompt] = useState(false);
+  const [promptContent, setPromptContent] = useState("");
+  const [promptChangeNote, setPromptChangeNote] = useState("");
+  const [promptLoading, setPromptLoading] = useState(false);
   const skillsPerPage = 10;
 
   useEffect(() => {
@@ -61,6 +69,47 @@ export default function Admin() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (tab !== "prompts") return;
+    setPromptLoading(true);
+    adminApi.getPrompts().then((items) => {
+      setPrompts(items);
+    }).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Could not load prompts.")).finally(() => setPromptLoading(false));
+  }, [tab]);
+
+  useEffect(() => {
+    if (!promptKey) return;
+    setPromptLoading(true);
+    adminApi.getPromptVersions(promptKey).then((items) => {
+      setPromptVersions(items);
+      setSelectedPromptVersion((current) => items.find((item) => item.version === current?.version) ?? items[0] ?? null);
+    }).catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Could not load prompt versions.")).finally(() => setPromptLoading(false));
+  }, [promptKey]);
+
+  const savePromptVersion = async () => {
+    if (!promptKey || !promptContent.trim()) return;
+    try {
+      const created = await adminApi.createPromptVersion(promptKey, { content: promptContent, changeNote: promptChangeNote });
+      setPromptVersions((current) => [created, ...current]);
+      setSelectedPromptVersion(created);
+      setPrompts((current) => current.map((item) => item.promptKey === promptKey ? { ...item, activeVersion: created.version, versionCount: item.versionCount + 1, updatedAt: created.createdAt } : item));
+      setEditingPrompt(false);
+      setPromptChangeNote("");
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Could not save prompt version."); }
+  };
+
+  const activatePromptVersion = async () => {
+    if (!promptKey || !selectedPromptVersion || selectedPromptVersion.isActive) return;
+    if (!window.confirm(`Set prompt v${selectedPromptVersion.version} as active?`)) return;
+    try {
+      await adminApi.activatePromptVersion(promptKey, selectedPromptVersion.version);
+      const versions = await adminApi.getPromptVersions(promptKey);
+      setPromptVersions(versions);
+      setSelectedPromptVersion(versions.find((item) => item.version === selectedPromptVersion.version) ?? null);
+      setPrompts((current) => current.map((item) => item.promptKey === promptKey ? { ...item, activeVersion: selectedPromptVersion.version, updatedAt: new Date().toISOString() } : item));
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Could not activate prompt version."); }
+  };
 
   const skills = overview?.skills ?? [];
   const factors = overview?.matchingFactors ?? [];
@@ -261,6 +310,40 @@ export default function Admin() {
         </div>
 
         <Tabs tabs={TABS} activeTab={tab} onChange={setTab} />
+
+        {tab === "prompts" && !promptKey && (
+          <section className="bg-app-surface border border-app rounded-lg p-4 text-xs text-app-muted">{promptLoading ? "Loading prompts..." : "No prompts available."}</section>
+        )}
+
+        {tab === "prompts" && promptKey && (
+          <section className="space-y-3">
+            {!selectedPromptVersion ? (
+              <div className="bg-app-surface border border-app rounded-lg p-4 text-xs text-app-muted">Loading prompt versions...</div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => { setPromptKey(null); setSelectedPromptVersion(null); }} className="inline-flex items-center gap-1 text-xs text-app-muted hover:text-app-primary"><ArrowLeft size={12} /> Back to Prompt Management</button>
+                  <h2 className="text-sm font-semibold text-app-primary">{selectedPromptVersion.displayName}</h2>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+                  <div className="bg-app-surface border border-app rounded-lg p-3 space-y-1">
+                    <p className="text-[10px] uppercase tracking-wide text-app-faint mb-2">Version History</p>
+                    {promptVersions.map((version) => <button key={version.version} type="button" onClick={() => { setSelectedPromptVersion(version); setEditingPrompt(false); }} className={`w-full rounded-md px-3 py-2 text-left text-xs ${selectedPromptVersion.version === version.version ? "bg-app-brand-soft text-app-primary" : "text-app-muted hover:bg-app"}`}><span className="font-medium">v{version.version}</span>{version.isActive && <span className="ml-2 text-[10px] text-app-brand">Active</span>}<span className="block text-[10px] text-app-faint mt-1">{new Date(version.createdAt).toLocaleDateString()}</span></button>)}
+                  </div>
+                  <div className="bg-app-surface border border-app rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3"><div><span className="text-xs font-semibold text-app-primary">v{selectedPromptVersion.version}</span>{selectedPromptVersion.isActive && <StatusBadge tone="success">Active</StatusBadge>} {!selectedPromptVersion.isActive && <span className="ml-2 text-[10px] text-app-muted">Previous</span>}</div><span className="text-[10px] text-app-faint">{new Date(selectedPromptVersion.createdAt).toLocaleString()}</span></div>
+                    {selectedPromptVersion.changeNote && <p className="text-xs text-app-muted">{selectedPromptVersion.changeNote}</p>}
+                    {editingPrompt ? <><p className="text-[11px] text-app-brand">Editing based on v{selectedPromptVersion.version}</p><textarea value={promptContent} onChange={(event) => setPromptContent(event.target.value)} rows={18} className="w-full rounded-md border border-app bg-app px-3 py-2 text-xs font-mono text-app-primary outline-none focus:border-app-brand" /><input value={promptChangeNote} onChange={(event) => setPromptChangeNote(event.target.value)} placeholder="Change note (optional)" className="w-full rounded-md border border-app bg-app px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" /><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingPrompt(false)}>Cancel</Button><Button variant="primary" onClick={() => void savePromptVersion()}>Save as new version</Button></div></> : <><pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-md border border-app bg-app px-3 py-3 text-[11px] leading-relaxed text-app-secondary">{selectedPromptVersion.content}</pre><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setPromptContent(selectedPromptVersion.content); setPromptChangeNote(""); setEditingPrompt(true); }}>Edit</Button>{!selectedPromptVersion.isActive && <Button variant="primary" onClick={() => void activatePromptVersion()}>Set as Active</Button>}</div></>}
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
+        {tab === "prompts" && !selectedPromptVersion && promptKey === null && prompts.length > 0 && (
+          <section className="bg-app-surface border border-app rounded-lg p-4"><DataTable<PromptSummary> columns={[{ key: "displayName", header: "Prompt", render: (item) => <span className="font-medium text-app-primary">{item.displayName}</span> }, { key: "activeVersion", header: "Active Version", render: (item) => <span className="text-app-brand">v{item.activeVersion}</span> }, { key: "versionCount", header: "Versions", render: (item) => <span>{item.versionCount}</span> }, { key: "updatedAt", header: "Updated", render: (item) => <span>{new Date(item.updatedAt).toLocaleDateString()}</span> }, { key: "action", header: "Action", render: (item) => <Button variant="primary" onClick={() => setPromptKey(item.promptKey)}>View</Button> }]} rows={prompts} rowKey={(item) => item.promptKey} /></section>
+        )}
 
         {tab === "taxonomy" && (
           <div className="flex gap-2 border-b border-app">

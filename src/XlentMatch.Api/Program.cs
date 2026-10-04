@@ -19,6 +19,7 @@ builder.Services.AddSingleton<MatchingWeightsStore>();
 builder.Services.AddScoped<MatchingService>();
 builder.Services.AddScoped<SkillNormalizationService>();
 builder.Services.AddScoped<ConsultantAvailabilityService>();
+builder.Services.AddScoped<IPromptService, PromptService>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -42,6 +43,7 @@ using (var scope = app.Services.CreateScope())
     var skillNormalization = scope.ServiceProvider.GetRequiredService<SkillNormalizationService>();
     await skillNormalization.EnsureCatalogAsync();
     await SeedData.InitializeAsync(db);
+    await PromptSeedData.InitializeAsync(db);
 }
 
 if (app.Environment.IsDevelopment())

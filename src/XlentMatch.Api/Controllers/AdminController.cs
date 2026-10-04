@@ -13,7 +13,8 @@ public class AdminController(
     AppDbContext db,
     MatchingWeightsStore matchingWeightsStore,
     IOptions<OpenAiOptions> openAiOptions,
-    SkillNormalizationService skillNormalization) : ControllerBase
+    SkillNormalizationService skillNormalization,
+    IPromptService promptService) : ControllerBase
 {
     [HttpGet("overview")]
     public async Task<ActionResult<AdminOverviewDto>> GetOverview(CancellationToken ct)
@@ -369,6 +370,85 @@ public class AdminController(
         return await GetOverview(ct);
     }
 
+    [HttpGet("prompts")]
+    public async Task<ActionResult<List<PromptSummaryDto>>> GetPrompts(CancellationToken ct)
+    {
+        var prompts = await db.AiPromptVersions.AsNoTracking()
+            .GroupBy(x => x.PromptKey)
+            .Select(group => new PromptSummaryDto
+            {
+                PromptKey = group.Key,
+                DisplayName = group.OrderBy(x => x.Version).Select(x => x.DisplayName).First(),
+                ActiveVersion = group.Where(x => x.IsActive).Select(x => (int?)x.Version).FirstOrDefault(),
+                VersionCount = group.Count(),
+                UpdatedAt = group.Max(x => x.CreatedAt)
+            })
+            .OrderBy(x => x.DisplayName)
+            .ToListAsync(ct);
+        return prompts;
+    }
+
+    [HttpGet("prompts/{promptKey}/versions")]
+    public async Task<ActionResult<List<AiPromptVersionDto>>> GetPromptVersions(string promptKey, CancellationToken ct)
+    {
+        promptKey = CanonicalPromptKey(promptKey);
+        if (!IsKnownPrompt(promptKey)) return NotFound("Unknown prompt key.");
+        return (await promptService.GetVersionsAsync(promptKey, ct)).Select(ToDto).ToList();
+    }
+
+    [HttpGet("prompts/{promptKey}/versions/{version:int}")]
+    public async Task<ActionResult<AiPromptVersionDto>> GetPromptVersion(string promptKey, int version, CancellationToken ct)
+    {
+        promptKey = CanonicalPromptKey(promptKey);
+        if (!IsKnownPrompt(promptKey)) return NotFound("Unknown prompt key.");
+        var prompt = await promptService.GetVersionAsync(promptKey, version, ct);
+        return prompt is null ? NotFound() : ToDto(prompt);
+    }
+
+    [HttpPost("prompts/{promptKey}/versions")]
+    public async Task<ActionResult<AiPromptVersionDto>> CreatePromptVersion(string promptKey, PromptVersionRequest input, CancellationToken ct)
+    {
+        promptKey = CanonicalPromptKey(promptKey);
+        try
+        {
+            var prompt = await promptService.CreateVersionAsync(promptKey, input.Content, input.ChangeNote, ct);
+            return Ok(ToDto(prompt));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("prompts/{promptKey}/versions/{version:int}/activate")]
+    public async Task<ActionResult<AiPromptVersionDto>> ActivatePromptVersion(string promptKey, int version, CancellationToken ct)
+    {
+        promptKey = CanonicalPromptKey(promptKey);
+        if (!IsKnownPrompt(promptKey)) return NotFound("Unknown prompt key.");
+        var prompt = await promptService.ActivateVersionAsync(promptKey, version, ct);
+        return prompt is null ? NotFound() : Ok(ToDto(prompt));
+    }
+
+    private static bool IsKnownPrompt(string promptKey) =>
+        PromptKeys.CvExtraction.Equals(promptKey, StringComparison.OrdinalIgnoreCase) ||
+        PromptKeys.AssignmentExtraction.Equals(promptKey, StringComparison.OrdinalIgnoreCase) ||
+        PromptKeys.CvAdaptation.Equals(promptKey, StringComparison.OrdinalIgnoreCase);
+
+    private static string CanonicalPromptKey(string promptKey) =>
+        new[] { PromptKeys.CvExtraction, PromptKeys.AssignmentExtraction, PromptKeys.CvAdaptation }
+            .FirstOrDefault(key => key.Equals(promptKey, StringComparison.OrdinalIgnoreCase)) ?? promptKey;
+
+    private static AiPromptVersionDto ToDto(AiPromptVersion prompt) => new()
+    {
+        PromptKey = prompt.PromptKey,
+        DisplayName = prompt.DisplayName,
+        Version = prompt.Version,
+        Content = prompt.Content,
+        IsActive = prompt.IsActive,
+        ChangeNote = prompt.ChangeNote,
+        CreatedAt = prompt.CreatedAt
+    };
+
 }
 
 public class UpdateAdminSkillRequest
@@ -408,6 +488,32 @@ public class AdminSkillSuggestionDto
     public string Category { get; set; } = "Unclassified";
     public int Occurrences { get; set; }
     public DateTime FirstSeenAt { get; set; }
+}
+
+public class PromptSummaryDto
+{
+    public string PromptKey { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public int? ActiveVersion { get; set; }
+    public int VersionCount { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class AiPromptVersionDto
+{
+    public string PromptKey { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public int Version { get; set; }
+    public string Content { get; set; } = "";
+    public bool IsActive { get; set; }
+    public string? ChangeNote { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class PromptVersionRequest
+{
+    public string Content { get; set; } = "";
+    public string? ChangeNote { get; set; }
 }
 
 public class ReviewSkillSuggestionRequest
