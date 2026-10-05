@@ -1206,6 +1206,12 @@ const consultantEditorTranslations: Record<Locale, Record<string, string>> = {
   },
 };
 
+const cvReviewTranslations: Record<Locale, Record<string, string>> = {
+  en: { upload_review_title: "Review consultant details", upload_review_description: "AI extracted these consultant details from the CV. Correct anything that is wrong before saving." },
+  es: { upload_review_title: "Revisar los datos del consultor", upload_review_description: "La IA extrajo estos datos del consultor a partir del CV. Corrige lo necesario antes de guardar." },
+  sv: { upload_review_title: "Granska konsultuppgifter", upload_review_description: "AI har extraherat dessa konsultuppgifter från CV:t. Rätta fel innan du sparar." },
+};
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(() => {
     const stored = localStorage.getItem("xlent-match-locale");
@@ -1218,6 +1224,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [locale]);
 
   const t = (key: TranslationKey): string =>
+    cvReviewTranslations[locale][key] ??
     (translations[locale] as Record<string, string>)[key] ??
     consultantEditorTranslations[locale][key] ??
     (translations.en as Record<string, string>)[key] ??
