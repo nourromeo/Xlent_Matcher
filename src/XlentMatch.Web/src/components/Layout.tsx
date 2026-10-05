@@ -11,6 +11,7 @@ import {
   Sun,
   Moon,
   Sparkles,
+  BookOpen,
 } from "../design-system/icons";
 import { useTheme } from "../theme";
 import { useI18n, type Locale } from "../i18n";
@@ -28,6 +29,7 @@ export default function Layout() {
     { to: "/consultants", icon: Users, label: t("nav_consultants") },
     { to: "/client-assignments", icon: Briefcase, label: t("nav_assignments") },
     { to: "/matching", icon: GitMerge, label: t("nav_matching") },
+    { to: "/how-it-works", icon: BookOpen, label: t("nav_how_it_works") },
     { to: "/cv-upload", icon: Upload, label: t("nav_upload") },
     { to: "/cv-adaptation", icon: Sparkles, label: t("nav_coach") },
     { to: "/admin", icon: Settings, label: t("nav_admin") },

@@ -1,8 +1,10 @@
 export {
   AlertCircle,
   AlertTriangle,
+  ArrowDown,
   Archive,
   ArrowLeft,
+  ArrowRight,
   ArrowUpRight,
   BookOpen,
   Briefcase,
@@ -23,6 +25,7 @@ export {
   GraduationCap,
   Info,
   LayoutDashboard,
+  ListChecks,
   Loader,
   Moon,
   Plus,
