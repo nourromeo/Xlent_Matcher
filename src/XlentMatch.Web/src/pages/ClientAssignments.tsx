@@ -81,7 +81,7 @@ export function NewAssignmentPage() {
 
       setRequirements(
         extracted.requirements.map((item) =>
-          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.proficiency),
+          emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.proficiency, item.matchMode ?? "Exact", item.maximumSeniority ?? null),
         ),
       );
 
