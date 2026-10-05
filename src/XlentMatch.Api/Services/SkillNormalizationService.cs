@@ -204,29 +204,50 @@ public class SkillNormalizationService(AppDbContext db)
 
     public async Task NormalizeConsultantSkillsAsync(IList<ConsultantSkill> skills, CancellationToken ct = default)
     {
+        var expandedSkills = new List<ConsultantSkill>();
         foreach (var consultantSkill in skills)
         {
             if (string.IsNullOrWhiteSpace(consultantSkill.Name))
                 continue;
 
-            var normalized = NormalizeKey(consultantSkill.Name);
-            var skill = await db.Skills.Include(x => x.Aliases)
-                .FirstOrDefaultAsync(x => x.NormalizedName == normalized || x.Aliases.Any(a => a.NormalizedAlias == normalized), ct);
+            var skill = await FindCanonicalSkillAsync(consultantSkill.Name, ct);
             if (skill is null)
             {
+                var components = consultantSkill.Name.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                if (components.Length > 1)
+                {
+                    var componentSkills = new List<Skill>();
+                    foreach (var component in components)
+                    {
+                        var componentSkill = await FindCanonicalSkillAsync(component, ct);
+                        if (componentSkill is null)
+                        {
+                            componentSkills.Clear();
+                            break;
+                        }
+
+                        componentSkills.Add(componentSkill);
+                    }
+
+                    if (componentSkills.Count == components.Length)
+                    {
+                        foreach (var componentSkill in componentSkills)
+                            expandedSkills.Add(CreateCanonicalSkill(consultantSkill, componentSkill));
+                        continue;
+                    }
+                }
+
                 await RecordSkillSuggestionAsync(consultantSkill.Name, consultantSkill.Category ?? "Unclassified", ct);
                 consultantSkill.SkillId = null;
+                expandedSkills.Add(consultantSkill);
                 continue;
             }
 
-            consultantSkill.SkillId = skill.Id;
-            consultantSkill.Skill = null;
-            consultantSkill.Name = skill.CanonicalName;
-            consultantSkill.Category = skill.Category;
+            expandedSkills.Add(CreateCanonicalSkill(consultantSkill, skill));
         }
 
         var unique = new Dictionary<string, ConsultantSkill>(StringComparer.OrdinalIgnoreCase);
-        foreach (var consultantSkill in skills.Where(skill => !string.IsNullOrWhiteSpace(skill.Name)))
+        foreach (var consultantSkill in expandedSkills.Where(skill => !string.IsNullOrWhiteSpace(skill.Name)))
         {
             var key = consultantSkill.SkillId is int skillId
                 ? $"skill:{skillId}"
@@ -249,6 +270,28 @@ public class SkillNormalizationService(AppDbContext db)
         skills.Clear();
         foreach (var consultantSkill in unique.Values)
             skills.Add(consultantSkill);
+    }
+
+    private async Task<Skill?> FindCanonicalSkillAsync(string name, CancellationToken ct)
+    {
+        var normalized = NormalizeKey(name);
+        return await db.Skills.Include(x => x.Aliases)
+            .FirstOrDefaultAsync(x => x.NormalizedName == normalized || x.Aliases.Any(a => a.NormalizedAlias == normalized), ct);
+    }
+
+    private static ConsultantSkill CreateCanonicalSkill(ConsultantSkill source, Skill skill)
+    {
+        return new ConsultantSkill
+        {
+            Id = source.Id,
+            ConsultantId = source.ConsultantId,
+            SkillId = skill.Id,
+            Name = skill.CanonicalName,
+            Category = skill.Category,
+            Years = source.Years,
+            Level = source.Level,
+            Evidence = source.Evidence
+        };
     }
 
     public async Task NormalizeRequirementsAsync(IEnumerable<AssignmentRequirement> requirements, CancellationToken ct = default)
