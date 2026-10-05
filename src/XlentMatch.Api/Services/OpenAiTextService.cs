@@ -35,7 +35,13 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     }
 
     public const string AssignmentExtractionSchemaInstruction =
-        "For minYearsExperience, extract an explicit overall minimum experience requirement when the source states one, such as 'at least 5 years of experience', and return the numeric value 5. If no explicit overall minimum is stated, return null. Keep skill-specific minYears on the corresponding skill requirement and do not copy it to minYearsExperience. For HumanLanguage requirements, proficiency must be exactly null or one of: Not specified, Low, Medium, High, Native. Use null or Not specified when the source does not provide a proficiency that can be represented by those values; never return display translations or CEFR levels.";
+        "Return exactly the DTO-compatible JSON types for every property. " +
+        "For minYearsExperience, extract an explicit overall minimum experience requirement when the source states one, such as 'at least 5 years of experience', and return the JSON integer 5. If no explicit overall minimum is stated, return JSON null. Never return numeric strings, units or descriptive text. " +
+        "For each requirement, Type must be the JSON string Mandatory or Desired; Name and Category must be JSON strings; MinYears and MinLevel must be JSON integers or JSON null; Proficiency, MatchMode and MaximumSeniority must be JSON strings or JSON null. Do not return empty strings for numeric fields. " +
+        "Skill requirements may populate skill-specific minYears only when skill-specific years are explicitly stated, and may populate MinLevel only when an explicit numeric skill level on the existing 1-5 scale is stated; otherwise return null. Do not use MinLevel for language proficiency or seniority labels. " +
+        "HumanLanguage requirements may populate Proficiency only with exactly null or one of: Not specified, Low, Medium, High, Native; MinYears and MinLevel must be null. Never return display translations or CEFR levels. " +
+        "Seniority requirements should use the seniority fields and match mode; MinYears, MinLevel and Proficiency must be null. " +
+        "Arrays must remain arrays, and fields that do not apply or are not explicitly present in the source must be JSON null. Preserve the no-invention rule.";
 
     public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
     {

@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.Controllers;
 using XlentMatch.Api.DTOs.Assignments;
@@ -44,7 +46,49 @@ public class PromptServiceTests
         Assert.Contains("at least 5 years", schema);
         Assert.Contains("skill-specific minYears", schema);
         Assert.Contains("Not specified, Low, Medium, High, Native", schema);
+        Assert.Contains("MinYears and MinLevel must be JSON integers or JSON null", schema);
+        Assert.Contains("MinLevel only when an explicit numeric skill level on the existing 1-5 scale", schema);
+        Assert.Contains("MinYears and MinLevel must be null", schema);
     }
+
+    [Fact]
+    public void AssignmentExtractionJsonMapsTypedRequirementFieldsAndOverallMinimum()
+    {
+        var json = """
+        {
+          "minYearsExperience": 5,
+          "requirements": [
+            { "name": "React", "type": "Mandatory", "minYears": 3, "minLevel": null, "proficiency": null, "matchMode": "Exact", "maximumSeniority": null, "category": "Skill" },
+            { "name": "Swedish", "type": "Desired", "minYears": null, "minLevel": null, "proficiency": "High", "matchMode": "Exact", "maximumSeniority": null, "category": "HumanLanguage" }
+          ]
+        }
+        """;
+
+        var result = JsonSerializer.Deserialize<RequirementExtractionResultDto>(json, ExtractionJsonOptions());
+
+        Assert.NotNull(result);
+        Assert.Equal(5, result!.MinYearsExperience);
+        Assert.Equal(3, result.Requirements[0].MinYears);
+        Assert.Null(result.Requirements[0].MinLevel);
+        Assert.Equal("High", result.Requirements[1].Proficiency);
+        Assert.Null(result.Requirements[1].MinLevel);
+        Assert.Null(result.Requirements[1].MinYears);
+    }
+
+    [Fact]
+    public void AssignmentExtractionRejectsSemanticTextInNumericMinLevel()
+    {
+        var json = """
+        { "requirements": [ { "name": "React", "type": "Mandatory", "minLevel": "High", "category": "Skill" } ] }
+        """;
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<RequirementExtractionResultDto>(json, ExtractionJsonOptions()));
+    }
+
+    private static JsonSerializerOptions ExtractionJsonOptions() => new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     [Fact]
     public void AssignmentLanguageDisplayTextIsNormalizedToDomainValue()
