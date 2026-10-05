@@ -5,6 +5,7 @@ import Consultants from "./pages/Consultants";
 import ConsultantDetail from "./pages/ConsultantDetail";
 import ClientAssignments, { NewAssignmentPage } from "./pages/ClientAssignments";
 import AssignmentDetail from "./pages/AssignmentDetail";
+import EditAssignment from "./pages/EditAssignment";
 import Matching from "./pages/Matching";
 import HowItWorks from "./pages/HowItWorks";
 import CvUpload from "./pages/CvUpload";
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="consultants/:id" element={<ConsultantDetail />} />
           <Route path="client-assignments" element={<ClientAssignments />} />
           <Route path="client-assignments/new" element={<NewAssignmentPage />} />
+          <Route path="client-assignments/:id/edit" element={<EditAssignment />} />
           <Route path="client-assignments/:id" element={<AssignmentDetail />} />
           <Route path="matching" element={<Matching />} />
           <Route path="how-it-works" element={<HowItWorks />} />
