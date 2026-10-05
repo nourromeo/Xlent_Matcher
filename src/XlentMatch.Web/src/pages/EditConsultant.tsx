@@ -1079,67 +1079,192 @@ export default function EditConsultant() {
 
         {step === "review" && (
           <div className="space-y-5">
-            {panel(
-              t("assignment_edit_step_review"),
-              <div className="space-y-5 text-sm">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <p className="text-[10px] text-app-muted">
-                      {t("consultant_full_name")}
-                    </p>
-                    <p className="text-app-primary">
-                      {draft.firstName} {draft.lastName}
-                    </p>
+            <h2 className="text-sm font-medium text-app-primary">
+              {t("assignment_edit_step_review")}
+            </h2>
+            <p className="text-xs text-app-muted">
+              {t("consultant_review_description")}
+            </p>
+            <section className="space-y-3 border-b border-app pb-4">
+              <h3 className="text-xs font-medium text-app-primary">
+                {t("consultant_review_basic")}
+              </h3>
+              <div className="grid gap-x-6 gap-y-3 text-sm md:grid-cols-2">
+                {[
+                  [
+                    t("consultant_full_name"),
+                    `${draft.firstName} ${draft.lastName}`,
+                  ],
+                  [
+                    t("consultant_role"),
+                    draft.title || t("common_not_specified"),
+                  ],
+                  [
+                    t("consultant_seniority"),
+                    draft.seniority || t("common_not_specified"),
+                  ],
+                  [t("consultant_availability"), draft.availability],
+                  [
+                    t("consultant_office"),
+                    draft.office || t("common_not_specified"),
+                  ],
+                  [
+                    t("consultant_years"),
+                    draft.yearsOfExperience == null
+                      ? t("common_not_specified")
+                      : `${draft.yearsOfExperience} ${t("consultant_year_count")}`,
+                  ],
+                  [t("upload_email"), draft.email || t("common_not_specified")],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <p className="text-[10px] text-app-muted">{label}</p>
+                    <p className="text-app-primary">{value}</p>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-app-muted">
-                      {t("consultant_role")}
-                    </p>
-                    <p className="text-app-secondary">
-                      {draft.title || t("common_not_specified")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-app-muted">
-                      {t("consultant_seniority")}
-                    </p>
-                    <p className="text-app-secondary">
-                      {draft.seniority || t("common_not_specified")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-app-muted">
-                      {t("consultant_years")}
-                    </p>
-                    <p className="text-app-secondary">
-                      {draft.yearsOfExperience ?? t("common_not_specified")}
-                    </p>
-                  </div>
-                </div>
-                {draft.skills.length > 0 && (
-                  <p className="text-xs text-app-secondary">
-                    {draft.skills
-                      .map(
-                        (x) =>
-                          `${x.name} · ${x.years} ${t("consultant_year_count")} · ${levelLabel(x.level)}`,
-                      )
-                      .join(" | ")}
-                  </p>
-                )}
-                {draft.languages.length > 0 && (
-                  <p className="text-xs text-app-secondary">
-                    {draft.languages
-                      .map((x) => `${x.name} · ${x.proficiency}`)
-                      .join(" | ")}
-                  </p>
-                )}
-                {draft.summary && (
-                  <p className="whitespace-pre-wrap text-xs text-app-secondary">
-                    {draft.summary}
-                  </p>
-                )}
-              </div>,
+                ))}
+              </div>
+            </section>
+            {draft.summary?.trim() && (
+              <section className="space-y-2 border-b border-app pb-4">
+                <h3 className="text-xs font-medium text-app-primary">
+                  {t("consultant_review_summary")}
+                </h3>
+                <p className="whitespace-pre-wrap text-sm text-app-secondary">
+                  {draft.summary}
+                </p>
+              </section>
             )}
+            {draft.skills.length > 0 && (
+              <section className="space-y-3 border-b border-app pb-4">
+                <h3 className="text-xs font-medium text-app-primary">
+                  {t("consultant_skills")}
+                </h3>
+                <div className="hidden grid-cols-[minmax(0,1fr)_130px_170px] gap-2 border-b border-app pb-1 text-[10px] text-app-muted md:grid">
+                  <span>{t("consultant_skill")}</span>
+                  <span>{t("consultant_skill_experience")}</span>
+                  <span>{t("consultant_skill_level")}</span>
+                </div>
+                {draft.skills
+                  .filter((x) => x.name.trim())
+                  .map((x, index) => (
+                    <div
+                      key={`${x.id}-${index}`}
+                      className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_130px_170px]"
+                    >
+                      <span className="text-app-primary">{x.name}</span>
+                      <span className="text-app-muted">
+                        {x.years} {t("consultant_year_count")}
+                      </span>
+                      <span className="text-app-muted">
+                        {levelLabel(x.level)} ({x.level}/5)
+                      </span>
+                      {x.evidence?.trim() && (
+                        <p className="md:col-span-3 text-[11px] text-app-faint">
+                          {x.evidence}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+              </section>
+            )}
+            {(draft.languages.length > 0 || draft.industries.length > 0) && (
+              <section className="space-y-4 border-b border-app pb-4">
+                <h3 className="text-xs font-medium text-app-primary">
+                  {t("consultant_review_languages_industries")}
+                </h3>
+                {draft.languages.length > 0 && (
+                  <div>
+                    <h4 className="mb-1 text-[10px] uppercase tracking-wide text-app-muted">
+                      {t("consultant_languages")}
+                    </h4>
+                    {draft.languages
+                      .filter((x) => x.name.trim())
+                      .map((x, index) => (
+                        <div
+                          key={`${x.id}-${index}`}
+                          className="flex justify-between border-b border-app py-2 text-xs last:border-0"
+                        >
+                          <span className="text-app-primary">{x.name}</span>
+                          <span className="text-app-muted">
+                            {x.proficiency === "Not specified"
+                              ? t("common_not_specified")
+                              : x.proficiency}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+                {draft.industries.length > 0 && (
+                  <div>
+                    <h4 className="mb-1 text-[10px] uppercase tracking-wide text-app-muted">
+                      {t("upload_industries")}
+                    </h4>
+                    <p className="text-xs text-app-secondary">
+                      {draft.industries
+                        .filter((x) => x.name.trim())
+                        .map((x) => x.name)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                )}
+              </section>
+            )}
+            {(
+              [
+                "experiences",
+                "projects",
+                "education",
+                "certifications",
+              ] as const
+            ).map((collection) => {
+              const items = draft[collection].filter((item) =>
+                Object.values(item).some(
+                  (value) => typeof value === "string" && value.trim(),
+                ),
+              );
+              if (!items.length) return null;
+              const title =
+                collection === "experiences"
+                  ? t("consultant_experience")
+                  : collection === "projects"
+                    ? t("consultant_projects")
+                    : collection === "education"
+                      ? t("upload_education")
+                      : t("upload_certifications");
+              return (
+                <section
+                  key={collection}
+                  className="space-y-2 border-b border-app pb-4"
+                >
+                  <h3 className="text-xs font-medium text-app-primary">
+                    {title}
+                  </h3>
+                  {items.map((item, index) => (
+                    <div
+                      key={`${item.id}-${index}`}
+                      className="border-b border-app py-2 text-xs last:border-0"
+                    >
+                      <p className="font-medium text-app-primary">
+                        {"company" in item
+                          ? `${item.role} · ${item.company}`
+                          : "degree" in item
+                            ? `${item.degree}${item.school ? ` · ${item.school}` : ""}`
+                            : item.name}
+                      </p>
+                      {"description" in item && item.description && (
+                        <p className="mt-1 text-app-secondary">
+                          {item.description}
+                        </p>
+                      )}
+                      {"technologies" in item && item.technologies && (
+                        <p className="mt-1 text-app-muted">
+                          {item.technologies}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </section>
+              );
+            })}
             <div className="flex justify-between">
               <Button variant="ghost" onClick={() => setStep("experience")}>
                 {t("common_previous")}

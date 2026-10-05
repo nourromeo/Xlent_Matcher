@@ -208,7 +208,7 @@ export default function EditAssignment() {
     language: boolean,
     isNew: boolean,
   ) => (
-    <div className="space-y-3 rounded-lg border border-app-brand bg-app-raised p-3">
+    <div className="space-y-3 rounded-lg border border-app-brand bg-app-raised p-4">
       <h4 className="text-xs font-medium text-app-primary">
         {isNew
           ? language
@@ -218,7 +218,7 @@ export default function EditAssignment() {
             ? t("assignment_edit_language_requirement")
             : t("assignment_edit_skill_requirement")}
       </h4>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {field(
           language ? t("assignment_language") : t("assignment_skill"),
           <Input
@@ -266,7 +266,10 @@ export default function EditAssignment() {
               t("assignment_years_unit"),
             )}
       </div>
-      <div className="flex justify-end gap-2">
+      <div className="flex gap-2">
+        <Button variant="primary" onClick={() => setEditing(null)}>
+          {isNew ? t("assignment_add") : t("assignment_save_local")}
+        </Button>
         <Button
           variant="ghost"
           onClick={() => {
@@ -275,9 +278,6 @@ export default function EditAssignment() {
           }}
         >
           {t("assignment_cancel_edit")}
-        </Button>
-        <Button variant="primary" onClick={() => setEditing(null)}>
-          {isNew ? t("assignment_add") : t("assignment_save_local")}
         </Button>
       </div>
     </div>
@@ -352,7 +352,7 @@ export default function EditAssignment() {
               type="button"
               aria-label={`${t("common_remove")} ${item.name}`}
               onClick={() => removeRequirement(index)}
-              className="rounded px-2 text-app-muted hover:text-app-danger"
+              className="text-xs text-app-danger"
             >
               {t("common_remove")}
             </button>
@@ -549,10 +549,14 @@ export default function EditAssignment() {
                     <span>{t("common_actions")}</span>
                   </div>
                   {rows(groups.skills, false)}
-                  <Button onClick={() => addRequirement("Skill", "Mandatory")}>
-                    <Plus size={12} />
+                  <button
+                    type="button"
+                    onClick={() => addRequirement("Skill", "Mandatory")}
+                    className="inline-flex items-center gap-1 text-xs text-app-brand"
+                  >
+                    <Plus size={13} />
                     {t("assignment_add_skill_requirement")}
-                  </Button>
+                  </button>
                 </section>
                 <section className="space-y-2">
                   <h3 className="text-xs font-medium text-app-primary">
@@ -565,12 +569,14 @@ export default function EditAssignment() {
                     <span>{t("common_actions")}</span>
                   </div>
                   {rows(groups.languages, true)}
-                  <Button
+                  <button
+                    type="button"
                     onClick={() => addRequirement("HumanLanguage", "Mandatory")}
+                    className="inline-flex items-center gap-1 text-xs text-app-brand"
                   >
-                    <Plus size={12} />
+                    <Plus size={13} />
                     {t("assignment_add_language_requirement")}
-                  </Button>
+                  </button>
                 </section>
                 <section className="space-y-2">
                   <h3 className="text-xs font-medium text-app-primary">
@@ -622,47 +628,170 @@ export default function EditAssignment() {
               <p className="text-xs text-app-muted">
                 {t("assignment_review_description")}
               </p>
-              <div className="grid gap-4 text-sm md:grid-cols-2">
-                {[
-                  [t("assignment_title"), draft.title],
-                  [t("assignment_client"), draft.customerName],
-                  [
-                    t("assignment_seniority"),
-                    draft.seniority || t("common_not_specified"),
-                  ],
-                  [
-                    t("assignment_minimum_years"),
-                    `${draft.minYearsExperience} ${t("assignment_years_unit")}`,
-                  ],
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <p className="text-[10px] text-app-muted">{label}</p>
-                    <p className="text-app-primary">{value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-lg border border-app bg-app-raised p-3">
-                <p className="mb-2 text-[10px] uppercase tracking-wide text-app-muted">
-                  {t("assignment_requirements")}
-                </p>
-                <div className="space-y-1">
-                  {draft.requirements
-                    .filter((item) => item.name.trim())
-                    .map((item, index) => (
-                      <div
-                        key={`${item.id}-${index}`}
-                        className="flex flex-wrap justify-between gap-2 text-xs text-app-secondary"
-                      >
-                        <span>{item.name}</span>
-                        <span>
-                          {item.type === "Mandatory"
-                            ? t("client_mandatory")
-                            : t("client_desired")}
-                        </span>
-                      </div>
-                    ))}
+              <section className="space-y-3 border-b border-app pb-4">
+                <h3 className="text-xs font-medium text-app-primary">
+                  {t("assignment_review_basic")}
+                </h3>
+                <div className="grid gap-x-6 gap-y-3 text-sm md:grid-cols-2">
+                  {[
+                    [t("assignment_title"), draft.title],
+                    [t("assignment_client"), draft.customerName],
+                    [
+                      t("assignment_seniority"),
+                      draft.seniority || t("common_not_specified"),
+                    ],
+                    [
+                      t("assignment_minimum_years"),
+                      `${draft.minYearsExperience} ${t("assignment_years_unit")}`,
+                    ],
+                    [
+                      t("assignment_work_location"),
+                      draft.location || t("common_not_specified"),
+                    ],
+                    [
+                      t("assignment_availability"),
+                      draft.availability || t("common_not_specified"),
+                    ],
+                    [
+                      t("client_required_start_date"),
+                      draft.requiredStartDate || t("common_not_specified"),
+                    ],
+                    [
+                      t("assignment_seniority_mode"),
+                      seniority?.matchMode
+                        ? t(
+                            `assignment_${seniority.matchMode.toLowerCase()}` as never,
+                          )
+                        : t("common_not_specified"),
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <p className="text-[10px] text-app-muted">{label}</p>
+                      <p className="text-sm text-app-primary">{value}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </section>
+              {(() => {
+                const skills = draft.requirements.filter(
+                  (item) => item.category === "Skill" && item.name.trim(),
+                );
+                const mandatory = skills.filter(
+                  (item) => item.type === "Mandatory",
+                );
+                const preferred = skills.filter(
+                  (item) => item.type === "Desired",
+                );
+                const languages = draft.requirements.filter(
+                  (item) =>
+                    item.category === "HumanLanguage" && item.name.trim(),
+                );
+                const other = draft.requirements.filter(
+                  (item) =>
+                    item.category !== "Skill" &&
+                    item.category !== "HumanLanguage" &&
+                    item.category !== "Seniority" &&
+                    item.name.trim(),
+                );
+                const skillRows = (items: typeof skills) =>
+                  items.map((item, index) => (
+                    <div
+                      key={`${item.id}-${index}`}
+                      className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_180px]"
+                    >
+                      <span className="text-app-primary">{item.name}</span>
+                      <span className="text-app-muted">
+                        {item.minYears == null
+                          ? t("common_not_specified")
+                          : `${item.minYears} ${t("assignment_years_unit")}`}
+                      </span>
+                    </div>
+                  ));
+                return (
+                  <div className="space-y-5">
+                    {skills.length > 0 && (
+                      <section className="space-y-3">
+                        <h3 className="text-xs font-medium text-app-primary">
+                          {t("assignment_review_skill_requirements")}
+                        </h3>
+                        {mandatory.length > 0 && (
+                          <div>
+                            <h4 className="mb-1 text-[10px] uppercase tracking-wide text-app-muted">
+                              {t("client_mandatory")}
+                            </h4>
+                            <div>{skillRows(mandatory)}</div>
+                          </div>
+                        )}
+                        {preferred.length > 0 && (
+                          <div>
+                            <h4 className="mb-1 text-[10px] uppercase tracking-wide text-app-muted">
+                              {t("client_desired")}
+                            </h4>
+                            <div>{skillRows(preferred)}</div>
+                          </div>
+                        )}
+                      </section>
+                    )}
+                    {languages.length > 0 && (
+                      <section className="space-y-3">
+                        <h3 className="text-xs font-medium text-app-primary">
+                          {t("assignment_review_language_requirements")}
+                        </h3>
+                        <div className="hidden grid-cols-[minmax(0,1fr)_150px_150px] gap-2 border-b border-app px-0 pb-1 text-[10px] text-app-muted md:grid">
+                          <span>{t("assignment_language")}</span>
+                          <span>{t("assignment_requirement_priority")}</span>
+                          <span>{t("assignment_language_proficiency")}</span>
+                        </div>
+                        {languages.map((item, index) => (
+                          <div
+                            key={`${item.id}-${index}`}
+                            className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_150px_150px]"
+                          >
+                            <span className="text-app-primary">
+                              {item.name}
+                            </span>
+                            <span className="text-app-muted">
+                              {item.type === "Mandatory"
+                                ? t("client_mandatory")
+                                : t("client_desired")}
+                            </span>
+                            <span className="text-app-muted">
+                              {item.proficiency === "Not specified" ||
+                              !item.proficiency
+                                ? t("common_not_specified")
+                                : t(
+                                    `proficiency_${item.proficiency.toLowerCase()}` as never,
+                                  )}
+                            </span>
+                          </div>
+                        ))}
+                      </section>
+                    )}
+                    {other.length > 0 && (
+                      <section className="space-y-3">
+                        <h3 className="text-xs font-medium text-app-primary">
+                          {t("assignment_review_other_requirements")}
+                        </h3>
+                        {other.map((item, index) => (
+                          <div
+                            key={`${item.id}-${index}`}
+                            className="flex flex-wrap justify-between gap-2 border-b border-app py-2 text-xs last:border-0"
+                          >
+                            <span className="text-app-primary">
+                              {item.name}
+                            </span>
+                            <span className="text-app-muted">
+                              {item.type === "Mandatory"
+                                ? t("client_mandatory")
+                                : t("client_desired")}
+                            </span>
+                          </div>
+                        ))}
+                      </section>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="flex justify-between">
                 <Button variant="ghost" onClick={() => setStep("requirements")}>
                   {t("assignment_modal_back")}
