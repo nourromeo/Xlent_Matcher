@@ -56,6 +56,7 @@ public class PromptServiceTests
         Assert.Contains("MatchMode is applicable only to Seniority requirements", schema);
         Assert.Contains("Exact, Minimum, Range", schema);
         Assert.Contains("For Skill and HumanLanguage requirements, MatchMode must be JSON null", schema);
+        Assert.Contains("Do not return translated or descriptive values, empty strings, numbers, or alternative spellings for MatchMode", schema);
     }
 
     [Fact]
