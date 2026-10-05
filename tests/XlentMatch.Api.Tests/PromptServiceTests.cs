@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.Controllers;
+using XlentMatch.Api.Models;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.Services;
 
@@ -54,9 +55,70 @@ public class PromptServiceTests
         Assert.Contains("assignment-level facts independently of requirement filtering", schema);
         Assert.Contains("seniority, overall minimum experience, location and work mode", schema);
         Assert.Contains("MatchMode is applicable only to Seniority requirements", schema);
-        Assert.Contains("Exact, Minimum, Range", schema);
+        Assert.Contains("\"Exact\", \"Minimum\" or \"Range\"", schema);
         Assert.Contains("For Skill and HumanLanguage requirements, MatchMode must be JSON null", schema);
         Assert.Contains("Do not return translated or descriptive values, empty strings, numbers, or alternative spellings for MatchMode", schema);
+    }
+
+    [Fact]
+    public void CvExtractionContractSeparatesOptionalScalarsFromCollectionIdentity()
+    {
+        var contract = OpenAiTextService.CvExtractionSchemaInstruction;
+
+        Assert.Contains("Optional scalar profile fields may be JSON null", contract);
+        Assert.Contains("only include a skill with a non-empty name", contract);
+        Assert.Contains("Do not return collection items with null or empty identifying fields", contract);
+        Assert.Contains("Not specified, Low, Medium, High, Native", contract);
+    }
+
+    [Fact]
+    public void IncompleteCvCollectionItemsAreRemovedWithoutInventingFacts()
+    {
+        var draft = new XlentMatch.Api.DTOs.Consultants.ConsultantDraftDto
+        {
+            Skills = [new() { Name = " " }, new() { Name = "C#" }],
+            Experiences = [new() { Company = "", Role = "" }, new() { Company = "Acme", Role = "Developer" }],
+            Projects = [new() { Name = "" }, new() { Name = "Migration" }],
+            Education = [new() { Degree = "" }, new() { Degree = "MSc" }],
+            Languages = [new() { Name = "" }, new() { Name = "Swedish" }],
+            Certifications = [new() { Name = "" }, new() { Name = "Azure" }],
+            Industries = ["", "Finance"]
+        };
+
+        ExtractionController.RemoveIncompleteCollectionItems(draft);
+
+        Assert.Single(draft.Skills);
+        Assert.Single(draft.Experiences);
+        Assert.Single(draft.Projects);
+        Assert.Single(draft.Education);
+        Assert.Single(draft.Languages);
+        Assert.Single(draft.Certifications);
+        Assert.Equal("Finance", Assert.Single(draft.Industries));
+    }
+
+    [Fact]
+    public void CvLanguageProficiencyAlwaysUsesCanonicalValuesWithoutInference()
+    {
+        var draft = new XlentMatch.Api.DTOs.Consultants.ConsultantDraftDto
+        {
+            Languages =
+            [
+                new() { Name = "Swedish", Proficiency = "Fluent" },
+                new() { Name = "English", Proficiency = null },
+                new() { Name = "German", Proficiency = "C2" }
+            ]
+        };
+
+        foreach (var language in draft.Languages)
+        {
+            var normalized = SkillNormalizationService.NormalizeHumanLanguage(language.Name, language.Proficiency);
+            language.Name = normalized.Name;
+            language.Proficiency = normalized.Proficiency;
+        }
+
+        Assert.Equal("High", draft.Languages[0].Proficiency);
+        Assert.Equal("Not specified", draft.Languages[1].Proficiency);
+        Assert.Equal("Not specified", draft.Languages[2].Proficiency);
     }
 
     [Fact]

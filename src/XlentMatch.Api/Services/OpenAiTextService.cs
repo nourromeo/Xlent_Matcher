@@ -22,9 +22,12 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
 
     public async Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {
-        var system = await GetPromptAsync(PromptKeys.CvExtraction, ct);
+        var system = await GetPromptAsync(PromptKeys.CvExtraction, ct) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + CvExtractionSchemaInstruction;
         return await AskForJsonAsync<ConsultantDraftDto>(PromptKeys.CvExtraction, system, text, ct);
     }
+
+    public const string CvExtractionSchemaInstruction =
+        "Optional scalar profile fields may be JSON null when the CV does not state them. Collection items must not be fabricated: only include a skill with a non-empty name, an experience with a non-empty company or role, a project with a non-empty name, education with a non-empty degree, a language with a non-empty name, or a certification with a non-empty name. Do not return collection items with null or empty identifying fields. Language proficiency must be exactly null or one of: Not specified, Low, Medium, High, Native; when a language is present but proficiency is not explicitly stated, return Not specified and do not infer it from the language name. Numeric skill level and years must be JSON integers; use 0 only when the existing review model requires an unknown numeric value.";
 
     public async Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct)
     {
