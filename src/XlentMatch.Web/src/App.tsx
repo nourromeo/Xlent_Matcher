@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Consultants from "./pages/Consultants";
 import ConsultantDetail from "./pages/ConsultantDetail";
+import EditConsultant from "./pages/EditConsultant";
 import ClientAssignments, { NewAssignmentPage } from "./pages/ClientAssignments";
 import AssignmentDetail from "./pages/AssignmentDetail";
 import EditAssignment from "./pages/EditAssignment";
@@ -20,6 +21,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="consultants" element={<Consultants />} />
           <Route path="consultants/:id" element={<ConsultantDetail />} />
+          <Route path="consultants/:id/edit" element={<EditConsultant />} />
           <Route path="client-assignments" element={<ClientAssignments />} />
           <Route path="client-assignments/new" element={<NewAssignmentPage />} />
           <Route path="client-assignments/:id/edit" element={<EditAssignment />} />

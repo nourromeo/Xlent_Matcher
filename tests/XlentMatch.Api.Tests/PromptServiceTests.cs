@@ -140,13 +140,9 @@ public class PromptServiceTests
 
         Assert.Equal(7, diagnostic.PromptVersion);
         Assert.Equal("gpt-test", diagnostic.Model);
-        Assert.False(diagnostic.RootSeniorityPresent);
-        Assert.True(diagnostic.SeniorityRequirementPresent);
-        Assert.True(diagnostic.SeniorityMatchModePresent);
-        Assert.True(diagnostic.SeniorityMaximumPresent);
         Assert.Equal(1, diagnostic.SkillRequirementCount);
         Assert.Equal(1, diagnostic.HumanLanguageRequirementCount);
-        Assert.Equal(1, diagnostic.SeniorityRequirementCount);
+        Assert.Equal(1, diagnostic.OtherRequirementCount);
         Assert.Equal(3, diagnostic.RequirementCount);
     }
 

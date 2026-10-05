@@ -184,7 +184,7 @@ export default function ConsultantDetail() {
         subtitle={consultant.title || t("consultant_role")}
         metadata={`${consultant.office || "—"} · ${consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}`}
         badges={consultant.availability ? <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}>{availabilityLabel(consultant, t, locale)}</span> : undefined}
-        actions={<button onClick={openEdit} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}><Edit3 size={12} /> {t("consultant_edit")}</button>}
+        actions={<Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}><Edit3 size={12} /> {t("consultant_edit")}</Link>}
       />
 
       {error && (
