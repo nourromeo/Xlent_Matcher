@@ -48,13 +48,13 @@ export function NewAssignmentPage() {
   const [brief, setBrief] = useState("");
   const [briefFile, setBriefFile] = useState<File | null>(null);
   const [sourceMode, setSourceMode] = useState<"paste" | "upload">("paste");
-  const [seniority, setSeniority] = useState("Mid");
+  const [seniority, setSeniority] = useState("");
   const [seniorityMatchMode, setSeniorityMatchMode] = useState<"Exact" | "Minimum" | "Range">("Exact");
   const [maximumSeniority, setMaximumSeniority] = useState("");
-  const [availability, setAvailability] = useState("Available now");
+  const [availability, setAvailability] = useState("");
   const [requiredStartDate, setRequiredStartDate] = useState("");
   const [location, setLocation] = useState("");
-  const [minYears, setMinYears] = useState(0);
+  const [minYears, setMinYears] = useState<number | null>(null);
   const [requirements, setRequirements] = useState<AssignmentRequirementApi[]>([]);
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -92,7 +92,7 @@ export function NewAssignmentPage() {
       if (extracted.availability) setAvailability(extracted.availability);
       if (extracted.requiredStartDate) setRequiredStartDate(extracted.requiredStartDate);
       if (extracted.location) setLocation(extracted.location);
-      if (extracted.minYearsExperience !== null) setMinYears(extracted.minYearsExperience);
+      setMinYears(extracted.minYearsExperience);
 
       setAiExtracted(true);
       setStep("basic");
@@ -160,7 +160,7 @@ export function NewAssignmentPage() {
       title: title.trim(),
       description: brief.trim() || (briefFile ? `Source file: ${briefFile.name}` : null),
       seniority: seniority.trim() || null,
-      minYearsExperience: minYears,
+      minYearsExperience: minYears ?? 0,
       availability: availability.trim() || null,
       requiredStartDate: requiredStartDate || null,
       location: location.trim() || null,
@@ -266,7 +266,7 @@ export function NewAssignmentPage() {
             <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("client_required_start_date")}</span><Input type="date" value={requiredStartDate} onChange={(event) => setRequiredStartDate(event.target.value)} /></label>
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">{t("client_minimum_experience")}</span>
-              <Input type="number" min={0} value={minYears} onChange={(event) => setMinYears(Number(event.target.value) || 0)} />
+              <Input type="number" min={0} value={minYears ?? ""} onChange={(event) => setMinYears(event.target.value ? Number(event.target.value) : null)} />
             </label>
           </div>
           <div className="flex justify-end gap-2"><Button onClick={() => setStep("input")} variant="ghost">{t("assignment_modal_back")}</Button><Button onClick={() => setStep("requirements")} variant="primary">{t("common_next")}</Button></div>
@@ -313,7 +313,7 @@ export function NewAssignmentPage() {
             <h2 className="text-sm font-medium text-app-primary">{t("assignment_step_review")}</h2>
             <p className="text-xs text-app-muted">{t("assignment_review_description")}</p>
             <div className="rounded-lg border border-app bg-app-raised p-4"><h3 className="text-sm font-medium text-app-primary">{title}</h3><p className="text-xs text-app-muted mt-1">{client}</p></div>
-            <div className="grid md:grid-cols-2 gap-4"><div className="rounded-lg border border-app bg-app-raised p-4"><h3 className="text-xs font-medium text-app-primary mb-3">{t("assignment_step_basic")}</h3><div className="space-y-1 text-xs text-app-secondary"><p>{t("assignment_seniority")}: {seniority || t("common_not_specified")}</p><p>{t("client_seniority_matching")}: {seniorityMatchMode}</p><p>{t("assignment_availability")}: {availability || t("common_not_specified")}</p><p>{t("client_work_location")}: {location || t("common_not_specified")}</p><p>{t("client_required_start_date")}: {requiredStartDate || t("common_not_specified")}</p><p>{t("client_minimum_experience")}: {minYears} {t("assignment_years")}</p></div></div><div className="rounded-lg border border-app bg-app-raised p-4"><h3 className="text-xs font-medium text-app-primary mb-3">{t("assignment_step_requirements")}</h3><div className="space-y-2"><p className="text-[10px] uppercase tracking-wide text-app-faint">{t("client_mandatory")}</p>{requirements.filter((item) => item.type === "Mandatory").map((item, index) => <p key={`required-${item.name}-${index}`} className="text-xs text-app-secondary">{item.name}</p>)}<p className="text-[10px] uppercase tracking-wide text-app-faint mt-3">{t("client_desired")}</p>{requirements.filter((item) => item.type === "Desired").map((item, index) => <p key={`desired-${item.name}-${index}`} className="text-xs text-app-secondary">{item.name}</p>)}</div></div></div>
+            <div className="grid md:grid-cols-2 gap-4"><div className="rounded-lg border border-app bg-app-raised p-4"><h3 className="text-xs font-medium text-app-primary mb-3">{t("assignment_step_basic")}</h3><div className="space-y-1 text-xs text-app-secondary"><p>{t("assignment_seniority")}: {seniority || t("common_not_specified")}</p><p>{t("client_seniority_matching")}: {seniority ? seniorityMatchMode : t("common_not_specified")}</p><p>{t("assignment_availability")}: {availability || t("common_not_specified")}</p><p>{t("client_work_location")}: {location || t("common_not_specified")}</p><p>{t("client_required_start_date")}: {requiredStartDate || t("common_not_specified")}</p><p>{t("client_minimum_experience")}: {minYears === null ? t("common_not_specified") : `${minYears} ${t("assignment_years")}`}</p></div></div><div className="rounded-lg border border-app bg-app-raised p-4"><h3 className="text-xs font-medium text-app-primary mb-3">{t("assignment_step_requirements")}</h3><div className="space-y-2"><p className="text-[10px] uppercase tracking-wide text-app-faint">{t("client_mandatory")}</p>{requirements.filter((item) => item.type === "Mandatory").map((item, index) => <p key={`required-${item.name}-${index}`} className="text-xs text-app-secondary">{item.name}</p>)}<p className="text-[10px] uppercase tracking-wide text-app-faint mt-3">{t("client_desired")}</p>{requirements.filter((item) => item.type === "Desired").map((item, index) => <p key={`desired-${item.name}-${index}`} className="text-xs text-app-secondary">{item.name}</p>)}</div></div></div>
             <div className="flex justify-end gap-2"><Button onClick={() => setStep("requirements")} variant="ghost">{t("assignment_modal_back")}</Button><Button onClick={createAssignment} variant="primary" disabled={saving}>{saving ? t("client_saving") : t("client_create")}</Button></div>
           </>}
           {error && <p className="text-xs text-app-secondary">{error}</p>}

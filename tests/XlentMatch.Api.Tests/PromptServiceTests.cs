@@ -49,6 +49,8 @@ public class PromptServiceTests
         Assert.Contains("MinYears and MinLevel must be JSON integers or JSON null", schema);
         Assert.Contains("MinLevel only when an explicit numeric skill level on the existing 1-5 scale", schema);
         Assert.Contains("MinYears and MinLevel must be null", schema);
+        Assert.Contains("Responsibility or assignment-description language alone is not a requirement", schema);
+        Assert.Contains("If the same sentence also explicitly requires experience with a technology, extract only that technology requirement", schema);
     }
 
     [Fact]
