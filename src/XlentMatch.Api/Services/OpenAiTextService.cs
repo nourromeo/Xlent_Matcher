@@ -35,7 +35,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     }
 
     public const string AssignmentExtractionSchemaInstruction =
-        "Return exactly the DTO-compatible JSON types for every property. " +
+        "First extract assignment-level facts independently of requirement filtering: preserve explicit seniority, overall minimum experience, location and work mode, availability when stated, and required start date when stated. These fields describe the assignment and must not be discarded because nearby text describes responsibilities. Then extract consultant requirements separately. Return exactly the DTO-compatible JSON types for every property. " +
         "For minYearsExperience, extract an explicit overall minimum experience requirement when the source states one, such as 'at least 5 years of experience', and return the JSON integer 5. If no explicit overall minimum is stated, return JSON null. Never return numeric strings, units or descriptive text. " +
         "Preserve explicit seniority labels using the canonical values Junior, Mid, Senior or Staff; do not default to Mid and do not infer seniority from years. " +
         "Extract availability only when the source explicitly states it; otherwise return null. Extract location exactly when stated. If both a place and an explicit work mode such as hybrid are stated and the existing single location field is used, preserve both in that field (for example, Stockholm / Hybrid). " +

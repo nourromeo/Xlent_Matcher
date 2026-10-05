@@ -51,6 +51,8 @@ public class PromptServiceTests
         Assert.Contains("MinYears and MinLevel must be null", schema);
         Assert.Contains("Responsibility or assignment-description language alone is not a requirement", schema);
         Assert.Contains("If the same sentence also explicitly requires experience with a technology, extract only that technology requirement", schema);
+        Assert.Contains("assignment-level facts independently of requirement filtering", schema);
+        Assert.Contains("seniority, overall minimum experience, location and work mode", schema);
     }
 
     [Fact]
