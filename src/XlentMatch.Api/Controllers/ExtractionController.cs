@@ -61,17 +61,6 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
         {
             var draft = await ai.ExtractRequirementsAsync(input.Text!, ct);
             NormalizeLanguageRequirementProficiencies(draft);
-            logger.LogInformation(
-                "Assignment extraction parsed. Seniority={Seniority} SeniorityMatchMode={SeniorityMatchMode} MaximumSeniority={MaximumSeniority} MinYearsExperience={MinYearsExperience} LocationPresent={LocationPresent} Availability={Availability} RequiredStartDate={RequiredStartDate} RequirementCount={RequirementCount} RequirementCategories={RequirementCategories}",
-                draft.Seniority ?? "null",
-                draft.SeniorityMatchMode ?? "null",
-                draft.MaximumSeniority ?? "null",
-                draft.MinYearsExperience?.ToString() ?? "null",
-                !string.IsNullOrWhiteSpace(draft.Location),
-                draft.Availability ?? "null",
-                draft.RequiredStartDate?.ToString("yyyy-MM-dd") ?? "null",
-                draft.Requirements.Count,
-                string.Join(",", draft.Requirements.GroupBy(item => item.Category, StringComparer.OrdinalIgnoreCase).Select(group => $"{group.Key}:{group.Count()}")));
             draft.SourceText = input.Text;
             return draft;
         }

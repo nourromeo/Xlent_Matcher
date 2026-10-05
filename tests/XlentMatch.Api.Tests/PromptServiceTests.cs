@@ -122,6 +122,35 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void AssignmentDiagnosticsSummarizeMetadataWithoutRequirementContent()
+    {
+        var prompt = new ActivePromptContext("ASSIGNMENT_EXTRACTION", 7, true, "not logged");
+        var draft = new RequirementExtractionResultDto
+        {
+            Seniority = null,
+            Requirements =
+            [
+                new() { Category = "Skill", MatchMode = null },
+                new() { Category = "HumanLanguage", MatchMode = null },
+                new() { Category = "Seniority", MatchMode = SeniorityMatchMode.Range, MaximumSeniority = "Senior" }
+            ]
+        };
+
+        var diagnostic = OpenAiTextService.CreateAssignmentExtractionDiagnostic(prompt, "gpt-test", draft);
+
+        Assert.Equal(7, diagnostic.PromptVersion);
+        Assert.Equal("gpt-test", diagnostic.Model);
+        Assert.False(diagnostic.RootSeniorityPresent);
+        Assert.True(diagnostic.SeniorityRequirementPresent);
+        Assert.True(diagnostic.SeniorityMatchModePresent);
+        Assert.True(diagnostic.SeniorityMaximumPresent);
+        Assert.Equal(1, diagnostic.SkillRequirementCount);
+        Assert.Equal(1, diagnostic.HumanLanguageRequirementCount);
+        Assert.Equal(1, diagnostic.SeniorityRequirementCount);
+        Assert.Equal(3, diagnostic.RequirementCount);
+    }
+
+    [Fact]
     public void AssignmentExtractionJsonMapsTypedRequirementFieldsAndOverallMinimum()
     {
         var json = """

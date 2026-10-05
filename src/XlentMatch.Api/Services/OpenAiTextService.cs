@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using XlentMatch.Api.DTOs.Assignments;
@@ -10,6 +11,8 @@ namespace XlentMatch.Api.Services;
 
 public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options, IPromptService prompts, ILogger<OpenAiTextService> logger) : IAiTextService
 {
+    public sealed record AssignmentExtractionDiagnostic(string PromptKey, int PromptVersion, bool PromptActive, string Model, string? Seniority, string? SeniorityMatchMode, string? MaximumSeniority, int? MinYearsExperience, bool LocationPresent, bool AvailabilityPresent, bool RequiredStartDatePresent, int RequirementCount, int SkillRequirementCount, int HumanLanguageRequirementCount, int SeniorityRequirementCount, int OtherRequirementCount, bool RootSeniorityPresent, bool SeniorityRequirementPresent, bool SeniorityMatchModePresent, bool SeniorityMaximumPresent);
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter() }
@@ -22,7 +25,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
 
     public async Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {
-        var system = await GetPromptAsync(PromptKeys.CvExtraction, ct) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + CvExtractionSchemaInstruction;
+        var system = (await GetPromptAsync(PromptKeys.CvExtraction, ct)).Content + "\n\nRUNTIME OUTPUT CONTRACT:\n" + CvExtractionSchemaInstruction;
         return await AskForJsonAsync<ConsultantDraftDto>(PromptKeys.CvExtraction, system, text, ct);
     }
 
@@ -33,8 +36,12 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     {
         var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
         var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
-        var system = (await GetPromptAsync(PromptKeys.AssignmentExtraction, ct)).Replace("{{today}}", today, StringComparison.Ordinal) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + AssignmentExtractionSchemaInstruction;
-        return await AskForJsonAsync<RequirementExtractionResultDto>(PromptKeys.AssignmentExtraction, system, text, ct);
+        var prompt = await GetPromptAsync(PromptKeys.AssignmentExtraction, ct);
+        var system = prompt.Content.Replace("{{today}}", today, StringComparison.Ordinal) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + AssignmentExtractionSchemaInstruction;
+        var result = await AskForJsonAsync<RequirementExtractionResultDto>(PromptKeys.AssignmentExtraction, system, text, ct);
+        var diagnostic = CreateAssignmentExtractionDiagnostic(prompt, options.Value.Model, result);
+        logger.LogInformation("Assignment extraction parsed. TraceId={TraceId} PromptKey={PromptKey} PromptVersion={PromptVersion} PromptActive={PromptActive} Model={Model} Seniority={Seniority} SeniorityMatchMode={SeniorityMatchMode} MaximumSeniority={MaximumSeniority} MinYearsExperience={MinYearsExperience} LocationPresent={LocationPresent} AvailabilityPresent={AvailabilityPresent} RequiredStartDatePresent={RequiredStartDatePresent} RequirementCount={RequirementCount} SkillRequirementCount={SkillRequirementCount} HumanLanguageRequirementCount={HumanLanguageRequirementCount} SeniorityRequirementCount={SeniorityRequirementCount} OtherRequirementCount={OtherRequirementCount} RootSeniorityPresent={RootSeniorityPresent} SeniorityRequirementPresent={SeniorityRequirementPresent} SeniorityMatchModePresent={SeniorityMatchModePresent} SeniorityMaximumPresent={SeniorityMaximumPresent}", Activity.Current?.TraceId.ToString() ?? "none", diagnostic.PromptKey, diagnostic.PromptVersion, diagnostic.PromptActive, diagnostic.Model, diagnostic.Seniority ?? "null", diagnostic.SeniorityMatchMode ?? "null", diagnostic.MaximumSeniority ?? "null", diagnostic.MinYearsExperience?.ToString() ?? "null", diagnostic.LocationPresent, diagnostic.AvailabilityPresent, diagnostic.RequiredStartDatePresent, diagnostic.RequirementCount, diagnostic.SkillRequirementCount, diagnostic.HumanLanguageRequirementCount, diagnostic.SeniorityRequirementCount, diagnostic.OtherRequirementCount, diagnostic.RootSeniorityPresent, diagnostic.SeniorityRequirementPresent, diagnostic.SeniorityMatchModePresent, diagnostic.SeniorityMaximumPresent);
+        return result;
     }
 
     public const string AssignmentExtractionSchemaInstruction =
@@ -51,7 +58,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
 
     public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
     {
-        var system = await GetPromptAsync(PromptKeys.CvAdaptation, ct) + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
+        var system = (await GetPromptAsync(PromptKeys.CvAdaptation, ct)).Content + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
         var user = JsonSerializer.Serialize(new { assignment, consultant }, Json);
         return await AskForJsonAsync<CvAdaptationSuggestionDto>(PromptKeys.CvAdaptation, system, user, ct);
     }
@@ -67,12 +74,18 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "Return exactly one JSON object with exactly these properties: summary (string), highlightedExperiences (array of strings), adaptedCvText (string), and notes (array of strings). " +
         "Do not rename properties. Do not return objects inside highlightedExperiences or notes; every item in both arrays must be a string. Change only textual values to the requested language, never the JSON structure or types.";
 
-    private async Task<string> GetPromptAsync(string key, CancellationToken ct)
+    private async Task<ActivePromptContext> GetPromptAsync(string key, CancellationToken ct)
     {
-        var prompt = await prompts.GetActivePromptAsync(key, ct);
+        var prompt = await prompts.GetActivePromptContextAsync(key, ct);
         if (prompt is null || string.IsNullOrWhiteSpace(prompt.Content))
             throw new InvalidOperationException($"No active AI prompt is configured for '{key}'.");
-        return prompt.Content.Replace("{{NoInventionRule}}", NoInventionRule, StringComparison.Ordinal);
+        return prompt with { Content = prompt.Content.Replace("{{NoInventionRule}}", NoInventionRule, StringComparison.Ordinal) };
+    }
+
+    public static AssignmentExtractionDiagnostic CreateAssignmentExtractionDiagnostic(ActivePromptContext prompt, string model, RequirementExtractionResultDto draft)
+    {
+        var seniorityRequirements = draft.Requirements.Where(item => string.Equals(item.Category, "Seniority", StringComparison.OrdinalIgnoreCase)).ToList();
+        return new(prompt.Key, prompt.Version, prompt.IsActive, model, draft.Seniority, draft.SeniorityMatchMode, draft.MaximumSeniority, draft.MinYearsExperience, !string.IsNullOrWhiteSpace(draft.Location), !string.IsNullOrWhiteSpace(draft.Availability), draft.RequiredStartDate is not null, draft.Requirements.Count, draft.Requirements.Count(item => string.Equals(item.Category, "Skill", StringComparison.OrdinalIgnoreCase)), draft.Requirements.Count(item => string.Equals(item.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase)), seniorityRequirements.Count, draft.Requirements.Count(item => !new[] { "Skill", "HumanLanguage", "Seniority" }.Contains(item.Category, StringComparer.OrdinalIgnoreCase)), !string.IsNullOrWhiteSpace(draft.Seniority), seniorityRequirements.Count > 0, seniorityRequirements.Any(item => item.MatchMode is not null), seniorityRequirements.Any(item => !string.IsNullOrWhiteSpace(item.MaximumSeniority)));
     }
 
     private async Task<T> AskForJsonAsync<T>(string operation, string systemPrompt, string userContent, CancellationToken ct) where T : new()
