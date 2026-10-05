@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
@@ -7,7 +8,7 @@ using XlentMatch.Api.DTOs.Cv;
 
 namespace XlentMatch.Api.Services;
 
-public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options, IPromptService prompts) : IAiTextService
+public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options, IPromptService prompts, ILogger<OpenAiTextService> logger) : IAiTextService
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -22,7 +23,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     public async Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {
         var system = await GetPromptAsync(PromptKeys.CvExtraction, ct);
-        return await AskForJsonAsync<ConsultantDraftDto>(system, text, ct);
+        return await AskForJsonAsync<ConsultantDraftDto>(PromptKeys.CvExtraction, system, text, ct);
     }
 
     public async Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct)
@@ -30,7 +31,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
         var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
         var system = (await GetPromptAsync(PromptKeys.AssignmentExtraction, ct)).Replace("{{today}}", today, StringComparison.Ordinal) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + AssignmentExtractionSchemaInstruction;
-        return await AskForJsonAsync<RequirementExtractionResultDto>(system, text, ct);
+        return await AskForJsonAsync<RequirementExtractionResultDto>(PromptKeys.AssignmentExtraction, system, text, ct);
     }
 
     public const string AssignmentExtractionSchemaInstruction =
@@ -40,7 +41,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     {
         var system = await GetPromptAsync(PromptKeys.CvAdaptation, ct) + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
         var user = JsonSerializer.Serialize(new { assignment, consultant }, Json);
-        return await AskForJsonAsync<CvAdaptationSuggestionDto>(system, user, ct);
+        return await AskForJsonAsync<CvAdaptationSuggestionDto>(PromptKeys.CvAdaptation, system, user, ct);
     }
 
     public static string LanguageInstruction(string? locale) => locale?.Trim().ToLowerInvariant() switch
@@ -62,7 +63,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         return prompt.Content.Replace("{{NoInventionRule}}", NoInventionRule, StringComparison.Ordinal);
     }
 
-    private async Task<T> AskForJsonAsync<T>(string systemPrompt, string userContent, CancellationToken ct) where T : new()
+    private async Task<T> AskForJsonAsync<T>(string operation, string systemPrompt, string userContent, CancellationToken ct) where T : new()
     {
         var o = options.Value;
         if (string.IsNullOrWhiteSpace(o.ApiKey) || string.IsNullOrWhiteSpace(o.Endpoint) || string.IsNullOrWhiteSpace(o.Model))
@@ -85,16 +86,48 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         using var response = await http.SendAsync(request, ct);
         var raw = await response.Content.ReadAsStringAsync(ct);
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Azure OpenAI request failed ({(int)response.StatusCode}): {raw}");
+        {
+            logger.LogWarning("AI extraction failed after provider response. operation={Operation} stage={Stage} statusCode={StatusCode} responseLength={ResponseLength}", operation, "ProviderHttpFailure", (int)response.StatusCode, raw.Length);
+            throw new InvalidOperationException($"Azure OpenAI request failed with HTTP {(int)response.StatusCode}.");
+        }
 
-        using var doc = JsonDocument.Parse(raw);
-        var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "{}";
+        string content;
+        try
+        {
+            using var doc = JsonDocument.Parse(raw);
+            var choices = doc.RootElement.GetProperty("choices");
+            content = choices[0].GetProperty("message").GetProperty("content").GetString() ?? string.Empty;
+        }
+        catch (JsonException exception)
+        {
+            logger.LogError(exception, "AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength} jsonPath={JsonPath}", operation, "ResponseEnvelopeParsing", raw.Length, exception.Path);
+            throw new InvalidOperationException("The AI service returned an invalid response envelope.", exception);
+        }
+        catch (InvalidOperationException exception)
+        {
+            logger.LogError(exception, "AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength}", operation, "ResponseEnvelopeParsing", raw.Length);
+            throw new InvalidOperationException("The AI service returned an invalid response envelope.", exception);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength} exceptionType={ExceptionType}", operation, "ResponseEnvelopeParsing", raw.Length, exception.GetType().Name);
+            throw new InvalidOperationException("The AI service returned an invalid response envelope.", exception);
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            logger.LogError("AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength}", operation, "EmptyAiResponse", raw.Length);
+            throw new InvalidOperationException("The AI service returned an empty response.");
+        }
+
+        var hasCodeFence = content.Contains("```", StringComparison.Ordinal);
         try
         {
             return JsonSerializer.Deserialize<T>(content, Json) ?? new T();
         }
         catch (JsonException exception)
         {
+            logger.LogError(exception, "AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength} contentLength={ContentLength} hasCodeFence={HasCodeFence} jsonPath={JsonPath} targetType={TargetType}", operation, "DtoDeserialization", raw.Length, content.Length, hasCodeFence, exception.Path, typeof(T).Name);
             throw new InvalidOperationException("The AI service returned an invalid response format.", exception);
         }
     }
