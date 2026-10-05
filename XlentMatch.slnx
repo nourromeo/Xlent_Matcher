@@ -1,3 +1,7 @@
 <Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/XlentMatch.Api.Tests/XlentMatch.Api.Tests.csproj" />
+  </Folder>
   <Project Path="src/XlentMatch.Api/XlentMatch.Api.csproj" />
 </Solution>

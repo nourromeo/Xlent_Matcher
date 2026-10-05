@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
 using XlentMatch.Api.DTOs.Extraction;
@@ -9,7 +10,7 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/extraction")]
-public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : ControllerBase
+public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILogger<ExtractionController> logger) : ControllerBase
 {
     private const long MaxFileSize = 10 * 1024 * 1024;
 
@@ -36,8 +37,9 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
             draft.SourceText = input.Text;
             return draft;
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException exception)
         {
+            logger.LogError(exception, "AI extraction failed. operation={Operation} exceptionType={ExceptionType}", PromptKeys.CvExtraction, exception.GetType().Name);
             return Problem(
                 statusCode: StatusCodes.Status502BadGateway,
                 title: "AI service unavailable",
@@ -57,15 +59,27 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai) : Co
         try
         {
             var draft = await ai.ExtractRequirementsAsync(input.Text!, ct);
+            NormalizeLanguageRequirementProficiencies(draft);
             draft.SourceText = input.Text;
             return draft;
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException exception)
         {
+            logger.LogError(exception, "AI extraction failed. operation={Operation} exceptionType={ExceptionType}", PromptKeys.AssignmentExtraction, exception.GetType().Name);
             return Problem(
                 statusCode: StatusCodes.Status502BadGateway,
                 title: "AI service unavailable",
                 detail: "The AI service could not process the assignment requirements right now. Try again shortly.");
+        }
+    }
+
+    public static void NormalizeLanguageRequirementProficiencies(RequirementExtractionResultDto draft)
+    {
+        foreach (var requirement in draft.Requirements.Where(item => string.Equals(item.Category, "HumanLanguage", StringComparison.OrdinalIgnoreCase)))
+        {
+            requirement.Proficiency = string.IsNullOrWhiteSpace(requirement.Proficiency)
+                ? null
+                : SkillNormalizationService.NormalizeLanguageProficiency(requirement.Proficiency);
         }
     }
 

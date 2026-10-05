@@ -88,20 +88,6 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     {
         var details = new List<MatchContextResult>();
 
-        if (assignment.MinYearsExperience > 0)
-        {
-            bool? matched = consultant.YearsOfExperience is null ? null : consultant.YearsOfExperience.Value >= assignment.MinYearsExperience;
-            details.Add(new MatchContextResult
-            {
-                Name = "Overall experience",
-                IsMatched = matched,
-                AffectsScore = true,
-                Evidence = consultant.YearsOfExperience is null
-                    ? $"Consultant experience is not confirmed; assignment requires at least {assignment.MinYearsExperience} years."
-                    : $"Consultant has {consultant.YearsOfExperience} years; assignment requires at least {assignment.MinYearsExperience}."
-            });
-        }
-
         if (!string.IsNullOrWhiteSpace(assignment.Location))
         {
             var required = NormalizeText(assignment.Location);

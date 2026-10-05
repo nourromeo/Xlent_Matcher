@@ -36,7 +36,7 @@ export function EditFormModal({
         <div className="flex justify-end gap-2 pt-4 border-t border-app">
           {stepCount && stepIndex !== undefined && onStepChange && stepIndex > 0 && <Button onClick={() => onStepChange(stepIndex - 1)} variant="ghost">Back</Button>}
           <Button onClick={cancel} variant="ghost">{t("common_cancel")}</Button>
-          <Button onClick={onSubmit} variant="primary">{stepCount && stepIndex !== undefined && stepIndex < stepCount - 1 ? "Next" : t("common_save_changes")}</Button>
+          <Button onClick={onSubmit} variant="primary">{stepCount && stepIndex !== undefined && stepIndex < stepCount - 1 ? t("common_next") : t("common_save_changes")}</Button>
         </div>
       </div>
     </Modal>

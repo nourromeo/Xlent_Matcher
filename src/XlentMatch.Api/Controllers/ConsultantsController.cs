@@ -37,6 +37,9 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         if (string.IsNullOrWhiteSpace(consultant.FirstName))
             return BadRequest("FirstName is required.");
 
+        var validation = ValidateConsultant(consultant);
+        if (validation is not null) return BadRequest(validation);
+
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
         CvUploadRecord? upload = null;
@@ -93,6 +96,12 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
     {
         var existing = await LoadFull(id, ct, track: true);
         if (existing is null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(input.FirstName))
+            return BadRequest("FirstName is required.");
+
+        var validation = ValidateConsultant(input);
+        if (validation is not null) return BadRequest(validation);
 
         existing.FirstName = input.FirstName;
         existing.LastName = input.LastName;
@@ -171,4 +180,35 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         string.Equals(value, ConsultantAvailability.Unavailable, StringComparison.OrdinalIgnoreCase)
             ? ConsultantAvailability.Unavailable
             : ConsultantAvailability.Available;
+
+    private static string? ValidateConsultant(Consultant consultant)
+    {
+        if (consultant.YearsOfExperience is < 0)
+            return "YearsOfExperience cannot be negative.";
+
+        if (!string.IsNullOrWhiteSpace(consultant.Seniority) &&
+            SeniorityLevel(consultant.Seniority) is null)
+            return "Seniority must be Junior, Mid, Senior, or Staff.";
+
+        if (consultant.Skills.Any(skill => skill.Years < 0))
+            return "Skill years cannot be negative.";
+
+        if (consultant.Skills.Any(skill => skill.Level < 0 || skill.Level > 5))
+            return "Skill level must be between 0 and 5.";
+
+        if (consultant.Experiences.Any(experience => experience.StartDate is not null &&
+            experience.EndDate is not null && experience.EndDate < experience.StartDate))
+            return "Experience end date cannot be before its start date.";
+
+        return null;
+    }
+
+    private static int? SeniorityLevel(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "junior" => 1,
+        "mid" => 2,
+        "senior" => 3,
+        "staff" => 4,
+        _ => null
+    };
 }

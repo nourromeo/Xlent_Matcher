@@ -7,6 +7,8 @@ import { assignmentsApi } from "../services/assignmentsApi";
 import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { matchingApi } from "../services/matchingApi";
 import type { AssignmentApi, Consultant, MatchResultApi } from "../types";
+import { useI18n } from "../i18n";
+import { formatDateTime } from "../services/localeFormat";
 
 function StatCard({
   label,
@@ -48,6 +50,7 @@ const uploadIcon = (status: CvUploadRecord["status"]) =>
       : <Clock size={10} style={{ color: "var(--color-brand)" }} />;
 
 export default function Dashboard() {
+  const { t, locale } = useI18n();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [uploads, setUploads] = useState<CvUploadRecord[]>([]);
@@ -89,7 +92,7 @@ export default function Dashboard() {
 
         const failedMatchLoads = resultSets.filter((result) => result.status === "rejected");
         if (failedMatchLoads.length > 0) {
-          setError("Some matching results could not be loaded.");
+          setError(t("dashboard_match_load_error"));
         }
 
         setMatches(
@@ -100,7 +103,7 @@ export default function Dashboard() {
         );
       } catch (requestError) {
         if (!cancelled) {
-          setError(requestError instanceof Error ? requestError.message : "Could not load dashboard.");
+          setError(t("dashboard_load_error"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -135,8 +138,8 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Dashboard"
-        description="Live overview of consultants, client assignments, CV processing and recent matching results."
+        title={t("dash_title")}
+        description={t("dashboard_description")}
       />
 
       {error && (
@@ -146,37 +149,37 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatCard label="Consultants" value={loading ? "—" : String(consultants.length)} sub="Existing consultant profiles" icon={Users} accent />
-        <StatCard label="Client assignments" value={loading ? "—" : String(assignments.length)} sub="Assignments in the system" icon={Briefcase} />
-        <StatCard label="CV uploads" value={loading ? "—" : String(uploads.length)} sub={processingUploads + " processing / review"} icon={FileText} />
-        <StatCard label="Matched assignments" value={loading ? "—" : String(matchedAssignments)} sub="Assignments with matching results" icon={GitMerge} />
+        <StatCard label={t("dashboard_consultants_label")} value={loading ? "—" : String(consultants.length)} sub={t("dashboard_consultants_sub")} icon={Users} accent />
+        <StatCard label={t("dashboard_assignments_label")} value={loading ? "—" : String(assignments.length)} sub={t("dashboard_assignments_sub")} icon={Briefcase} />
+        <StatCard label={t("dashboard_cv_uploads_label")} value={loading ? "—" : String(uploads.length)} sub={`${processingUploads} ${t("dashboard_cv_uploads_sub")}`} icon={FileText} />
+        <StatCard label={t("dashboard_matched_label")} value={loading ? "—" : String(matchedAssignments)} sub={t("dashboard_matched_sub")} icon={GitMerge} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <section className="xl:col-span-1 bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <div>
-              <p className="text-xs font-medium text-app-primary">Recent CV uploads</p>
-              <p className="text-[10px] text-app-muted mt-0.5">Latest database-backed CV processing activity</p>
+              <p className="text-xs font-medium text-app-primary">{t("dashboard_recent_uploads")}</p>
+              <p className="text-[10px] text-app-muted mt-0.5">{t("dashboard_upload_activity")}</p>
             </div>
             <Link to="/cv-upload" className="text-[10px] text-app-brand flex items-center gap-1">
-              View all <ArrowUpRight size={10} />
+              {t("dashboard_view_all")} <ArrowUpRight size={10} />
             </Link>
           </div>
 
           {recentUploads.length === 0 && !loading ? (
-            <p className="px-4 py-6 text-xs text-app-faint text-center">No CV uploads yet.</p>
+            <p className="px-4 py-6 text-xs text-app-faint text-center">{t("dashboard_no_uploads")}</p>
           ) : (
             recentUploads.map((item) => (
               <div key={item.id} className="flex items-center gap-3 px-4 py-3 border-b border-app-subtle last:border-b-0">
                 <FileText size={12} className="text-app-faint flex-none" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-app-primary truncate font-mono">{item.fileName}</p>
-                  <p className="text-[10px] text-app-faint">{new Date(item.uploadedAt).toLocaleString()}</p>
+              <p className="text-[10px] text-app-faint">{formatDateTime(item.uploadedAt, locale)}</p>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[10px] text-app-muted">
                   {uploadIcon(item.status)}
-                  {item.status === "Review" ? "Review" : item.status}
+                  {item.status === "Review" ? t("dashboard_review") : item.status === "Indexed" ? t("dashboard_indexed") : item.status === "Extracting" ? t("status_extracting") : item.status === "Error" ? t("status_error") : item.status === "Queued" ? t("status_queued") : item.status}
                 </span>
               </div>
             ))
@@ -186,9 +189,9 @@ export default function Dashboard() {
         <section className="xl:col-span-2 bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
           <div className="flex items-center justify-between px-4 py-3 border-b border-app">
             <div>
-              <p className="text-xs font-medium text-app-primary">Recent Consultant Matches</p>
+            <p className="text-xs font-medium text-app-primary">{t("dashboard_recent_matches")}</p>
               <p className="text-[10px] text-app-muted mt-0.5">
-                Latest saved consultant scores from completed matching runs
+                {t("dashboard_matches_sub")}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -197,27 +200,27 @@ export default function Dashboard() {
                   type="button"
                   onClick={clearRecentMatches}
                   className="text-[10px] text-app-muted hover:text-app-primary"
-                  title="Hide these items from the dashboard only. Saved matching results are not deleted."
+                  title={t("dashboard_clear_title")}
                 >
-                  Clear
+                  {t("dashboard_clear")}
                 </button>
               )}
               <Link to="/matching" className="text-[10px] text-app-brand flex items-center gap-1">
-                Open matching <ArrowUpRight size={10} />
+                {t("dashboard_open_matching")} <ArrowUpRight size={10} />
               </Link>
             </div>
           </div>
 
           <div className="grid grid-cols-[1fr_1fr_180px_90px] gap-3 px-4 py-2 border-b border-app text-[10px] uppercase tracking-wide text-app-faint">
-            <span>Consultant</span>
-            <span>Assignment</span>
-            <span>Match Score</span>
-            <span className="text-right">Result</span>
+            <span>{t("dashboard_consultant")}</span>
+            <span>{t("dashboard_assignment")}</span>
+            <span>{t("dashboard_score")}</span>
+              <span className="text-right">{t("dashboard_result")}</span>
           </div>
 
           {recentMatches.length === 0 && !loading ? (
             <p className="px-4 py-8 text-xs text-app-faint text-center">
-              {matches.length > 0 ? "Recent matches cleared from this dashboard view." : "No matching results yet."}
+              {matches.length > 0 ? t("dashboard_recent_cleared") : t("dashboard_no_matches")}
             </p>
           ) : (
             <div>
@@ -248,7 +251,7 @@ export default function Dashboard() {
                     to={"/matching?assignment=" + match.assignmentId}
                     className="text-[10px] text-app-brand text-right"
                   >
-                    View result
+                    {t("dashboard_view_result")}
                   </Link>
                 </div>
               ))}

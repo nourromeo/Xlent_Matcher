@@ -21,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MatchRequirementResult> MatchRequirementResults => Set<MatchRequirementResult>();
     public DbSet<CvUploadRecord> CvUploads => Set<CvUploadRecord>();
     public DbSet<SkillSuggestion> SkillSuggestions => Set<SkillSuggestion>();
+    public DbSet<AiPromptVersion> AiPromptVersions => Set<AiPromptVersion>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -66,5 +67,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(x => x.ConsultantId)
             .OnDelete(DeleteBehavior.SetNull);
         mb.Entity<CvUploadRecord>().HasIndex(x => x.ConsultantId);
+        mb.Entity<AiPromptVersion>().HasIndex(x => new { x.PromptKey, x.Version }).IsUnique();
+        mb.Entity<AiPromptVersion>().HasIndex(x => new { x.PromptKey, x.IsActive })
+            .HasFilter("[IsActive] = 1")
+            .IsUnique();
+        mb.Entity<AiPromptVersion>().Property(x => x.PromptKey).IsRequired();
+        mb.Entity<AiPromptVersion>().Property(x => x.Content).IsRequired();
+        mb.Entity<AiPromptVersion>().ToTable(table => table.HasCheckConstraint("CK_AiPromptVersions_Version_Positive", "[Version] > 0"));
     }
 }

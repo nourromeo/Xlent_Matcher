@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import type { Locale } from "../i18n";
 import type { AssignmentApi, Consultant } from "../types";
 
 export type RequirementDraft = {
@@ -162,9 +163,9 @@ export const aiApi = {
       body: extractionForm(undefined, text),
     }),
 
-  suggestTemporaryCvAdaptation: (consultant: ConsultantDraft, assignment: TemporaryAssignmentDraft) =>
+  suggestTemporaryCvAdaptation: (consultant: ConsultantDraft, assignment: TemporaryAssignmentDraft, locale: Locale) =>
     apiRequest<CvAdaptationSuggestion>("/cv/suggest-temporary", {
       method: "POST",
-      body: JSON.stringify({ consultant, assignment }),
+      body: JSON.stringify({ consultant, assignment, locale }),
     }),
 };

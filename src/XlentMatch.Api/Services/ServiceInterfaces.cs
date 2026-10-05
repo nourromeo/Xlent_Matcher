@@ -14,5 +14,5 @@ public interface IAiTextService
     Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct);
     Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct);
     Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(
-        ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, CancellationToken ct);
+        ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct);
 }

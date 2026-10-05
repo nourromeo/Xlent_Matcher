@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
@@ -7,7 +8,7 @@ using XlentMatch.Api.DTOs.Cv;
 
 namespace XlentMatch.Api.Services;
 
-public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options) : IAiTextService
+public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options, IPromptService prompts, ILogger<OpenAiTextService> logger) : IAiTextService
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -19,126 +20,63 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
         "Never invent, assume or embellish skills, experiences, certifications, dates or numbers. " +
         "If something is unknown, use null, 0 or an empty list. Respond with valid JSON only.";
 
-    public Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
+    public async Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
+    {
+        var system = await GetPromptAsync(PromptKeys.CvExtraction, ct);
+        return await AskForJsonAsync<ConsultantDraftDto>(PromptKeys.CvExtraction, system, text, ct);
+    }
+
+    public async Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct)
     {
         var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
         var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
-        var system = $$"""
-            You extract structured consultant profiles from CV text.
-            {{NoInventionRule}}
-            Extract skill names exactly enough for later normalization, but do NOT classify skills into categories.
-            Seniority: provide a suggestedSeniority using only Junior, Mid, Senior or Staff, based only on evidence actually present in the CV. Consider explicit roles/titles, technical ownership, independent delivery, architecture/design responsibility, technical leadership, mentoring and scope or cross-team responsibility. Total years may support the suggestion but must never determine it by itself. Do not invent responsibilities. If evidence is insufficient, return null. This is a suggestion for human review.
-            Experience: yearsOfExperience should be null unless the CV explicitly states total professional years. The application may calculate an estimate from dated roles and will label its source.
-            Do not infer or extract consultant availability. Availability is maintained manually by an admin.
-            For human languages, put only the language name in name. Set proficiency only when an explicit descriptor maps to Low, Medium, High or Native; otherwise use Not specified. Do not infer proficiency. Do not use CEFR levels.
-            The application's canonical Skill Catalog is the source of truth for skill names, aliases and categories.
-            Return a JSON object with exactly this shape:
-            {
-              "firstName": string, "lastName": string, "email": string|null, "title": string|null,
-              "summary": string|null, "seniority": null, "suggestedSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "yearsOfExperience": int|null,
-              "yearsOfExperienceSource": "ExplicitInCv"|null, "office": string|null,
-              "skills": [{ "name": string, "level": int, "years": int, "evidence": string|null }],
-              "experiences": [{ "company": string, "role": string, "description": string|null,
-                                 "startDate": "yyyy-MM"|null, "endDate": "yyyy-MM"|null }],
-              "projects": [{ "name": string, "description": string|null, "technologies": "comma, separated"|null }],
-              "education": [{ "degree": string, "school": string|null, "year": string|null }],
-              "languages": [{ "name": canonical language name only (for example "Swedish", "English", "Arabic"), "proficiency": "Not specified"|"Low"|"Medium"|"High"|"Native" }],
-              "industries": [string],
-              "certifications": [{ "name": string, "issuer": string|null, "issuedDate": "yyyy-MM"|null }]
-            }
-            """;
-
-        return AskForJsonAsync<ConsultantDraftDto>(system, text, ct);
+        var system = (await GetPromptAsync(PromptKeys.AssignmentExtraction, ct)).Replace("{{today}}", today, StringComparison.Ordinal) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + AssignmentExtractionSchemaInstruction;
+        return await AskForJsonAsync<RequirementExtractionResultDto>(PromptKeys.AssignmentExtraction, system, text, ct);
     }
 
-    public Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct)
+    public const string AssignmentExtractionSchemaInstruction =
+        "Return exactly the DTO-compatible JSON types for every property. " +
+        "For minYearsExperience, extract an explicit overall minimum experience requirement when the source states one, such as 'at least 5 years of experience', and return the JSON integer 5. If no explicit overall minimum is stated, return JSON null. Never return numeric strings, units or descriptive text. " +
+        "Preserve explicit seniority labels using the canonical values Junior, Mid, Senior or Staff; do not default to Mid and do not infer seniority from years. " +
+        "Extract availability only when the source explicitly states it; otherwise return null. Extract location exactly when stated. If both a place and an explicit work mode such as hybrid are stated and the existing single location field is used, preserve both in that field (for example, Stockholm / Hybrid). " +
+        "Only create Skill or HumanLanguage requirements when the source expresses consultant competence or qualification, such as experience of, must have, required, mandatory, desirable, competence in, knowledge of, or an equivalent phrase in English, Swedish or Spanish. Responsibility or assignment-description language alone is not a requirement: do not extract activities such as working with, developing, maintaining, participating in, responsible for, or the work involves as skills. For example, 'the consultant shall work with development and further development of backend services and APIs' describes the assignment and must not become a Skill requirement. If the same sentence also explicitly requires experience with a technology, extract only that technology requirement. Do not remove a technology merely because it appears in a descriptive sentence when a separate explicit competence requirement exists. " +
+        "For each requirement, Type must be the JSON string Mandatory or Desired; Name and Category must be JSON strings; MinYears and MinLevel must be JSON integers or JSON null; Proficiency, MatchMode and MaximumSeniority must be JSON strings or JSON null. Do not return empty strings for numeric fields. " +
+        "Skill requirements may populate skill-specific minYears only when skill-specific years are explicitly stated, and may populate MinLevel only when an explicit numeric skill level on the existing 1-5 scale is stated; otherwise return null. Do not use MinLevel for language proficiency or seniority labels. " +
+        "HumanLanguage requirements may populate Proficiency only with exactly null or one of: Not specified, Low, Medium, High, Native; MinYears and MinLevel must be null. Never return display translations or CEFR levels. " +
+        "Seniority requirements should use the seniority fields and match mode; MinYears, MinLevel and Proficiency must be null. " +
+        "Arrays must remain arrays, and fields that do not apply or are not explicitly present in the source must be JSON null. Preserve the no-invention rule.";
+
+    public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
     {
-        var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
-        var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
-        var system = NoInventionRule + $$"""
-            
-            You extract structured information from a customer assignment / requirement specification.
-            The current date in Europe/Stockholm is {{today}}.
-
-            Separate assignment metadata from actual consultant requirements.
-
-            Assignment metadata:
-            - seniority: the required level when explicitly stated; otherwise null. Keep this for compatibility.
-            - seniorityMatchMode: Exact by default; use Minimum for "at least" wording and Range when both a minimum and maximum are explicitly stated.
-            - minimumSeniority and maximumSeniority: only Junior, Mid, Senior or Staff; maximumSeniority is only populated for Range. Do not infer seniority from years.
-            - minYearsExperience: the overall minimum years of professional experience when explicitly stated; otherwise null.
-            - availability: preserve explicit availability wording; otherwise null. Resolve relative timing against today={{today}} into requiredStartDate (yyyy-MM-dd); otherwise null.
-            - location: an explicit work location or Remote/Hybrid arrangement; otherwise null.
-
-            Requirements:
-            - Include concrete technical skills, technologies, platforms, tools, certifications, methods or clearly named competencies with category "Skill".
-            - Include explicit human language requirements (for example Swedish or English) as separate requirements with category "HumanLanguage". Do not treat programming languages such as C# or Python as human languages.
-            - Do NOT create requirements such as "senior consultant", ".NET consultant", role titles, availability, location, customer name, start date, or general years-of-experience statements.
-            - If a requirement has its own explicit minimum years, put that number in minYears.
-            - For human languages, set proficiency only when the assignment explicitly requires one of Not specified, Low, Medium, High or Native. Otherwise use null.
-            - Classify as "Mandatory" when the text says must, required, mandatory, shall, need, or equivalent.
-            - Classify as "Desired" when the text says preferred, meriting, bonus, nice to have, or equivalent.
-            - If the text lists a skill without clearly saying preferred/optional, treat it as Mandatory.
-            - Keep technology names concise, for example "C#", "ASP.NET Core", "SQL Server", "Azure", "React", "Docker".
-
-            Return a JSON object with exactly this shape:
-            {
-              "seniority": string|null, "seniorityMatchMode": "Exact"|"Minimum"|"Range"|null,
-              "minimumSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null, "maximumSeniority": "Junior"|"Mid"|"Senior"|"Staff"|null,
-              "minYearsExperience": int|null,
-              "availability": string|null, "requiredStartDate": "yyyy-MM-dd"|null,
-              "location": string|null,
-              "requirements": [
-                { "name": string, "category": "Skill"|"HumanLanguage", "type": "Mandatory"|"Desired", "minYears": int|null, "minLevel": int|null, "proficiency": string|null }
-              ]
-            }
-            """;
-
-        return AskForJsonAsync<RequirementExtractionResultDto>(system, text, ct);
+        var system = await GetPromptAsync(PromptKeys.CvAdaptation, ct) + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
+        var user = JsonSerializer.Serialize(new { assignment, consultant }, Json);
+        return await AskForJsonAsync<CvAdaptationSuggestionDto>(PromptKeys.CvAdaptation, system, user, ct);
     }
 
-    public Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(
-        ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, CancellationToken ct)
+    public static string LanguageInstruction(string? locale) => locale?.Trim().ToLowerInvariant() switch
     {
-        var system = $$"""
-            You help a consultant tailor an existing CV to a customer assignment.
-            {{NoInventionRule}}
-            You may reorder, emphasize and rephrase EXISTING CV content so relevant experience is highlighted.
-            You must NOT invent skills, experiences, certifications, employers, dates or achievements.
-            If the assignment asks for something missing from the CV, mention the gap in notes instead of adding it.
-            The result is temporary and intended for user review, copying or printing.
-            Return a JSON object with exactly this shape:
-            {
-              "summary": string,
-              "highlightedExperiences": [string],
-              "adaptedCvText": string,
-              "notes": [string]
-            }
-            """;
+        "sv" => "Generate all user-facing prose fields in Swedish. Preserve names, companies, technologies, certifications and other factual CV data exactly; do not invent or translate technical data.",
+        "es" => "Generate all user-facing prose fields in Spanish. Preserve names, companies, technologies, certifications and other factual CV data exactly; do not invent or translate technical data.",
+        _ => "Generate all user-facing prose fields in English. Preserve names, companies, technologies, certifications and other factual CV data exactly; do not invent or translate technical data."
+    };
 
-        var user = JsonSerializer.Serialize(new
-        {
-            assignment,
-            consultant
-        }, Json);
+    public const string AdaptationSchemaInstruction =
+        "Return exactly one JSON object with exactly these properties: summary (string), highlightedExperiences (array of strings), adaptedCvText (string), and notes (array of strings). " +
+        "Do not rename properties. Do not return objects inside highlightedExperiences or notes; every item in both arrays must be a string. Change only textual values to the requested language, never the JSON structure or types.";
 
-        return AskForJsonAsync<CvAdaptationSuggestionDto>(system, user, ct);
+    private async Task<string> GetPromptAsync(string key, CancellationToken ct)
+    {
+        var prompt = await prompts.GetActivePromptAsync(key, ct);
+        if (prompt is null || string.IsNullOrWhiteSpace(prompt.Content))
+            throw new InvalidOperationException($"No active AI prompt is configured for '{key}'.");
+        return prompt.Content.Replace("{{NoInventionRule}}", NoInventionRule, StringComparison.Ordinal);
     }
 
-
-    private async Task<T> AskForJsonAsync<T>(string systemPrompt, string userContent, CancellationToken ct) where T : new()
+    private async Task<T> AskForJsonAsync<T>(string operation, string systemPrompt, string userContent, CancellationToken ct) where T : new()
     {
         var o = options.Value;
-
-        if (string.IsNullOrWhiteSpace(o.ApiKey) ||
-            string.IsNullOrWhiteSpace(o.Endpoint) ||
-            string.IsNullOrWhiteSpace(o.Model))
-        {
-            throw new InvalidOperationException(
-                "Azure OpenAI is not configured. Set OpenAi:Endpoint, OpenAi:ApiKey and OpenAi:Model using configuration or user secrets.");
-        }
-
-        var requestUrl = $"{o.Endpoint.TrimEnd('/')}/chat/completions";
+        if (string.IsNullOrWhiteSpace(o.ApiKey) || string.IsNullOrWhiteSpace(o.Endpoint) || string.IsNullOrWhiteSpace(o.Model))
+            throw new InvalidOperationException("Azure OpenAI is not configured. Set OpenAi:Endpoint, OpenAi:ApiKey and OpenAi:Model using configuration or user secrets.");
 
         var body = new
         {
@@ -151,23 +89,55 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options)
             }
         };
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{o.Endpoint.TrimEnd('/')}/chat/completions");
         request.Headers.Add("api-key", o.ApiKey);
         request.Content = JsonContent.Create(body);
-
         using var response = await http.SendAsync(request, ct);
         var raw = await response.Content.ReadAsStringAsync(ct);
-
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Azure OpenAI request failed ({(int)response.StatusCode}): {raw}");
+        {
+            logger.LogWarning("AI extraction failed after provider response. operation={Operation} stage={Stage} statusCode={StatusCode} responseLength={ResponseLength}", operation, "ProviderHttpFailure", (int)response.StatusCode, raw.Length);
+            throw new InvalidOperationException($"Azure OpenAI request failed with HTTP {(int)response.StatusCode}.");
+        }
 
-        using var doc = JsonDocument.Parse(raw);
-        var content = doc.RootElement
-            .GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString() ?? "{}";
+        string content;
+        try
+        {
+            using var doc = JsonDocument.Parse(raw);
+            var choices = doc.RootElement.GetProperty("choices");
+            content = choices[0].GetProperty("message").GetProperty("content").GetString() ?? string.Empty;
+        }
+        catch (JsonException exception)
+        {
+            logger.LogError(exception, "AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength} jsonPath={JsonPath}", operation, "ResponseEnvelopeParsing", raw.Length, exception.Path);
+            throw new InvalidOperationException("The AI service returned an invalid response envelope.", exception);
+        }
+        catch (InvalidOperationException exception)
+        {
+            logger.LogError(exception, "AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength}", operation, "ResponseEnvelopeParsing", raw.Length);
+            throw new InvalidOperationException("The AI service returned an invalid response envelope.", exception);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength} exceptionType={ExceptionType}", operation, "ResponseEnvelopeParsing", raw.Length, exception.GetType().Name);
+            throw new InvalidOperationException("The AI service returned an invalid response envelope.", exception);
+        }
 
-        return JsonSerializer.Deserialize<T>(content, Json) ?? new T();
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            logger.LogError("AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength}", operation, "EmptyAiResponse", raw.Length);
+            throw new InvalidOperationException("The AI service returned an empty response.");
+        }
+
+        var hasCodeFence = content.Contains("```", StringComparison.Ordinal);
+        try
+        {
+            return JsonSerializer.Deserialize<T>(content, Json) ?? new T();
+        }
+        catch (JsonException exception)
+        {
+            logger.LogError(exception, "AI extraction failed after provider response. operation={Operation} stage={Stage} responseLength={ResponseLength} contentLength={ContentLength} hasCodeFence={HasCodeFence} jsonPath={JsonPath} targetType={TargetType}", operation, "DtoDeserialization", raw.Length, content.Length, hasCodeFence, exception.Path, typeof(T).Name);
+            throw new InvalidOperationException("The AI service returned an invalid response format.", exception);
+        }
     }
 }
