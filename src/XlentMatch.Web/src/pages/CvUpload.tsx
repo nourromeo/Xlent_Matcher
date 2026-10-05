@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Upload as UploadIcon, FileText, CheckCircle, AlertCircle, Loader, Plus, X, Eye } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
@@ -105,6 +105,7 @@ function parseUpload(record: Awaited<ReturnType<typeof cvUploadsApi.getAll>>[num
 
 export default function CvUpload() {
   const { t, locale } = useI18n();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<CvUploadView[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -189,7 +190,8 @@ export default function CvUpload() {
       });
 
       updateLocal(created.id, { ...updated, draft: result });
-      setActiveId(created.id);
+      localStorage.setItem(`xlent-cv-review-${created.id}`, JSON.stringify(result));
+      navigate(`/cv-upload/review?uploadId=${created.id}`);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : t("upload_extract_error");
       setError(message);
@@ -404,7 +406,7 @@ export default function CvUpload() {
             {file.status === "Review" && file.draft && (
               <button
                 type="button"
-                onClick={() => { setReviewStep(0); setActiveId(file.id); }}
+                onClick={() => { localStorage.setItem(`xlent-cv-review-${file.id}`, JSON.stringify(file.draft)); navigate(`/cv-upload/review?uploadId=${file.id}`); }}
                 className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
               >
                   <Eye size={11} /> {t("upload_review")}
