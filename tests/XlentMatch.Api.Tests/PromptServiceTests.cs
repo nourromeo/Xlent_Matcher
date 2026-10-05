@@ -150,6 +150,23 @@ public class PromptServiceTests
         Assert.Equal(3, diagnostic.RequirementCount);
     }
 
+    [Theory]
+    [InlineData("ASSIGNMENT_EXTRACTION")]
+    [InlineData("CV_EXTRACTION")]
+    [InlineData("CV_ADAPTATION")]
+    public void StructuredResponseFormatUsesStrictAzureJsonSchema(string operation)
+    {
+        var json = JsonSerializer.Serialize(OpenAiTextService.CreateStructuredResponseFormat(operation));
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        Assert.Equal("json_schema", root.GetProperty("type").GetString());
+        Assert.True(root.GetProperty("json_schema").GetProperty("strict").GetBoolean());
+        Assert.Equal(JsonValueKind.Object, root.GetProperty("json_schema").GetProperty("schema").ValueKind);
+        Assert.DoesNotContain("\"minimum\":null", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"maximum\":null", json, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AssignmentExtractionJsonMapsTypedRequirementFieldsAndOverallMinimum()
     {

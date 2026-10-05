@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using XlentMatch.Api.DTOs.Assignments;
@@ -97,7 +98,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         var body = new
         {
             model = o.Model,
-            response_format = new { type = "json_object" },
+            response_format = CreateStructuredResponseFormat(operation),
             messages = new object[]
             {
                 new { role = "system", content = systemPrompt },
@@ -112,7 +113,8 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         var raw = await response.Content.ReadAsStringAsync(ct);
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogWarning("AI extraction failed after provider response. operation={Operation} stage={Stage} statusCode={StatusCode} responseLength={ResponseLength}", operation, "ProviderHttpFailure", (int)response.StatusCode, raw.Length);
+            var providerError = ReadProviderErrorMetadata(raw);
+            logger.LogWarning("AI extraction failed after provider response. operation={Operation} stage={Stage} statusCode={StatusCode} responseLength={ResponseLength} providerCode={ProviderCode} providerType={ProviderType} providerParam={ProviderParam} providerMessage={ProviderMessage}", operation, "ProviderHttpFailure", (int)response.StatusCode, raw.Length, providerError.Code, providerError.Type, providerError.Param, providerError.Message);
             throw new InvalidOperationException($"Azure OpenAI request failed with HTTP {(int)response.StatusCode}.");
         }
 
@@ -156,4 +158,137 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             throw new InvalidOperationException("The AI service returned an invalid response format.", exception);
         }
     }
+
+    public static object CreateStructuredResponseFormat(string operation) => new
+    {
+        type = "json_schema",
+        json_schema = new
+        {
+            name = operation switch
+            {
+                PromptKeys.AssignmentExtraction => "assignment_extraction",
+                PromptKeys.CvExtraction => "cv_extraction",
+                PromptKeys.CvAdaptation => "cv_adaptation",
+                _ => "ai_extraction"
+            },
+            strict = true,
+            schema = operation switch
+            {
+                PromptKeys.AssignmentExtraction => AssignmentSchema(),
+                PromptKeys.CvExtraction => CvSchema(),
+                PromptKeys.CvAdaptation => CvAdaptationSchema(),
+                _ => throw new InvalidOperationException($"No structured schema is configured for '{operation}'.")
+            }
+        }
+    };
+
+    private static JsonObject AssignmentSchema() => new()
+    {
+        ["type"] = "object",
+        ["additionalProperties"] = false,
+        ["properties"] = new JsonObject
+        {
+            ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
+            ["seniorityMatchMode"] = NullableString(["Exact", "Minimum", "Range"]),
+            ["minimumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
+            ["maximumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
+            ["minYearsExperience"] = NullableInteger(),
+            ["availability"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
+            ["requiredStartDate"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
+            ["location"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
+            ["requirements"] = new JsonObject
+            {
+                ["type"] = "array",
+                ["items"] = RequirementSchema()
+            },
+            ["sourceText"] = new JsonObject { ["type"] = new JsonArray("string", "null") }
+        },
+        ["required"] = Required("seniority", "seniorityMatchMode", "minimumSeniority", "maximumSeniority", "minYearsExperience", "availability", "requiredStartDate", "location", "requirements", "sourceText")
+    };
+
+    private static JsonObject RequirementSchema() => new()
+    {
+        ["type"] = "object",
+        ["additionalProperties"] = false,
+        ["properties"] = new JsonObject
+        {
+            ["name"] = new JsonObject { ["type"] = "string" },
+            ["type"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("Mandatory", "Desired") },
+            ["minYears"] = NullableInteger(),
+            ["minLevel"] = NullableInteger(1, 5),
+            ["proficiency"] = NullableString(["Not specified", "Low", "Medium", "High", "Native"]),
+            ["matchMode"] = NullableString(["Exact", "Minimum", "Range"]),
+            ["maximumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
+            ["category"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("Skill", "HumanLanguage", "Seniority") }
+        },
+        ["required"] = Required("name", "type", "minYears", "minLevel", "proficiency", "matchMode", "maximumSeniority", "category")
+    };
+
+    private static JsonObject CvSchema() => new()
+    {
+        ["type"] = "object", ["additionalProperties"] = false,
+        ["properties"] = new JsonObject
+        {
+            ["firstName"] = new JsonObject { ["type"] = "string" }, ["lastName"] = new JsonObject { ["type"] = "string" },
+            ["email"] = NullableString(), ["title"] = NullableString(), ["summary"] = NullableString(), ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["suggestedSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["yearsOfExperience"] = NullableInteger(), ["yearsOfExperienceSource"] = NullableString(), ["office"] = NullableString(),
+            ["skills"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["level"] = new JsonObject { ["type"] = "integer" }, ["years"] = new JsonObject { ["type"] = "integer" }, ["evidence"] = NullableString() }, ["required"] = Required("name", "level", "years", "evidence") }),
+            ["experiences"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["company"] = new JsonObject { ["type"] = "string" }, ["role"] = new JsonObject { ["type"] = "string" }, ["description"] = NullableString(), ["startDate"] = NullableString(), ["endDate"] = NullableString() }, ["required"] = Required("company", "role", "description", "startDate", "endDate") }),
+            ["projects"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["description"] = NullableString(), ["technologies"] = NullableString() }, ["required"] = Required("name", "description", "technologies") }),
+            ["education"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["degree"] = new JsonObject { ["type"] = "string" }, ["school"] = NullableString(), ["year"] = NullableString() }, ["required"] = Required("degree", "school", "year") }),
+            ["languages"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["proficiency"] = NullableString(["Not specified", "Low", "Medium", "High", "Native"]) }, ["required"] = Required("name", "proficiency") }),
+            ["industries"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+            ["certifications"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["issuer"] = NullableString(), ["issuedDate"] = NullableString() }, ["required"] = Required("name", "issuer", "issuedDate") }),
+            ["sourceText"] = NullableString()
+        },
+        ["required"] = Required("firstName", "lastName", "email", "title", "summary", "seniority", "suggestedSeniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "experiences", "projects", "education", "languages", "industries", "certifications", "sourceText")
+    };
+
+    private static JsonObject CvAdaptationSchema() => new()
+    {
+        ["type"] = "object", ["additionalProperties"] = false,
+        ["properties"] = new JsonObject { ["summary"] = new JsonObject { ["type"] = "string" }, ["highlightedExperiences"] = ArrayOf(new JsonObject { ["type"] = "string" }), ["adaptedCvText"] = new JsonObject { ["type"] = "string" }, ["notes"] = ArrayOf(new JsonObject { ["type"] = "string" }) },
+        ["required"] = Required("summary", "highlightedExperiences", "adaptedCvText", "notes")
+    };
+
+    private static JsonObject NullableString(string[]? values = null)
+    {
+        var schema = new JsonObject { ["type"] = new JsonArray("string", "null") };
+        if (values is not null) schema["enum"] = new JsonArray(values.Select(value => (JsonNode?)value).ToArray()) { null };
+        return schema;
+    }
+
+    private static JsonObject NullableInteger(int? minimum = null, int? maximum = null)
+    {
+        var schema = new JsonObject { ["type"] = new JsonArray("integer", "null") };
+        if (minimum is not null) schema["minimum"] = minimum.Value;
+        if (maximum is not null) schema["maximum"] = maximum.Value;
+        return schema;
+    }
+    private static JsonObject ArrayOf(JsonObject items) => new() { ["type"] = "array", ["items"] = items };
+    private static JsonArray Required(params string[] names) => new(names.Select(name => (JsonNode?)name).ToArray());
+
+    private static (string Code, string Type, string Param, string Message) ReadProviderErrorMetadata(string raw)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(raw);
+            var error = document.RootElement.TryGetProperty("error", out var errorElement) ? errorElement : document.RootElement;
+            return (
+                ReadErrorValue(error, "code"),
+                ReadErrorValue(error, "type"),
+                ReadErrorValue(error, "param"),
+                Truncate(ReadErrorValue(error, "message")));
+        }
+        catch (JsonException)
+        {
+            return ("unparsed", "unparsed", "unparsed", "Provider returned a non-JSON error response.");
+        }
+    }
+
+    private static string ReadErrorValue(JsonElement error, string property) =>
+        error.TryGetProperty(property, out var value) && value.ValueKind != JsonValueKind.Null
+            ? value.ToString()
+            : "null";
+
+    private static string Truncate(string value) => value.Length <= 500 ? value : value[..500];
 }
