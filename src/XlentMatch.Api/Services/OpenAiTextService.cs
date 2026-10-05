@@ -54,7 +54,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "For each requirement, Type must be the JSON string Mandatory or Desired; Name and Category must be JSON strings; MinYears and MinLevel must be JSON integers or JSON null; MaximumSeniority must be a JSON string or JSON null. MatchMode is applicable only to Seniority requirements and must be exactly one of the JSON strings \"Exact\", \"Minimum\" or \"Range\", or JSON null where not applicable. Do not return translated or descriptive values, empty strings, numbers, or alternative spellings for MatchMode. For Skill and HumanLanguage requirements, MatchMode must be JSON null. Do not return empty strings for numeric fields. " +
         "Skill requirements may populate skill-specific minYears only when skill-specific years are explicitly stated, and may populate MinLevel only when an explicit numeric skill level on the existing 1-5 scale is stated; otherwise return null. Do not use MinLevel for language proficiency or seniority labels. " +
         "HumanLanguage requirements may populate Proficiency only with exactly null or one of: Not specified, Low, Medium, High, Native; MinYears and MinLevel must be null. Never return display translations or CEFR levels. " +
-        "Seniority requirements should use the seniority fields and match mode; MinYears, MinLevel and Proficiency must be null. " +
+        "Extract assignment seniority only into the root seniority, seniorityMatchMode, minimumSeniority and maximumSeniority fields. Do not create a Seniority item in requirements[]. Requirements[] may contain only Skill and HumanLanguage items. " +
         "Arrays must remain arrays, and fields that do not apply or are not explicitly present in the source must be JSON null. Preserve the no-invention rule.";
 
     public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
@@ -219,7 +219,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             ["proficiency"] = NullableString(["Not specified", "Low", "Medium", "High", "Native"]),
             ["matchMode"] = NullableString(["Exact", "Minimum", "Range"]),
             ["maximumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
-            ["category"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("Skill", "HumanLanguage", "Seniority") }
+            ["category"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("Skill", "HumanLanguage") }
         },
         ["required"] = Required("name", "type", "minYears", "minLevel", "proficiency", "matchMode", "maximumSeniority", "category")
     };
