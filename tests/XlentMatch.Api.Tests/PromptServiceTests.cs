@@ -53,6 +53,9 @@ public class PromptServiceTests
         Assert.Contains("If the same sentence also explicitly requires experience with a technology, extract only that technology requirement", schema);
         Assert.Contains("assignment-level facts independently of requirement filtering", schema);
         Assert.Contains("seniority, overall minimum experience, location and work mode", schema);
+        Assert.Contains("MatchMode is applicable only to Seniority requirements", schema);
+        Assert.Contains("Exact, Minimum, Range", schema);
+        Assert.Contains("For Skill and HumanLanguage requirements, MatchMode must be JSON null", schema);
     }
 
     [Fact]
@@ -77,6 +80,37 @@ public class PromptServiceTests
         Assert.Equal("High", result.Requirements[1].Proficiency);
         Assert.Null(result.Requirements[1].MinLevel);
         Assert.Null(result.Requirements[1].MinYears);
+    }
+
+    [Theory]
+    [InlineData("Exact", SeniorityMatchMode.Exact)]
+    [InlineData("Minimum", SeniorityMatchMode.Minimum)]
+    [InlineData("Range", SeniorityMatchMode.Range)]
+    public void AssignmentExtractionAcceptsEveryCanonicalSeniorityMatchMode(string value, SeniorityMatchMode expected)
+    {
+        var result = JsonSerializer.Deserialize<RequirementExtractionResultDto>(
+            $"{{ \"requirements\": [{{ \"name\": \"Senior\", \"category\": \"Seniority\", \"matchMode\": \"{value}\" }}] }}",
+            ExtractionJsonOptions());
+
+        Assert.Equal(expected, result!.Requirements.Single().MatchMode);
+    }
+
+    [Fact]
+    public void AssignmentExtractionAllowsNullMatchModeForNonSeniorityRequirements()
+    {
+        var result = JsonSerializer.Deserialize<RequirementExtractionResultDto>(
+            "{ \"requirements\": [{ \"name\": \"React\", \"category\": \"Skill\", \"matchMode\": null }, { \"name\": \"Swedish\", \"category\": \"HumanLanguage\", \"matchMode\": null }] }",
+            ExtractionJsonOptions());
+
+        Assert.All(result!.Requirements, requirement => Assert.Null(requirement.MatchMode));
+    }
+
+    [Fact]
+    public void AssignmentExtractionRejectsInvalidSeniorityMatchMode()
+    {
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<RequirementExtractionResultDto>(
+            "{ \"requirements\": [{ \"name\": \"Senior\", \"category\": \"Seniority\", \"matchMode\": \"AtLeast\" }] }",
+            ExtractionJsonOptions()));
     }
 
     [Fact]
