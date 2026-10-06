@@ -6,6 +6,7 @@ import { Tabs } from "../components/ui/Tabs";
 import { DataTable } from "../components/ui/DataTable";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { SkillEditModal } from "../components/SkillEditModal";
 import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion, type PromptSummary, type PromptVersion } from "../services/adminApi";
 import { formatDate, formatDateTime } from "../services/localeFormat";
@@ -66,6 +67,7 @@ export default function Admin() {
   const [promptContent, setPromptContent] = useState("");
   const [promptChangeNote, setPromptChangeNote] = useState("");
   const [promptLoading, setPromptLoading] = useState(false);
+  const [confirmation, setConfirmation] = useState<{ message: string; onConfirm: () => void | Promise<void> } | null>(null);
   const skillsPerPage = 10;
 
   useEffect(() => {
@@ -124,7 +126,7 @@ export default function Admin() {
 
   const activatePromptVersion = async () => {
     if (!promptKey || !selectedPromptVersion || selectedPromptVersion.isActive) return;
-    if (!window.confirm(`${t("prompt_set_active")} v${selectedPromptVersion.version}?`)) return;
+    setConfirmation({ message: `${t("prompt_set_active")} v${selectedPromptVersion.version}?`, onConfirm: async () => {
     try {
       await adminApi.activatePromptVersion(promptKey, selectedPromptVersion.version);
       const versions = await adminApi.getPromptVersions(promptKey);
@@ -133,6 +135,7 @@ export default function Admin() {
       const updatedPrompts = await adminApi.getPrompts();
       setPrompts(updatedPrompts);
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : t("admin_prompt_activate_error")); }
+    } });
   };
 
   const skills = overview?.skills ?? [];
@@ -250,7 +253,7 @@ export default function Admin() {
   };
 
   const deleteSkill = async (skill: AdminSkill) => {
-    if (!window.confirm(t("admin_skill_delete_confirm").replace("{name}", skill.canonical))) return;
+    setConfirmation({ message: t("admin_skill_delete_confirm").replace("{name}", skill.canonical), onConfirm: async () => {
     setError("");
     try {
       await adminApi.deleteSkill(skill.id);
@@ -258,6 +261,7 @@ export default function Admin() {
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : t("admin_skill_delete_error"));
     }
+    } });
   };
 
   const editableFactors = factors.map((factor) => ({
@@ -312,6 +316,7 @@ export default function Admin() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-6 space-y-5">
+        <ConfirmDialog open={confirmation !== null} title={t("common_delete")} message={confirmation?.message ?? ""} onClose={() => setConfirmation(null)} onConfirm={async () => { if (confirmation) await confirmation.onConfirm(); setConfirmation(null); }} />
         <PageHeader title={t("admin_title")} description={t("admin_description")} />
 
         {error && (

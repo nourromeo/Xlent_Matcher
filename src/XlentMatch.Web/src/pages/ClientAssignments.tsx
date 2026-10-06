@@ -17,6 +17,7 @@ import { SkillTag } from "../components/ui/SkillTag";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { EmptyState } from "../components/ui/EmptyState";
 import { PageHeader } from "../components/ui/PageHeader";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { validateDocumentFile } from "../services/fileValidation";
 import { aiApi } from "../services/aiApi";
@@ -1250,6 +1251,7 @@ export default function ClientAssignments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [assignmentToDelete, setAssignmentToDelete] = useState<AssignmentApi | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -1277,13 +1279,6 @@ export default function ClientAssignments() {
   }, []);
 
   const deleteAssignment = async (assignment: AssignmentApi) => {
-    if (
-      !window.confirm(
-        t("client_delete_confirm").replace("{title}", assignment.title),
-      )
-    )
-      return;
-
     setDeletingId(assignment.id);
     setError("");
 
@@ -1361,6 +1356,7 @@ export default function ClientAssignments() {
 
   return (
     <div className="p-6 space-y-4">
+      <ConfirmDialog open={assignmentToDelete !== null} title={t("common_delete")} message={assignmentToDelete ? t("client_delete_confirm").replace("{title}", assignmentToDelete.title) : ""} onClose={() => setAssignmentToDelete(null)} onConfirm={async () => { if (assignmentToDelete) await deleteAssignment(assignmentToDelete); setAssignmentToDelete(null); }} />
       <PageHeader
         title={t("assignments_title")}
         meta={String(assignments.length) + " " + t("assignments_sub")}
@@ -1472,7 +1468,7 @@ export default function ClientAssignments() {
                   </LinkButton>
                   <button
                     type="button"
-                    onClick={() => void deleteAssignment(assignment)}
+                    onClick={() => setAssignmentToDelete(assignment)}
                     disabled={deletingId === assignment.id}
                     className="text-[11px] px-2.5 py-1.5 rounded border disabled:opacity-50"
                     style={{

@@ -10,7 +10,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { Modal } from "../components/ui/Modal";
 import { consultantsApi } from "../services/consultantsApi";
 import type { Consultant } from "../types";
-import { formatDate } from "../services/localeFormat";
+import { formatDate, formatDateShort } from "../services/localeFormat";
 
 const SENIORITY_OPTIONS = ["All", "Junior", "Mid", "Senior", "Staff"];
 const AVAIL_OPTIONS = ["All", "Available", "Unavailable"];
@@ -30,7 +30,7 @@ function formatAvailableAgainDate(value: string | null, locale: "en" | "es" | "s
   const [year, month, day] = value.slice(0, 10).split("-").map(Number);
   if (!year || !month || !day) return fallback;
   if (compact) {
-    return new Intl.DateTimeFormat(locale === "sv" ? "sv-SE" : locale === "es" ? "es-ES" : "en-US", { day: "numeric", month: "short" }).format(new Date(year, month - 1, day));
+    return formatDateShort(new Date(year, month - 1, day), locale);
   }
   return formatDate(new Date(year, month - 1, day), locale);
 }

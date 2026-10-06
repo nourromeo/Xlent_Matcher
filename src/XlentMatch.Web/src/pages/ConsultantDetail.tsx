@@ -7,6 +7,7 @@ import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { EditFormModal } from "../components/ui/EditFormModal";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
 import { consultantsApi } from "../services/consultantsApi";
@@ -60,6 +61,7 @@ export default function ConsultantDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [error, setError] = useState("");
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
@@ -151,7 +153,7 @@ export default function ConsultantDetail() {
   };
 
   const deleteConsultant = async () => {
-    if (!consultant || !window.confirm(t("consultant_delete_confirm").replace("{name}", fullName(consultant)))) return;
+    if (!consultant) return;
     setDeleting(true);
     setError("");
     try {
@@ -199,8 +201,10 @@ export default function ConsultantDetail() {
         subtitle={consultant.title || t("consultant_role")}
         metadata={`${consultant.office || "—"} · ${consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}`}
         badges={consultant.availability ? <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}>{availabilityLabel(consultant, t, locale)}</span> : undefined}
-        actions={<div className="flex items-center gap-2"><Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}><Edit3 size={12} /> {t("consultant_edit")}</Link><button type="button" onClick={() => void deleteConsultant()} disabled={deleting} className="flex items-center gap-1.5 rounded px-2 py-1.5 text-xs text-app-muted hover:bg-app-raised hover:text-app-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand disabled:opacity-50"><Trash2 size={12} /> {deleting ? t("client_deleting") : t("common_delete")}</button></div>}
+        actions={<div className="flex items-center gap-2"><Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}><Edit3 size={12} /> {t("consultant_edit")}</Link><button type="button" onClick={() => setDeleteConfirmOpen(true)} disabled={deleting} className="flex items-center gap-1.5 rounded px-2 py-1.5 text-xs text-app-muted hover:bg-app-raised hover:text-app-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand disabled:opacity-50"><Trash2 size={12} /> {deleting ? t("client_deleting") : t("common_delete")}</button></div>}
       />
+
+      <ConfirmDialog open={deleteConfirmOpen} title={t("common_delete")} message={t("consultant_delete_confirm").replace("{name}", fullName(consultant))} onClose={() => setDeleteConfirmOpen(false)} onConfirm={async () => { setDeleteConfirmOpen(false); await deleteConsultant(); }} />
 
       {error && (
         <div className="mx-6 mt-4 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
