@@ -16,6 +16,7 @@ import { assignmentsApi } from "../services/assignmentsApi";
 import { consultantsApi } from "../services/consultantsApi";
 import { matchingApi } from "../services/matchingApi";
 import type { AssignmentApi, Consultant, MatchResultApi } from "../types";
+import { matchCategory } from "../services/matchCategory";
 
 const initials = (name: string) =>
   name
@@ -26,9 +27,6 @@ const initials = (name: string) =>
     .slice(0, 2);
 
 type MatchCategory = "All" | "Strong" | "Partial" | "Low";
-
-const matchCategory = (score: number): Exclude<MatchCategory, "All"> =>
-  score >= 70 ? "Strong" : score >= 40 ? "Partial" : "Low";
 
 function RequirementColumn({
   title,
