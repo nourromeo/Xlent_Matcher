@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Code, Briefcase, GraduationCap, Globe, Edit3 } from "../design-system/icons";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Code, Briefcase, GraduationCap, Globe, Edit3, Trash2 } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { EntitySummary } from "../components/ui/EntitySummary";
 import { useI18n } from "../i18n";
@@ -51,6 +51,7 @@ const initials = (consultant: Consultant) =>
 export default function ConsultantDetail() {
   const { t, locale } = useI18n();
   const { id } = useParams();
+  const navigate = useNavigate();
   const consultantId = Number(id);
 
   const [consultant, setConsultant] = useState<Consultant | null>(null);
@@ -58,6 +59,7 @@ export default function ConsultantDetail() {
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [summaryExpanded, setSummaryExpanded] = useState(false);
@@ -148,6 +150,19 @@ export default function ConsultantDetail() {
     }
   };
 
+  const deleteConsultant = async () => {
+    if (!consultant || !window.confirm(t("consultant_delete_confirm").replace("{name}", fullName(consultant)))) return;
+    setDeleting(true);
+    setError("");
+    try {
+      await consultantsApi.remove(consultant.id);
+      navigate("/consultants");
+    } catch (requestError) {
+      setError(t("consultant_delete_error"));
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-6 text-sm text-app-muted">{t("consultant_loading")}</div>;
   }
@@ -184,7 +199,7 @@ export default function ConsultantDetail() {
         subtitle={consultant.title || t("consultant_role")}
         metadata={`${consultant.office || "—"} · ${consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}`}
         badges={consultant.availability ? <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ color: "var(--color-success)", background: "var(--color-success-subtle)" }}>{availabilityLabel(consultant, t, locale)}</span> : undefined}
-        actions={<Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}><Edit3 size={12} /> {t("consultant_edit")}</Link>}
+        actions={<div className="flex items-center gap-2"><Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}><Edit3 size={12} /> {t("consultant_edit")}</Link><button type="button" onClick={() => void deleteConsultant()} disabled={deleting} className="flex items-center gap-1.5 rounded px-2 py-1.5 text-xs text-app-muted hover:bg-app-raised hover:text-app-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand disabled:opacity-50"><Trash2 size={12} /> {deleting ? t("client_deleting") : t("common_delete")}</button></div>}
       />
 
       {error && (

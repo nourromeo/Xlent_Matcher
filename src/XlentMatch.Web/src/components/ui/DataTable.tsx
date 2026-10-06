@@ -9,6 +9,7 @@ type Column<T> = {
   render?: (row: T) => ReactNode;
   sortable?: boolean;
   sortValue?: (row: T) => SortValue;
+  width?: string;
 };
 
 type DataTableProps<T> = {
@@ -67,7 +68,10 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full table-fixed">
+        <colgroup>
+          {columns.map((column) => <col key={column.key} style={column.width ? { width: column.width } : undefined} />)}
+        </colgroup>
         <thead>
           <tr className="border-b border-app">
             {columns.map((column) => {
@@ -129,7 +133,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
                 aria-label={onRowClick ? rowAriaLabel?.(row) : undefined}
               >
                 {columns.map((column) => (
-                  <td key={column.key} className="px-4 py-2.5 text-xs text-app-secondary">
+                    <td key={column.key} className="px-4 py-2.5 text-xs text-app-secondary align-middle">
                     {column.render ? column.render(row) : String((row as unknown as Record<string, unknown>)[column.key] ?? "")}
                   </td>
                 ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, ChevronRight, Filter, MoreHorizontal, Search } from "../design-system/icons";
+import { Calendar, ChevronLeft, ChevronRight, Filter, Search } from "../design-system/icons";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { LinkButton } from "../components/ui/LinkButton";
@@ -7,6 +7,7 @@ import { Input } from "../components/ui/Input";
 import { DataTable } from "../components/ui/DataTable";
 import { SkillTag } from "../components/ui/SkillTag";
 import { PageHeader } from "../components/ui/PageHeader";
+import { Modal } from "../components/ui/Modal";
 import { consultantsApi } from "../services/consultantsApi";
 import type { Consultant } from "../types";
 import { formatDate } from "../services/localeFormat";
@@ -24,11 +25,38 @@ const initials = (consultant: Consultant) =>
     .join("")
     .slice(0, 2);
 
-function formatAvailableAgainDate(value: string | null, locale: "en" | "es" | "sv", fallback: string) {
+function formatAvailableAgainDate(value: string | null, locale: "en" | "es" | "sv", fallback: string, compact = false) {
   if (!value) return fallback;
   const [year, month, day] = value.slice(0, 10).split("-").map(Number);
   if (!year || !month || !day) return fallback;
+  if (compact) {
+    return new Intl.DateTimeFormat(locale === "sv" ? "sv-SE" : locale === "es" ? "es-ES" : "en-US", { day: "numeric", month: "short" }).format(new Date(year, month - 1, day));
+  }
   return formatDate(new Date(year, month - 1, day), locale);
+}
+
+function dateInputValue(value: string | null) {
+  return value?.slice(0, 10) ?? "";
+}
+
+function monthStart(value: string | null) {
+  if (value) {
+    const [year, month] = value.slice(0, 10).split("-").map(Number);
+    if (year && month) return new Date(year, month - 1, 1);
+  }
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), 1);
+}
+
+function calendarDays(month: Date) {
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+  const mondayOffset = (firstDay.getDay() + 6) % 7;
+  const start = new Date(month.getFullYear(), month.getMonth(), 1 - mondayOffset);
+  return Array.from({ length: 42 }, (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index));
+}
+
+function dateValue(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export default function Consultants() {
@@ -40,9 +68,12 @@ export default function Consultants() {
   const [query, setQuery] = useState("");
   const [seniority, setSeniority] = useState("All");
   const [avail, setAvail] = useState("All");
-  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [updatingAvailabilityId, setUpdatingAvailabilityId] = useState<number | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [availabilityConsultant, setAvailabilityConsultant] = useState<Consultant | null>(null);
+  const [availabilityDraft, setAvailabilityDraft] = useState<Consultant["availability"]>("Available");
+  const [availableAgainDraft, setAvailableAgainDraft] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => monthStart(null));
 
   useEffect(() => {
     let cancelled = false;
@@ -66,23 +97,6 @@ export default function Consultants() {
     };
   }, []);
 
-  const deleteConsultant = async (consultant: Consultant) => {
-    const name = consultantName(consultant);
-    if (!window.confirm(t("consultant_delete_confirm").replace("{name}", name))) return;
-
-    setDeletingId(consultant.id);
-    setError("");
-
-    try {
-      await consultantsApi.remove(consultant.id);
-      setConsultants((current) => current.filter((item) => item.id !== consultant.id));
-    } catch (requestError) {
-      setError(t("consultant_delete_error"));
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
   const updateAvailability = async (consultant: Consultant, availability: Consultant["availability"], availableAgainDate: string | null) => {
     setUpdatingAvailabilityId(consultant.id);
     setError("");
@@ -94,6 +108,14 @@ export default function Consultants() {
     } finally {
       setUpdatingAvailabilityId(null);
     }
+  };
+
+  const openAvailabilityEditor = (consultant: Consultant) => {
+    setAvailabilityDraft(consultant.availability);
+    setAvailableAgainDraft(consultant.availableAgainDate);
+    setCalendarMonth(monthStart(consultant.availableAgainDate));
+    setCalendarOpen(false);
+    setAvailabilityConsultant(consultant);
   };
 
   const displaySeniority = (value: string) =>
@@ -182,11 +204,12 @@ export default function Consultants() {
         </div>
       )}
 
-      <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
+      <div className="bg-app-surface border border-app rounded-lg overflow-visible shadow-app-surface">
         <DataTable
           columns={[
             {
               key: "consultant",
+              width: "25%",
               header: t("col_consultant"),
               sortable: true,
               sortValue: (consultant) => consultantName(consultant),
@@ -205,21 +228,27 @@ export default function Consultants() {
               ),
             },
             {
-              key: "profile",
-              header: t("col_profile"),
+              key: "seniority",
+              width: "10%",
+              header: t("col_seniority"),
               sortable: true,
               sortValue: (consultant) => seniorityRank[consultant.seniority ?? ""] ?? 99,
-              render: (consultant) => (
-                <span className="font-mono text-[11px]">
-                  {[consultant.seniority ? displaySeniority(consultant.seniority) : null, consultant.yearsOfExperience == null ? null : `${consultant.yearsOfExperience} ${t("consultant_year_count")}`].filter(Boolean).join(" · ") || "—"}
-                </span>
-              ),
+              render: (consultant) => <span>{consultant.seniority ? displaySeniority(consultant.seniority) : "—"}</span>,
+            },
+            {
+              key: "experience",
+              width: "12%",
+              header: t("col_experience"),
+              sortable: true,
+              sortValue: (consultant) => consultant.yearsOfExperience,
+              render: (consultant) => <span className="font-mono">{consultant.yearsOfExperience == null ? "—" : `${consultant.yearsOfExperience} ${t("consultant_year_count")}`}</span>,
             },
             {
               key: "skills",
+              width: "28%",
               header: t("col_skills"),
               render: (consultant) => (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex max-h-7 flex-wrap gap-1 overflow-hidden">
                   {consultant.skills.slice(0, 3).map((skill) => <SkillTag key={skill.id || skill.name}>{skill.name}</SkillTag>)}
                   {consultant.skills.length > 3 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 3}</span>}
                 </div>
@@ -227,43 +256,71 @@ export default function Consultants() {
             },
             {
               key: "availability",
+              width: "21%",
               header: t("col_avail"),
               sortable: true,
               sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99,
               render: (consultant) => (
-                <div className="min-w-36 space-y-1" onClick={(event) => event.stopPropagation()}>
-                  <select aria-label={`${t("consultants_availability_for")} ${consultantName(consultant)}`} value={consultant.availability} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, event.target.value as Consultant["availability"], consultant.availableAgainDate)} className="bg-app border border-app rounded px-2 py-1 text-[11px] text-app-primary">
-                    <option value="Available">{t("consultants_available")}</option>
-                    <option value="Unavailable">{t("consultants_unavailable")}</option>
-                  </select>
-                  {consultant.availability === "Unavailable" && (
-                    <label className="relative flex max-w-36 items-center gap-1 text-[10px] text-app-muted focus-within:text-app-primary">
-                      <Calendar size={11} className="flex-none" aria-hidden="true" />
-                      <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate, locale, t("consultant_available_again"))}</span>
-                      <input aria-label={`${t("consultants_available_again_for")} ${consultantName(consultant)}`} type="date" value={consultant.availableAgainDate?.slice(0, 10) ?? ""} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, "Unavailable", event.target.value || null)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
-                    </label>
+                <div className="relative min-h-10" onClick={(event) => event.stopPropagation()}>
+                  <button type="button" title={consultant.availability === "Unavailable" && consultant.availableAgainDate ? `${t("consultant_available_again")} ${formatAvailableAgainDate(consultant.availableAgainDate, locale, "", true)}` : undefined} aria-haspopup="dialog" aria-expanded={availabilityConsultant?.id === consultant.id} aria-label={`${t("consultants_availability_for")} ${consultantName(consultant)}`} onClick={() => openAvailabilityEditor(consultant)} className="inline-flex h-7 w-full min-w-0 items-center gap-1 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-primary hover:border-app-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand">
+                    <span className="flex-none text-[10px]" style={{ color: consultant.availability === "Unavailable" ? "var(--color-danger)" : "var(--color-success)" }} aria-hidden="true">●</span>
+                    <span className="flex-none" style={{ color: consultant.availability === "Unavailable" ? "var(--color-danger)" : "var(--color-success)" }}>{consultant.availability === "Unavailable" ? t("consultants_unavailable") : t("consultants_available")}</span>
+                    {consultant.availability === "Unavailable" && consultant.availableAgainDate && <span className="truncate text-app-muted">{formatAvailableAgainDate(consultant.availableAgainDate, locale, "", false)}</span>}
+                  </button>
+                  {availabilityConsultant?.id === consultant.id && (
+                    <Modal open title={t("consultants_availability")} description={consultantName(consultant)} onClose={() => setAvailabilityConsultant(null)}>
+                    <div className="p-5">
+                      <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-app-faint">{t("consultants_availability")}</p>
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <button type="button" aria-pressed={availabilityDraft === "Available"} onClick={() => setAvailabilityDraft("Available")} className="rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand" style={availabilityDraft === "Available" ? { borderColor: "var(--color-success)", background: "var(--color-success-subtle)", color: "var(--color-success)" } : { borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>
+                          <span className="mr-1 text-[10px]" style={{ color: "var(--color-success)" }}>●</span>{t("consultants_available")}
+                        </button>
+                        <button type="button" aria-pressed={availabilityDraft === "Unavailable"} onClick={() => setAvailabilityDraft("Unavailable")} className="rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand" style={availabilityDraft === "Unavailable" ? { borderColor: "var(--color-danger)", background: "var(--color-danger-subtle)", color: "var(--color-danger)" } : { borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>
+                          <span className="mr-1 text-[10px]" style={{ color: "var(--color-danger)" }}>●</span>{t("consultants_unavailable")}
+                        </button>
+                      </div>
+                      {availabilityDraft === "Unavailable" && (
+                        <label className="relative mt-3 block text-[10px] text-app-muted">
+                          <span className="mb-1 block">{t("consultant_available_again")}</span>
+                          <span className="relative flex items-center gap-1 rounded border border-app bg-app px-2 py-1.5 text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
+                            <button type="button" aria-label={`${t("consultants_available_again_for")} ${consultantName(consultant)}`} onClick={() => setCalendarOpen(true)} className="min-w-0 flex-1 truncate bg-transparent text-left text-[11px] text-app-primary outline-none focus-visible:ring-2 focus-visible:ring-app-brand">{formatAvailableAgainDate(availableAgainDraft, locale, t("consultant_available_again"))}</button>
+                            <button type="button" aria-label={t("consultant_available_again")} onClick={() => setCalendarOpen(true)} className="rounded p-0.5 text-app-muted hover:bg-app-raised hover:text-app-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand"><Calendar size={12} aria-hidden="true" /></button>
+                          </span>
+                          {calendarOpen && (
+                            <div role="dialog" aria-label={t("consultant_available_again")} className="relative mt-2 w-full rounded border border-app bg-app-surface p-2 shadow-app-surface" onClick={(event) => event.stopPropagation()}>
+                              <div className="flex items-center justify-between px-1 pb-2">
+                                <button type="button" aria-label={t("common_previous")} onClick={() => setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary"><ChevronLeft size={13} /></button>
+                                <span className="text-[11px] font-medium text-app-primary">{new Intl.DateTimeFormat(locale === "sv" ? "sv-SE" : locale === "es" ? "es-ES" : "en-US", { month: "long", year: "numeric" }).format(calendarMonth)}</span>
+                                <button type="button" aria-label={t("common_next")} onClick={() => setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary"><ChevronRight size={13} /></button>
+                              </div>
+                              <div className="grid grid-cols-7 gap-0.5 text-center text-[9px] text-app-faint">
+                                {(locale === "sv" ? ["Må", "Ti", "On", "To", "Fr", "Lö", "Sö"] : locale === "es" ? ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]).map((day) => <span key={day} className="py-1">{day}</span>)}
+                                {calendarDays(calendarMonth).map((day) => {
+                                  const value = dateValue(day);
+                                  const selected = value === dateInputValue(availableAgainDraft);
+                                  const inMonth = day.getMonth() === calendarMonth.getMonth();
+                                  return <button key={value} type="button" onClick={() => { setAvailableAgainDraft(value); setCalendarOpen(false); }} className={`rounded py-1 text-[10px] ${selected ? "bg-app-brand text-white" : inMonth ? "text-app-secondary hover:bg-app-raised" : "text-app-faint/50"}`}>{day.getDate()}</button>;
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </label>
+                      )}
+                      <div className="mt-3 flex justify-end gap-2">
+                        <button type="button" onClick={() => setAvailabilityConsultant(null)} className="rounded px-2 py-1 text-[10px] text-app-muted hover:bg-app-raised hover:text-app-primary">{t("common_cancel")}</button>
+                        <button type="button" disabled={updatingAvailabilityId === consultant.id} onClick={() => { setAvailabilityConsultant(null); void updateAvailability(consultant, availabilityDraft, availabilityDraft === "Available" ? null : availableAgainDraft); }} className="rounded bg-app-brand px-2 py-1 text-[10px] font-medium text-white disabled:opacity-50">{t("common_save")}</button>
+                      </div>
+                    </div>
+                    </Modal>
                   )}
                 </div>
               ),
             },
             {
-              key: "actions",
-              header: t("common_actions"),
-              render: (consultant) => (
-                <div className="relative flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
-                  <button type="button" aria-label={`${t("common_more")} ${consultantName(consultant)}`} aria-expanded={openMenuId === consultant.id} onClick={() => setOpenMenuId((current) => current === consultant.id ? null : consultant.id)} className="rounded p-1.5 text-app-muted hover:bg-app-raised hover:text-app-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand">
-                    <MoreHorizontal size={15} aria-hidden="true" />
-                  </button>
-                  {openMenuId === consultant.id && (
-                    <div role="menu" className="absolute right-0 top-full z-10 mt-1 min-w-28 rounded border border-app bg-app-surface p-1 shadow-app-surface">
-                      <button type="button" role="menuitem" onClick={() => { setOpenMenuId(null); void deleteConsultant(consultant); }} disabled={deletingId === consultant.id} className="w-full rounded px-2 py-1.5 text-left text-[11px] text-app-danger hover:bg-app-raised disabled:opacity-50">
-                        {deletingId === consultant.id ? t("client_deleting") : t("common_delete")}
-                      </button>
-                    </div>
-                  )}
-                  <ChevronRight size={15} className="text-app-faint" aria-hidden="true" />
-                </div>
-              ),
+              key: "navigation",
+              width: "4%",
+              header: "",
+              render: () => <ChevronRight size={15} className="text-app-faint" aria-hidden="true" />,
             },
           ]}
           rows={filtered}
