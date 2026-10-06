@@ -74,6 +74,9 @@ export function NewAssignmentPage() {
   const [requirements, setRequirements] = useState<AssignmentRequirementApi[]>(
     [],
   );
+  const [editingRequirement, setEditingRequirement] = useState<number | null>(
+    null,
+  );
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -152,6 +155,104 @@ export function NewAssignmentPage() {
   const removeRequirement = (index: number) => {
     setRequirements((current) =>
       current.filter((_, currentIndex) => currentIndex !== index),
+    );
+    setEditingRequirement(null);
+  };
+
+  const requirementEditor = (index: number, language: boolean) => {
+    const requirement = requirements[index];
+    if (!requirement) return null;
+    const update = (patch: Partial<AssignmentRequirementApi>) =>
+      updateRequirement(index, patch);
+    return (
+      <div className="space-y-3 rounded-lg border border-app-brand bg-app-raised p-4">
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="space-y-1">
+            <span className="text-[11px] text-app-muted">
+              {language ? t("client_language") : t("client_skill")}
+            </span>
+            <Input
+              autoFocus
+              value={requirement.name}
+              onChange={(event) => update({ name: event.target.value })}
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-[11px] text-app-muted">
+              {t("client_requirement_priority")}
+            </span>
+            <select
+              value={requirement.type}
+              onChange={(event) =>
+                update({ type: event.target.value as "Mandatory" | "Desired" })
+              }
+              className="w-full rounded border border-app bg-app-surface px-3 py-2 text-xs text-app-primary"
+            >
+              <option value="Mandatory">{t("client_mandatory")}</option>
+              <option value="Desired">{t("client_desired")}</option>
+            </select>
+          </label>
+          {language ? (
+            <label className="space-y-1">
+              <span className="text-[11px] text-app-muted">
+                {t("client_requirement_level")}
+              </span>
+              <select
+                value={requirement.proficiency ?? "Not specified"}
+                onChange={(event) =>
+                  update({
+                    proficiency: event.target
+                      .value as AssignmentRequirementApi["proficiency"],
+                    minLevel: null,
+                    minYears: null,
+                  })
+                }
+                className="w-full rounded border border-app bg-app-surface px-3 py-2 text-xs text-app-primary"
+              >
+                <option value="Not specified">
+                  {t("common_not_specified")}
+                </option>
+                <option value="Low">{t("proficiency_low")}</option>
+                <option value="Medium">{t("proficiency_medium")}</option>
+                <option value="High">{t("proficiency_high")}</option>
+                <option value="Native">{t("proficiency_native")}</option>
+              </select>
+            </label>
+          ) : (
+            <label className="space-y-1">
+              <span className="text-[11px] text-app-muted">
+                {t("client_minimum_skill_years")} ({t("assignment_years")})
+              </span>
+              <Input
+                type="number"
+                min={0}
+                value={requirement.minYears ?? ""}
+                onChange={(event) =>
+                  update({
+                    minYears: event.target.value
+                      ? Number(event.target.value)
+                      : null,
+                  })
+                }
+              />
+            </label>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setEditingRequirement(null)}>
+            {t("assignment_save_local")}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (!requirement.name.trim()) removeRequirement(index);
+              else setEditingRequirement(null);
+            }}
+          >
+            {t("assignment_cancel_edit")}
+          </Button>
+        </div>
+      </div>
     );
   };
 
@@ -590,81 +691,94 @@ export function NewAssignmentPage() {
                       <span />
                     </div>
                     <div className="space-y-2">
-                      {skillRequirements.map(({ requirement, index }) => (
-                        <div
-                          key={index}
-                          className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1.6fr)_minmax(150px,1fr)_minmax(150px,1fr)_32px] md:items-center"
-                        >
-                          <label className="space-y-1">
-                            <span className="md:hidden text-[10px] text-app-muted">
-                              {t("client_requirement_name")}
-                            </span>
-                            <Input
-                              aria-label={t("client_requirement_name")}
-                              value={requirement.name}
-                              onChange={(event) =>
-                                updateRequirement(index, {
-                                  name: event.target.value,
-                                })
-                              }
-                            />
-                          </label>
-                          <label className="space-y-1">
-                            <span className="md:hidden text-[10px] text-app-muted">
-                              {t("client_requirement_priority")}
-                            </span>
-                            <select
-                              aria-label={t("client_requirement_priority")}
-                              value={requirement.type}
-                              onChange={(event) =>
-                                updateRequirement(index, {
-                                  type: event.target.value as
-                                    "Mandatory" | "Desired",
-                                })
-                              }
-                              className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
-                            >
-                              <option value="Mandatory">
-                                {t("client_mandatory")}
-                              </option>
-                              <option value="Desired">
-                                {t("client_desired")}
-                              </option>
-                            </select>
-                          </label>
-                          <label className="space-y-1">
-                            <span className="md:hidden text-[10px] text-app-muted">
-                              {t("client_minimum_skill_years")}
-                            </span>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={requirement.minYears ?? ""}
-                              placeholder={t("common_not_specified")}
-                              aria-label={t("client_minimum_skill_years")}
-                              onChange={(event) =>
-                                updateRequirement(index, {
-                                  minYears: event.target.value
-                                    ? Number(event.target.value)
-                                    : null,
-                                })
-                              }
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            aria-label={t("client_delete")}
-                            onClick={() => removeRequirement(index)}
-                            className="text-app-faint hover:text-app-secondary"
+                      {skillRequirements.map(({ requirement, index }) =>
+                        editingRequirement === index ? (
+                          <div key={index}>
+                            {requirementEditor(index, false)}
+                          </div>
+                        ) : (
+                          <div
+                            key={index}
+                            className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1.6fr)_minmax(150px,1fr)_minmax(150px,1fr)_32px] md:items-center"
                           >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                            <label className="space-y-1">
+                              <span className="md:hidden text-[10px] text-app-muted">
+                                {t("client_requirement_name")}
+                              </span>
+                              <Input
+                                aria-label={t("client_requirement_name")}
+                                value={requirement.name}
+                                onChange={(event) =>
+                                  updateRequirement(index, {
+                                    name: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label className="space-y-1">
+                              <span className="md:hidden text-[10px] text-app-muted">
+                                {t("client_requirement_priority")}
+                              </span>
+                              <select
+                                aria-label={t("client_requirement_priority")}
+                                value={requirement.type}
+                                onChange={(event) =>
+                                  updateRequirement(index, {
+                                    type: event.target.value as
+                                      "Mandatory" | "Desired",
+                                  })
+                                }
+                                className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                              >
+                                <option value="Mandatory">
+                                  {t("client_mandatory")}
+                                </option>
+                                <option value="Desired">
+                                  {t("client_desired")}
+                                </option>
+                              </select>
+                            </label>
+                            <label className="space-y-1">
+                              <span className="md:hidden text-[10px] text-app-muted">
+                                {t("client_minimum_skill_years")}
+                              </span>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={requirement.minYears ?? ""}
+                                placeholder={t("common_not_specified")}
+                                aria-label={t("client_minimum_skill_years")}
+                                onChange={(event) =>
+                                  updateRequirement(index, {
+                                    minYears: event.target.value
+                                      ? Number(event.target.value)
+                                      : null,
+                                  })
+                                }
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              aria-label={t("client_delete")}
+                              onClick={() => removeRequirement(index)}
+                              className="text-app-faint hover:text-app-secondary"
+                            >
+                              ×
+                            </button>
+                            <button
+                              type="button"
+                              className="text-xs text-app-brand"
+                              onClick={() => setEditingRequirement(index)}
+                            >
+                              {t("assignment_edit")}
+                            </button>
+                          </div>
+                        ),
+                      )}
                     </div>
                     <Button
                       variant="ghost"
-                      onClick={() =>
+                      onClick={() => {
                         setRequirements((current) => [
                           ...current,
                           emptyRequirement(
@@ -674,8 +788,9 @@ export function NewAssignmentPage() {
                             null,
                             "Skill",
                           ),
-                        ])
-                      }
+                        ]);
+                        setEditingRequirement(requirements.length);
+                      }}
                       icon={<Plus size={11} />}
                     >
                       {t("client_add_competence")}
@@ -692,96 +807,113 @@ export function NewAssignmentPage() {
                       <span />
                     </div>
                     <div className="space-y-2">
-                      {languageRequirements.map(({ requirement, index }) => (
-                        <div
-                          key={index}
-                          className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1.6fr)_minmax(150px,1fr)_minmax(150px,1fr)_32px] md:items-center"
-                        >
-                          <label className="space-y-1">
-                            <span className="md:hidden text-[10px] text-app-muted">
-                              {t("client_requirement_name")}
-                            </span>
-                            <Input
-                              aria-label={t("client_requirement_name")}
-                              value={requirement.name}
-                              onChange={(event) =>
-                                updateRequirement(index, {
-                                  name: event.target.value,
-                                })
-                              }
-                            />
-                          </label>
-                          <label className="space-y-1">
-                            <span className="md:hidden text-[10px] text-app-muted">
-                              {t("client_requirement_priority")}
-                            </span>
-                            <select
-                              aria-label={t("client_requirement_priority")}
-                              value={requirement.type}
-                              onChange={(event) =>
-                                updateRequirement(index, {
-                                  type: event.target.value as
-                                    "Mandatory" | "Desired",
-                                })
-                              }
-                              className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
-                            >
-                              <option value="Mandatory">
-                                {t("client_mandatory")}
-                              </option>
-                              <option value="Desired">
-                                {t("client_desired")}
-                              </option>
-                            </select>
-                          </label>
-                          <label className="space-y-1">
-                            <span className="md:hidden text-[10px] text-app-muted">
-                              {t("client_requirement_level")}
-                            </span>
-                            <select
-                              aria-label={t("assignment_language_proficiency")}
-                              value={requirement.proficiency ?? "Not specified"}
-                              onChange={(event) =>
-                                updateRequirement(index, {
-                                  proficiency: event.target
-                                    .value as AssignmentRequirementApi["proficiency"],
-                                  minLevel: null,
-                                  minYears: null,
-                                })
-                              }
-                              className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
-                            >
-                              <option value="Not specified">
-                                {t("common_not_specified")}
-                              </option>
-                              <option value="Low">
-                                {t("proficiency_low")}
-                              </option>
-                              <option value="Medium">
-                                {t("proficiency_medium")}
-                              </option>
-                              <option value="High">
-                                {t("proficiency_high")}
-                              </option>
-                              <option value="Native">
-                                {t("proficiency_native")}
-                              </option>
-                            </select>
-                          </label>
-                          <button
-                            type="button"
-                            aria-label={t("client_delete")}
-                            onClick={() => removeRequirement(index)}
-                            className="text-app-faint hover:text-app-secondary"
+                      {languageRequirements.map(({ requirement, index }) =>
+                        editingRequirement === index ? (
+                          <div key={index}>
+                            {requirementEditor(index, true)}
+                          </div>
+                        ) : (
+                          <div
+                            key={index}
+                            className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1.6fr)_minmax(150px,1fr)_minmax(150px,1fr)_32px] md:items-center"
                           >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                            <label className="space-y-1">
+                              <span className="md:hidden text-[10px] text-app-muted">
+                                {t("client_requirement_name")}
+                              </span>
+                              <Input
+                                aria-label={t("client_requirement_name")}
+                                value={requirement.name}
+                                onChange={(event) =>
+                                  updateRequirement(index, {
+                                    name: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label className="space-y-1">
+                              <span className="md:hidden text-[10px] text-app-muted">
+                                {t("client_requirement_priority")}
+                              </span>
+                              <select
+                                aria-label={t("client_requirement_priority")}
+                                value={requirement.type}
+                                onChange={(event) =>
+                                  updateRequirement(index, {
+                                    type: event.target.value as
+                                      "Mandatory" | "Desired",
+                                  })
+                                }
+                                className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                              >
+                                <option value="Mandatory">
+                                  {t("client_mandatory")}
+                                </option>
+                                <option value="Desired">
+                                  {t("client_desired")}
+                                </option>
+                              </select>
+                            </label>
+                            <label className="space-y-1">
+                              <span className="md:hidden text-[10px] text-app-muted">
+                                {t("client_requirement_level")}
+                              </span>
+                              <select
+                                aria-label={t(
+                                  "assignment_language_proficiency",
+                                )}
+                                value={
+                                  requirement.proficiency ?? "Not specified"
+                                }
+                                onChange={(event) =>
+                                  updateRequirement(index, {
+                                    proficiency: event.target
+                                      .value as AssignmentRequirementApi["proficiency"],
+                                    minLevel: null,
+                                    minYears: null,
+                                  })
+                                }
+                                className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                              >
+                                <option value="Not specified">
+                                  {t("common_not_specified")}
+                                </option>
+                                <option value="Low">
+                                  {t("proficiency_low")}
+                                </option>
+                                <option value="Medium">
+                                  {t("proficiency_medium")}
+                                </option>
+                                <option value="High">
+                                  {t("proficiency_high")}
+                                </option>
+                                <option value="Native">
+                                  {t("proficiency_native")}
+                                </option>
+                              </select>
+                            </label>
+                            <button
+                              type="button"
+                              aria-label={t("client_delete")}
+                              onClick={() => removeRequirement(index)}
+                              className="text-app-faint hover:text-app-secondary"
+                            >
+                              ×
+                            </button>
+                            <button
+                              type="button"
+                              className="text-xs text-app-brand"
+                              onClick={() => setEditingRequirement(index)}
+                            >
+                              {t("assignment_edit")}
+                            </button>
+                          </div>
+                        ),
+                      )}
                     </div>
                     <Button
                       variant="ghost"
-                      onClick={() =>
+                      onClick={() => {
                         setRequirements((current) => [
                           ...current,
                           emptyRequirement(
@@ -791,8 +923,9 @@ export function NewAssignmentPage() {
                             null,
                             "HumanLanguage",
                           ),
-                        ])
-                      }
+                        ]);
+                        setEditingRequirement(requirements.length);
+                      }}
                       icon={<Plus size={11} />}
                     >
                       {t("client_add_language_requirement")}
@@ -853,7 +986,7 @@ export function NewAssignmentPage() {
                     {t("assignment_modal_back")}
                   </Button>
                   <Button onClick={() => setStep("review")} variant="primary">
-                    {t("common_next")}
+                    {t("assignment_step_review")}
                   </Button>
                 </div>
               </>
