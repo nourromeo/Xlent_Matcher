@@ -122,9 +122,12 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
               <tr
                 key={rowKey(row)}
                 className={`border-b border-app-subtle hover:bg-app-raised transition-colors${onRowClick ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-brand" : ""}`}
-                onClick={() => onRowClick?.(row)}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest("button,a,input,select,textarea,[role=button]")) return;
+                  onRowClick?.(row);
+                }}
                 onKeyDown={(event) => {
-                  if (!onRowClick || (event.key !== "Enter" && event.key !== " ")) return;
+                  if (!onRowClick || (event.key !== "Enter" && event.key !== " ") || (event.target as HTMLElement).closest("button,a,input,select,textarea,[role=button]")) return;
                   event.preventDefault();
                   onRowClick(row);
                 }}
