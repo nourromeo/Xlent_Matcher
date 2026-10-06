@@ -34,16 +34,32 @@ function RequirementColumn({
   title,
   items,
   matched = false,
-  expandedId,
-  onToggle,
+  categoryByName,
 }: {
   title: string;
   items: MatchResultApi["details"];
   matched?: boolean;
-  expandedId: string | number | null;
-  onToggle: (id: string | number) => void;
+  categoryByName: Map<string, string>;
 }) {
   const { t } = useI18n();
+  const categoryLabel = (category: string) =>
+    category === "Skill"
+      ? t("client_skill")
+      : category === "HumanLanguage"
+        ? t("assignment_human_languages")
+        : category === "Seniority"
+          ? t("assignment_seniority")
+          : t("assignment_review_other_requirements");
+  const grouped = items.reduce<Record<string, MatchResultApi["details"]>>(
+    (groups, detail) => {
+      const category =
+        categoryByName.get(detail.requirementName.trim().toLowerCase()) ??
+        "Other";
+      (groups[category] ??= []).push(detail);
+      return groups;
+    },
+    {},
+  );
   return (
     <div className="bg-app-surface border border-app rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
@@ -53,16 +69,16 @@ function RequirementColumn({
           {matched ? t("matching_matched") : t("matching_missing_prefix")}
         </span>
       </div>
-      <div className="space-y-2">
-        {items.map((detail) => {
-          const id = detail.id || detail.requirementName;
-          const open = expandedId === id;
-          return (
-            <div key={id} className="border-b border-app-subtle last:border-0">
-              <button
-                type="button"
-                onClick={() => onToggle(id)}
-                className="w-full flex items-center justify-between gap-2 py-2 text-left text-xs"
+      <div className="space-y-4">
+        {Object.entries(grouped).map(([category, categoryItems]) => (
+          <div key={category} className="space-y-1.5">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-app-muted">
+              {categoryLabel(category)}
+            </p>
+            {categoryItems.map((detail) => (
+              <div
+                key={detail.id || detail.requirementName}
+                className="flex items-center justify-between gap-3 border-b border-app-subtle py-2 last:border-0"
               >
                 <span
                   className={
@@ -71,27 +87,15 @@ function RequirementColumn({
                 >
                   {matched ? "✓" : "✕"} {detail.requirementName}
                 </span>
-                <span className="flex items-center gap-2 text-[10px] text-app-faint">
-                  <span>
-                    {detail.type === "Mandatory"
-                      ? t("common_required")
-                      : t("assignment_preferred")}{" "}
-                    ·{" "}
-                    {matched
-                      ? t("matching_matched")
-                      : t("matching_missing_prefix")}
-                  </span>
-                  <span>{open ? "⌃" : "›"}</span>
+                <span className="shrink-0 text-[10px] text-app-faint">
+                  {detail.type === "Mandatory"
+                    ? t("common_required")
+                    : t("assignment_preferred")}
                 </span>
-              </button>
-              {open && (
-                <div className="pb-2 pl-4 text-[10px] leading-relaxed text-app-muted">
-                  {detail.evidence || t("match_evidence")}
-                </div>
-              )}
-            </div>
-          );
-        })}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -129,9 +133,6 @@ export default function Matching() {
   >("Overview");
   const [listFilter, setListFilter] = useState<MatchCategory>("All");
   const [query, setQuery] = useState("");
-  const [expandedRequirementId, setExpandedRequirementId] = useState<
-    string | number | null
-  >(null);
 
   const assignmentId = Number(searchParams.get("assignment"));
   const assignment = assignments.find((item) => item.id === assignmentId);
@@ -275,6 +276,12 @@ export default function Matching() {
   const selectedConsultant = selected
     ? consultantById.get(selected.consultantId)
     : undefined;
+  const requirementCategoryByName = new Map(
+    (assignment?.requirements ?? []).map((requirement) => [
+      requirement.name.trim().toLowerCase(),
+      requirement.category,
+    ]),
+  );
   const matchedRequired =
     selected?.details.filter(
       (detail) => detail.type === "Mandatory" && detail.isMatched,
@@ -811,22 +818,12 @@ export default function Matching() {
                       title={t("matching_matched_requirements")}
                       items={matchedDetails}
                       matched
-                      expandedId={expandedRequirementId}
-                      onToggle={(id) =>
-                        setExpandedRequirementId((current) =>
-                          current === id ? null : id,
-                        )
-                      }
+                      categoryByName={requirementCategoryByName}
                     />
                     <RequirementColumn
                       title={t("matching_missing_requirements")}
                       items={missingDetails}
-                      expandedId={expandedRequirementId}
-                      onToggle={(id) =>
-                        setExpandedRequirementId((current) =>
-                          current === id ? null : id,
-                        )
-                      }
+                      categoryByName={requirementCategoryByName}
                     />
                   </div>
                 </section>
