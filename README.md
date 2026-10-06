@@ -87,7 +87,13 @@ dotnet ef database update
 dotnet run
 ```
 
-API:t använder EF Core migrations. Vid normal start kör applikationen också `Database.MigrateAsync()`.
+API:t använder EF Core migrations. I Development kör applikationen automatiskt `Database.MigrateAsync()` vid start för att förenkla lokal utveckling. I andra miljöer körs migrationer som ett explicit deploysteg, till exempel:
+
+```powershell
+dotnet ef database update --project src/XlentMatch.Api
+```
+
+Icke-Development kräver `ConnectionStrings:DefaultConnection` från miljökonfiguration eller secret storage. LocalDB finns endast i `appsettings.Development.json`.
 
 ## Starta frontend
 
