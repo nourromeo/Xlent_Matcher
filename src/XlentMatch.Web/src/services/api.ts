@@ -1,9 +1,16 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
-export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiRequest<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   const headers = new Headers(init?.headers);
 
-  if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
+  if (
+    init?.body &&
+    !(init.body instanceof FormData) &&
+    !headers.has("Content-Type")
+  ) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -15,7 +22,9 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
       headers,
     });
   } catch {
-    throw new Error("Cannot reach the backend API. Make sure the API is running and try again.");
+    throw new Error(
+      "Cannot reach the backend API. Make sure the API is running and try again.",
+    );
   }
 
   if (!response.ok) {
@@ -23,13 +32,26 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     let message = raw;
 
     try {
-      const parsed = JSON.parse(raw) as { detail?: string; title?: string };
-      message = parsed.detail || parsed.title || raw;
+      const parsed = JSON.parse(raw) as {
+        detail?: string;
+        title?: string;
+        errors?: Record<string, string[]>;
+      };
+      const validation = parsed.errors
+        ? Object.entries(parsed.errors)
+            .flatMap(([field, messages]) =>
+              messages.map((entry) => `${field}: ${entry}`),
+            )
+            .join("; ")
+        : "";
+      message = validation || parsed.detail || parsed.title || raw;
     } catch {
       // Keep plain-text API errors as-is.
     }
 
-    throw new Error(message || `API request failed with status ${response.status}`);
+    throw new Error(
+      message || `API request failed with status ${response.status}`,
+    );
   }
 
   if (response.status === 204) {

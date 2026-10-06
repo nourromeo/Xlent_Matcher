@@ -12,8 +12,12 @@ import type { ConsultantDraft } from "../services/aiApi";
 import type { Consultant } from "../types";
 
 const storageKey = (id: string | null) => `xlent-cv-review-${id ?? "unknown"}`;
-const dateOnly = (value: string | null) =>
-  value && /^\d{4}-\d{2}$/.test(value) ? `${value}-01` : value;
+const dateOnly = (value: string | null) => {
+  const normalized = value?.trim() || null;
+  if (!normalized) return null;
+  if (/^\d{4}-\d{2}$/.test(normalized)) return `${normalized}-01`;
+  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : null;
+};
 
 function toConsultant(draft: ConsultantDraft): Consultant {
   return {
@@ -30,7 +34,6 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     availability: "Available",
     office: draft.office?.trim() || null,
     originalCvText: null,
-    fullName: undefined,
     skills: draft.skills
       .filter((x) => x.name.trim())
       .map((x) => ({
@@ -51,8 +54,9 @@ function toConsultant(draft: ConsultantDraft): Consultant {
         proficiency: x.proficiency,
       })),
     industries: draft.industries
+      .map((name) => name.trim())
       .filter(Boolean)
-      .map((name) => ({ id: 0, consultantId: 0, name: name.trim() })),
+      .map((name) => ({ id: 0, consultantId: 0, name })),
     experiences: draft.experiences
       .filter((x) => x.company.trim() || x.role.trim())
       .map((x) => ({
