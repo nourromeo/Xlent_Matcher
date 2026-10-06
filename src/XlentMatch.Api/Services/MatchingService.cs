@@ -45,13 +45,7 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         var mandatory = details.Where(d => d.Type == RequirementType.Mandatory).ToList();
         var desired = details.Where(d => d.Type == RequirementType.Desired).ToList();
 
-        var weights = weightsStore.Get();
-        var mandatoryWeight = mandatory.Count * weights.MandatoryRequirementWeight;
-        var desiredWeight = desired.Count * weights.DesiredRequirementWeight;
-        var matchedWeight = mandatory.Count(d => d.IsMatched) * weights.MandatoryRequirementWeight
-                          + desired.Count(d => d.IsMatched) * weights.DesiredRequirementWeight;
-        var totalWeight = mandatoryWeight + desiredWeight;
-        var score = totalWeight == 0 ? 0 : (int)Math.Round((double)matchedWeight / totalWeight * 100, MidpointRounding.AwayFromZero);
+        var score = CalculateScore(mandatory, desired, weightsStore.Get());
         var missingMandatory = mandatory.Where(d => !d.IsMatched).ToList();
 
         var result = new MatchResult
@@ -59,14 +53,14 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             AssignmentId = assignment.Id,
             ConsultantId = consultant.Id,
             ConsultantName = consultant.FullName,
-            Score = score,
+            Score = score.Score,
             MatchedMandatory = mandatory.Count(d => d.IsMatched),
             TotalMandatory = mandatory.Count,
             MatchedDesired = desired.Count(d => d.IsMatched),
             TotalDesired = desired.Count,
-            MatchedWeight = matchedWeight,
-            TotalWeight = totalWeight,
-            ScoreAvailable = totalWeight > 0,
+            MatchedWeight = score.MatchedWeight,
+            TotalWeight = score.TotalWeight,
+            ScoreAvailable = score.TotalWeight > 0,
             Details = details,
             ContextDetails = BuildContextDetails(assignment, consultant)
         };
@@ -83,6 +77,25 @@ public class MatchingService(MatchingWeightsStore weightsStore)
         return string.Join("|", identity, requirement.Type, requirement.MinYears, requirement.MinLevel,
             NormalizeText(requirement.Proficiency ?? ""), requirement.MatchMode, NormalizeText(requirement.MaximumSeniority ?? ""));
     }
+
+    private static ScoreCalculation CalculateScore(
+        IReadOnlyCollection<MatchRequirementResult> mandatory,
+        IReadOnlyCollection<MatchRequirementResult> desired,
+        MatchingWeights weights)
+    {
+        var mandatoryWeight = mandatory.Count * weights.MandatoryRequirementWeight;
+        var desiredWeight = desired.Count * weights.DesiredRequirementWeight;
+        var matchedWeight = mandatory.Count(d => d.IsMatched) * weights.MandatoryRequirementWeight
+                          + desired.Count(d => d.IsMatched) * weights.DesiredRequirementWeight;
+        var totalWeight = mandatoryWeight + desiredWeight;
+        var score = totalWeight == 0
+            ? 0
+            : (int)Math.Round((double)matchedWeight / totalWeight * 100, MidpointRounding.AwayFromZero);
+
+        return new(score, matchedWeight, totalWeight);
+    }
+
+    private sealed record ScoreCalculation(int Score, int MatchedWeight, int TotalWeight);
 
     public List<MatchContextResult> BuildContextDetails(Assignment assignment, Consultant consultant)
     {

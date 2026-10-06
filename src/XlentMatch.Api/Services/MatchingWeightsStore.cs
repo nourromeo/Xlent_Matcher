@@ -26,13 +26,14 @@ public sealed class MatchingWeightsStore
         await _gate.WaitAsync(ct);
         try
         {
-            _current = Clone(input);
             Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
 
-            var json = JsonSerializer.Serialize(_current, new JsonSerializerOptions { WriteIndented = true });
+            var next = Clone(input);
+            var json = JsonSerializer.Serialize(next, new JsonSerializerOptions { WriteIndented = true });
             var tempPath = _filePath + ".tmp";
             await File.WriteAllTextAsync(tempPath, json, ct);
             File.Move(tempPath, _filePath, overwrite: true);
+            _current = next;
 
             return Clone(_current);
         }
@@ -47,11 +48,10 @@ public sealed class MatchingWeightsStore
         await _gate.WaitAsync(ct);
         try
         {
-            _current = Clone(_defaults);
-
             if (File.Exists(_filePath))
                 File.Delete(_filePath);
 
+            _current = Clone(_defaults);
             return Clone(_current);
         }
         finally
