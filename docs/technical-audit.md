@@ -27,21 +27,18 @@ Initial status for every finding: `To Do`.
 
 ## Most important findings
 
-1. **AUD-011 — Runtime database migrations:** startup can change schema and fail application startup.
-2. **AUD-018 — Access control and CV privacy:** personal data endpoints require an explicit deployment/security boundary.
-3. **AUD-012 — Production configuration:** development connection defaults and AI configuration require deployment verification.
-4. **AUD-006 — Matching query breadth:** the matching endpoint loads a large entity graph and should be measured against realistic data.
-5. **AUD-014 — Frontend test gap:** critical interactive workflows currently lack repository-visible automated UI coverage.
+1. **AUD-018 — Access control and CV privacy:** personal data endpoints require an explicit deployment/security boundary.
+2. **AUD-012 — Production configuration:** production connection strings and AI configuration require deployment verification.
+3. **AUD-006 — Matching query breadth:** the matching endpoint loads a broad entity graph and should be measured against realistic data before optimization.
+4. **AUD-008 — Reusable UI patterns:** remaining repeated shared-component responsibilities should be consolidated only where their meaning is identical.
 
 ## Findings requiring human verification
 
 - **AUD-012:** confirm actual production secret and connection-string injection.
 - **AUD-018:** confirm whether authentication/authorization is enforced by an external reverse proxy or hosting environment.
 - **AUD-006:** confirm which related collections are required by every current matching rule before reducing the query graph.
-- **AUD-007:** confirm deployment topology; file-backed weights are unsafe for multiple API instances.
-- **AUD-013:** confirm required atomicity between result replacement and assignment status update.
 - **AUD-004/AUD-008:** confirm repeated UI recipes represent the same responsibility before consolidating them.
 
 ## Audit constraints
 
-This is a read-only audit. No application code was refactored, deleted, moved, renamed or fixed as part of this audit.
+The initial audit was read-only; remediation was subsequently performed in controlled batches. Completed findings are marked `Done`, unresolved findings remain `To Do`, and this document is maintained as a living technical audit and remediation record.
