@@ -1,5 +1,21 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
+export type ApiErrorKind = "network" | "validation" | "server" | "not-found" | "unknown";
+
+export class ApiError extends Error {
+  constructor(message: string, public readonly kind: ApiErrorKind, public readonly status?: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export function normalizeApiError(status?: number, hasValidationErrors = false): ApiError {
+  if (hasValidationErrors || status === 400) return new ApiError("The request could not be completed. Please check the entered values.", "validation", status);
+  if (status === 404) return new ApiError("The requested item could not be found.", "not-found", status);
+  if (status !== undefined && status >= 500) return new ApiError("The server could not complete the request. Please try again.", "server", status);
+  return new ApiError("The request could not be completed. Please try again.", "unknown", status);
+}
+
 export async function apiRequest<T>(
   path: string,
   init?: RequestInit,
@@ -22,36 +38,22 @@ export async function apiRequest<T>(
       headers,
     });
   } catch {
-    throw new Error(
-      "Cannot reach the backend API. Make sure the API is running and try again.",
-    );
+    throw new ApiError("The backend could not be reached. Please try again.", "network");
   }
 
   if (!response.ok) {
     const raw = await response.text();
-    let message = raw;
-
+    let hasValidationErrors = false;
     try {
       const parsed = JSON.parse(raw) as {
-        detail?: string;
-        title?: string;
         errors?: Record<string, string[]>;
       };
-      const validation = parsed.errors
-        ? Object.entries(parsed.errors)
-            .flatMap(([field, messages]) =>
-              messages.map((entry) => `${field}: ${entry}`),
-            )
-            .join("; ")
-        : "";
-      message = validation || parsed.detail || parsed.title || raw;
+      hasValidationErrors = Boolean(parsed.errors && Object.keys(parsed.errors).length > 0);
     } catch {
-      // Keep plain-text API errors as-is.
+      // Internal/plain-text server responses are intentionally not exposed.
     }
 
-    throw new Error(
-      message || `API request failed with status ${response.status}`,
-    );
+    throw normalizeApiError(response.status, hasValidationErrors);
   }
 
   if (response.status === 204) {

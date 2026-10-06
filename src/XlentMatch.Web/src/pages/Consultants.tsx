@@ -263,8 +263,8 @@ export default function Consultants() {
               render: (consultant) => (
                 <div className="relative min-h-10" onClick={(event) => event.stopPropagation()}>
                   <button type="button" title={consultant.availability === "Unavailable" && consultant.availableAgainDate ? `${t("consultant_available_again")} ${formatAvailableAgainDate(consultant.availableAgainDate, locale, "", true)}` : undefined} aria-haspopup="dialog" aria-expanded={availabilityConsultant?.id === consultant.id} aria-label={`${t("consultants_availability_for")} ${consultantName(consultant)}`} onClick={() => openAvailabilityEditor(consultant)} className="inline-flex h-7 w-full min-w-0 items-center gap-1 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-primary hover:border-app-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand">
-                    <span className="flex-none text-[10px]" style={{ color: consultant.availability === "Unavailable" ? "var(--color-danger)" : "var(--color-success)" }} aria-hidden="true">●</span>
-                    <span className="flex-none" style={{ color: consultant.availability === "Unavailable" ? "var(--color-danger)" : "var(--color-success)" }}>{consultant.availability === "Unavailable" ? t("consultants_unavailable") : t("consultants_available")}</span>
+                    <span className={`flex-none text-[10px] ${consultant.availability === "Unavailable" ? "text-app-danger" : "text-app-success"}`} aria-hidden="true">●</span>
+                    <span className={`flex-none ${consultant.availability === "Unavailable" ? "text-app-danger" : "text-app-success"}`}>{consultant.availability === "Unavailable" ? t("consultants_unavailable") : t("consultants_available")}</span>
                     {consultant.availability === "Unavailable" && consultant.availableAgainDate && <span className="truncate text-app-muted">{formatAvailableAgainDate(consultant.availableAgainDate, locale, "", false)}</span>}
                   </button>
                   {availabilityConsultant?.id === consultant.id && (
@@ -272,11 +272,11 @@ export default function Consultants() {
                     <div className="p-5">
                       <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-app-faint">{t("consultants_availability")}</p>
                       <div className="grid grid-cols-2 gap-2 text-[11px]">
-                        <button type="button" aria-pressed={availabilityDraft === "Available"} onClick={() => setAvailabilityDraft("Available")} className="rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand" style={availabilityDraft === "Available" ? { borderColor: "var(--color-success)", background: "var(--color-success-subtle)", color: "var(--color-success)" } : { borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>
-                          <span className="mr-1 text-[10px]" style={{ color: "var(--color-success)" }}>●</span>{t("consultants_available")}
+                        <button type="button" aria-pressed={availabilityDraft === "Available"} onClick={() => setAvailabilityDraft("Available")} className={`rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${availabilityDraft === "Available" ? "border-app-success bg-app-success-subtle text-app-success" : "border-app text-app-secondary"}`}>
+                          <span className="mr-1 text-[10px] text-app-success">●</span>{t("consultants_available")}
                         </button>
-                        <button type="button" aria-pressed={availabilityDraft === "Unavailable"} onClick={() => setAvailabilityDraft("Unavailable")} className="rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand" style={availabilityDraft === "Unavailable" ? { borderColor: "var(--color-danger)", background: "var(--color-danger-subtle)", color: "var(--color-danger)" } : { borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>
-                          <span className="mr-1 text-[10px]" style={{ color: "var(--color-danger)" }}>●</span>{t("consultants_unavailable")}
+                        <button type="button" aria-pressed={availabilityDraft === "Unavailable"} onClick={() => setAvailabilityDraft("Unavailable")} className={`rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${availabilityDraft === "Unavailable" ? "border-app-danger bg-app-danger-subtle text-app-danger" : "border-app text-app-secondary"}`}>
+                          <span className="mr-1 text-[10px] text-app-danger">●</span>{t("consultants_unavailable")}
                         </button>
                       </div>
                       {availabilityDraft === "Unavailable" && (
