@@ -17,6 +17,8 @@ type DataTableProps<T> = {
   rowKey: (row: T) => string;
   emptyMessage?: string;
   defaultSort?: { key: string; direction?: "asc" | "desc" };
+  onRowClick?: (row: T) => void;
+  rowAriaLabel?: (row: T) => string;
 };
 
 function normalizeSortValue(value: SortValue) {
@@ -26,7 +28,7 @@ function normalizeSortValue(value: SortValue) {
   return value ?? "";
 }
 
-export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort, onRowClick, rowAriaLabel }: DataTableProps<T>) {
   const { t } = useI18n();
   const resolvedEmptyMessage = emptyMessage ?? t("common_no_data");
   const [sort, setSort] = useState<{ key: string; direction: "asc" | "desc" } | null>(
@@ -113,7 +115,19 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort 
             </tr>
           ) : (
             sortedRows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-app-subtle hover:bg-app-raised transition-colors">
+              <tr
+                key={rowKey(row)}
+                className={`border-b border-app-subtle hover:bg-app-raised transition-colors${onRowClick ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-brand" : ""}`}
+                onClick={() => onRowClick?.(row)}
+                onKeyDown={(event) => {
+                  if (!onRowClick || (event.key !== "Enter" && event.key !== " ")) return;
+                  event.preventDefault();
+                  onRowClick(row);
+                }}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? "link" : undefined}
+                aria-label={onRowClick ? rowAriaLabel?.(row) : undefined}
+              >
                 {columns.map((column) => (
                   <td key={column.key} className="px-4 py-2.5 text-xs text-app-secondary">
                     {column.render ? column.render(row) : String((row as unknown as Record<string, unknown>)[column.key] ?? "")}

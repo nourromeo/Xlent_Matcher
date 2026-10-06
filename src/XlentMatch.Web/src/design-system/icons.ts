@@ -28,6 +28,7 @@ export {
   ListChecks,
   Loader,
   Moon,
+  MoreHorizontal,
   Plus,
   RefreshCw,
   Save,

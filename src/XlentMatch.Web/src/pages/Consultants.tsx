@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Search, Filter, Eye, Calendar } from "../design-system/icons";
+import { Calendar, ChevronRight, Filter, MoreHorizontal, Search } from "../design-system/icons";
+import { useNavigate } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { LinkButton } from "../components/ui/LinkButton";
 import { Input } from "../components/ui/Input";
@@ -32,6 +33,7 @@ function formatAvailableAgainDate(value: string | null, locale: "en" | "es" | "s
 
 export default function Consultants() {
   const { t, locale } = useI18n();
+  const navigate = useNavigate();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,6 +42,7 @@ export default function Consultants() {
   const [avail, setAvail] = useState("All");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [updatingAvailabilityId, setUpdatingAvailabilityId] = useState<number | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,26 +205,23 @@ export default function Consultants() {
               ),
             },
             {
-              key: "seniority",
-              header: t("col_seniority"),
+              key: "profile",
+              header: t("col_profile"),
               sortable: true,
               sortValue: (consultant) => seniorityRank[consultant.seniority ?? ""] ?? 99,
-              render: (consultant) => <span>{displaySeniority(consultant.seniority ?? "—")}</span>,
-            },
-            {
-              key: "experience",
-              header: t("col_experience"),
-              sortable: true,
-              sortValue: (consultant) => consultant.yearsOfExperience,
-              render: (consultant) => <span className="font-mono">{consultant.yearsOfExperience == null ? "—" : `${consultant.yearsOfExperience} yrs`}</span>,
+              render: (consultant) => (
+                <span className="font-mono text-[11px]">
+                  {[consultant.seniority ? displaySeniority(consultant.seniority) : null, consultant.yearsOfExperience == null ? null : `${consultant.yearsOfExperience} ${t("consultant_year_count")}`].filter(Boolean).join(" · ") || "—"}
+                </span>
+              ),
             },
             {
               key: "skills",
               header: t("col_skills"),
               render: (consultant) => (
                 <div className="flex flex-wrap gap-1">
-                  {consultant.skills.slice(0, 4).map((skill) => <SkillTag key={skill.id || skill.name}>{skill.name}</SkillTag>)}
-                  {consultant.skills.length > 4 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 4}</span>}
+                  {consultant.skills.slice(0, 3).map((skill) => <SkillTag key={skill.id || skill.name}>{skill.name}</SkillTag>)}
+                  {consultant.skills.length > 3 && <span className="text-[10px] text-app-faint">+{consultant.skills.length - 3}</span>}
                 </div>
               ),
             },
@@ -231,53 +231,45 @@ export default function Consultants() {
               sortable: true,
               sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99,
               render: (consultant) => (
-                <select aria-label={`Availability for ${consultantName(consultant)}`} value={consultant.availability} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, event.target.value as Consultant["availability"], consultant.availableAgainDate)} className="bg-app border border-app rounded px-2 py-1 text-[11px] text-app-primary">
-                  <option value="Available">{t("consultants_available")}</option>
-                  <option value="Unavailable">{t("consultants_unavailable")}</option>
-                </select>
+                <div className="min-w-36 space-y-1" onClick={(event) => event.stopPropagation()}>
+                  <select aria-label={`${t("consultants_availability_for")} ${consultantName(consultant)}`} value={consultant.availability} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, event.target.value as Consultant["availability"], consultant.availableAgainDate)} className="bg-app border border-app rounded px-2 py-1 text-[11px] text-app-primary">
+                    <option value="Available">{t("consultants_available")}</option>
+                    <option value="Unavailable">{t("consultants_unavailable")}</option>
+                  </select>
+                  {consultant.availability === "Unavailable" && (
+                    <label className="relative flex max-w-36 items-center gap-1 text-[10px] text-app-muted focus-within:text-app-primary">
+                      <Calendar size={11} className="flex-none" aria-hidden="true" />
+                      <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate, locale, t("consultant_available_again"))}</span>
+                      <input aria-label={`${t("consultants_available_again_for")} ${consultantName(consultant)}`} type="date" value={consultant.availableAgainDate?.slice(0, 10) ?? ""} disabled={updatingAvailabilityId === consultant.id} onChange={(event) => void updateAvailability(consultant, "Unavailable", event.target.value || null)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                    </label>
+                  )}
+                </div>
               ),
-            },
-            {
-              key: "availableAgain",
-              header: t("consultant_available_again"),
-              render: (consultant) => consultant.availability === "Unavailable" ? (
-                <label className="relative inline-flex max-w-36 items-center gap-1.5 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
-                  <span className="truncate">{formatAvailableAgainDate(consultant.availableAgainDate, locale, t("consultant_available_again"))}</span>
-                  <Calendar size={12} className="flex-none text-app-muted" aria-hidden="true" />
-                  <input
-                    aria-label={`${t("consultants_available_again_for")} ${consultantName(consultant)}`}
-                    type="date"
-                    value={consultant.availableAgainDate?.slice(0, 10) ?? ""}
-                    disabled={updatingAvailabilityId === consultant.id}
-                    onChange={(event) => void updateAvailability(consultant, "Unavailable", event.target.value || null)}
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  />
-                </label>
-              ) : <span className="text-app-faint">—</span>,
             },
             {
               key: "actions",
               header: t("common_actions"),
               render: (consultant) => (
-                <div className="flex items-center gap-2">
-                  <LinkButton to={`/consultants/${consultant.id}`} variant="secondary" icon={<Eye size={12} />}>
-                    {t("consultants_view")}
-                  </LinkButton>
-                  <button
-                    type="button"
-                    onClick={() => void deleteConsultant(consultant)}
-                    disabled={deletingId === consultant.id}
-                    className="text-[11px] px-2.5 py-1.5 rounded border disabled:opacity-50"
-                    style={{ color: "var(--color-danger)", borderColor: "var(--color-danger)", background: "transparent" }}
-                  >
-                    {deletingId === consultant.id ? t("client_deleting") : t("common_delete")}
+                <div className="relative flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+                  <button type="button" aria-label={`${t("common_more")} ${consultantName(consultant)}`} aria-expanded={openMenuId === consultant.id} onClick={() => setOpenMenuId((current) => current === consultant.id ? null : consultant.id)} className="rounded p-1.5 text-app-muted hover:bg-app-raised hover:text-app-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand">
+                    <MoreHorizontal size={15} aria-hidden="true" />
                   </button>
+                  {openMenuId === consultant.id && (
+                    <div role="menu" className="absolute right-0 top-full z-10 mt-1 min-w-28 rounded border border-app bg-app-surface p-1 shadow-app-surface">
+                      <button type="button" role="menuitem" onClick={() => { setOpenMenuId(null); void deleteConsultant(consultant); }} disabled={deletingId === consultant.id} className="w-full rounded px-2 py-1.5 text-left text-[11px] text-app-danger hover:bg-app-raised disabled:opacity-50">
+                        {deletingId === consultant.id ? t("client_deleting") : t("common_delete")}
+                      </button>
+                    </div>
+                  )}
+                  <ChevronRight size={15} className="text-app-faint" aria-hidden="true" />
                 </div>
               ),
             },
           ]}
           rows={filtered}
           rowKey={(consultant) => String(consultant.id)}
+          onRowClick={(consultant) => navigate(`/consultants/${consultant.id}`)}
+          rowAriaLabel={(consultant) => `${t("consultants_view")} ${consultantName(consultant)}`}
           emptyMessage={loading ? t("consultants_loading") : t("consultants_empty")}
         />
 
