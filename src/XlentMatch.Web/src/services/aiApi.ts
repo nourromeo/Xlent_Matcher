@@ -9,6 +9,8 @@ export type RequirementDraft = {
   minYears: number | null;
   minLevel: number | null;
   proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" | null;
+  matchMode?: "Exact" | "Minimum" | "Range" | null;
+  maximumSeniority?: string | null;
 };
 
 export type RequirementExtractionResult = {

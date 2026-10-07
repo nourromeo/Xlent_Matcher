@@ -9,7 +9,7 @@ public class RequirementDraftDto
     public int? MinYears { get; set; }
     public int? MinLevel { get; set; }
     public string? Proficiency { get; set; }
-    public SeniorityMatchMode MatchMode { get; set; } = SeniorityMatchMode.Exact;
+    public SeniorityMatchMode? MatchMode { get; set; }
     public string? MaximumSeniority { get; set; }
     public string Category { get; set; } = "Skill";
 }

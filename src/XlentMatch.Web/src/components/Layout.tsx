@@ -11,6 +11,7 @@ import {
   Sun,
   Moon,
   Sparkles,
+  Info,
 } from "../design-system/icons";
 import { useTheme } from "../theme";
 import { useI18n, type Locale } from "../i18n";
@@ -33,7 +34,9 @@ export default function Layout() {
     { to: "/admin", icon: Settings, label: t("nav_admin") },
   ];
 
-  const section = NAV.find((item) =>
+  const supportNav = { to: "/how-it-works", icon: Info, label: t("nav_how_it_works") };
+
+  const section = [...NAV, supportNav].find((item) =>
     item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to)
   );
 
@@ -79,7 +82,7 @@ export default function Layout() {
           <span className="ml-auto text-[10px] font-mono text-app-faint bg-app-raised px-1.5 py-0.5 rounded">MVP</span>
         </div>
 
-        <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 min-h-0 py-2 px-2 space-y-0.5 overflow-y-auto">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
@@ -98,6 +101,22 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
+
+        <div className="px-2 pb-2">
+          <NavLink
+            to={supportNav.to}
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-2.5 py-1.5 rounded text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${
+                isActive
+                  ? "bg-app-brand-subtle text-app-brand font-medium"
+                  : "text-app-muted hover:text-app-secondary hover:bg-app-raised"
+              }`
+            }
+          >
+            <supportNav.icon size={14} />
+            {supportNav.label}
+          </NavLink>
+        </div>
 
         <div className="border-t border-app px-3 py-3">
           <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("layout_internal_tool")}</p>

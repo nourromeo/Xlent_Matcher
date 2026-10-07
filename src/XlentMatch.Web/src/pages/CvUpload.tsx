@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Upload as UploadIcon, FileText, CheckCircle, AlertCircle, Loader, Plus, X, Eye } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
@@ -105,6 +105,7 @@ function parseUpload(record: Awaited<ReturnType<typeof cvUploadsApi.getAll>>[num
 
 export default function CvUpload() {
   const { t, locale } = useI18n();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<CvUploadView[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -189,7 +190,8 @@ export default function CvUpload() {
       });
 
       updateLocal(created.id, { ...updated, draft: result });
-      setActiveId(created.id);
+      localStorage.setItem(`xlent-cv-review-${created.id}`, JSON.stringify(result));
+      navigate(`/cv-upload/review?uploadId=${created.id}`);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : t("upload_extract_error");
       setError(message);
@@ -404,7 +406,7 @@ export default function CvUpload() {
             {file.status === "Review" && file.draft && (
               <button
                 type="button"
-                onClick={() => { setReviewStep(0); setActiveId(file.id); }}
+                onClick={() => { localStorage.setItem(`xlent-cv-review-${file.id}`, JSON.stringify(file.draft)); navigate(`/cv-upload/review?uploadId=${file.id}`); }}
                 className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
               >
                   <Eye size={11} /> {t("upload_review")}
@@ -490,19 +492,8 @@ export default function CvUpload() {
             </section>
 
             <section className={reviewStep === 1 ? "space-y-3" : "hidden"}>
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_skills")} ({draft.skills.length})</p>
-                <Button
-                  variant="ghost"
-                  icon={<Plus size={11} />}
-                  onClick={() => updateDraft({
-                    ...draft,
-                    skills: [...draft.skills, { name: "", level: 0, years: 0, evidence: null }],
-                  })}
-                >
-                  {t("common_add")} {t("upload_field_skill").toLowerCase()}
-                </Button>
-              </div>
+              <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_skills")} ({draft.skills.length})</p>
+              <div className="hidden grid-cols-[1fr_80px_80px_30px] gap-2 px-3 text-[10px] text-app-muted md:grid"><span>{t("upload_field_skill")}</span><span>{t("upload_field_years")}</span><span>{t("upload_field_level")}</span><span>{t("common_actions")}</span></div>
 
               <div className="space-y-2">
                 {draft.skills.map((skill, index) => (
@@ -547,6 +538,7 @@ export default function CvUpload() {
                   </div>
                 ))}
               </div>
+              <button type="button" onClick={() => updateDraft({ ...draft, skills: [...draft.skills, { name: "", level: 0, years: 0, evidence: null }] })} className="inline-flex items-center gap-1 text-xs text-app-brand"><Plus size={13} />{t("common_add")} {t("upload_field_skill").toLowerCase()}</button>
             </section>
 
             <section className={reviewStep >= 2 ? "space-y-5" : "hidden"}>
@@ -559,10 +551,8 @@ export default function CvUpload() {
 
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-app-primary">{t("upload_languages")} ({draft.languages.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", proficiency: "Not specified" }] })}>{t("upload_add_language")}</Button>
-                </div>
+                <p className="text-xs font-medium text-app-primary">{t("upload_languages")} ({draft.languages.length})</p>
+                <div className="hidden grid-cols-[1fr_1fr_auto] gap-2 px-3 text-[10px] text-app-muted md:grid"><span>{t("consultant_language")}</span><span>{t("upload_language_proficiency")}</span><span>{t("common_actions")}</span></div>
                 {draft.languages.map((item, index) => (
                   <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                     <Input aria-label={t("consultant_language")} placeholder={t("consultant_language")} value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
@@ -571,6 +561,7 @@ export default function CvUpload() {
                   </div>
                 ))}
                 {draft.languages.length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_languages")}</p>}
+                <button type="button" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", proficiency: "Not specified" }] })} className="inline-flex items-center gap-1 text-xs text-app-brand"><Plus size={13} />{t("upload_add_language")}</button>
               </div>
 
 </div>

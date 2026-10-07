@@ -9,6 +9,7 @@ type Column<T> = {
   render?: (row: T) => ReactNode;
   sortable?: boolean;
   sortValue?: (row: T) => SortValue;
+  width?: string;
 };
 
 type DataTableProps<T> = {
@@ -17,6 +18,8 @@ type DataTableProps<T> = {
   rowKey: (row: T) => string;
   emptyMessage?: string;
   defaultSort?: { key: string; direction?: "asc" | "desc" };
+  onRowClick?: (row: T) => void;
+  rowAriaLabel?: (row: T) => string;
 };
 
 function normalizeSortValue(value: SortValue) {
@@ -26,7 +29,7 @@ function normalizeSortValue(value: SortValue) {
   return value ?? "";
 }
 
-export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort, onRowClick, rowAriaLabel }: DataTableProps<T>) {
   const { t } = useI18n();
   const resolvedEmptyMessage = emptyMessage ?? t("common_no_data");
   const [sort, setSort] = useState<{ key: string; direction: "asc" | "desc" } | null>(
@@ -65,7 +68,10 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort 
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full table-fixed">
+        <colgroup>
+          {columns.map((column) => <col key={column.key} style={column.width ? { width: column.width } : undefined} />)}
+        </colgroup>
         <thead>
           <tr className="border-b border-app">
             {columns.map((column) => {
@@ -113,9 +119,24 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort 
             </tr>
           ) : (
             sortedRows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-app-subtle hover:bg-app-raised transition-colors">
+              <tr
+                key={rowKey(row)}
+                className={`border-b border-app-subtle hover:bg-app-raised transition-colors${onRowClick ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-brand" : ""}`}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest("button,a,input,select,textarea,[role=button]")) return;
+                  onRowClick?.(row);
+                }}
+                onKeyDown={(event) => {
+                  if (!onRowClick || (event.key !== "Enter" && event.key !== " ") || (event.target as HTMLElement).closest("button,a,input,select,textarea,[role=button]")) return;
+                  event.preventDefault();
+                  onRowClick(row);
+                }}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? "link" : undefined}
+                aria-label={onRowClick ? rowAriaLabel?.(row) : undefined}
+              >
                 {columns.map((column) => (
-                  <td key={column.key} className="px-4 py-2.5 text-xs text-app-secondary">
+                    <td key={column.key} className="px-4 py-2.5 text-xs text-app-secondary align-middle">
                     {column.render ? column.render(row) : String((row as unknown as Record<string, unknown>)[column.key] ?? "")}
                   </td>
                 ))}

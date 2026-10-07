@@ -5,8 +5,16 @@ using XlentMatch.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        $"ConnectionStrings:DefaultConnection is required for the {builder.Environment.EnvironmentName} environment. " +
+        "Provide it through environment-specific configuration or secret storage.");
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
 builder.Services.Configure<OpenAiOptions>(builder.Configuration.GetSection("OpenAi"));
 builder.Services.Configure<MatchingOptions>(builder.Configuration.GetSection("Matching"));
@@ -38,7 +46,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    if (app.Environment.IsDevelopment())
+        await db.Database.MigrateAsync();
 
     var skillNormalization = scope.ServiceProvider.GetRequiredService<SkillNormalizationService>();
     await skillNormalization.EnsureCatalogAsync();

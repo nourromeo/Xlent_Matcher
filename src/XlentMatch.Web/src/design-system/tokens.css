@@ -84,8 +84,15 @@ html.light {
 .bg-app-brand-subtle { background-color: var(--color-brand-subtle); }
 .bg-app-brand-soft { background-color: var(--color-brand-soft); }
 .text-app-brand { color: var(--color-brand); }
+.text-app-success { color: var(--color-success); }
+.text-app-warning { color: var(--color-warning); }
+.text-app-danger { color: var(--color-danger); }
 .text-app-on-brand { color: var(--color-on-brand); }
 .bg-app-danger { background-color: var(--color-danger-strong); }
+.bg-app-success-subtle { background-color: var(--color-success-subtle); }
+.bg-app-danger-subtle { background-color: var(--color-danger-subtle); }
+.border-app-success { border-color: var(--color-success); }
+.border-app-danger { border-color: var(--color-danger); }
 .shadow-app-surface { box-shadow: var(--shadow-surface); }
 
 .shadow-app-modal { box-shadow: var(--shadow-modal); }

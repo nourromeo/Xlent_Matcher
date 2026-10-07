@@ -12,9 +12,11 @@ public static class PromptKeys
 }
 
 public sealed record PromptDefinition(string Key, string DisplayName, string Content);
+public sealed record ActivePromptContext(string Key, int Version, bool IsActive, string Content);
 
 public interface IPromptService
 {
+    Task<ActivePromptContext?> GetActivePromptContextAsync(string promptKey, CancellationToken ct = default);
     Task<AiPromptVersion?> GetActivePromptAsync(string promptKey, CancellationToken ct = default);
     Task<List<AiPromptVersion>> GetVersionsAsync(string promptKey, CancellationToken ct = default);
     Task<AiPromptVersion?> GetVersionAsync(string promptKey, int version, CancellationToken ct = default);
@@ -24,6 +26,12 @@ public interface IPromptService
 
 public sealed class PromptService(AppDbContext db) : IPromptService
 {
+    public async Task<ActivePromptContext?> GetActivePromptContextAsync(string promptKey, CancellationToken ct = default)
+    {
+        var prompt = await db.AiPromptVersions.AsNoTracking().FirstOrDefaultAsync(x => x.PromptKey == promptKey && x.IsActive, ct);
+        return prompt is null ? null : new ActivePromptContext(prompt.PromptKey, prompt.Version, prompt.IsActive, prompt.Content);
+    }
+
     public Task<AiPromptVersion?> GetActivePromptAsync(string promptKey, CancellationToken ct = default) =>
         db.AiPromptVersions.AsNoTracking().FirstOrDefaultAsync(x => x.PromptKey == promptKey && x.IsActive, ct);
 

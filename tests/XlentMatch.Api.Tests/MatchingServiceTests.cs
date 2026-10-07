@@ -71,6 +71,22 @@ public class MatchingServiceTests
         Assert.False(service.Match(new Assignment { Requirements = [Seniority("Junior", SeniorityMatchMode.Range, "Mid")] }, consultant).Details.Single().IsMatched);
     }
 
+    [Fact]
+    public async Task MatchingWeightsStorePersistsAnUpdateAndReloadsIt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "xlent-match-tests", Guid.NewGuid().ToString("N"));
+        var options = Options.Create(new MatchingOptions { MandatoryRequirementWeight = 2, DesiredRequirementWeight = 1 });
+        var environment = new TestEnvironment { ContentRootPath = root };
+        var store = new MatchingWeightsStore(options, environment);
+
+        await store.UpdateAsync(new MatchingWeights { MandatoryRequirementWeight = 5, DesiredRequirementWeight = 3 });
+
+        var reloaded = new MatchingWeightsStore(options, environment).Get();
+
+        Assert.Equal(5, reloaded.MandatoryRequirementWeight);
+        Assert.Equal(3, reloaded.DesiredRequirementWeight);
+    }
+
     private static AssignmentRequirement Requirement(int skillId, string name, RequirementType type) => new()
     {
         SkillId = skillId,

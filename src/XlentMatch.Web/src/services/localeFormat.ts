@@ -6,6 +6,10 @@ export function formatDate(value: string | Date, locale: Locale): string {
   return new Intl.DateTimeFormat(localeMap[locale], { dateStyle: "medium" }).format(new Date(value));
 }
 
+export function formatDateShort(value: string | Date, locale: Locale): string {
+  return new Intl.DateTimeFormat(localeMap[locale], { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
+}
+
 export function formatDateTime(value: string | Date, locale: Locale): string {
   return new Intl.DateTimeFormat(localeMap[locale], { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }

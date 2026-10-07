@@ -26,6 +26,7 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
         try
         {
             var draft = await ai.ExtractConsultantProfileAsync(input.Text!, ct);
+            RemoveIncompleteCollectionItems(draft);
             draft.Seniority ??= draft.SuggestedSeniority;
             SetExperienceYears(draft);
             foreach (var language in draft.Languages)
@@ -81,6 +82,17 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
                 ? null
                 : SkillNormalizationService.NormalizeLanguageProficiency(requirement.Proficiency);
         }
+    }
+
+    public static void RemoveIncompleteCollectionItems(ConsultantDraftDto draft)
+    {
+        draft.Skills = draft.Skills.Where(item => !string.IsNullOrWhiteSpace(item.Name)).ToList();
+        draft.Experiences = draft.Experiences.Where(item => !string.IsNullOrWhiteSpace(item.Company) || !string.IsNullOrWhiteSpace(item.Role)).ToList();
+        draft.Projects = draft.Projects.Where(item => !string.IsNullOrWhiteSpace(item.Name)).ToList();
+        draft.Education = draft.Education.Where(item => !string.IsNullOrWhiteSpace(item.Degree)).ToList();
+        draft.Languages = draft.Languages.Where(item => !string.IsNullOrWhiteSpace(item.Name)).ToList();
+        draft.Certifications = draft.Certifications.Where(item => !string.IsNullOrWhiteSpace(item.Name)).ToList();
+        draft.Industries = draft.Industries.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
     }
 
 
