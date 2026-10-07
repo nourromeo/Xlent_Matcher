@@ -5,23 +5,20 @@ import {
   Search,
   Clock,
   CheckCircle,
-  Eye,
+  ChevronRight,
   Sparkles,
 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { Button } from "../components/ui/Button";
-import { LinkButton } from "../components/ui/LinkButton";
-import { SkillTag } from "../components/ui/SkillTag";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { EmptyState } from "../components/ui/EmptyState";
 import { PageHeader } from "../components/ui/PageHeader";
-import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { validateDocumentFile } from "../services/fileValidation";
 import { aiApi } from "../services/aiApi";
 import { formatDate } from "../services/localeFormat";
+import { DataTable } from "../components/ui/DataTable";
 import type {
   AssignmentApi,
   AssignmentRequirementApi,
@@ -1250,8 +1247,6 @@ export default function ClientAssignments() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [assignmentToDelete, setAssignmentToDelete] = useState<AssignmentApi | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -1278,52 +1273,16 @@ export default function ClientAssignments() {
     };
   }, []);
 
-  const deleteAssignment = async (assignment: AssignmentApi) => {
-    setDeletingId(assignment.id);
-    setError("");
-
-    try {
-      await assignmentsApi.remove(assignment.id);
-      setAssignments((current) =>
-        current.filter((item) => item.id !== assignment.id),
-      );
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t("client_delete_error"),
-      );
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
   const statusConfig = (status: AssignmentStatusApi) => {
     switch (status) {
       case "Draft":
-        return {
-          label: t("assignment_draft"),
-          tone: "neutral" as const,
-          icon: <Clock size={9} />,
-        };
+        return { label: t("assignment_draft"), tone: "neutral" as const, icon: <Clock size={9} /> };
       case "Matching":
-        return {
-          label: t("assignment_matching"),
-          tone: "neutral" as const,
-          icon: <Clock size={9} />,
-        };
+        return { label: t("assignment_matching"), tone: "neutral" as const, icon: <Clock size={9} /> };
       case "Closed":
-        return {
-          label: t("assignment_closed"),
-          tone: "neutral" as const,
-          icon: <Clock size={9} />,
-        };
+        return { label: t("assignment_closed"), tone: "neutral" as const, icon: <Clock size={9} /> };
       default:
-        return {
-          label: t("assignment_done"),
-          tone: "success" as const,
-          icon: <CheckCircle size={9} />,
-        };
+        return { label: t("assignment_done"), tone: "success" as const, icon: <CheckCircle size={9} /> };
     }
   };
 
@@ -1337,6 +1296,8 @@ export default function ClientAssignments() {
           : value === "Staff"
             ? t("seniority_staff")
             : value;
+
+  const seniorityRank: Record<string, number> = { Junior: 1, Mid: 2, Senior: 3, Staff: 4 };
 
   const filtered = assignments.filter((assignment) => {
     const search = query.trim().toLowerCase();
@@ -1356,7 +1317,6 @@ export default function ClientAssignments() {
 
   return (
     <div className="p-6 space-y-4">
-      <ConfirmDialog open={assignmentToDelete !== null} title={t("common_delete")} message={assignmentToDelete ? t("client_delete_confirm").replace("{title}", assignmentToDelete.title) : ""} onClose={() => setAssignmentToDelete(null)} onConfirm={async () => { if (assignmentToDelete) await deleteAssignment(assignmentToDelete); setAssignmentToDelete(null); }} />
       <PageHeader
         title={t("assignments_title")}
         meta={String(assignments.length) + " " + t("assignments_sub")}
@@ -1393,104 +1353,83 @@ export default function ClientAssignments() {
         </div>
       )}
 
-      <div className="space-y-2">
-        {filtered.map((assignment) => {
-          const status = statusConfig(assignment.status);
-          const required = assignment.requirements.filter(
-            (requirement) => requirement.type === "Mandatory",
-          );
-          const preferred = assignment.requirements.filter(
-            (requirement) => requirement.type === "Desired",
-          );
-
-          return (
-            <div
-              key={assignment.id}
-              className="bg-app-surface border border-app rounded-lg px-5 py-4 shadow-app-surface"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-sm font-medium text-app-primary">
-                      {assignment.title}
-                    </h2>
-                    <StatusBadge tone={status.tone} icon={status.icon}>
-                      {status.label}
-                    </StatusBadge>
-                  </div>
-                  <p className="text-xs text-app-muted">
-                    {assignment.customerName || "—"} ·{" "}
-                    {displaySeniority(assignment.seniority ?? "—")} ·{" "}
-                    {assignment.location ||
-                      t("assignment_location_unspecified")}{" "}
-                    · {t("common_updated")}{" "}
-                    {formatDate(
-                      assignment.updatedAt || assignment.createdAt,
-                      locale,
-                    )}
+      <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
+        <DataTable
+          columns={[
+            {
+              key: "assignment",
+              width: "30%",
+              header: t("assignment_title"),
+              sortable: true,
+              sortValue: (assignment) => assignment.title,
+              render: (assignment) => (
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-app-primary">{assignment.title}</p>
+                  <p className="truncate text-[10px] text-app-muted">
+                    {assignment.location || t("assignment_location_unspecified")}
                   </p>
-                  <p className="text-[11px] text-app-secondary mt-1 mb-2 max-w-3xl line-clamp-2">
-                    {assignment.description || "—"}
-                  </p>
-                  <p className="text-[10px] text-app-muted mb-2">
-                    {assignment.requirements.length} {t("client_requirements")}
-                    {assignment.minYearsExperience > 0
-                      ? ` · ${assignment.minYearsExperience}+ ${t("client_years_experience")}`
-                      : ""}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {required.map((requirement) => (
-                      <SkillTag
-                        key={requirement.id || requirement.name}
-                        variant="required"
-                      >
-                        {requirement.category === "HumanLanguage"
-                          ? `${t("client_language_prefix")}${requirement.name}`
-                          : requirement.name}
-                      </SkillTag>
-                    ))}
-                    {preferred.map((requirement) => (
-                      <SkillTag key={requirement.id || requirement.name}>
-                        {requirement.category === "HumanLanguage"
-                          ? `${t("client_language_prefix")}${requirement.name}`
-                          : requirement.name}
-                      </SkillTag>
-                    ))}
-                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <LinkButton
-                    to={"/client-assignments/" + assignment.id}
-                    variant="secondary"
-                    icon={<Eye size={12} />}
-                  >
-                    {t("assignment_view")}
-                  </LinkButton>
-                  <button
-                    type="button"
-                    onClick={() => setAssignmentToDelete(assignment)}
-                    disabled={deletingId === assignment.id}
-                    className="text-[11px] px-2.5 py-1.5 rounded border disabled:opacity-50"
-                    style={{
-                      color: "var(--color-danger)",
-                      borderColor: "var(--color-danger)",
-                      background: "transparent",
-                    }}
-                  >
-                    {deletingId === assignment.id
-                      ? t("client_deleting")
-                      : t("client_delete")}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {filtered.length === 0 && (
-        <EmptyState
-          title={
+              ),
+            },
+            {
+              key: "client",
+              width: "20%",
+              header: t("assignment_client"),
+              sortable: true,
+              sortValue: (assignment) => assignment.customerName,
+              render: (assignment) => <span className="truncate">{assignment.customerName || "—"}</span>,
+            },
+            {
+              key: "seniority",
+              width: "12%",
+              header: t("assignment_seniority"),
+              sortable: true,
+              sortValue: (assignment) => seniorityRank[assignment.seniority ?? ""] ?? 99,
+              render: (assignment) => assignment.seniority ? displaySeniority(assignment.seniority) : "—",
+            },
+            {
+              key: "requirements",
+              width: "12%",
+              header: t("client_requirements"),
+              sortable: true,
+              sortValue: (assignment) => assignment.requirements.length,
+              render: (assignment) => <span className="font-mono">{assignment.requirements.length}</span>,
+            },
+            {
+              key: "updated",
+              width: "16%",
+              header: t("common_updated"),
+              sortable: true,
+              sortValue: (assignment) => new Date(assignment.updatedAt || assignment.createdAt),
+              render: (assignment) => formatDate(assignment.updatedAt || assignment.createdAt, locale),
+            },
+            {
+              key: "status",
+              width: "8%",
+              header: "Status",
+              sortable: true,
+              sortValue: (assignment) => assignment.status,
+              render: (assignment) => {
+                const status = statusConfig(assignment.status);
+                return (
+                  <StatusBadge tone={status.tone} icon={status.icon}>
+                    {status.label}
+                  </StatusBadge>
+                );
+              },
+            },
+            {
+              key: "navigation",
+              width: "2%",
+              header: "",
+              render: () => <ChevronRight size={15} className="text-app-faint" aria-hidden="true" />,
+            },
+          ]}
+          rows={filtered}
+          rowKey={(assignment) => String(assignment.id)}
+          onRowClick={(assignment) => navigate(`/client-assignments/${assignment.id}`)}
+          rowAriaLabel={(assignment) => `${t("assignment_view")} ${assignment.title}`}
+          emptyMessage={
             loading
               ? t("assignments_loading")
               : query
@@ -1498,7 +1437,15 @@ export default function ClientAssignments() {
                 : t("assignments_empty")
           }
         />
-      )}
+
+        <div className="border-t border-app px-4 py-2.5 bg-app-surface">
+          <span className="text-[10px] text-app-faint">
+            {loading
+              ? t("assignments_loading")
+              : `${filtered.length} / ${assignments.length} ${t("assignments_sub")}`}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
