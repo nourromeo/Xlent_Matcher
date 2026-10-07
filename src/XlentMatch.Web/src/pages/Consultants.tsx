@@ -200,12 +200,12 @@ export default function Consultants() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+        <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
           {t("client_backend_error")}: {error}
         </div>
       )}
 
-      <div className="bg-app-surface border border-app rounded-lg overflow-visible shadow-app-surface">
+      <div className="bg-app-surface border border-app-border rounded-lg overflow-visible shadow-app-surface">
         <DataTable
           columns={[
             {
@@ -274,22 +274,22 @@ export default function Consultants() {
                     <div className="p-5">
                       <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-app-faint">{t("consultants_availability")}</p>
                       <div className="grid grid-cols-2 gap-2 text-[11px]">
-                        <button type="button" aria-pressed={availabilityDraft === "Available"} onClick={() => setAvailabilityDraft("Available")} className={`rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${availabilityDraft === "Available" ? "border-app-success bg-app-success-subtle text-app-success" : "border-app text-app-secondary"}`}>
+                        <button type="button" aria-pressed={availabilityDraft === "Available"} onClick={() => setAvailabilityDraft("Available")} className={`rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${availabilityDraft === "Available" ? "border-app-success bg-app-success-subtle text-app-success" : "border-app-border text-app-secondary"}`}>
                           <span className="mr-1 text-[10px] text-app-success">●</span>{t("consultants_available")}
                         </button>
-                        <button type="button" aria-pressed={availabilityDraft === "Unavailable"} onClick={() => setAvailabilityDraft("Unavailable")} className={`rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${availabilityDraft === "Unavailable" ? "border-app-danger bg-app-danger-subtle text-app-danger" : "border-app text-app-secondary"}`}>
+                        <button type="button" aria-pressed={availabilityDraft === "Unavailable"} onClick={() => setAvailabilityDraft("Unavailable")} className={`rounded border px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${availabilityDraft === "Unavailable" ? "border-app-danger bg-app-danger-subtle text-app-danger" : "border-app-border text-app-secondary"}`}>
                           <span className="mr-1 text-[10px] text-app-danger">●</span>{t("consultants_unavailable")}
                         </button>
                       </div>
                       {availabilityDraft === "Unavailable" && (
                         <label className="relative mt-3 block text-[10px] text-app-muted">
                           <span className="mb-1 block">{t("consultant_available_again")}</span>
-                          <span className="relative flex items-center gap-1 rounded border border-app bg-app px-2 py-1.5 text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
+                          <span className="relative flex items-center gap-1 rounded border border-app-border bg-app px-2 py-1.5 text-app-secondary focus-within:border-app-brand focus-within:ring-1 focus-within:ring-app-brand">
                             <button type="button" aria-label={`${t("consultants_available_again_for")} ${consultantName(consultant)}`} onClick={() => setCalendarOpen(true)} className="min-w-0 flex-1 truncate bg-transparent text-left text-[11px] text-app-primary outline-none focus-visible:ring-2 focus-visible:ring-app-brand">{formatAvailableAgainDate(availableAgainDraft, locale, t("consultant_available_again"))}</button>
                             <button type="button" aria-label={t("consultant_available_again")} onClick={() => setCalendarOpen(true)} className="rounded p-0.5 text-app-muted hover:bg-app-raised hover:text-app-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand"><Calendar size={12} aria-hidden="true" /></button>
                           </span>
                           {calendarOpen && (
-                            <div role="dialog" aria-label={t("consultant_available_again")} className="relative mt-2 w-full rounded border border-app bg-app-surface p-2 shadow-app-surface" onClick={(event) => event.stopPropagation()}>
+                            <div role="dialog" aria-label={t("consultant_available_again")} className="relative mt-2 w-full rounded border border-app-border bg-app-surface p-2 shadow-app-surface" onClick={(event) => event.stopPropagation()}>
                               <div className="flex items-center justify-between px-1 pb-2">
                                 <button type="button" aria-label={t("common_previous")} onClick={() => setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary"><ChevronLeft size={13} /></button>
                                 <span className="text-[11px] font-medium text-app-primary">{new Intl.DateTimeFormat(locale === "sv" ? "sv-SE" : locale === "es" ? "es-ES" : "en-US", { month: "long", year: "numeric" }).format(calendarMonth)}</span>
