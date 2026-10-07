@@ -17,8 +17,8 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "var(--color-overlay)", backdropFilter: "blur(4px)" }}>
-      <div role="dialog" aria-modal="true" aria-labelledby="modal-title" className="w-full max-w-2xl max-h-[92vh] overflow-auto bg-app-surface border border-app rounded-lg shadow-app-modal">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 px-5 py-4 bg-app-surface border-b border-app">
+      <div role="dialog" aria-modal="true" aria-labelledby="modal-title" className="w-full max-w-2xl max-h-[92vh] overflow-auto bg-app-surface border border-app-border rounded-lg shadow-app-modal">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 px-5 py-4 bg-app-surface border-b border-app-border">
           <div>
             <h2 id="modal-title" className="text-sm font-semibold text-app-primary">{title}</h2>
             {description && <p className="text-xs text-app-muted mt-1">{description}</p>}
