@@ -49,52 +49,6 @@ function SourceTabs({
   );
 }
 
-function PrintCvContent({ text }: { text: string }) {
-  const lines = text.split(/\r?\n/);
-  const headingPattern =
-    /^(profile summary|seniority and experience|technical skills(?: \(from source cv\))?|experiences?\s*\/|experiences?|projects?|education|certifications?|languages?|industries?|core skills|professional experience|summary)\s*:?$/i;
-
-  return (
-    <div className="cv-print-content">
-      {lines.map((rawLine, index) => {
-        const line = rawLine.trim();
-        if (!line) return <div key={index} className="cv-print-spacer" />;
-        if (headingPattern.test(line)) {
-          return (
-            <h2 key={index} className="cv-print-section-title">
-              {line.replace(/:$/, "")}
-            </h2>
-          );
-        }
-        if (/^[-•*]\s+/.test(line)) {
-          return (
-            <div key={index} className="cv-print-bullet">
-              <span aria-hidden="true">•</span>
-              <p>{line.replace(/^[-•*]\s+/, "")}</p>
-            </div>
-          );
-        }
-
-        const field = line.match(/^([^:]{2,32}):\s*(.+)$/);
-        if (field) {
-          return (
-            <div key={index} className="cv-print-field">
-              <span>{field[1]}</span>
-              <p>{field[2]}</p>
-            </div>
-          );
-        }
-
-        return (
-          <p key={index} className="cv-print-paragraph">
-            {line}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
 export default function CvAdaptation() {
   const { t, locale } = useI18n();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
@@ -115,13 +69,11 @@ export default function CvAdaptation() {
   const [assignmentText, setAssignmentText] = useState("");
 
   const [result, setResult] = useState<CvAdaptationSuggestion | null>(null);
-  const [adaptedText, setAdaptedText] = useState("");
   const [usedConsultant, setUsedConsultant] = useState<ConsultantDraft | null>(
     null,
   );
   const [usedAssignment, setUsedAssignment] =
     useState<TemporaryAssignmentDraft | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,10 +103,8 @@ export default function CvAdaptation() {
 
   const clearResult = () => {
     setResult(null);
-    setAdaptedText("");
     setUsedConsultant(null);
     setUsedAssignment(null);
-    setCopied(false);
     setError("");
   };
 
@@ -263,7 +213,6 @@ export default function CvAdaptation() {
       setUsedConsultant(consultant);
       setUsedAssignment(assignment);
       setResult(response);
-      setAdaptedText(response.adaptedCvText);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -275,20 +224,8 @@ export default function CvAdaptation() {
     }
   };
 
-  const copyText = async () => {
-    if (!adaptedText.trim()) return;
-
-    try {
-      await navigator.clipboard.writeText(adaptedText);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setError(t("adaptation_edit_result"));
-    }
-  };
-
   const printResult = () => {
-    if (!adaptedText.trim()) return;
+    if (!result) return;
     window.print();
   };
 
@@ -735,92 +672,78 @@ export default function CvAdaptation() {
 
         {result && (
           <div className="space-y-4">
-            <div>
-              <p className="text-[10px] uppercase tracking-wide text-app-faint">
-                {t("adaptation_result")}
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-app-faint">
+                  {t("adaptation_result")}
+                </p>
+                <h2 className="mt-1 text-base font-semibold text-app-primary">
+                  CV Analysis Report
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={printResult}>
+                  Print report
+                </Button>
+                <Button variant="ghost" onClick={clearResult}>
+                  {t("adaptation_close")}
+                </Button>
+              </div>
             </div>
+
             <section className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface">
               <p className="mb-3 text-sm font-medium text-app-primary">
-                {t("adaptation_summary")}
+                Overall assessment
               </p>
-              <p className="max-w-4xl text-sm leading-7 text-app-secondary">
-                {result.summary}
+              <p className="max-w-5xl text-sm leading-7 text-app-secondary">
+                {result.overallAssessment}
               </p>
             </section>
 
-            <section className="grid md:grid-cols-2 gap-4">
-              <div className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-                <p className="text-sm font-medium text-app-primary mb-3">
-                  {t("adaptation_highlights")}
-                </p>
-                <div className="space-y-3 text-sm leading-6">
-                  {result.highlightedExperiences.length === 0 ? (
-                    <p className="text-xs text-app-faint">
-                      {t("adaptation_no_highlights")}
-                    </p>
-                  ) : (
-                    result.highlightedExperiences.map((item, index) => (
-                      <p key={index} className="text-sm text-app-secondary">
-                        • {item}
-                      </p>
-                    ))
-                  )}
+            <section className="grid lg:grid-cols-2 gap-4">
+              {[
+                ["Your strengths", result.strengths],
+                ["Relevant experience to highlight", result.relevantExperience],
+                ["Missing / weak areas", result.missingOrWeakAreas],
+                ["Suggested improvements", result.suggestedImprovements],
+              ].map(([title, items]) => (
+                <div
+                  key={title as string}
+                  className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface"
+                >
+                  <p className="mb-3 text-sm font-medium text-app-primary">
+                    {title as string}
+                  </p>
+                  <div className="space-y-2">
+                    {(items as string[]).length === 0 ? (
+                      <p className="text-xs text-app-faint">No items identified.</p>
+                    ) : (
+                      (items as string[]).map((item, index) => (
+                        <p key={index} className="text-sm leading-6 text-app-secondary">
+                          • {item}
+                        </p>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-                <p className="text-sm font-medium text-app-primary mb-3">
-                  {t("adaptation_gaps")}
-                </p>
-                <div className="space-y-3 text-sm leading-6">
-                  {result.notes.length === 0 ? (
-                    <p className="text-xs text-app-faint">
-                      {t("adaptation_no_notes")}
-                    </p>
-                  ) : (
-                    result.notes.map((item, index) => (
-                      <p key={index} className="text-sm text-app-secondary">
-                        • {item}
-                      </p>
-                    ))
-                  )}
-                </div>
-              </div>
+              ))}
             </section>
 
-            <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-              <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-                <div>
-                  <p className="text-xs font-medium text-app-primary">
-                    {t("adaptation_adapted_draft")}
-                  </p>
-                  <p className="text-[10px] text-app-muted mt-0.5">
-                    {t("adaptation_edit_result")}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="secondary" onClick={copyText}>
-                    {copied ? t("adaptation_copied") : t("adaptation_copy")}
-                  </Button>
-                  <Button variant="secondary" onClick={printResult}>
-                    {t("adaptation_print")}
-                  </Button>
-                  <Button variant="ghost" onClick={clearResult}>
-                    {t("adaptation_close")}
-                  </Button>
-                  <Button variant="ghost" onClick={resetAll}>
-                    {t("adaptation_start_over")}
-                  </Button>
-                </div>
+            <section className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface">
+              <p className="mb-3 text-sm font-medium text-app-primary">
+                Evidence from your CV
+              </p>
+              <div className="space-y-2">
+                {result.evidence.length === 0 ? (
+                  <p className="text-xs text-app-faint">No supporting evidence identified.</p>
+                ) : (
+                  result.evidence.map((item, index) => (
+                    <p key={index} className="text-sm leading-6 text-app-secondary">
+                      • {item}
+                    </p>
+                  ))
+                )}
               </div>
-
-              <Textarea
-                value={adaptedText}
-                onChange={(event) => setAdaptedText(event.target.value)}
-                rows={20}
-              />
             </section>
           </div>
         )}
@@ -835,7 +758,7 @@ export default function CvAdaptation() {
                 <span className="cv-print-brand-mark">X</span>
                 XLENT Match
               </div>
-              <div className="cv-print-document-label">Consultant profile</div>
+              <div className="cv-print-document-label">CV analysis report</div>
             </div>
 
             <header className="cv-print-header">
@@ -858,7 +781,28 @@ export default function CvAdaptation() {
               </div>
             </header>
 
-            <PrintCvContent text={adaptedText} />
+            <section>
+              <h2 className="cv-print-section-title">Overall assessment</h2>
+              <p className="cv-print-paragraph">{result.overallAssessment}</p>
+            </section>
+
+            {[
+              ["Your strengths", result.strengths],
+              ["Relevant experience to highlight", result.relevantExperience],
+              ["Missing / weak areas", result.missingOrWeakAreas],
+              ["Suggested improvements", result.suggestedImprovements],
+              ["Evidence from your CV", result.evidence],
+            ].map(([title, items]) => (
+              <section key={title as string}>
+                <h2 className="cv-print-section-title">{title as string}</h2>
+                {(items as string[]).map((item, index) => (
+                  <div key={index} className="cv-print-bullet">
+                    <span aria-hidden="true">•</span>
+                    <p>{item}</p>
+                  </div>
+                ))}
+              </section>
+            ))}
 
             <footer className="cv-print-footer">
               {t("adaptation_print_footer")}
