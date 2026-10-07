@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
+import { RemoveButton } from "../components/ui/RemoveButton";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { useI18n } from "../i18n";
@@ -644,13 +645,7 @@ export default function ConsultantReview() {
                         >
                           {t("consultant_edit")}
                         </button>
-                        <button
-                          type="button"
-                          className="text-xs text-app-danger"
-                          onClick={() => remove("skills", index)}
-                        >
-                          {t("common_remove")}
-                        </button>
+                        <RemoveButton onClick={() => remove("skills", index)} />
                       </div>
                     </div>
                   );
@@ -702,13 +697,7 @@ export default function ConsultantReview() {
                         >
                           {t("consultant_edit")}
                         </button>
-                        <button
-                          type="button"
-                          className="text-xs text-app-danger"
-                          onClick={() => remove("languages", index)}
-                        >
-                          {t("common_remove")}
-                        </button>
+                        <RemoveButton onClick={() => remove("languages", index)} />
                       </div>
                     </div>
                   ),
@@ -754,13 +743,7 @@ export default function ConsultantReview() {
                           >
                             {t("consultant_edit")}
                           </button>
-                          <button
-                            type="button"
-                            className="text-xs text-app-danger"
-                            onClick={() => remove("industries", index)}
-                          >
-                            {t("common_remove")}
-                          </button>
+                          <RemoveButton onClick={() => remove("industries", index)} />
                         </div>
                       </div>
                     ) : null,
@@ -838,13 +821,7 @@ export default function ConsultantReview() {
                           >
                             {t("consultant_edit")}
                           </button>
-                          <button
-                            type="button"
-                            className="text-xs text-app-danger"
-                            onClick={() => remove(key, index)}
-                          >
-                            {t("common_remove")}
-                          </button>
+                          <RemoveButton onClick={() => remove(key, index)} />
                         </div>
                       </div>
                     );
