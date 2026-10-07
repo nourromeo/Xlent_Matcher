@@ -19,6 +19,7 @@ import { validateDocumentFile } from "../services/fileValidation";
 import { aiApi } from "../services/aiApi";
 import { formatDate } from "../services/localeFormat";
 import { DataTable } from "../components/ui/DataTable";
+import { RemoveButton } from "../components/ui/RemoveButton";
 import type {
   AssignmentApi,
   AssignmentRequirementApi,
@@ -303,13 +304,7 @@ export function NewAssignmentPage() {
         >
           {t("assignment_edit")}
         </button>
-        <button
-          type="button"
-          className="text-xs text-app-danger"
-          onClick={() => removeRequirement(index)}
-        >
-          {t("client_delete")}
-        </button>
+        <RemoveButton onClick={() => removeRequirement(index)} />
       </div>
     </div>
   );
@@ -815,14 +810,7 @@ export function NewAssignmentPage() {
                                   }
                                 />
                               </label>
-                              <button
-                                type="button"
-                                aria-label={t("client_delete")}
-                                onClick={() => removeRequirement(index)}
-                                className="text-app-faint hover:text-app-secondary"
-                              >
-                                ×
-                              </button>
+                              <RemoveButton compact onClick={() => removeRequirement(index)} />
                               <button
                                 type="button"
                                 className="text-xs text-app-brand"
@@ -952,14 +940,7 @@ export function NewAssignmentPage() {
                                   </option>
                                 </select>
                               </label>
-                              <button
-                                type="button"
-                                aria-label={t("client_delete")}
-                                onClick={() => removeRequirement(index)}
-                                className="text-app-faint hover:text-app-secondary"
-                              >
-                                ×
-                              </button>
+                              <RemoveButton compact onClick={() => removeRequirement(index)} />
                               <button
                                 type="button"
                                 className="text-xs text-app-brand"
@@ -1031,14 +1012,7 @@ export function NewAssignmentPage() {
                               {t("client_desired")}
                             </option>
                           </select>
-                          <button
-                            type="button"
-                            aria-label={t("client_delete")}
-                            onClick={() => removeRequirement(index)}
-                            className="text-app-faint hover:text-app-secondary"
-                          >
-                            ×
-                          </button>
+                          <RemoveButton compact onClick={() => removeRequirement(index)} />
                         </div>
                       ))}
                     </section>
