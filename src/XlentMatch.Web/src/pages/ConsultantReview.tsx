@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
+import { RemoveButton } from "../components/ui/RemoveButton";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { useI18n } from "../i18n";
@@ -305,7 +306,7 @@ export default function ConsultantReview() {
               onChange={(e) =>
                 set({ proficiency: e.target.value as typeof item.proficiency })
               }
-              className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+              className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
             >
               <option value="Not specified">{t("common_not_specified")}</option>
               <option value="Low">{t("proficiency_low")}</option>
@@ -401,7 +402,7 @@ export default function ConsultantReview() {
               type="button"
               key={label}
               onClick={() => setStep(index)}
-              className={`rounded-lg border px-3 py-2 text-left text-xs ${step === index ? "border-app-brand bg-app-brand-soft text-app-primary" : "border-app text-app-muted"}`}
+              className={`rounded-lg border px-3 py-2 text-left text-xs ${step === index ? "border-app-brand bg-app-brand-soft text-app-primary" : "border-app-border text-app-muted"}`}
             >
               <span className="font-semibold">{index + 1}</span>
               <span className="ml-2">{label}</span>
@@ -411,12 +412,12 @@ export default function ConsultantReview() {
         {error && (
           <div
             role="alert"
-            className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary"
+            className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary"
           >
             {error}
           </div>
         )}
-        <section className="space-y-5 rounded-xl border border-app bg-app-surface p-5 shadow-app-surface">
+        <section className="space-y-5 rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
           {step === 0 && (
             <>
               <h2 className="text-sm font-medium text-app-primary">
@@ -451,7 +452,7 @@ export default function ConsultantReview() {
                     onChange={(e) =>
                       update({ seniority: e.target.value || null })
                     }
-                    className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                    className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
                   >
                     <option value="">{t("common_not_specified")}</option>
                     <option value="Junior">{t("seniority_junior")}</option>
@@ -582,7 +583,7 @@ export default function ConsultantReview() {
                                 ),
                               })
                             }
-                            className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                            className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
                           >
                             {[0, 1, 2, 3, 4, 5].map((value) => (
                               <option key={value} value={value}>
@@ -625,7 +626,7 @@ export default function ConsultantReview() {
                   ) : (
                     <div
                       key={key}
-                      className="grid gap-2 rounded-lg border border-app bg-app-raised p-3 md:grid-cols-[1fr_110px_150px_auto]"
+                      className="grid gap-2 rounded-lg border border-app-border bg-app-raised p-3 md:grid-cols-[1fr_110px_150px_auto]"
                     >
                       <span className="text-sm text-app-primary">
                         {item.name || t("common_not_specified")}
@@ -644,13 +645,7 @@ export default function ConsultantReview() {
                         >
                           {t("consultant_edit")}
                         </button>
-                        <button
-                          type="button"
-                          className="text-xs text-app-danger"
-                          onClick={() => remove("skills", index)}
-                        >
-                          {t("common_remove")}
-                        </button>
+                        <RemoveButton onClick={() => remove("skills", index)} />
                       </div>
                     </div>
                   );
@@ -682,7 +677,7 @@ export default function ConsultantReview() {
                   ) : (
                     <div
                       key={index}
-                      className="grid gap-2 rounded-lg border border-app bg-app-raised p-3 md:grid-cols-[1fr_1fr_auto]"
+                      className="grid gap-2 rounded-lg border border-app-border bg-app-raised p-3 md:grid-cols-[1fr_1fr_auto]"
                     >
                       <span className="text-sm text-app-primary">
                         {item.name}
@@ -702,13 +697,7 @@ export default function ConsultantReview() {
                         >
                           {t("consultant_edit")}
                         </button>
-                        <button
-                          type="button"
-                          className="text-xs text-app-danger"
-                          onClick={() => remove("languages", index)}
-                        >
-                          {t("common_remove")}
-                        </button>
+                        <RemoveButton onClick={() => remove("languages", index)} />
                       </div>
                     </div>
                   ),
@@ -741,7 +730,7 @@ export default function ConsultantReview() {
                     ) : item.trim() ? (
                       <div
                         key={index}
-                        className="flex items-center justify-between rounded-lg border border-app bg-app-raised px-3 py-2"
+                        className="flex items-center justify-between rounded-lg border border-app-border bg-app-raised px-3 py-2"
                       >
                         <span className="text-xs text-app-secondary">
                           {item}
@@ -754,13 +743,7 @@ export default function ConsultantReview() {
                           >
                             {t("consultant_edit")}
                           </button>
-                          <button
-                            type="button"
-                            className="text-xs text-app-danger"
-                            onClick={() => remove("industries", index)}
-                          >
-                            {t("common_remove")}
-                          </button>
+                          <RemoveButton onClick={() => remove("industries", index)} />
                         </div>
                       </div>
                     ) : null,
@@ -811,7 +794,7 @@ export default function ConsultantReview() {
                     return (
                       <div
                         key={index}
-                        className="rounded-lg border border-app bg-app-raised p-3"
+                        className="rounded-lg border border-app-border bg-app-raised p-3"
                       >
                         <p className="text-sm text-app-primary">
                           {"company" in item
@@ -838,13 +821,7 @@ export default function ConsultantReview() {
                           >
                             {t("consultant_edit")}
                           </button>
-                          <button
-                            type="button"
-                            className="text-xs text-app-danger"
-                            onClick={() => remove(key, index)}
-                          >
-                            {t("common_remove")}
-                          </button>
+                          <RemoveButton onClick={() => remove(key, index)} />
                         </div>
                       </div>
                     );
@@ -896,7 +873,7 @@ export default function ConsultantReview() {
               <h2 className="text-sm font-medium text-app-primary">
                 {t("assignment_edit_step_review")}
               </h2>
-              <section className="space-y-3 border-b border-app pb-4">
+              <section className="space-y-3 border-b border-app-border pb-4">
                 <h3 className="text-xs font-medium text-app-primary">
                   {t("consultant_review_basic")}
                 </h3>
@@ -934,7 +911,7 @@ export default function ConsultantReview() {
                 </div>
               </section>
               {draft.summary?.trim() && (
-                <section className="space-y-2 border-b border-app pb-4">
+                <section className="space-y-2 border-b border-app-border pb-4">
                   <h3 className="text-xs font-medium text-app-primary">
                     {t("consultant_review_summary")}
                   </h3>
@@ -944,7 +921,7 @@ export default function ConsultantReview() {
                 </section>
               )}
               {draft.skills.length > 0 && (
-                <section className="space-y-2 border-b border-app pb-4">
+                <section className="space-y-2 border-b border-app-border pb-4">
                   <h3 className="text-xs font-medium text-app-primary">
                     {t("consultant_skills")}
                   </h3>
@@ -953,7 +930,7 @@ export default function ConsultantReview() {
                     .map((x, index) => (
                       <div
                         key={index}
-                        className="grid gap-2 border-b border-app py-2 text-xs md:grid-cols-[1fr_110px_150px]"
+                        className="grid gap-2 border-b border-app-border py-2 text-xs md:grid-cols-[1fr_110px_150px]"
                       >
                         <span>{x.name}</span>
                         <span>
@@ -967,7 +944,7 @@ export default function ConsultantReview() {
                 </section>
               )}
               {draft.languages.length > 0 && (
-                <section className="space-y-2 border-b border-app pb-4">
+                <section className="space-y-2 border-b border-app-border pb-4">
                   <h3 className="text-xs font-medium text-app-primary">
                     {t("consultant_languages")}
                   </h3>
@@ -976,7 +953,7 @@ export default function ConsultantReview() {
                     .map((x, index) => (
                       <div
                         key={index}
-                        className="flex justify-between border-b border-app py-2 text-xs"
+                        className="flex justify-between border-b border-app-border py-2 text-xs"
                       >
                         <span>{x.name}</span>
                         <span>

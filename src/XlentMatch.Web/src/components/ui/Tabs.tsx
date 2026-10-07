@@ -14,7 +14,7 @@ type TabsProps = {
 
 export function Tabs({ tabs, activeTab, onChange, renderLabel }: TabsProps) {
   return (
-    <div className="flex gap-0 border-b border-app">
+    <div className="flex gap-0 border-b border-app-border">
       {tabs.map((tab) => {
         const active = tab.id === activeTab;
         return (

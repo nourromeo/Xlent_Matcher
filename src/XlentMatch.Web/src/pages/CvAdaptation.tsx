@@ -33,7 +33,7 @@ function SourceTabs({
     { value: "paste", label: t("adaptation_paste") },
   ];
   return (
-    <div className="inline-flex rounded-lg border border-app bg-app p-1">
+    <div className="inline-flex rounded-lg border border-app-border bg-app p-1">
       {sourceTabs.map((tab) => (
         <button
           key={tab.value}
@@ -449,7 +449,7 @@ export default function CvAdaptation() {
         />
 
         <div className="grid xl:grid-cols-2 gap-5">
-          <section className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
+          <section className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-medium text-app-primary">
@@ -479,7 +479,7 @@ export default function CvAdaptation() {
                     setConsultantId(event.target.value);
                     clearResult();
                   }}
-                  className="w-full text-xs rounded px-3 py-2.5 bg-app-surface border border-app text-app-primary"
+                  className="w-full text-xs rounded px-3 py-2.5 bg-app-surface border border-app-border text-app-primary"
                 >
                   <option value="">{t("adaptation_select_consultant")}</option>
                   {consultants.map((consultant) => (
@@ -494,7 +494,7 @@ export default function CvAdaptation() {
             )}
 
             {consultantMode === "upload" && (
-              <label className="block space-y-2 rounded-lg border border-dashed border-app p-5 text-center cursor-pointer">
+              <label className="block space-y-2 rounded-lg border border-dashed border-app-border p-5 text-center cursor-pointer">
                 <span className="block text-left text-[11px] text-app-muted">
                   {t("adaptation_consultant_cv")}
                 </span>
@@ -543,7 +543,7 @@ export default function CvAdaptation() {
             )}
           </section>
 
-          <section className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
+          <section className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-medium text-app-primary">
@@ -573,7 +573,7 @@ export default function CvAdaptation() {
                     setAssignmentId(event.target.value);
                     clearResult();
                   }}
-                  className="w-full text-xs rounded px-3 py-2.5 bg-app-surface border border-app text-app-primary"
+                  className="w-full text-xs rounded px-3 py-2.5 bg-app-surface border border-app-border text-app-primary"
                 >
                   <option value="">{t("adaptation_select_assignment")}</option>
                   {assignments.map((assignment) => (
@@ -586,7 +586,7 @@ export default function CvAdaptation() {
             )}
 
             {assignmentMode === "upload" && (
-              <label className="block space-y-2 rounded-lg border border-dashed border-app p-5 text-center cursor-pointer">
+              <label className="block space-y-2 rounded-lg border border-dashed border-app-border p-5 text-center cursor-pointer">
                 <span className="block text-left text-[11px] text-app-muted">
                   {t("adaptation_assignment")}
                 </span>
@@ -636,7 +636,7 @@ export default function CvAdaptation() {
           </section>
         </div>
 
-        <section className="bg-app-surface border border-app rounded-xl p-4 shadow-app-surface">
+        <section className="bg-app-surface border border-app-border rounded-xl p-4 shadow-app-surface">
           <div className="flex items-center justify-between gap-5">
             <div>
               <p className="text-xs text-app-primary font-medium">
@@ -664,7 +664,7 @@ export default function CvAdaptation() {
         </section>
 
         {error && (
-          <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+          <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
             {error}
           </div>
         )}
@@ -690,7 +690,7 @@ export default function CvAdaptation() {
               </div>
             </div>
 
-            <section className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface">
+            <section className="rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
               <p className="mb-3 text-sm font-medium text-app-primary">
                 Overall assessment
               </p>
@@ -708,7 +708,7 @@ export default function CvAdaptation() {
               ].map(([title, items]) => (
                 <div
                   key={title as string}
-                  className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface"
+                  className="rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface"
                 >
                   <p className="mb-3 text-sm font-medium text-app-primary">
                     {title as string}
@@ -728,7 +728,7 @@ export default function CvAdaptation() {
               ))}
             </section>
 
-            <section className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface">
+            <section className="rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
               <p className="mb-3 text-sm font-medium text-app-primary">
                 Evidence from your CV
               </p>

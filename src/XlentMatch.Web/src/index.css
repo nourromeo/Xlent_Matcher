@@ -6,6 +6,33 @@
 @theme inline {
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* XLENT semantic design tokens exposed as native Tailwind utilities. */
+  --color-app: var(--color-bg);
+  --color-app-surface: var(--color-surface);
+  --color-app-raised: var(--color-surface-raised);
+  --color-app-border: var(--color-border);
+  --color-app-border-subtle: var(--color-border-subtle);
+  --color-app-primary: var(--color-text-primary);
+  --color-app-secondary: var(--color-text-secondary);
+  --color-app-muted: var(--color-text-muted);
+  --color-app-faint: var(--color-text-faint);
+  --color-app-on-brand: var(--color-on-brand);
+  --color-app-brand: var(--color-brand);
+  --color-app-brand-strong: var(--color-brand-strong);
+  --color-app-brand-text: var(--color-brand-text);
+  --color-app-brand-subtle: var(--color-brand-subtle);
+  --color-app-brand-soft: var(--color-brand-soft);
+  --color-app-success: var(--color-success);
+  --color-app-success-subtle: var(--color-success-subtle);
+  --color-app-warning: var(--color-warning);
+  --color-app-warning-subtle: var(--color-warning-subtle);
+  --color-app-danger: var(--color-danger);
+  --color-app-danger-strong: var(--color-danger-strong);
+  --color-app-danger-subtle: var(--color-danger-subtle);
+
+  --shadow-app-surface: var(--shadow-surface);
+  --shadow-app-modal: var(--shadow-modal);
 }
 
 html, body, #root {

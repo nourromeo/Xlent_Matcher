@@ -5,23 +5,21 @@ import {
   Search,
   Clock,
   CheckCircle,
-  Eye,
+  ChevronRight,
   Sparkles,
 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { Button } from "../components/ui/Button";
-import { LinkButton } from "../components/ui/LinkButton";
-import { SkillTag } from "../components/ui/SkillTag";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { EmptyState } from "../components/ui/EmptyState";
 import { PageHeader } from "../components/ui/PageHeader";
-import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { validateDocumentFile } from "../services/fileValidation";
 import { aiApi } from "../services/aiApi";
 import { formatDate } from "../services/localeFormat";
+import { DataTable } from "../components/ui/DataTable";
+import { RemoveButton } from "../components/ui/RemoveButton";
 import type {
   AssignmentApi,
   AssignmentRequirementApi,
@@ -202,7 +200,7 @@ export function NewAssignmentPage() {
               onChange={(event) =>
                 update({ type: event.target.value as "Mandatory" | "Desired" })
               }
-              className="w-full rounded border border-app bg-app-surface px-3 py-2 text-xs text-app-primary"
+              className="w-full rounded border border-app-border bg-app-surface px-3 py-2 text-xs text-app-primary"
             >
               <option value="Mandatory">{t("client_mandatory")}</option>
               <option value="Desired">{t("client_desired")}</option>
@@ -223,7 +221,7 @@ export function NewAssignmentPage() {
                     minYears: null,
                   })
                 }
-                className="w-full rounded border border-app bg-app-surface px-3 py-2 text-xs text-app-primary"
+                className="w-full rounded border border-app-border bg-app-surface px-3 py-2 text-xs text-app-primary"
               >
                 <option value="Not specified">
                   {t("common_not_specified")}
@@ -281,7 +279,7 @@ export function NewAssignmentPage() {
     index: number,
     language: boolean,
   ) => (
-    <div className="grid gap-2 rounded-lg border border-app bg-app-raised p-3 md:grid-cols-[minmax(0,1.6fr)_minmax(140px,1fr)_minmax(140px,1fr)_auto] md:items-center">
+    <div className="grid gap-2 rounded-lg border border-app-border bg-app-raised p-3 md:grid-cols-[minmax(0,1.6fr)_minmax(140px,1fr)_minmax(140px,1fr)_auto] md:items-center">
       <span className="text-sm text-app-primary">{requirement.name}</span>
       <span className="text-xs text-app-secondary">
         {requirement.type === "Mandatory"
@@ -306,13 +304,7 @@ export function NewAssignmentPage() {
         >
           {t("assignment_edit")}
         </button>
-        <button
-          type="button"
-          className="text-xs text-app-danger"
-          onClick={() => removeRequirement(index)}
-        >
-          {t("client_delete")}
-        </button>
+        <RemoveButton onClick={() => removeRequirement(index)} />
       </div>
     </div>
   );
@@ -445,7 +437,7 @@ export function NewAssignmentPage() {
                 disabled={!available}
                 aria-current={active ? "step" : undefined}
                 onClick={() => available && setStep(stepKey)}
-                className={`rounded-lg border px-3 py-2 text-left text-xs focus:outline-none focus:ring-2 focus:ring-app-brand ${active ? "border-app-brand bg-app-brand-soft text-app-primary" : available ? "border-app text-app-secondary hover:border-app-brand" : "border-app text-app-muted"}`}
+                className={`rounded-lg border px-3 py-2 text-left text-xs focus:outline-none focus:ring-2 focus:ring-app-brand ${active ? "border-app-brand bg-app-brand-soft text-app-primary" : available ? "border-app-border text-app-secondary hover:border-app-brand" : "border-app-border text-app-muted"}`}
               >
                 <span className="font-semibold">{index + 1}</span>
                 <span className="ml-2">{label}</span>
@@ -454,7 +446,7 @@ export function NewAssignmentPage() {
           })}
         </div>
         {step === "input" ? (
-          <div className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
+          <div className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_name")}{" "}
@@ -485,7 +477,7 @@ export function NewAssignmentPage() {
                   {t("client_ai_extraction")}
                 </span>
               </span>
-              <div className="flex gap-1 rounded-lg border border-app bg-app p-1 w-fit">
+              <div className="flex gap-1 rounded-lg border border-app-border bg-app p-1 w-fit">
                 <button
                   type="button"
                   onClick={() => setSourceMode("paste")}
@@ -519,7 +511,7 @@ export function NewAssignmentPage() {
                   <input
                     type="file"
                     accept=".pdf,.txt,application/pdf,text/plain"
-                    className="block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app file:bg-app-surface file:px-3 file:py-2"
+                    className="block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app-border file:bg-app-surface file:px-3 file:py-2"
                     onChange={(event) => {
                       const file = event.target.files?.[0] ?? null;
                       setError("");
@@ -585,11 +577,11 @@ export function NewAssignmentPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
+          <div className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
             {step === "basic" && (
               <>
                 {aiExtracted && (
-                  <div className="rounded-lg border border-app bg-app-raised px-3 py-2 text-xs text-app-secondary">
+                  <div className="rounded-lg border border-app-border bg-app-raised px-3 py-2 text-xs text-app-secondary">
                     {t("assignment_ai_review_indicator")}
                   </div>
                 )}
@@ -604,7 +596,7 @@ export function NewAssignmentPage() {
                     <select
                       value={seniority}
                       onChange={(event) => setSeniority(event.target.value)}
-                      className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"
+                      className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"
                     >
                       <option value="">{t("common_not_specified")}</option>
                       <option value="Junior">{t("seniority_junior")}</option>
@@ -625,7 +617,7 @@ export function NewAssignmentPage() {
                             event.target.value as typeof seniorityMatchMode,
                           )
                         }
-                        className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"
+                        className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"
                       >
                         <option value="Exact">{t("assignment_exact")}</option>
                         <option value="Minimum">
@@ -645,7 +637,7 @@ export function NewAssignmentPage() {
                         onChange={(event) =>
                           setMaximumSeniority(event.target.value)
                         }
-                        className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"
+                        className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"
                       >
                         <option value="">{t("client_select_maximum")}</option>
                         <option value="Junior">{t("seniority_junior")}</option>
@@ -727,12 +719,12 @@ export function NewAssignmentPage() {
                   {t("assignment_requirements_review_help")}
                 </p>
                 {aiExtracted && (
-                  <div className="rounded-lg border border-app bg-app-raised px-3 py-2 text-xs text-app-secondary">
+                  <div className="rounded-lg border border-app-border bg-app-raised px-3 py-2 text-xs text-app-secondary">
                     {t("assignment_ai_review_indicator")}
                   </div>
                 )}
                 {brief.trim() && (
-                  <details className="rounded-lg border border-app bg-app-surface px-3 py-2">
+                  <details className="rounded-lg border border-app-border bg-app-surface px-3 py-2">
                     <summary className="cursor-pointer text-xs text-app-secondary">
                       {t("client_view_source")}
                     </summary>
@@ -789,7 +781,7 @@ export function NewAssignmentPage() {
                                         "Mandatory" | "Desired",
                                     })
                                   }
-                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"
                                 >
                                   <option value="Mandatory">
                                     {t("client_mandatory")}
@@ -818,14 +810,7 @@ export function NewAssignmentPage() {
                                   }
                                 />
                               </label>
-                              <button
-                                type="button"
-                                aria-label={t("client_delete")}
-                                onClick={() => removeRequirement(index)}
-                                className="text-app-faint hover:text-app-secondary"
-                              >
-                                ×
-                              </button>
+                              <RemoveButton compact onClick={() => removeRequirement(index)} />
                               <button
                                 type="button"
                                 className="text-xs text-app-brand"
@@ -907,7 +892,7 @@ export function NewAssignmentPage() {
                                         "Mandatory" | "Desired",
                                     })
                                   }
-                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"
                                 >
                                   <option value="Mandatory">
                                     {t("client_mandatory")}
@@ -936,7 +921,7 @@ export function NewAssignmentPage() {
                                       minYears: null,
                                     })
                                   }
-                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"
                                 >
                                   <option value="Not specified">
                                     {t("common_not_specified")}
@@ -955,14 +940,7 @@ export function NewAssignmentPage() {
                                   </option>
                                 </select>
                               </label>
-                              <button
-                                type="button"
-                                aria-label={t("client_delete")}
-                                onClick={() => removeRequirement(index)}
-                                className="text-app-faint hover:text-app-secondary"
-                              >
-                                ×
-                              </button>
+                              <RemoveButton compact onClick={() => removeRequirement(index)} />
                               <button
                                 type="button"
                                 className="text-xs text-app-brand"
@@ -1005,7 +983,7 @@ export function NewAssignmentPage() {
                       {otherRequirements.map(({ requirement, index }) => (
                         <div
                           key={index}
-                          className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1fr)_minmax(150px,1fr)_32px] md:items-center"
+                          className="grid gap-2 rounded-lg border border-app-border bg-app-raised p-2 md:grid-cols-[minmax(180px,1fr)_minmax(150px,1fr)_32px] md:items-center"
                         >
                           <Input
                             aria-label={t("client_requirement_name")}
@@ -1025,7 +1003,7 @@ export function NewAssignmentPage() {
                                   "Mandatory" | "Desired",
                               })
                             }
-                            className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                            className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"
                           >
                             <option value="Mandatory">
                               {t("client_mandatory")}
@@ -1034,14 +1012,7 @@ export function NewAssignmentPage() {
                               {t("client_desired")}
                             </option>
                           </select>
-                          <button
-                            type="button"
-                            aria-label={t("client_delete")}
-                            onClick={() => removeRequirement(index)}
-                            className="text-app-faint hover:text-app-secondary"
-                          >
-                            ×
-                          </button>
+                          <RemoveButton compact onClick={() => removeRequirement(index)} />
                         </div>
                       ))}
                     </section>
@@ -1066,7 +1037,7 @@ export function NewAssignmentPage() {
                 <p className="text-xs text-app-muted">
                   {t("assignment_review_description")}
                 </p>
-                <section className="space-y-3 border-b border-app pb-4">
+                <section className="space-y-3 border-b border-app-border pb-4">
                   <h3 className="text-xs font-medium text-app-primary">
                     {t("assignment_review_basic")}
                   </h3>
@@ -1129,7 +1100,7 @@ export function NewAssignmentPage() {
                     items.map((item, index) => (
                       <div
                         key={`${item.id}-${index}`}
-                        className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_180px]"
+                        className="grid gap-1 border-b border-app-border py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_180px]"
                       >
                         <span className="text-app-primary">{item.name}</span>
                         <span className="text-app-muted">
@@ -1171,7 +1142,7 @@ export function NewAssignmentPage() {
                           {languages.map((item, index) => (
                             <div
                               key={`${item.id}-${index}`}
-                              className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_150px_150px]"
+                              className="grid gap-1 border-b border-app-border py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_150px_150px]"
                             >
                               <span className="text-app-primary">
                                 {item.name}
@@ -1201,7 +1172,7 @@ export function NewAssignmentPage() {
                           {other.map((item, index) => (
                             <div
                               key={`${item.id}-${index}`}
-                              className="flex justify-between border-b border-app py-2 text-xs last:border-0"
+                              className="flex justify-between border-b border-app-border py-2 text-xs last:border-0"
                             >
                               <span className="text-app-primary">
                                 {item.name}
@@ -1250,8 +1221,6 @@ export default function ClientAssignments() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [assignmentToDelete, setAssignmentToDelete] = useState<AssignmentApi | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -1278,52 +1247,16 @@ export default function ClientAssignments() {
     };
   }, []);
 
-  const deleteAssignment = async (assignment: AssignmentApi) => {
-    setDeletingId(assignment.id);
-    setError("");
-
-    try {
-      await assignmentsApi.remove(assignment.id);
-      setAssignments((current) =>
-        current.filter((item) => item.id !== assignment.id),
-      );
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t("client_delete_error"),
-      );
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
   const statusConfig = (status: AssignmentStatusApi) => {
     switch (status) {
       case "Draft":
-        return {
-          label: t("assignment_draft"),
-          tone: "neutral" as const,
-          icon: <Clock size={9} />,
-        };
+        return { label: t("assignment_draft"), tone: "neutral" as const, icon: <Clock size={9} /> };
       case "Matching":
-        return {
-          label: t("assignment_matching"),
-          tone: "neutral" as const,
-          icon: <Clock size={9} />,
-        };
+        return { label: t("assignment_matching"), tone: "neutral" as const, icon: <Clock size={9} /> };
       case "Closed":
-        return {
-          label: t("assignment_closed"),
-          tone: "neutral" as const,
-          icon: <Clock size={9} />,
-        };
+        return { label: t("assignment_closed"), tone: "neutral" as const, icon: <Clock size={9} /> };
       default:
-        return {
-          label: t("assignment_done"),
-          tone: "success" as const,
-          icon: <CheckCircle size={9} />,
-        };
+        return { label: t("assignment_done"), tone: "success" as const, icon: <CheckCircle size={9} /> };
     }
   };
 
@@ -1337,6 +1270,8 @@ export default function ClientAssignments() {
           : value === "Staff"
             ? t("seniority_staff")
             : value;
+
+  const seniorityRank: Record<string, number> = { Junior: 1, Mid: 2, Senior: 3, Staff: 4 };
 
   const filtered = assignments.filter((assignment) => {
     const search = query.trim().toLowerCase();
@@ -1356,7 +1291,6 @@ export default function ClientAssignments() {
 
   return (
     <div className="p-6 space-y-4">
-      <ConfirmDialog open={assignmentToDelete !== null} title={t("common_delete")} message={assignmentToDelete ? t("client_delete_confirm").replace("{title}", assignmentToDelete.title) : ""} onClose={() => setAssignmentToDelete(null)} onConfirm={async () => { if (assignmentToDelete) await deleteAssignment(assignmentToDelete); setAssignmentToDelete(null); }} />
       <PageHeader
         title={t("assignments_title")}
         meta={String(assignments.length) + " " + t("assignments_sub")}
@@ -1388,109 +1322,91 @@ export default function ClientAssignments() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+        <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
           {t("client_backend_error")}: {error}
         </div>
       )}
 
-      <div className="space-y-2">
-        {filtered.map((assignment) => {
-          const status = statusConfig(assignment.status);
-          const required = assignment.requirements.filter(
-            (requirement) => requirement.type === "Mandatory",
-          );
-          const preferred = assignment.requirements.filter(
-            (requirement) => requirement.type === "Desired",
-          );
-
-          return (
-            <div
-              key={assignment.id}
-              className="bg-app-surface border border-app rounded-lg px-5 py-4 shadow-app-surface"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-sm font-medium text-app-primary">
-                      {assignment.title}
-                    </h2>
-                    <StatusBadge tone={status.tone} icon={status.icon}>
-                      {status.label}
-                    </StatusBadge>
-                  </div>
-                  <p className="text-xs text-app-muted">
-                    {assignment.customerName || "—"} ·{" "}
-                    {displaySeniority(assignment.seniority ?? "—")} ·{" "}
-                    {assignment.location ||
-                      t("assignment_location_unspecified")}{" "}
-                    · {t("common_updated")}{" "}
-                    {formatDate(
-                      assignment.updatedAt || assignment.createdAt,
-                      locale,
-                    )}
+      <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+        <DataTable
+          columns={[
+            {
+              key: "assignment",
+              width: "29%",
+              header: t("assignment_title"),
+              sortable: true,
+              sortValue: (assignment) => assignment.title,
+              render: (assignment) => (
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-app-primary">{assignment.title}</p>
+                  <p className="truncate text-[10px] text-app-muted">
+                    {assignment.location || t("assignment_location_unspecified")}
                   </p>
-                  <p className="text-[11px] text-app-secondary mt-1 mb-2 max-w-3xl line-clamp-2">
-                    {assignment.description || "—"}
-                  </p>
-                  <p className="text-[10px] text-app-muted mb-2">
-                    {assignment.requirements.length} {t("client_requirements")}
-                    {assignment.minYearsExperience > 0
-                      ? ` · ${assignment.minYearsExperience}+ ${t("client_years_experience")}`
-                      : ""}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {required.map((requirement) => (
-                      <SkillTag
-                        key={requirement.id || requirement.name}
-                        variant="required"
-                      >
-                        {requirement.category === "HumanLanguage"
-                          ? `${t("client_language_prefix")}${requirement.name}`
-                          : requirement.name}
-                      </SkillTag>
-                    ))}
-                    {preferred.map((requirement) => (
-                      <SkillTag key={requirement.id || requirement.name}>
-                        {requirement.category === "HumanLanguage"
-                          ? `${t("client_language_prefix")}${requirement.name}`
-                          : requirement.name}
-                      </SkillTag>
-                    ))}
-                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <LinkButton
-                    to={"/client-assignments/" + assignment.id}
-                    variant="secondary"
-                    icon={<Eye size={12} />}
-                  >
-                    {t("assignment_view")}
-                  </LinkButton>
-                  <button
-                    type="button"
-                    onClick={() => setAssignmentToDelete(assignment)}
-                    disabled={deletingId === assignment.id}
-                    className="text-[11px] px-2.5 py-1.5 rounded border disabled:opacity-50"
-                    style={{
-                      color: "var(--color-danger)",
-                      borderColor: "var(--color-danger)",
-                      background: "transparent",
-                    }}
-                  >
-                    {deletingId === assignment.id
-                      ? t("client_deleting")
-                      : t("client_delete")}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {filtered.length === 0 && (
-        <EmptyState
-          title={
+              ),
+            },
+            {
+              key: "client",
+              width: "19%",
+              header: t("assignment_client"),
+              sortable: true,
+              sortValue: (assignment) => assignment.customerName,
+              render: (assignment) => <span className="truncate">{assignment.customerName || "—"}</span>,
+            },
+            {
+              key: "seniority",
+              width: "12%",
+              header: t("assignment_seniority"),
+              sortable: true,
+              sortValue: (assignment) => seniorityRank[assignment.seniority ?? ""] ?? 99,
+              render: (assignment) => assignment.seniority ? displaySeniority(assignment.seniority) : "—",
+            },
+            {
+              key: "requirements",
+              width: "12%",
+              header: t("client_requirements"),
+              sortable: true,
+              sortValue: (assignment) => assignment.requirements.length,
+              render: (assignment) => <span className="font-mono">{assignment.requirements.length}</span>,
+            },
+            {
+              key: "updated",
+              width: "16%",
+              header: t("common_updated"),
+              sortable: true,
+              sortValue: (assignment) => new Date(assignment.updatedAt || assignment.createdAt),
+              render: (assignment) => formatDate(assignment.updatedAt || assignment.createdAt, locale),
+            },
+            {
+              key: "status",
+              width: "8%",
+              header: "Status",
+              sortable: true,
+              sortValue: (assignment) => assignment.status,
+              render: (assignment) => {
+                const status = statusConfig(assignment.status);
+                return (
+                  <StatusBadge tone={status.tone} icon={status.icon}>
+                    {status.label}
+                  </StatusBadge>
+                );
+              },
+            },
+            {
+              key: "navigation",
+              width: "4%",
+              header: "",
+              render: () => <ChevronRight size={15} className="text-app-faint" aria-hidden="true" />,
+            },
+          ]}
+          rows={filtered}
+          pagination
+          pageSizeOptions={[25, 50, 100]}
+          paginationLabel={t("assignments_sub")}
+          rowKey={(assignment) => String(assignment.id)}
+          onRowClick={(assignment) => navigate(`/client-assignments/${assignment.id}`)}
+          rowAriaLabel={(assignment) => `${t("assignment_view")} ${assignment.title}`}
+          emptyMessage={
             loading
               ? t("assignments_loading")
               : query
@@ -1498,7 +1414,9 @@ export default function ClientAssignments() {
                 : t("assignments_empty")
           }
         />
-      )}
+
+        
+      </div>
     </div>
   );
 }
