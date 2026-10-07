@@ -1358,7 +1358,7 @@ export default function ClientAssignments() {
           columns={[
             {
               key: "assignment",
-              width: "30%",
+              width: "29%",
               header: t("assignment_title"),
               sortable: true,
               sortValue: (assignment) => assignment.title,
@@ -1373,7 +1373,7 @@ export default function ClientAssignments() {
             },
             {
               key: "client",
-              width: "20%",
+              width: "19%",
               header: t("assignment_client"),
               sortable: true,
               sortValue: (assignment) => assignment.customerName,
@@ -1420,7 +1420,7 @@ export default function ClientAssignments() {
             },
             {
               key: "navigation",
-              width: "2%",
+              width: "4%",
               header: "",
               render: () => <ChevronRight size={15} className="text-app-faint" aria-hidden="true" />,
             },
