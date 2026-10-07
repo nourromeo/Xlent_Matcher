@@ -200,7 +200,7 @@ export function NewAssignmentPage() {
               onChange={(event) =>
                 update({ type: event.target.value as "Mandatory" | "Desired" })
               }
-              className="w-full rounded border border-app bg-app-surface px-3 py-2 text-xs text-app-primary"
+              className="w-full rounded border border-app-border bg-app-surface px-3 py-2 text-xs text-app-primary"
             >
               <option value="Mandatory">{t("client_mandatory")}</option>
               <option value="Desired">{t("client_desired")}</option>
@@ -221,7 +221,7 @@ export function NewAssignmentPage() {
                     minYears: null,
                   })
                 }
-                className="w-full rounded border border-app bg-app-surface px-3 py-2 text-xs text-app-primary"
+                className="w-full rounded border border-app-border bg-app-surface px-3 py-2 text-xs text-app-primary"
               >
                 <option value="Not specified">
                   {t("common_not_specified")}
@@ -279,7 +279,7 @@ export function NewAssignmentPage() {
     index: number,
     language: boolean,
   ) => (
-    <div className="grid gap-2 rounded-lg border border-app bg-app-raised p-3 md:grid-cols-[minmax(0,1.6fr)_minmax(140px,1fr)_minmax(140px,1fr)_auto] md:items-center">
+    <div className="grid gap-2 rounded-lg border border-app-border bg-app-raised p-3 md:grid-cols-[minmax(0,1.6fr)_minmax(140px,1fr)_minmax(140px,1fr)_auto] md:items-center">
       <span className="text-sm text-app-primary">{requirement.name}</span>
       <span className="text-xs text-app-secondary">
         {requirement.type === "Mandatory"
@@ -437,7 +437,7 @@ export function NewAssignmentPage() {
                 disabled={!available}
                 aria-current={active ? "step" : undefined}
                 onClick={() => available && setStep(stepKey)}
-                className={`rounded-lg border px-3 py-2 text-left text-xs focus:outline-none focus:ring-2 focus:ring-app-brand ${active ? "border-app-brand bg-app-brand-soft text-app-primary" : available ? "border-app text-app-secondary hover:border-app-brand" : "border-app text-app-muted"}`}
+                className={`rounded-lg border px-3 py-2 text-left text-xs focus:outline-none focus:ring-2 focus:ring-app-brand ${active ? "border-app-brand bg-app-brand-soft text-app-primary" : available ? "border-app-border text-app-secondary hover:border-app-brand" : "border-app-border text-app-muted"}`}
               >
                 <span className="font-semibold">{index + 1}</span>
                 <span className="ml-2">{label}</span>
@@ -446,7 +446,7 @@ export function NewAssignmentPage() {
           })}
         </div>
         {step === "input" ? (
-          <div className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
+          <div className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_name")}{" "}
@@ -477,7 +477,7 @@ export function NewAssignmentPage() {
                   {t("client_ai_extraction")}
                 </span>
               </span>
-              <div className="flex gap-1 rounded-lg border border-app bg-app p-1 w-fit">
+              <div className="flex gap-1 rounded-lg border border-app-border bg-app p-1 w-fit">
                 <button
                   type="button"
                   onClick={() => setSourceMode("paste")}
@@ -511,7 +511,7 @@ export function NewAssignmentPage() {
                   <input
                     type="file"
                     accept=".pdf,.txt,application/pdf,text/plain"
-                    className="block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app file:bg-app-surface file:px-3 file:py-2"
+                    className="block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app-border file:bg-app-surface file:px-3 file:py-2"
                     onChange={(event) => {
                       const file = event.target.files?.[0] ?? null;
                       setError("");
@@ -577,11 +577,11 @@ export function NewAssignmentPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-app-surface border border-app rounded-xl p-5 space-y-4 shadow-app-surface">
+          <div className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
             {step === "basic" && (
               <>
                 {aiExtracted && (
-                  <div className="rounded-lg border border-app bg-app-raised px-3 py-2 text-xs text-app-secondary">
+                  <div className="rounded-lg border border-app-border bg-app-raised px-3 py-2 text-xs text-app-secondary">
                     {t("assignment_ai_review_indicator")}
                   </div>
                 )}
@@ -596,7 +596,7 @@ export function NewAssignmentPage() {
                     <select
                       value={seniority}
                       onChange={(event) => setSeniority(event.target.value)}
-                      className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"
+                      className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"
                     >
                       <option value="">{t("common_not_specified")}</option>
                       <option value="Junior">{t("seniority_junior")}</option>
@@ -617,7 +617,7 @@ export function NewAssignmentPage() {
                             event.target.value as typeof seniorityMatchMode,
                           )
                         }
-                        className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"
+                        className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"
                       >
                         <option value="Exact">{t("assignment_exact")}</option>
                         <option value="Minimum">
@@ -637,7 +637,7 @@ export function NewAssignmentPage() {
                         onChange={(event) =>
                           setMaximumSeniority(event.target.value)
                         }
-                        className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"
+                        className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"
                       >
                         <option value="">{t("client_select_maximum")}</option>
                         <option value="Junior">{t("seniority_junior")}</option>
@@ -719,12 +719,12 @@ export function NewAssignmentPage() {
                   {t("assignment_requirements_review_help")}
                 </p>
                 {aiExtracted && (
-                  <div className="rounded-lg border border-app bg-app-raised px-3 py-2 text-xs text-app-secondary">
+                  <div className="rounded-lg border border-app-border bg-app-raised px-3 py-2 text-xs text-app-secondary">
                     {t("assignment_ai_review_indicator")}
                   </div>
                 )}
                 {brief.trim() && (
-                  <details className="rounded-lg border border-app bg-app-surface px-3 py-2">
+                  <details className="rounded-lg border border-app-border bg-app-surface px-3 py-2">
                     <summary className="cursor-pointer text-xs text-app-secondary">
                       {t("client_view_source")}
                     </summary>
@@ -781,7 +781,7 @@ export function NewAssignmentPage() {
                                         "Mandatory" | "Desired",
                                     })
                                   }
-                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"
                                 >
                                   <option value="Mandatory">
                                     {t("client_mandatory")}
@@ -892,7 +892,7 @@ export function NewAssignmentPage() {
                                         "Mandatory" | "Desired",
                                     })
                                   }
-                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"
                                 >
                                   <option value="Mandatory">
                                     {t("client_mandatory")}
@@ -921,7 +921,7 @@ export function NewAssignmentPage() {
                                       minYears: null,
                                     })
                                   }
-                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                                  className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"
                                 >
                                   <option value="Not specified">
                                     {t("common_not_specified")}
@@ -983,7 +983,7 @@ export function NewAssignmentPage() {
                       {otherRequirements.map(({ requirement, index }) => (
                         <div
                           key={index}
-                          className="grid gap-2 rounded-lg border border-app bg-app-raised p-2 md:grid-cols-[minmax(180px,1fr)_minmax(150px,1fr)_32px] md:items-center"
+                          className="grid gap-2 rounded-lg border border-app-border bg-app-raised p-2 md:grid-cols-[minmax(180px,1fr)_minmax(150px,1fr)_32px] md:items-center"
                         >
                           <Input
                             aria-label={t("client_requirement_name")}
@@ -1003,7 +1003,7 @@ export function NewAssignmentPage() {
                                   "Mandatory" | "Desired",
                               })
                             }
-                            className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"
+                            className="w-full text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"
                           >
                             <option value="Mandatory">
                               {t("client_mandatory")}
@@ -1037,7 +1037,7 @@ export function NewAssignmentPage() {
                 <p className="text-xs text-app-muted">
                   {t("assignment_review_description")}
                 </p>
-                <section className="space-y-3 border-b border-app pb-4">
+                <section className="space-y-3 border-b border-app-border pb-4">
                   <h3 className="text-xs font-medium text-app-primary">
                     {t("assignment_review_basic")}
                   </h3>
@@ -1100,7 +1100,7 @@ export function NewAssignmentPage() {
                     items.map((item, index) => (
                       <div
                         key={`${item.id}-${index}`}
-                        className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_180px]"
+                        className="grid gap-1 border-b border-app-border py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_180px]"
                       >
                         <span className="text-app-primary">{item.name}</span>
                         <span className="text-app-muted">
@@ -1142,7 +1142,7 @@ export function NewAssignmentPage() {
                           {languages.map((item, index) => (
                             <div
                               key={`${item.id}-${index}`}
-                              className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_150px_150px]"
+                              className="grid gap-1 border-b border-app-border py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_150px_150px]"
                             >
                               <span className="text-app-primary">
                                 {item.name}
@@ -1172,7 +1172,7 @@ export function NewAssignmentPage() {
                           {other.map((item, index) => (
                             <div
                               key={`${item.id}-${index}`}
-                              className="flex justify-between border-b border-app py-2 text-xs last:border-0"
+                              className="flex justify-between border-b border-app-border py-2 text-xs last:border-0"
                             >
                               <span className="text-app-primary">
                                 {item.name}
@@ -1322,12 +1322,12 @@ export default function ClientAssignments() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+        <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
           {t("client_backend_error")}: {error}
         </div>
       )}
 
-      <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
+      <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
         <DataTable
           columns={[
             {
