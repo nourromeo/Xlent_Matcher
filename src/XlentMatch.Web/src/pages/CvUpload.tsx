@@ -309,7 +309,7 @@ export default function CvUpload() {
           { label: t("upload_saved_indexed"), value: indexed },
           { label: t("upload_errors"), value: errors },
         ].map((item) => (
-          <div key={item.label} className="bg-app-surface border border-app rounded-lg px-4 py-3 shadow-app-surface">
+          <div key={item.label} className="bg-app-surface border border-app-border rounded-lg px-4 py-3 shadow-app-surface">
             <p className="text-xl font-semibold font-mono text-app-primary">{item.value}</p>
             <p className="text-[10px] text-app-faint mt-0.5">{item.label}</p>
           </div>
@@ -349,18 +349,18 @@ export default function CvUpload() {
         <p className="text-xs text-app-faint mt-1">{t("upload_flow")}</p>
       </div>
 
-      <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-[11px] text-app-muted">
+      <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-[11px] text-app-muted">
         {t("upload_history_note")}
       </div>
 
       {error && (
-        <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+        <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
           {error}
         </div>
       )}
 
-      <div className="bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
-        <div className="px-4 py-2.5 border-b border-app flex items-center justify-between">
+      <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+        <div className="px-4 py-2.5 border-b border-app-border flex items-center justify-between">
           <span className="text-xs font-medium text-app-primary">{t("upload_processing_history")}</span>
           <span className="text-[10px] text-app-faint">{loading ? t("common_loading") : `${files.length} ${t("upload_files")}`}</span>
         </div>
@@ -407,7 +407,7 @@ export default function CvUpload() {
               <button
                 type="button"
                 onClick={() => { localStorage.setItem(`xlent-cv-review-${file.id}`, JSON.stringify(file.draft)); navigate(`/cv-upload/review?uploadId=${file.id}`); }}
-                className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
+                className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app-border rounded px-2.5 py-1.5"
               >
                   <Eye size={11} /> {t("upload_review")}
               </button>
@@ -416,7 +416,7 @@ export default function CvUpload() {
             {file.status === "Indexed" && file.consultantId && (
               <Link
                 to={"/consultants/" + file.consultantId}
-                className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app rounded px-2.5 py-1.5"
+                className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app-border rounded px-2.5 py-1.5"
               >
                 <Eye size={11} /> {t("consultants_view")}
               </Link>
@@ -467,7 +467,7 @@ export default function CvUpload() {
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">{t("consultant_seniority_label")}</span>
                   {draft.suggestedSeniority && <span className="text-[10px] text-app-brand block mb-1">{t("upload_ai_suggestion")} {draft.suggestedSeniority}</span>}
-                  <select value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("common_not_specified")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>
+                  <select value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("common_not_specified")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">{t("consultant_total_experience")}</span>
@@ -550,13 +550,13 @@ export default function CvUpload() {
               </div>
 
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
-              <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+              <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
                 <p className="text-xs font-medium text-app-primary">{t("upload_languages")} ({draft.languages.length})</p>
                 <div className="hidden grid-cols-[1fr_1fr_auto] gap-2 px-3 text-[10px] text-app-muted md:grid"><span>{t("consultant_language")}</span><span>{t("upload_language_proficiency")}</span><span>{t("common_actions")}</span></div>
                 {draft.languages.map((item, index) => (
                   <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                     <Input aria-label={t("consultant_language")} placeholder={t("consultant_language")} value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                    <select aria-label={t("upload_language_proficiency")} value={item.proficiency} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
+                    <select aria-label={t("upload_language_proficiency")} value={item.proficiency} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
                     <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label={t("upload_remove_language")}><X size={12} /></button>
                   </div>
                 ))}
@@ -566,13 +566,13 @@ export default function CvUpload() {
 
 </div>
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
-              <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+              <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-app-primary">{t("upload_experience_section")} ({draft.experiences.length})</p>
                   <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...draft.experiences, { company: "", role: "", description: null, startDate: null, endDate: null }] })}>{t("upload_add_experience")}</Button>
                 </div>
                 {draft.experiences.map((item, index) => (
-                  <div key={index} className="rounded-md border border-app bg-app-surface p-3 space-y-2">
+                  <div key={index} className="rounded-md border border-app-border bg-app-surface p-3 space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       <Input aria-label={t("upload_role")} placeholder={t("upload_role")} value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
                       <Input aria-label={t("consultant_company")} placeholder={t("consultant_company")} value={item.company} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
@@ -589,13 +589,13 @@ export default function CvUpload() {
 </div>
               <div className={reviewStep === 3 ? "space-y-4" : "hidden"}>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-medium text-app-primary">{t("upload_projects")} ({draft.projects.length})</p>
                     <Button variant="ghost" onClick={() => updateDraft({ ...draft, projects: [...draft.projects, { name: "", description: null, technologies: null }] })}>{t("common_add")} {t("upload_projects").toLowerCase()}</Button>
                   </div>
                   {draft.projects.map((item, index) => (
-                    <div key={index} className="rounded border border-app bg-app-surface p-2 space-y-2">
+                    <div key={index} className="rounded border border-app-border bg-app-surface p-2 space-y-2">
                       <Input aria-label={t("upload_project_name")} placeholder={t("upload_project_name")} value={item.name} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
                       <Input aria-label={t("upload_technologies")} placeholder={t("upload_technologies")} value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
                       <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
@@ -604,7 +604,7 @@ export default function CvUpload() {
                   ))}
                 </div>
 
-                <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-medium text-app-primary">{t("upload_education")} ({draft.education.length})</p>
                     <Button variant="ghost" onClick={() => updateDraft({ ...draft, education: [...draft.education, { degree: "", school: null, year: null }] })}>{t("common_add")} {t("upload_education").toLowerCase()}</Button>
@@ -619,7 +619,7 @@ export default function CvUpload() {
                   ))}
                 </div>
 
-                <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-medium text-app-primary">{t("upload_certifications")} ({draft.certifications.length})</p>
                     <Button variant="ghost" onClick={() => updateDraft({ ...draft, certifications: [...draft.certifications, { name: "", issuer: null, issuedDate: null }] })}>{t("common_add")} {t("upload_certifications").toLowerCase()}</Button>
@@ -634,7 +634,7 @@ export default function CvUpload() {
                   ))}
                 </div>
 
-                <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
+                <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-medium text-app-primary">{t("upload_industries")} ({draft.industries.length})</p>
                     <Button variant="ghost" onClick={() => updateDraft({ ...draft, industries: [...draft.industries, ""] })}>{t("common_add")} {t("upload_industries").toLowerCase()}</Button>
