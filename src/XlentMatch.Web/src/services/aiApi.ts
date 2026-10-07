@@ -60,10 +60,12 @@ export type TemporaryAssignmentDraft = {
 };
 
 export type CvAdaptationSuggestion = {
-  summary: string;
-  highlightedExperiences: string[];
-  adaptedCvText: string;
-  notes: string[];
+  overallAssessment: string;
+  strengths: string[];
+  relevantExperience: string[];
+  missingOrWeakAreas: string[];
+  suggestedImprovements: string[];
+  evidence: string[];
 };
 
 function extractionForm(file?: File, text?: string) {
