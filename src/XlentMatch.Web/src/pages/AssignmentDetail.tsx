@@ -105,7 +105,7 @@ function RequirementRuleEditor({ category, type, requirements, onChange }: {
         <div key={item.id + ":" + item.name} className="grid grid-cols-[1fr_130px] items-center gap-2">
           <span className="text-[10px] text-app-muted">{item.name} · {category === "HumanLanguage" ? t("assignment_language_proficiency") : t("assignment_minimum_years")}</span>
           {category === "HumanLanguage" ? (
-            <select aria-label={`${item.name} ${t("assignment_language_proficiency")}`} value={item.proficiency ?? "Not specified"} onChange={(event) => onChange(item.name, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
+            <select aria-label={`${item.name} ${t("assignment_language_proficiency")}`} value={item.proficiency ?? "Not specified"} onChange={(event) => onChange(item.name, { proficiency: event.target.value as AssignmentRequirementApi["proficiency"], minLevel: null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
           ) : (
             <Input type="number" min={0} aria-label={`${item.name} ${t("assignment_minimum_years")}`} value={item.minYears ?? ""} placeholder={t("matching_no_minimum")}
               onChange={(event) => onChange(item.name, { minYears: event.target.value ? Number(event.target.value) : null })} />
@@ -310,14 +310,14 @@ export default function AssignmentDetail() {
       />
 
       {error && (
-        <div className="mx-6 mt-4 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+        <div className="mx-6 mt-4 rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
           {error}
         </div>
       )}
 
       <div className="flex-1 overflow-auto bg-app">
         <div className="p-6 space-y-5 max-w-6xl mx-auto">
-          <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+          <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-medium text-app-primary">{t("assignment_overview")}</h2>
               <span className="text-[10px] text-app-muted">{t("assignment_client_brief")}</span>
@@ -331,7 +331,7 @@ export default function AssignmentDetail() {
           </section>
 
           <section className="grid md:grid-cols-2 gap-5">
-            <div className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+            <div className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-sm font-medium text-app-primary">{t("assignment_required_skills")}</h2>
                 <span className="text-[10px] text-app-muted">{t("assignment_must_have")}</span>
@@ -345,7 +345,7 @@ export default function AssignmentDetail() {
               </div>
             </div>
 
-            <div className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+            <div className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-sm font-medium text-app-primary">{t("assignment_preferred_skills")}</h2>
                 <span className="text-[10px] text-app-muted">{t("assignment_nice_have")}</span>
@@ -362,7 +362,7 @@ export default function AssignmentDetail() {
 
           <section className="grid md:grid-cols-2 gap-5">
             {(assignment.seniority || assignment.minYearsExperience > 0 || viewSeniorityRequirement) && (
-              <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+              <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
                 <h2 className="text-sm font-medium text-app-primary mb-4">{t("assignment_experience_seniority")}</h2>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   {assignment.seniority && <div><p className="text-[10px] text-app-muted">{t("assignment_seniority")}</p><p className="text-sm text-app-secondary mt-1">{displaySeniority(assignment.seniority)}</p></div>}
@@ -374,7 +374,7 @@ export default function AssignmentDetail() {
             )}
 
             {languageRequirements.length > 0 && (
-              <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+              <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
                 <h2 className="text-sm font-medium text-app-primary mb-4">{t("assignment_human_languages")}</h2>
                 <div className="space-y-2">
                   {languageRequirements.map((requirement) => (
@@ -389,7 +389,7 @@ export default function AssignmentDetail() {
           </section>
 
           {otherRequirements.length > 0 && (
-            <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
+            <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
               <h2 className="text-sm font-medium text-app-primary mb-3">{t("assignment_other_requirements")}</h2>
               <div className="flex flex-wrap gap-2">{otherRequirements.map((requirement) => <SkillTag key={requirement.id + ":" + requirement.name}>{requirement.name}</SkillTag>)}</div>
             </section>
@@ -427,14 +427,14 @@ export default function AssignmentDetail() {
                   const value = event.target.value || null;
                   setDraft({ ...draft, seniority: value });
                   setSeniorityRequirement((current) => value ? { ...(current ?? { id: 0, assignmentId: draft.id, category: "Seniority", type: "Mandatory", minYears: null, minLevel: null, proficiency: null, matchMode: "Exact", maximumSeniority: null }), name: value } : null);
-                }} className="w-full rounded-md border border-app bg-app-surface px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand">
+                }} className="w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand">
                   <option value="">{t("common_not_specified")}</option>
                   <option value="Junior">{t("seniority_junior")}</option>
                   <option value="Mid">{t("seniority_mid")}</option>
                   <option value="Senior">{t("seniority_senior")}</option>
                   <option value="Staff">{t("seniority_staff")}</option>
                 </select>
-                {seniorityRequirement && <div className="mt-2 grid grid-cols-2 gap-2"><select aria-label={t("assignment_seniority_mode")} value={seniorityRequirement.matchMode ?? "Exact"} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, matchMode: event.target.value as "Exact" | "Minimum" | "Range", maximumSeniority: event.target.value === "Range" ? seniorityRequirement.maximumSeniority : null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="Exact">{t("assignment_exact")}</option><option value="Minimum">{t("assignment_minimum")}</option><option value="Range">{t("assignment_range")}</option></select>{seniorityRequirement.matchMode === "Range" && <select aria-label={t("assignment_maximum_seniority")} value={seniorityRequirement.maximumSeniority ?? ""} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, maximumSeniority: event.target.value || null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app text-app-primary"><option value="">{t("assignment_maximum")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>}</div>}
+                {seniorityRequirement && <div className="mt-2 grid grid-cols-2 gap-2"><select aria-label={t("assignment_seniority_mode")} value={seniorityRequirement.matchMode ?? "Exact"} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, matchMode: event.target.value as "Exact" | "Minimum" | "Range", maximumSeniority: event.target.value === "Range" ? seniorityRequirement.maximumSeniority : null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"><option value="Exact">{t("assignment_exact")}</option><option value="Minimum">{t("assignment_minimum")}</option><option value="Range">{t("assignment_range")}</option></select>{seniorityRequirement.matchMode === "Range" && <select aria-label={t("assignment_maximum_seniority")} value={seniorityRequirement.maximumSeniority ?? ""} onChange={(event) => setSeniorityRequirement({ ...seniorityRequirement, maximumSeniority: event.target.value || null })} className="text-xs rounded px-2 py-2 bg-app-surface border border-app-border text-app-primary"><option value="">{t("assignment_maximum")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>}</div>}
               </FormField>
               <FormField label={t("assignment_availability")}>
                 <Input value={draft.availability ?? ""} onChange={(event) => setDraft({ ...draft, availability: event.target.value || null })} />
