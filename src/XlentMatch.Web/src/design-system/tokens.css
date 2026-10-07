@@ -91,6 +91,8 @@ html.light {
 .text-app-danger { color: var(--color-danger); }
 .text-app-on-brand { color: var(--color-on-brand); }
 .bg-app-danger { background-color: var(--color-danger-strong); }
+.bg-app-danger-soft { background-color: var(--color-danger-subtle); }
+.hover-bg-app-danger-subtle:hover { background-color: color-mix(in srgb, var(--color-danger) 16%, transparent); }
 .bg-app-success-subtle { background-color: var(--color-success-subtle); }
 .bg-app-danger-subtle { background-color: var(--color-danger-subtle); }
 .border-app-success { border-color: var(--color-success); }
