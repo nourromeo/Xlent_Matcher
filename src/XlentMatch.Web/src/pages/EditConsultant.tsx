@@ -188,7 +188,7 @@ export default function EditConsultant() {
     );
 
   const panel = (title: string, children: ReactNode) => (
-    <section className="rounded-xl border border-app bg-app-surface p-5 space-y-4">
+    <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-4">
       <h2 className="text-sm font-medium text-app-primary">{title}</h2>
       {children}
     </section>
@@ -228,7 +228,7 @@ export default function EditConsultant() {
     return (
       <div
         key={`${collection}-${index}`}
-        className="rounded-lg border border-app bg-app-raised"
+        className="rounded-lg border border-app-border bg-app-raised"
       >
         <button
           type="button"
@@ -247,7 +247,7 @@ export default function EditConsultant() {
           <span className="text-xs text-app-muted">{isOpen ? "−" : "+"}</span>
         </button>
         {isOpen && (
-          <div className="border-t border-app p-3 space-y-3">
+          <div className="border-t border-app-border p-3 space-y-3">
             {children}
             <div className="flex gap-2">
               <Button onClick={() => setOpen(null)}>
@@ -294,7 +294,7 @@ export default function EditConsultant() {
               type="button"
               key={item}
               onClick={() => setStep(item)}
-              className={`rounded-lg border px-3 py-2 text-left text-xs ${step === item ? "border-app-brand bg-app-brand-soft text-app-primary" : "border-app text-app-muted"}`}
+              className={`rounded-lg border px-3 py-2 text-left text-xs ${step === item ? "border-app-brand bg-app-brand-soft text-app-primary" : "border-app-border text-app-muted"}`}
             >
               <span className="font-semibold">{index + 1}</span>
               <span className="ml-2">
@@ -310,7 +310,7 @@ export default function EditConsultant() {
           ))}
         </div>
         {error && (
-          <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+          <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
             {error}
           </div>
         )}
@@ -347,7 +347,7 @@ export default function EditConsultant() {
                       onChange={(e) =>
                         update({ seniority: e.target.value || null })
                       }
-                      className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                      className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
                     >
                       <option value="">{t("common_not_specified")}</option>
                       <option value="Junior">{t("seniority_junior")}</option>
@@ -369,7 +369,7 @@ export default function EditConsultant() {
                               : draft.availableAgainDate,
                         })
                       }
-                      className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                      className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
                     >
                       <option value="Available">
                         {t("availability_available")}
@@ -512,7 +512,7 @@ export default function EditConsultant() {
                                 level: Number(e.target.value),
                               })
                             }
-                            className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                            className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
                           >
                             {[0, 1, 2, 3, 4, 5].map((level) => (
                               <option key={level} value={level}>
@@ -552,7 +552,7 @@ export default function EditConsultant() {
                   ) : (
                     <div
                       key={`${item.id}-${index}`}
-                      className="flex flex-wrap items-center gap-3 rounded-lg border border-app bg-app-raised p-3"
+                      className="flex flex-wrap items-center gap-3 rounded-lg border border-app-border bg-app-raised p-3"
                     >
                       <span className="min-w-[150px] flex-1 text-sm font-medium text-app-primary">
                         {item.name || t("common_not_specified")}
@@ -630,7 +630,7 @@ export default function EditConsultant() {
                               proficiency: e.target.value,
                             })
                           }
-                          className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                          className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
                         >
                           <option value="Not specified">
                             {t("common_not_specified")}
@@ -660,7 +660,7 @@ export default function EditConsultant() {
                   ) : (
                     <div
                       key={`${item.id}-${index}`}
-                      className="flex flex-wrap items-center gap-3 rounded-lg border border-app bg-app-raised p-3"
+                      className="flex flex-wrap items-center gap-3 rounded-lg border border-app-border bg-app-raised p-3"
                     >
                       <span className="flex-1 text-sm text-app-primary">
                         {item.name}
@@ -740,7 +740,7 @@ export default function EditConsultant() {
                   ) : (
                     <div
                       key={`${item.id}-${index}`}
-                      className="flex gap-2 rounded-lg border border-app bg-app-raised p-3"
+                      className="flex gap-2 rounded-lg border border-app-border bg-app-raised p-3"
                     >
                       <span className="flex-1 text-sm text-app-primary">
                         {item.name || t("common_not_specified")}
@@ -1059,7 +1059,7 @@ export default function EditConsultant() {
             <p className="text-xs text-app-muted">
               {t("consultant_review_description")}
             </p>
-            <section className="space-y-3 border-b border-app pb-4">
+            <section className="space-y-3 border-b border-app-border pb-4">
               <h3 className="text-xs font-medium text-app-primary">
                 {t("consultant_review_basic")}
               </h3>
@@ -1098,7 +1098,7 @@ export default function EditConsultant() {
               </div>
             </section>
             {draft.summary?.trim() && (
-              <section className="space-y-2 border-b border-app pb-4">
+              <section className="space-y-2 border-b border-app-border pb-4">
                 <h3 className="text-xs font-medium text-app-primary">
                   {t("consultant_review_summary")}
                 </h3>
@@ -1108,11 +1108,11 @@ export default function EditConsultant() {
               </section>
             )}
             {draft.skills.length > 0 && (
-              <section className="space-y-3 border-b border-app pb-4">
+              <section className="space-y-3 border-b border-app-border pb-4">
                 <h3 className="text-xs font-medium text-app-primary">
                   {t("consultant_skills")}
                 </h3>
-                <div className="hidden grid-cols-[minmax(0,1fr)_130px_170px] gap-2 border-b border-app pb-1 text-[10px] text-app-muted md:grid">
+                <div className="hidden grid-cols-[minmax(0,1fr)_130px_170px] gap-2 border-b border-app-border pb-1 text-[10px] text-app-muted md:grid">
                   <span>{t("consultant_skill")}</span>
                   <span>{t("consultant_skill_experience")}</span>
                   <span>{t("consultant_skill_level")}</span>
@@ -1122,7 +1122,7 @@ export default function EditConsultant() {
                   .map((x, index) => (
                     <div
                       key={`${x.id}-${index}`}
-                      className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_130px_170px]"
+                      className="grid gap-1 border-b border-app-border py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_130px_170px]"
                     >
                       <span className="text-app-primary">{x.name}</span>
                       <span className="text-app-muted">
@@ -1141,7 +1141,7 @@ export default function EditConsultant() {
               </section>
             )}
             {(draft.languages.length > 0 || draft.industries.length > 0) && (
-              <section className="space-y-4 border-b border-app pb-4">
+              <section className="space-y-4 border-b border-app-border pb-4">
                 <h3 className="text-xs font-medium text-app-primary">
                   {t("consultant_review_languages_industries")}
                 </h3>
@@ -1155,7 +1155,7 @@ export default function EditConsultant() {
                       .map((x, index) => (
                         <div
                           key={`${x.id}-${index}`}
-                          className="flex justify-between border-b border-app py-2 text-xs last:border-0"
+                          className="flex justify-between border-b border-app-border py-2 text-xs last:border-0"
                         >
                           <span className="text-app-primary">{x.name}</span>
                           <span className="text-app-muted">
@@ -1207,7 +1207,7 @@ export default function EditConsultant() {
               return (
                 <section
                   key={collection}
-                  className="space-y-2 border-b border-app pb-4"
+                  className="space-y-2 border-b border-app-border pb-4"
                 >
                   <h3 className="text-xs font-medium text-app-primary">
                     {title}
@@ -1215,7 +1215,7 @@ export default function EditConsultant() {
                   {items.map((item, index) => (
                     <div
                       key={`${item.id}-${index}`}
-                      className="border-b border-app py-2 text-xs last:border-0"
+                      className="border-b border-app-border py-2 text-xs last:border-0"
                     >
                       <p className="font-medium text-app-primary">
                         {"company" in item
