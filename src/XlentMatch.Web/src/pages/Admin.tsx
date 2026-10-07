@@ -7,6 +7,9 @@ import { DataTable } from "../components/ui/DataTable";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Modal } from "../components/ui/Modal";
+import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
 import { SkillEditModal } from "../components/SkillEditModal";
 import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion, type PromptSummary, type PromptVersion } from "../services/adminApi";
 import { formatDate, formatDateTime } from "../services/localeFormat";
@@ -405,18 +408,17 @@ export default function Admin() {
           </section>
         )}
 
-        {reviewingSuggestion && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="w-full max-w-md rounded-lg border border-app bg-app-surface p-5 space-y-4">
-              <h2 className="text-sm font-semibold text-app-primary">{t("admin_review_suggestion")}</h2>
+        <Modal open={reviewingSuggestion !== null} title={t("admin_review_suggestion")} onClose={() => setReviewingSuggestion(null)}>
+          {reviewingSuggestion && (
+            <div className="p-5 space-y-4">
               <p className="text-[11px] text-app-muted">{t("admin_found_times")} {reviewingSuggestion.occurrences} {t("admin_times")}</p>
-              <input value={suggestionCanonical} onChange={(event) => setSuggestionCanonical(event.target.value)} placeholder={t("admin_canonical_name")} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
-              <select value={suggestionCategory} onChange={(event) => setSuggestionCategory(event.target.value)} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Unclassified">{t("taxonomy_category_unclassified")}</option><option value="Human language">{t("taxonomy_category_human_language")}</option><option value="Language">{t("taxonomy_category_language")}</option><option value="Framework">{t("taxonomy_category_framework")}</option><option value="Database">{t("taxonomy_category_database")}</option><option value="Messaging">{t("taxonomy_category_messaging")}</option><option value="Cloud">{t("taxonomy_category_cloud")}</option><option value="AI/ML">{t("taxonomy_category_ai_ml")}</option><option value="Backend">{t("taxonomy_category_backend")}</option></select>
-              <input value={suggestionAliases} onChange={(event) => setSuggestionAliases(event.target.value)} placeholder={t("admin_aliases_placeholder")} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary" />
+              <Input value={suggestionCanonical} onChange={(event) => setSuggestionCanonical(event.target.value)} placeholder={t("admin_canonical_name")} />
+              <Select value={suggestionCategory} onChange={(event) => setSuggestionCategory(event.target.value)}><option value="Unclassified">{t("taxonomy_category_unclassified")}</option><option value="Human language">{t("taxonomy_category_human_language")}</option><option value="Language">{t("taxonomy_category_language")}</option><option value="Framework">{t("taxonomy_category_framework")}</option><option value="Database">{t("taxonomy_category_database")}</option><option value="Messaging">{t("taxonomy_category_messaging")}</option><option value="Cloud">{t("taxonomy_category_cloud")}</option><option value="AI/ML">{t("taxonomy_category_ai_ml")}</option><option value="Backend">{t("taxonomy_category_backend")}</option></Select>
+              <Input value={suggestionAliases} onChange={(event) => setSuggestionAliases(event.target.value)} placeholder={t("admin_aliases_placeholder")} />
               <div className="flex justify-between gap-2"><Button variant="ghost" onClick={() => void reviewSuggestion(false)}>{t("admin_dismiss_suggestion")}</Button><div className="flex gap-2"><Button variant="ghost" onClick={() => setReviewingSuggestion(null)}>{t("common_cancel")}</Button><Button variant="primary" onClick={() => void reviewSuggestion(true)}>{t("admin_approve")}</Button></div></div>
             </div>
-          </div>
-        )}
+          )}
+        </Modal>
 
 {tab === "taxonomy" && taxonomyTab === "catalog" && (
           <div className="bg-app-surface border border-app rounded-lg overflow-hidden" style={{ boxShadow: "var(--shadow-surface)" }}>
