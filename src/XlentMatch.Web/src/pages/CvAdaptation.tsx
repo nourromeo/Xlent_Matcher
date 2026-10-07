@@ -197,7 +197,6 @@ export default function CvAdaptation() {
 
     setAnalysing(true);
     setError("");
-    setCopied(false);
 
     try {
       const [consultant, assignment] = await Promise.all([
