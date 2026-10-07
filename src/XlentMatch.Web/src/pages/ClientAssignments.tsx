@@ -1400,6 +1400,9 @@ export default function ClientAssignments() {
             },
           ]}
           rows={filtered}
+          pagination
+          pageSizeOptions={[25, 50, 100]}
+          paginationLabel={t("assignments_sub")}
           rowKey={(assignment) => String(assignment.id)}
           onRowClick={(assignment) => navigate(`/client-assignments/${assignment.id}`)}
           rowAriaLabel={(assignment) => `${t("assignment_view")} ${assignment.title}`}
@@ -1412,13 +1415,7 @@ export default function ClientAssignments() {
           }
         />
 
-        <div className="border-t border-app px-4 py-2.5 bg-app-surface">
-          <span className="text-[10px] text-app-faint">
-            {loading
-              ? t("assignments_loading")
-              : `${filtered.length} / ${assignments.length} ${t("assignments_sub")}`}
-          </span>
-        </div>
+        
       </div>
     </div>
   );
