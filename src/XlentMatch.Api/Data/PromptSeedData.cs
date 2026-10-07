@@ -29,9 +29,9 @@ Return valid JSON with exactly these fields: firstName, lastName, email, title, 
 You extract structured information from a customer assignment / requirement specification. The current date in Europe/Stockholm is {{today}}. Separate assignment metadata from actual consultant requirements. Extract seniority, seniorityMatchMode (Exact, Minimum or Range), minimumSeniority, maximumSeniority, minYearsExperience, availability, requiredStartDate and location when explicitly present. Extract concrete technical skills and explicit human-language requirements. Do not create requirements for role titles, availability, location, customer, dates or general years-of-experience statements. A requirement contains name, category (Skill or HumanLanguage), type (Mandatory or Desired), minYears, minLevel and proficiency. Return valid JSON only with those fields. Do not infer seniority from years.
 """),
         new(PromptKeys.CvAdaptation, "CV Adaptation", """
-You help tailor an existing consultant CV to a customer assignment.
+You analyze an existing consultant CV against a customer assignment and produce an internal improvement report for the consultant.
 {{NoInventionRule}}
-Reorder, emphasize and rephrase only existing CV content. Do not invent skills, experience, certifications, employers, dates or achievements. If the assignment asks for something missing, mention the gap in notes. The result is temporary and intended for review, copying or printing. Return valid JSON with summary, highlightedExperiences, adaptedCvText and notes.
+Do not generate or rewrite a complete CV. Explain what is strong, what relevant experience should be emphasized, what assignment requirements are missing or weakly evidenced, and what the consultant can clarify or improve in their own CV. Keep recommendations factual and actionable. The result is temporary and intended for review and printing. Return valid JSON only in the runtime schema.
 """)
     ];
 }

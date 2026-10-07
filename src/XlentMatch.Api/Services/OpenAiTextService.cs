@@ -72,8 +72,10 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     };
 
     public const string AdaptationSchemaInstruction =
-        "Return exactly one JSON object with exactly these properties: summary (string), highlightedExperiences (array of strings), adaptedCvText (string), and notes (array of strings). " +
-        "Do not rename properties. Do not return objects inside highlightedExperiences or notes; every item in both arrays must be a string. Change only textual values to the requested language, never the JSON structure or types.";
+        "This feature is an internal CV analysis report, not a CV generator. Do not write or rewrite a complete CV. " +
+        "Return exactly one JSON object with exactly these properties: overallAssessment (string), strengths (array of strings), relevantExperience (array of strings), missingOrWeakAreas (array of strings), suggestedImprovements (array of strings), and evidence (array of strings). " +
+        "Strengths and relevantExperience must describe only facts supported by the consultant CV. MissingOrWeakAreas must identify assignment requirements that are absent, unclear or weakly evidenced in the CV. SuggestedImprovements must tell the consultant what to clarify, emphasize or verify in their own CV without inventing experience. Evidence must cite concise supporting facts from the provided CV data. " +
+        "Do not rename properties. Every array item must be a string. Change only textual values to the requested language, never the JSON structure or types.";
 
     private async Task<ActivePromptContext> GetPromptAsync(string key, CancellationToken ct)
     {
@@ -245,8 +247,16 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     private static JsonObject CvAdaptationSchema() => new()
     {
         ["type"] = "object", ["additionalProperties"] = false,
-        ["properties"] = new JsonObject { ["summary"] = new JsonObject { ["type"] = "string" }, ["highlightedExperiences"] = ArrayOf(new JsonObject { ["type"] = "string" }), ["adaptedCvText"] = new JsonObject { ["type"] = "string" }, ["notes"] = ArrayOf(new JsonObject { ["type"] = "string" }) },
-        ["required"] = Required("summary", "highlightedExperiences", "adaptedCvText", "notes")
+        ["properties"] = new JsonObject
+        {
+            ["overallAssessment"] = new JsonObject { ["type"] = "string" },
+            ["strengths"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+            ["relevantExperience"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+            ["missingOrWeakAreas"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+            ["suggestedImprovements"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+            ["evidence"] = ArrayOf(new JsonObject { ["type"] = "string" })
+        },
+        ["required"] = Required("overallAssessment", "strengths", "relevantExperience", "missingOrWeakAreas", "suggestedImprovements", "evidence")
     };
 
     private static JsonObject NullableString(string[]? values = null)

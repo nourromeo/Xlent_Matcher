@@ -69,13 +69,11 @@ export default function CvAdaptation() {
   const [assignmentText, setAssignmentText] = useState("");
 
   const [result, setResult] = useState<CvAdaptationSuggestion | null>(null);
-  const [adaptedText, setAdaptedText] = useState("");
   const [usedConsultant, setUsedConsultant] = useState<ConsultantDraft | null>(
     null,
   );
   const [usedAssignment, setUsedAssignment] =
     useState<TemporaryAssignmentDraft | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,10 +103,8 @@ export default function CvAdaptation() {
 
   const clearResult = () => {
     setResult(null);
-    setAdaptedText("");
     setUsedConsultant(null);
     setUsedAssignment(null);
-    setCopied(false);
     setError("");
   };
 
@@ -201,7 +197,6 @@ export default function CvAdaptation() {
 
     setAnalysing(true);
     setError("");
-    setCopied(false);
 
     try {
       const [consultant, assignment] = await Promise.all([
@@ -217,7 +212,6 @@ export default function CvAdaptation() {
       setUsedConsultant(consultant);
       setUsedAssignment(assignment);
       setResult(response);
-      setAdaptedText(response.adaptedCvText);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -229,20 +223,8 @@ export default function CvAdaptation() {
     }
   };
 
-  const copyText = async () => {
-    if (!adaptedText.trim()) return;
-
-    try {
-      await navigator.clipboard.writeText(adaptedText);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setError(t("adaptation_edit_result"));
-    }
-  };
-
   const printResult = () => {
-    if (!adaptedText.trim()) return;
+    if (!result) return;
     window.print();
   };
 
@@ -262,7 +244,11 @@ export default function CvAdaptation() {
         @media print {
           @page {
             size: A4;
-            margin: 16mm 17mm 18mm;
+            margin: 0;
+          }
+
+          html, body {
+            background: #ffffff !important;
           }
 
           body * {
@@ -278,53 +264,180 @@ export default function CvAdaptation() {
             display: block !important;
             position: absolute;
             inset: 0;
-            width: 100%;
-            background: white;
-            color: #111827;
-            font-family: Arial, Helvetica, sans-serif;
+            width: 210mm;
+            min-height: 297mm;
+            box-sizing: border-box;
+            background: #ffffff;
+            color: #172033;
+            font-family: Inter, "Segoe UI", Arial, Helvetica, sans-serif;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          .cv-print-accent {
+            height: 8mm;
+            background: linear-gradient(90deg, #4636d9 0%, #6758ee 58%, #8578ff 100%);
+          }
+
+          .cv-print-page {
+            padding: 15mm 17mm 16mm;
+          }
+
+          .cv-print-brand-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12mm;
+            margin-bottom: 8mm;
+          }
+
+          .cv-print-brand {
+            display: flex;
+            align-items: center;
+            gap: 3mm;
+            color: #4636d9;
+            font-size: 9pt;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+          }
+
+          .cv-print-brand-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 7mm;
+            height: 7mm;
+            border-radius: 2mm;
+            background: #4636d9;
+            color: #ffffff;
+            font-size: 8pt;
+            letter-spacing: 0;
+          }
+
+          .cv-print-document-label {
+            color: #7b8496;
+            font-size: 7.5pt;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
           }
 
           .cv-print-header {
-            border-bottom: 2px solid #111827;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+            padding-bottom: 7mm;
+            margin-bottom: 7mm;
+            border-bottom: 1px solid #dfe3ec;
           }
 
           .cv-print-name {
-            font-size: 24px;
-            font-weight: 700;
-            line-height: 1.2;
             margin: 0;
+            color: #111827;
+            font-size: 26pt;
+            font-weight: 750;
+            line-height: 1.08;
+            letter-spacing: -.025em;
           }
 
           .cv-print-title {
-            font-size: 12px;
-            color: #4b5563;
-            margin-top: 5px;
+            margin-top: 2.5mm;
+            color: #596277;
+            font-size: 11pt;
+            font-weight: 500;
           }
 
           .cv-print-target {
-            margin-top: 12px;
-            padding: 8px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 10px;
-            color: #374151;
+            margin-top: 5mm;
+            padding: 3.2mm 4mm;
+            border: 1px solid #d9d5ff;
+            border-left: 3px solid #5848e5;
+            border-radius: 2mm;
+            background: #f6f5ff;
+            color: #424b60;
+            font-size: 8.5pt;
+            line-height: 1.4;
           }
 
-          .cv-print-body {
-            white-space: pre-wrap;
-            font-size: 10.5pt;
-            line-height: 1.55;
-            overflow-wrap: anywhere;
+          .cv-print-target strong {
+            color: #4636d9;
+            font-weight: 700;
+          }
+
+          .cv-print-content {
+            font-size: 9.5pt;
+            line-height: 1.5;
+          }
+
+          .cv-print-section-title {
+            break-after: avoid;
+            page-break-after: avoid;
+            margin: 6mm 0 2.5mm;
+            padding-bottom: 1.5mm;
+            border-bottom: 1px solid #e5e7ef;
+            color: #4636d9;
+            font-size: 9.5pt;
+            font-weight: 800;
+            letter-spacing: .075em;
+            text-transform: uppercase;
+          }
+
+          .cv-print-paragraph {
+            margin: 0 0 2.5mm;
+            color: #333c50;
+            orphans: 3;
+            widows: 3;
+          }
+
+          .cv-print-field {
+            display: grid;
+            grid-template-columns: 35mm 1fr;
+            gap: 3mm;
+            margin: 0 0 1.6mm;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          .cv-print-field > span {
+            color: #687187;
+            font-size: 8.5pt;
+            font-weight: 700;
+          }
+
+          .cv-print-field > p {
+            margin: 0;
+            color: #273044;
+          }
+
+          .cv-print-bullet {
+            display: grid;
+            grid-template-columns: 4mm 1fr;
+            gap: 1.5mm;
+            margin: 0 0 1.5mm;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            color: #333c50;
+          }
+
+          .cv-print-bullet > span {
+            color: #5848e5;
+            font-size: 10pt;
+            font-weight: 800;
+          }
+
+          .cv-print-bullet > p {
+            margin: 0;
+          }
+
+          .cv-print-spacer {
+            height: 1.8mm;
           }
 
           .cv-print-footer {
-            margin-top: 22px;
-            padding-top: 8px;
-            border-top: 1px solid #e5e7eb;
-            font-size: 8.5px;
-            color: #6b7280;
+            margin-top: 9mm;
+            padding-top: 3mm;
+            border-top: 1px solid #e2e5ec;
+            color: #8a92a3;
+            font-size: 7.5pt;
+            line-height: 1.4;
           }
         }
       `}</style>
@@ -558,92 +671,78 @@ export default function CvAdaptation() {
 
         {result && (
           <div className="space-y-4">
-            <div>
-              <p className="text-[10px] uppercase tracking-wide text-app-faint">
-                {t("adaptation_result")}
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-app-faint">
+                  {t("adaptation_result")}
+                </p>
+                <h2 className="mt-1 text-base font-semibold text-app-primary">
+                  CV Analysis Report
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={printResult}>
+                  Print report
+                </Button>
+                <Button variant="ghost" onClick={clearResult}>
+                  {t("adaptation_close")}
+                </Button>
+              </div>
             </div>
+
             <section className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface">
               <p className="mb-3 text-sm font-medium text-app-primary">
-                {t("adaptation_summary")}
+                Overall assessment
               </p>
-              <p className="max-w-4xl text-sm leading-7 text-app-secondary">
-                {result.summary}
+              <p className="max-w-5xl text-sm leading-7 text-app-secondary">
+                {result.overallAssessment}
               </p>
             </section>
 
-            <section className="grid md:grid-cols-2 gap-4">
-              <div className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-                <p className="text-sm font-medium text-app-primary mb-3">
-                  {t("adaptation_highlights")}
-                </p>
-                <div className="space-y-3 text-sm leading-6">
-                  {result.highlightedExperiences.length === 0 ? (
-                    <p className="text-xs text-app-faint">
-                      {t("adaptation_no_highlights")}
-                    </p>
-                  ) : (
-                    result.highlightedExperiences.map((item, index) => (
-                      <p key={index} className="text-sm text-app-secondary">
-                        • {item}
-                      </p>
-                    ))
-                  )}
+            <section className="grid lg:grid-cols-2 gap-4">
+              {[
+                ["Your strengths", result.strengths],
+                ["Relevant experience to highlight", result.relevantExperience],
+                ["Missing / weak areas", result.missingOrWeakAreas],
+                ["Suggested improvements", result.suggestedImprovements],
+              ].map(([title, items]) => (
+                <div
+                  key={title as string}
+                  className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface"
+                >
+                  <p className="mb-3 text-sm font-medium text-app-primary">
+                    {title as string}
+                  </p>
+                  <div className="space-y-2">
+                    {(items as string[]).length === 0 ? (
+                      <p className="text-xs text-app-faint">No items identified.</p>
+                    ) : (
+                      (items as string[]).map((item, index) => (
+                        <p key={index} className="text-sm leading-6 text-app-secondary">
+                          • {item}
+                        </p>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-                <p className="text-sm font-medium text-app-primary mb-3">
-                  {t("adaptation_gaps")}
-                </p>
-                <div className="space-y-3 text-sm leading-6">
-                  {result.notes.length === 0 ? (
-                    <p className="text-xs text-app-faint">
-                      {t("adaptation_no_notes")}
-                    </p>
-                  ) : (
-                    result.notes.map((item, index) => (
-                      <p key={index} className="text-sm text-app-secondary">
-                        • {item}
-                      </p>
-                    ))
-                  )}
-                </div>
-              </div>
+              ))}
             </section>
 
-            <section className="bg-app-surface border border-app rounded-xl p-5 shadow-app-surface">
-              <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-                <div>
-                  <p className="text-xs font-medium text-app-primary">
-                    {t("adaptation_adapted_draft")}
-                  </p>
-                  <p className="text-[10px] text-app-muted mt-0.5">
-                    {t("adaptation_edit_result")}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="secondary" onClick={copyText}>
-                    {copied ? t("adaptation_copied") : t("adaptation_copy")}
-                  </Button>
-                  <Button variant="secondary" onClick={printResult}>
-                    {t("adaptation_print")}
-                  </Button>
-                  <Button variant="ghost" onClick={clearResult}>
-                    {t("adaptation_close")}
-                  </Button>
-                  <Button variant="ghost" onClick={resetAll}>
-                    {t("adaptation_start_over")}
-                  </Button>
-                </div>
+            <section className="rounded-xl border border-app bg-app-surface p-5 shadow-app-surface">
+              <p className="mb-3 text-sm font-medium text-app-primary">
+                Evidence from your CV
+              </p>
+              <div className="space-y-2">
+                {result.evidence.length === 0 ? (
+                  <p className="text-xs text-app-faint">No supporting evidence identified.</p>
+                ) : (
+                  result.evidence.map((item, index) => (
+                    <p key={index} className="text-sm leading-6 text-app-secondary">
+                      • {item}
+                    </p>
+                  ))
+                )}
               </div>
-
-              <Textarea
-                value={adaptedText}
-                onChange={(event) => setAdaptedText(event.target.value)}
-                rows={20}
-              />
             </section>
           </div>
         )}
@@ -651,31 +750,63 @@ export default function CvAdaptation() {
 
       {result && usedConsultant && usedAssignment && (
         <article className="cv-adaptation-print">
-          <header className="cv-print-header">
-            <h1 className="cv-print-name">
-              {[usedConsultant.firstName, usedConsultant.lastName]
-                .filter(Boolean)
-                .join(" ") || t("adaptation_consultant_cv")}
-            </h1>
-            <div className="cv-print-title">
-              {[usedConsultant.title, usedConsultant.seniority]
-                .filter(Boolean)
-                .join(" · ")}
+          <div className="cv-print-accent" />
+          <div className="cv-print-page">
+            <div className="cv-print-brand-row">
+              <div className="cv-print-brand">
+                <span className="cv-print-brand-mark">X</span>
+                XLENT Match
+              </div>
+              <div className="cv-print-document-label">CV analysis report</div>
             </div>
-            <div className="cv-print-target">
-              <strong>{t("adaptation_adapted_for")}</strong>{" "}
-              {usedAssignment.title || t("adaptation_client_assignment")}
-              {usedAssignment.customerName
-                ? ` · ${usedAssignment.customerName}`
-                : ""}
-            </div>
-          </header>
 
-          <div className="cv-print-body">{adaptedText}</div>
+            <header className="cv-print-header">
+              <h1 className="cv-print-name">
+                {[usedConsultant.firstName, usedConsultant.lastName]
+                  .filter(Boolean)
+                  .join(" ") || t("adaptation_consultant_cv")}
+              </h1>
+              <div className="cv-print-title">
+                {[usedConsultant.title, usedConsultant.seniority]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </div>
+              <div className="cv-print-target">
+                <strong>{t("adaptation_adapted_for")}</strong>{" "}
+                {usedAssignment.title || t("adaptation_client_assignment")}
+                {usedAssignment.customerName
+                  ? ` · ${usedAssignment.customerName}`
+                  : ""}
+              </div>
+            </header>
 
-          <footer className="cv-print-footer">
-            {t("adaptation_print_footer")}
-          </footer>
+            <section>
+              <h2 className="cv-print-section-title">Overall assessment</h2>
+              <p className="cv-print-paragraph">{result.overallAssessment}</p>
+            </section>
+
+            {[
+              ["Your strengths", result.strengths],
+              ["Relevant experience to highlight", result.relevantExperience],
+              ["Missing / weak areas", result.missingOrWeakAreas],
+              ["Suggested improvements", result.suggestedImprovements],
+              ["Evidence from your CV", result.evidence],
+            ].map(([title, items]) => (
+              <section key={title as string}>
+                <h2 className="cv-print-section-title">{title as string}</h2>
+                {(items as string[]).map((item, index) => (
+                  <div key={index} className="cv-print-bullet">
+                    <span aria-hidden="true">•</span>
+                    <p>{item}</p>
+                  </div>
+                ))}
+              </section>
+            ))}
+
+            <footer className="cv-print-footer">
+              {t("adaptation_print_footer")}
+            </footer>
+          </div>
         </article>
       )}
     </>
