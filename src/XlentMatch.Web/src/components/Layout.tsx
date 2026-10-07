@@ -65,10 +65,10 @@ export default function Layout() {
   return (
     <div className="flex h-full bg-app">
       <aside
-        className="w-56 flex-none flex flex-col border-r border-app bg-app-surface"
+        className="w-56 flex-none flex flex-col border-r border-app-border bg-app-surface"
         style={{ boxShadow: "var(--shadow-surface)" }}
       >
-        <div className="h-12 flex items-center px-4 border-b border-app">
+        <div className="h-12 flex items-center px-4 border-b border-app-border">
           <Link
             to="/"
             className="flex items-center gap-2 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand"
@@ -118,14 +118,14 @@ export default function Layout() {
           </NavLink>
         </div>
 
-        <div className="border-t border-app px-3 py-3">
+        <div className="border-t border-app-border px-3 py-3">
           <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("layout_internal_tool")}</p>
           <p className="text-[10px] text-app-muted mt-1">{t("layout_matching")}</p>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-app">
-        <header className="h-12 flex items-center px-5 border-b border-app bg-app-surface flex-none">
+        <header className="h-12 flex items-center px-5 border-b border-app-border bg-app-surface flex-none">
           <nav aria-label={t("aria_breadcrumb")} className="flex items-center gap-1.5 text-sm text-app-faint min-w-0">
             {breadcrumbs.map((item, index) => (
               <div key={item.label + index} className="flex items-center gap-1.5 min-w-0">
@@ -147,7 +147,7 @@ export default function Layout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            <div className="flex items-center rounded overflow-hidden border border-app">
+            <div className="flex items-center rounded overflow-hidden border border-app-border">
               {LOCALES.map((loc) => (
                 <button
                   key={loc}
@@ -169,7 +169,7 @@ export default function Layout() {
               type="button"
               onClick={toggle}
               aria-label={theme === "dark" ? t("theme_light") : t("theme_dark")}
-              className="w-7 h-7 rounded flex items-center justify-center text-app-muted hover:text-app-secondary hover:bg-app-raised border border-app transition-colors"
+              className="w-7 h-7 rounded flex items-center justify-center text-app-muted hover:text-app-secondary hover:bg-app-raised border border-app-border transition-colors"
               title={theme === "dark" ? t("theme_light") : t("theme_dark")}
             >
               {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
