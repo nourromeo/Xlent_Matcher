@@ -24,8 +24,10 @@ public class TemporaryAssignmentDraftDto
 
 public class CvAdaptationSuggestionDto
 {
-    public string Summary { get; set; } = "";
-    public List<string> HighlightedExperiences { get; set; } = new();
-    public string AdaptedCvText { get; set; } = "";
-    public List<string> Notes { get; set; } = new();
+    public string OverallAssessment { get; set; } = "";
+    public List<string> Strengths { get; set; } = new();
+    public List<string> RelevantExperience { get; set; } = new();
+    public List<string> MissingOrWeakAreas { get; set; } = new();
+    public List<string> SuggestedImprovements { get; set; } = new();
+    public List<string> Evidence { get; set; } = new();
 }
