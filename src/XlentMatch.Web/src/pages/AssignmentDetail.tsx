@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Briefcase, Edit3, Eye, Plus, X } from "../design-system/icons";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Briefcase, Edit3, Eye, Plus, Trash2, X } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { EntitySummary } from "../components/ui/EntitySummary";
 import { useI18n } from "../i18n";
@@ -13,6 +13,7 @@ import { SkillTag } from "../components/ui/SkillTag";
 import { EditFormModal } from "../components/ui/EditFormModal";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { assignmentsApi } from "../services/assignmentsApi";
 import type { AssignmentApi, AssignmentRequirementApi } from "../types";
 import { formatDate } from "../services/localeFormat";
@@ -140,6 +141,7 @@ const makeRequirements = (
 export default function AssignmentDetail() {
   const { t, locale } = useI18n();
   const { id } = useParams();
+  const navigate = useNavigate();
   const assignmentId = Number(id);
 
   const [assignment, setAssignment] = useState<AssignmentApi | null>(null);
@@ -155,6 +157,7 @@ export default function AssignmentDetail() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [overviewExpanded, setOverviewExpanded] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!Number.isInteger(assignmentId) || assignmentId <= 0) {
@@ -255,6 +258,19 @@ export default function AssignmentDetail() {
     }
   };
 
+  const deleteAssignment = async () => {
+    if (!assignment) return;
+
+    setError("");
+    try {
+      await assignmentsApi.remove(assignment.id);
+      navigate("/client-assignments");
+    } catch {
+      setDeleteOpen(false);
+      setError(t("client_delete_error"));
+    }
+  };
+
   if (loading) {
     return <div className="p-6 text-sm text-app-muted">{t("assignment_loading")}</div>;
   }
@@ -290,7 +306,7 @@ export default function AssignmentDetail() {
         title={assignment.title}
         metadata={`${assignment.customerName || "—"} · ${displaySeniority(assignment.seniority ?? "—")} · ${assignment.location || t("assignment_location_unspecified")} · ${t("common_updated")} ${formatDate(assignment.updatedAt || assignment.createdAt, locale)}`}
         badges={<><StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>{(assignment.availability || assignment.requiredStartDate) && <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>{assignment.requiredStartDate ? formatDate(assignment.requiredStartDate, locale) : displayAvailability(assignment.availability ?? "")}</StatusBadge>}</>}
-        actions={<><LinkButton to={"/matching?assignment=" + assignment.id} state={{ fromAssignment: true }} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view_matches")}</LinkButton><LinkButton to={`/client-assignments/${assignment.id}/edit`} variant="secondary" icon={<Edit3 size={12} />}>{t("assignment_edit")}</LinkButton></>}
+        actions={<><LinkButton to={"/matching?assignment=" + assignment.id} state={{ fromAssignment: true }} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view_matches")}</LinkButton><LinkButton to={`/client-assignments/${assignment.id}/edit`} variant="secondary" icon={<Edit3 size={12} />}>{t("assignment_edit")}</LinkButton><Button variant="danger" icon={<Trash2 size={12} />} onClick={() => setDeleteOpen(true)}>{t("common_delete")}</Button></>}
       />
 
       {error && (
@@ -380,6 +396,15 @@ export default function AssignmentDetail() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title={t("common_delete")}
+        message={t("client_delete_confirm").replace("{title}", assignment.title)}
+        confirmLabel={t("client_delete")}
+        onConfirm={deleteAssignment}
+        onClose={() => setDeleteOpen(false)}
+      />
 
       {draft && (
         <EditFormModal
