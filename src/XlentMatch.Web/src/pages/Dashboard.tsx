@@ -35,7 +35,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+    <div className="bg-app-surface border border-app-border rounded-lg p-4 shadow-app-surface">
       <div className="flex items-start justify-between mb-3">
         <p className="text-[10px] text-app-muted uppercase tracking-wider font-medium">
           {label}
@@ -214,7 +214,7 @@ export default function Dashboard() {
       />
 
       {error && (
-        <div className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+        <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
           {error}
         </div>
       )}
@@ -248,8 +248,8 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <section className="order-last xl:col-span-1 bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-app">
+        <section className="order-last xl:col-span-1 bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-app-border">
             <div>
               <p className="text-xs font-medium text-app-primary">
                 {t("dashboard_recent_uploads")}
@@ -274,7 +274,7 @@ export default function Dashboard() {
             recentUploads.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center gap-3 px-4 py-3 border-b border-app-subtle last:border-b-0"
+                className="flex items-center gap-3 px-4 py-3 border-b border-app-border-subtle last:border-b-0"
               >
                 <FileText size={12} className="text-app-faint flex-none" />
                 <div className="flex-1 min-w-0">
@@ -304,8 +304,8 @@ export default function Dashboard() {
           )}
         </section>
 
-        <section className="order-first xl:col-span-2 bg-app-surface border border-app rounded-lg overflow-hidden shadow-app-surface">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-app">
+        <section className="order-first xl:col-span-2 bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-app-border">
             <div>
               <p className="text-xs font-medium text-app-primary">
                 {t("dashboard_overview")}
@@ -324,7 +324,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_90px_120px] gap-3 px-4 py-2 border-b border-app text-[10px] uppercase tracking-wide text-app-faint">
+          <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_90px_120px] gap-3 px-4 py-2 border-b border-app-border text-[10px] uppercase tracking-wide text-app-faint">
             <span>{t("dashboard_assignment")}</span>
             <span>{t("dashboard_best_consultant")}</span>
             <span>{t("dashboard_score")}</span>
@@ -344,7 +344,7 @@ export default function Dashboard() {
                   ? `/matching?assignment=${assignment.id}`
                   : `/matching?assignment=${assignment.id}`;
                 const content = (
-                  <div className="grid grid-cols-1 gap-2 px-4 py-3 border-b border-app-subtle last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_90px_120px] md:items-center md:gap-3">
+                  <div className="grid grid-cols-1 gap-2 px-4 py-3 border-b border-app-border-subtle last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_90px_120px] md:items-center md:gap-3">
                     <p className="text-xs font-medium text-app-primary truncate">
                       {assignment.title}
                     </p>
