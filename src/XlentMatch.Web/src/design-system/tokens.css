@@ -85,6 +85,22 @@ html.light {
 .bg-app-brand { background-color: var(--color-brand); }
 .bg-app-brand-subtle { background-color: var(--color-brand-subtle); }
 .bg-app-brand-soft { background-color: var(--color-brand-soft); }
+.ds-availability-control {
+  border-color: transparent;
+  background-color: var(--color-surface-raised);
+}
+.ds-availability-control:hover {
+  border-color: var(--color-brand);
+  background-color: var(--color-brand-soft);
+}
+.ds-availability-control:hover .ds-availability-chevron {
+  color: var(--color-brand-text);
+}
+.ds-availability-control[data-open="true"] {
+  border-color: var(--color-brand);
+  background-color: var(--color-brand-soft);
+  box-shadow: 0 0 0 1px var(--color-brand);
+}
 .text-app-brand { color: var(--color-brand-text); }
 .text-app-success { color: var(--color-success); }
 .text-app-warning { color: var(--color-warning); }
