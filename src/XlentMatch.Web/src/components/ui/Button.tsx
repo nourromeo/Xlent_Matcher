@@ -10,7 +10,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-app-brand text-app-on-brand hover:opacity-90",
-  secondary: "border border-app text-app-secondary hover:text-app-primary",
+  secondary: "border border-app-border text-app-secondary hover:text-app-primary",
   ghost: "text-app-secondary hover:text-app-primary hover:bg-app-raised",
   danger: "border border-app-danger bg-app-danger-subtle text-app-danger hover:bg-app-danger/15",
 };
