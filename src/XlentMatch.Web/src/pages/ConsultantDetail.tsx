@@ -8,6 +8,8 @@ import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { EditFormModal } from "../components/ui/EditFormModal";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Button } from "../components/ui/Button";
+import { RemoveButton } from "../components/ui/RemoveButton";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
@@ -202,7 +204,7 @@ export default function ConsultantDetail() {
         subtitle={consultant.title || t("consultant_role")}
         metadata={`${consultant.office || "—"} · ${consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}`}
         badges={consultant.availability ? <StatusBadge tone={consultant.availability === "Available" ? "success" : "danger"}>{availabilityLabel(consultant, t, locale)}</StatusBadge> : undefined}
-        actions={<div className="flex items-center gap-2"><Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors" style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}><Edit3 size={12} /> {t("consultant_edit")}</Link><button type="button" onClick={() => setDeleteConfirmOpen(true)} disabled={deleting} className="flex items-center gap-1.5 rounded px-2 py-1.5 text-xs text-app-muted hover:bg-app-raised hover:text-app-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand disabled:opacity-50"><Trash2 size={12} /> {deleting ? t("client_deleting") : t("common_delete")}</button></div>}
+        actions={<div className="flex items-center gap-2"><Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-app text-app-secondary transition-colors hover:text-app-primary"><Edit3 size={12} /> {t("consultant_edit")}</Link><Button variant="danger" icon={<Trash2 size={12} />} onClick={() => setDeleteConfirmOpen(true)} disabled={deleting}>{deleting ? t("client_deleting") : t("common_delete")}</Button></div>}
       />
 
       <ConfirmDialog open={deleteConfirmOpen} title={t("common_delete")} message={t("consultant_delete_confirm").replace("{name}", fullName(consultant))} onClose={() => setDeleteConfirmOpen(false)} onConfirm={async () => { setDeleteConfirmOpen(false); await deleteConsultant(); }} />
@@ -376,7 +378,7 @@ export default function ConsultantDetail() {
                   <Input type="number" min={0} aria-label={t("upload_field_years")} placeholder={t("upload_field_years")} value={item.years} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, years: Number(event.target.value) || 0 } : row) })} />
                   <Input type="number" min={0} max={5} aria-label={t("upload_field_level")} placeholder={t("upload_field_level")} value={item.level} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, level: Number(event.target.value) || 0 } : row) })} />
                   <Input placeholder={t("consultant_evidence")} value={item.evidence ?? ""} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, evidence: event.target.value || null } : row) })} />
-                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, i) => i !== index) })}>{t("common_remove")}</button>
+                  <RemoveButton onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, i) => i !== index) })} />
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, skills: [...draft.skills, { id: 0, consultantId: draft.id, name: "", category: null, years: 0, level: 0, evidence: null }] })}>+ {t("consultant_add_skill")}</button>
@@ -389,7 +391,7 @@ export default function ConsultantDetail() {
                 <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                   <Input aria-label={t("consultant_language")} placeholder={t("consultant_language")} value={item.name} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
                   <select aria-label={t("upload_language_proficiency")} value={item.proficiency} onChange={(event) => setDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
-                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })}>{t("common_remove")}</button>
+                  <RemoveButton onClick={() => setDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} />
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, languages: [...draft.languages, { id: 0, consultantId: draft.id, name: "", proficiency: "Not specified" }] })}>+ {t("consultant_add_language")}</button>
@@ -407,7 +409,7 @@ export default function ConsultantDetail() {
                     <Input type="date" aria-label={t("upload_end_date")} value={item.endDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
                   </div>
                   <Textarea rows={2} placeholder={t("consultant_description")} value={item.description ?? ""} onChange={(event) => setDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
-                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })}>{t("consultant_remove_experience")}</button>
+                  <RemoveButton label={t("consultant_remove_experience")} onClick={() => setDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })} />
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, experiences: [...draft.experiences, { id: 0, consultantId: draft.id, company: "", role: "", description: null, startDate: null, endDate: null }] })}>+ {t("upload_add_experience")}</button>
@@ -421,7 +423,7 @@ export default function ConsultantDetail() {
                   <Input aria-label={t("upload_project_name")} placeholder={t("upload_project_name")} value={item.name} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
                   <Input aria-label={t("upload_technologies")} placeholder={t("upload_technologies")} value={item.technologies ?? ""} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
                   <Textarea rows={2} placeholder={t("consultant_description")} value={item.description ?? ""} onChange={(event) => setDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
-                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })}>{t("consultant_remove_project")}</button>
+                  <RemoveButton label={t("consultant_remove_project")} onClick={() => setDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })} />
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, projects: [...draft.projects, { id: 0, consultantId: draft.id, name: "", description: null, technologies: null }] })}>+ {t("upload_projects")}</button>
@@ -435,14 +437,14 @@ export default function ConsultantDetail() {
                   <Input aria-label={t("upload_degree")} placeholder={t("upload_degree")} value={item.degree} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
                   <Input aria-label={t("consultant_school")} placeholder={t("consultant_school")} value={item.school ?? ""} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
                   <Input aria-label={t("upload_year")} placeholder={t("upload_year")} value={item.year ?? ""} onChange={(event) => setDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
-                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })}>{t("common_remove")}</button>
+                  <RemoveButton onClick={() => setDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })} />
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, education: [...draft.education, { id: 0, consultantId: draft.id, degree: "", school: null, year: null }] })}>+ {t("upload_education")}</button>
               {draft.industries.map((item, index) => (
                 <div key={"industry-" + index} className="flex gap-2">
                   <Input aria-label={t("upload_industry")} placeholder={t("upload_industry")} value={item.name} onChange={(event) => setDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })}>{t("common_remove")}</button>
+                  <RemoveButton onClick={() => setDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })} />
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, industries: [...draft.industries, { id: 0, consultantId: draft.id, name: "" }] })}>+ {t("upload_industry")}</button>
@@ -451,7 +453,7 @@ export default function ConsultantDetail() {
                   <Input aria-label={t("upload_certification")} placeholder={t("upload_certification")} value={item.name} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
                   <Input aria-label={t("upload_issuer")} placeholder={t("upload_issuer")} value={item.issuer ?? ""} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
                   <Input placeholder={t("upload_issued_date")} value={item.issuedDate?.slice(0, 10) ?? ""} onChange={(event) => setDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
-                  <button type="button" className="text-[11px] text-app-muted" onClick={() => setDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })}>{t("common_remove")}</button>
+                  <RemoveButton onClick={() => setDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} />
                 </div>
               ))}
               <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, certifications: [...draft.certifications, { id: 0, consultantId: draft.id, name: "", issuer: null, issuedDate: null }] })}>+ {t("upload_certification")}</button>
