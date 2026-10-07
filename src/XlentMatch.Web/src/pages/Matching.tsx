@@ -59,7 +59,7 @@ function RequirementColumn({
     {},
   );
   return (
-    <div className="bg-app-surface border border-app rounded-lg p-4">
+    <div className="bg-app-surface border border-app-border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-medium text-app-primary">{title}</p>
         <span className="text-[10px] text-app-muted">
@@ -76,7 +76,7 @@ function RequirementColumn({
             {categoryItems.map((detail) => (
               <div
                 key={detail.id || detail.requirementName}
-                className="flex items-center justify-between gap-3 border-b border-app-subtle py-2 last:border-0"
+                className="flex items-center justify-between gap-3 border-b border-app-border-subtle py-2 last:border-0"
               >
                 <span
                   className={
@@ -359,7 +359,7 @@ export default function Matching() {
         />
 
         {!fromAssignment ? (
-          <div className="mt-4 rounded-lg border border-app bg-app px-4 py-3">
+          <div className="mt-4 rounded-lg border border-app-border bg-app px-4 py-3">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
@@ -447,7 +447,7 @@ export default function Matching() {
             </div>
           </div>
         ) : assignment ? (
-          <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-app bg-app px-4 py-3">
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-app-border bg-app px-4 py-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-semibold text-app-primary truncate">
@@ -518,7 +518,7 @@ export default function Matching() {
         )}
 
         {error && (
-          <div className="mt-3 rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary">
+          <div className="mt-3 rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
             {error}
           </div>
         )}
@@ -526,7 +526,7 @@ export default function Matching() {
 
       {!assignment ? (
         <div className="flex-1 flex items-center justify-center bg-app p-6">
-          <div className="bg-app-surface border border-app rounded-xl p-8 text-center max-w-md shadow-app-surface">
+          <div className="bg-app-surface border border-app-border rounded-xl p-8 text-center max-w-md shadow-app-surface">
             <h2 className="text-sm font-medium text-app-primary">
               {t("matching_choose_title")}
             </h2>
@@ -552,7 +552,7 @@ export default function Matching() {
         </div>
       ) : results.length === 0 ? (
         <div className="flex-1 flex items-center justify-center bg-app p-6">
-          <div className="bg-app-surface border border-app rounded-xl p-8 text-center max-w-md shadow-app-surface">
+          <div className="bg-app-surface border border-app-border rounded-xl p-8 text-center max-w-md shadow-app-surface">
             <Zap size={24} className="text-app-faint mx-auto mb-3" />
             <h2 className="text-sm font-medium text-app-primary">
               {t("matching_ready_title")}
@@ -564,8 +564,8 @@ export default function Matching() {
         </div>
       ) : selected ? (
         <div className="flex-1 flex min-h-0">
-          <aside className="w-80 flex-none border-r border-app bg-app-surface flex flex-col">
-            <div className="px-4 py-3 border-b border-app">
+          <aside className="w-80 flex-none border-r border-app-border bg-app-surface flex flex-col">
+            <div className="px-4 py-3 border-b border-app-border">
               <p className="text-sm font-semibold text-app-primary">
                 {t("matching_consultants")}
               </p>
@@ -578,7 +578,7 @@ export default function Matching() {
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={t("matching_search_placeholder")}
                   aria-label={t("matching_search_label")}
-                  className="w-full rounded-md border border-app bg-app px-3 py-2 pr-7 text-xs text-app-primary placeholder:text-app-faint focus:outline-none"
+                  className="w-full rounded-md border border-app-border bg-app px-3 py-2 pr-7 text-xs text-app-primary placeholder:text-app-faint focus:outline-none"
                 />
                 {query && (
                   <button
@@ -663,7 +663,7 @@ export default function Matching() {
                     <button
                       key={result.id}
                       onClick={() => setSelectedMatchId(result.id)}
-                      className="w-full text-left px-4 py-3.5 transition-colors border-b border-app-subtle"
+                      className="w-full text-left px-4 py-3.5 transition-colors border-b border-app-border-subtle"
                       style={
                         isSelected
                           ? {
@@ -780,7 +780,7 @@ export default function Matching() {
               </section>
 
               <nav
-                className="flex gap-5 border-b border-app"
+                className="flex gap-5 border-b border-app-border"
                 aria-label={t("match_breakdown")}
               >
                 {(["Overview", "Requirements", "Experience"] as const).map(
@@ -829,7 +829,7 @@ export default function Matching() {
 
               {activeTab === "Experience" && (
                 <section className="space-y-4">
-                  <div className="bg-app-surface border border-app rounded-lg p-4">
+                  <div className="bg-app-surface border border-app-border rounded-lg p-4">
                     <p className="text-sm font-medium text-app-primary">
                       {t("matching_total_experience")}
                     </p>
@@ -848,14 +848,14 @@ export default function Matching() {
                         : t("matching_no_minimum")}
                     </p>
                   </div>
-                  <div className="bg-app-surface border border-app rounded-lg p-4">
+                  <div className="bg-app-surface border border-app-border rounded-lg p-4">
                     <p className="text-sm font-medium text-app-primary mb-3">
                       {t("matching_skill_experience")}
                     </p>
                     {selectedConsultant?.skills.map((skill) => (
                       <div
                         key={skill.id}
-                        className="flex justify-between border-b border-app-subtle py-2 text-xs"
+                        className="flex justify-between border-b border-app-border-subtle py-2 text-xs"
                       >
                         <span>{skill.skill?.canonicalName ?? skill.name}</span>
                         <span className="text-app-muted">
@@ -872,7 +872,7 @@ export default function Matching() {
               {activeTab === "Overview" && (
                 <>
                   <section className="grid grid-cols-2 gap-4">
-                    <div className="min-h-40 bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                    <div className="min-h-40 bg-app-surface border border-app-border rounded-lg p-4 shadow-app-surface">
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-xs font-medium text-app-primary">
                           {t("match_must")}
@@ -901,7 +901,7 @@ export default function Matching() {
                           <button
                             type="button"
                             onClick={() => setActiveTab("Requirements")}
-                            className="mt-2 w-full border-t border-app-subtle pt-2 text-left text-[10px] text-app-brand hover:text-app-primary focus:outline-none focus:ring-1 focus:ring-app-brand"
+                            className="mt-2 w-full border-t border-app-border-subtle pt-2 text-left text-[10px] text-app-brand hover:text-app-primary focus:outline-none focus:ring-1 focus:ring-app-brand"
                           >
                             ✓ +{matchedRequired.length - 4}{" "}
                             {t("matching_more_matched")} →
@@ -910,7 +910,7 @@ export default function Matching() {
                       </div>
                     </div>
 
-                    <div className="min-h-40 bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                    <div className="min-h-40 bg-app-surface border border-app-border rounded-lg p-4 shadow-app-surface">
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-xs font-medium text-app-primary">
                           {t("match_missing")}
@@ -942,7 +942,7 @@ export default function Matching() {
                             <button
                               type="button"
                               onClick={() => setActiveTab("Requirements")}
-                              className="mt-2 w-full border-t border-app-subtle pt-2 text-left text-[10px] text-app-brand hover:text-app-primary focus:outline-none focus:ring-1 focus:ring-app-brand"
+                              className="mt-2 w-full border-t border-app-border-subtle pt-2 text-left text-[10px] text-app-brand hover:text-app-primary focus:outline-none focus:ring-1 focus:ring-app-brand"
                             >
                               ✕ +{missingRequired.length - 4}{" "}
                               {t("matching_more_missing")} →
@@ -963,7 +963,7 @@ export default function Matching() {
                     </div>
                   </section>
 
-                  <section className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                  <section className="bg-app-surface border border-app-border rounded-lg p-4 shadow-app-surface">
                     <p className="text-xs font-medium text-app-primary mb-4">
                       {t("match_breakdown")}
                     </p>
@@ -1010,7 +1010,7 @@ export default function Matching() {
                   </section>
 
                   <section className="grid grid-cols-2 gap-4">
-                    <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                    <div className="bg-app-surface border border-app-border rounded-lg p-4 shadow-app-surface">
                       <p className="text-xs font-medium text-app-primary mb-3">
                         {t("matching_relevant_exp")}
                       </p>
@@ -1031,7 +1031,7 @@ export default function Matching() {
                       </div>
                     </div>
 
-                    <div className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                    <div className="bg-app-surface border border-app-border rounded-lg p-4 shadow-app-surface">
                       <p className="text-xs font-medium text-app-primary mb-3">
                         {t("match_nice")}
                       </p>
@@ -1061,7 +1061,7 @@ export default function Matching() {
                   </section>
 
                   {(selected.contextDetails ?? []).length > 0 && (
-                    <section className="bg-app-surface border border-app rounded-lg p-4 shadow-app-surface">
+                    <section className="bg-app-surface border border-app-border rounded-lg p-4 shadow-app-surface">
                       <div className="flex items-center justify-between gap-3 mb-3">
                         <p className="text-xs font-medium text-app-primary">
                           {t("matching_fit_checks")}
@@ -1141,7 +1141,7 @@ export default function Matching() {
                     </div>
                   </section>
 
-                  <section className="bg-app-surface border border-app rounded-lg shadow-app-surface">
+                  <section className="bg-app-surface border border-app-border rounded-lg shadow-app-surface">
                     <button
                       onClick={() => setExpanded((current) => !current)}
                       className="w-full flex items-center justify-between px-4 py-3"
@@ -1159,11 +1159,11 @@ export default function Matching() {
                     </button>
 
                     {expanded && (
-                      <div className="border-t border-app">
+                      <div className="border-t border-app-border">
                         {selected.details.map((detail) => (
                           <div
                             key={detail.id || detail.requirementName}
-                            className="px-4 py-3 border-b border-app-subtle"
+                            className="px-4 py-3 border-b border-app-border-subtle"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               {detail.isMatched ? (
