@@ -12,7 +12,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-app-brand text-app-on-brand hover:opacity-90",
   secondary: "border border-app text-app-secondary hover:text-app-primary",
   ghost: "text-app-secondary hover:text-app-primary hover:bg-app-raised",
-  danger: "bg-app-danger-soft text-app-danger border border-app-danger hover-bg-app-danger-subtle",
+  danger: "border border-app-danger bg-app-danger-subtle text-app-danger hover:bg-app-danger/15",
 };
 
 export function Button({ variant = "secondary", icon, children, className = "", type = "button", ...props }: ButtonProps) {
