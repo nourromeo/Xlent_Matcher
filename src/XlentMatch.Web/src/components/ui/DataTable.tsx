@@ -91,7 +91,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
           {columns.map((column) => <col key={column.key} style={column.width ? { width: column.width } : undefined} />)}
         </colgroup>
         <thead>
-          <tr className="border-b border-app">
+          <tr className="border-b border-app-border">
             {columns.map((column) => {
               const active = sort?.key === column.key;
               const ariaSort = !column.sortable
@@ -139,7 +139,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
             visibleRows.map((row) => (
               <tr
                 key={rowKey(row)}
-                className={`border-b border-app-subtle hover:bg-app-raised transition-colors${onRowClick ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-brand" : ""}`}
+                className={`border-b border-app-border-subtle hover:bg-app-raised transition-colors${onRowClick ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-brand" : ""}`}
                 onClick={(event) => {
                   if ((event.target as HTMLElement).closest("button,a,input,select,textarea,[role=button]")) return;
                   onRowClick?.(row);
@@ -164,7 +164,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
         </tbody>
       </table>
       {pagination && sortedRows.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-app bg-app-surface px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-app-border bg-app-surface px-4 py-2.5">
           <span className="text-[10px] text-app-faint">
             {firstRow}–{lastRow} of {sortedRows.length}{paginationLabel ? ` ${paginationLabel}` : ""}
           </span>
@@ -177,7 +177,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
                   setPageSize(Number(event.target.value));
                   setPage(1);
                 }}
-                className="rounded border border-app bg-app-surface px-1.5 py-1 text-[10px] text-app-secondary outline-none focus:border-app-brand focus-visible:ring-2 focus-visible:ring-app-brand"
+                className="rounded border border-app-border bg-app-surface px-1.5 py-1 text-[10px] text-app-secondary outline-none focus:border-app-brand focus-visible:ring-2 focus-visible:ring-app-brand"
               >
                 {pageSizeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
               </select>
