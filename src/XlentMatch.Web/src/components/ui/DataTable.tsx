@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight } from "../../design-system/icons";
 import { useI18n } from "../../i18n";
 
 type SortValue = string | number | boolean | Date | null | undefined;
@@ -20,6 +21,9 @@ type DataTableProps<T> = {
   defaultSort?: { key: string; direction?: "asc" | "desc" };
   onRowClick?: (row: T) => void;
   rowAriaLabel?: (row: T) => string;
+  pagination?: boolean;
+  pageSizeOptions?: number[];
+  paginationLabel?: string;
 };
 
 function normalizeSortValue(value: SortValue) {
@@ -29,9 +33,11 @@ function normalizeSortValue(value: SortValue) {
   return value ?? "";
 }
 
-export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort, onRowClick, rowAriaLabel }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort, onRowClick, rowAriaLabel, pagination = false, pageSizeOptions = [25, 50, 100], paginationLabel }: DataTableProps<T>) {
   const { t } = useI18n();
   const resolvedEmptyMessage = emptyMessage ?? t("common_no_data");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(pageSizeOptions[0] ?? 25);
   const [sort, setSort] = useState<{ key: string; direction: "asc" | "desc" } | null>(
     defaultSort ? { key: defaultSort.key, direction: defaultSort.direction ?? "asc" } : null,
   );
@@ -58,6 +64,18 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
       return sort.direction === "asc" ? result : -result;
     });
   }, [columns, rows, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(sortedRows.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleRows = pagination
+    ? sortedRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : sortedRows;
+  const firstRow = sortedRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const lastRow = pagination ? Math.min(currentPage * pageSize, sortedRows.length) : sortedRows.length;
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, pageCount));
+  }, [pageCount]);
 
   const toggleSort = (key: string) => {
     setSort((current) => {
@@ -118,7 +136,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
               </td>
             </tr>
           ) : (
-            sortedRows.map((row) => (
+            visibleRows.map((row) => (
               <tr
                 key={rowKey(row)}
                 className={`border-b border-app-subtle hover:bg-app-raised transition-colors${onRowClick ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-app-brand" : ""}`}
@@ -145,6 +163,35 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
           )}
         </tbody>
       </table>
+      {pagination && sortedRows.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-app bg-app-surface px-4 py-2.5">
+          <span className="text-[10px] text-app-faint">
+            {firstRow}–{lastRow} of {sortedRows.length}{paginationLabel ? ` ${paginationLabel}` : ""}
+          </span>
+          <div className="flex items-center gap-3 text-[10px] text-app-muted">
+            <label className="flex items-center gap-1.5">
+              <span>Rows per page:</span>
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setPage(1);
+                }}
+                className="rounded border border-app bg-app-surface px-1.5 py-1 text-[10px] text-app-secondary outline-none focus:border-app-brand focus-visible:ring-2 focus-visible:ring-app-brand"
+              >
+                {pageSizeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
+            <button type="button" aria-label={t("common_previous")} disabled={currentPage === 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary disabled:cursor-not-allowed disabled:opacity-35">
+              <ChevronLeft size={13} />
+            </button>
+            <span className="min-w-[68px] text-center">Page {currentPage} of {pageCount}</span>
+            <button type="button" aria-label={t("common_next")} disabled={currentPage === pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary disabled:cursor-not-allowed disabled:opacity-35">
+              <ChevronRight size={13} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
