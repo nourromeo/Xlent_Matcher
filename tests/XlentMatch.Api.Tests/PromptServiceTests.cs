@@ -30,12 +30,15 @@ public class PromptServiceTests
     {
         var schema = OpenAiTextService.AdaptationSchemaInstruction;
 
-        Assert.Contains("summary (string)", schema);
-        Assert.Contains("highlightedExperiences (array of strings)", schema);
-        Assert.Contains("adaptedCvText (string)", schema);
-        Assert.Contains("notes (array of strings)", schema);
+        Assert.Contains("internal CV analysis report, not a CV generator", schema);
+        Assert.Contains("overallAssessment (string)", schema);
+        Assert.Contains("strengths (array of strings)", schema);
+        Assert.Contains("relevantExperience (array of strings)", schema);
+        Assert.Contains("missingOrWeakAreas (array of strings)", schema);
+        Assert.Contains("suggestedImprovements (array of strings)", schema);
+        Assert.Contains("evidence (array of strings)", schema);
         Assert.Contains("Do not rename properties", schema);
-        Assert.Contains("Do not return objects inside highlightedExperiences or notes", schema);
+        Assert.Contains("Every array item must be a string", schema);
     }
 
     [Fact]
