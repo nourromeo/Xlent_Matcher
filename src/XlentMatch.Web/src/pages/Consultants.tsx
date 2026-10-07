@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Filter, Search } from "../design-system/icons";
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Filter, Search } from "../design-system/icons";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../i18n";
 import { LinkButton } from "../components/ui/LinkButton";
@@ -263,10 +263,11 @@ export default function Consultants() {
               sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99,
               render: (consultant) => (
                 <div className="relative min-h-10" onClick={(event) => event.stopPropagation()}>
-                  <button type="button" title={consultant.availability === "Unavailable" && consultant.availableAgainDate ? `${t("consultant_available_again")} ${formatAvailableAgainDate(consultant.availableAgainDate, locale, "", true)}` : undefined} aria-haspopup="dialog" aria-expanded={availabilityConsultant?.id === consultant.id} aria-label={`${t("consultants_availability_for")} ${consultantName(consultant)}`} onClick={() => openAvailabilityEditor(consultant)} className="inline-flex h-7 w-full min-w-0 items-center gap-1 rounded border border-app bg-app px-2 py-1 text-[11px] text-app-primary hover:border-app-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand">
+                  <button type="button" title={consultant.availability === "Unavailable" && consultant.availableAgainDate ? `${t("consultant_available_again")} ${formatAvailableAgainDate(consultant.availableAgainDate, locale, "", true)}` : undefined} aria-haspopup="dialog" aria-expanded={availabilityConsultant?.id === consultant.id} aria-label={`${t("consultants_availability_for")} ${consultantName(consultant)}`} onClick={() => openAvailabilityEditor(consultant)} className={`inline-flex h-7 w-full min-w-0 cursor-pointer items-center gap-1 rounded border border-transparent bg-app-raised px-2 py-1 text-[11px] text-app-primary transition-colors hover:border-app hover:bg-app-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand ${availabilityConsultant?.id === consultant.id ? "border-app-brand bg-app-surface" : ""}`}>
                     <span className={`flex-none text-[10px] ${consultant.availability === "Unavailable" ? "text-app-danger" : "text-app-success"}`} aria-hidden="true">●</span>
                     <span className={`flex-none ${consultant.availability === "Unavailable" ? "text-app-danger" : "text-app-success"}`}>{consultant.availability === "Unavailable" ? t("consultants_unavailable") : t("consultants_available")}</span>
                     {consultant.availability === "Unavailable" && consultant.availableAgainDate && <span className="truncate text-app-muted">{formatAvailableAgainDate(consultant.availableAgainDate, locale, "", false)}</span>}
+                    <ChevronDown size={12} className="ml-auto flex-none text-app-faint" aria-hidden="true" />
                   </button>
                   {availabilityConsultant?.id === consultant.id && (
                     <Modal open title={t("consultants_availability")} description={consultantName(consultant)} onClose={() => setAvailabilityConsultant(null)}>
@@ -325,17 +326,16 @@ export default function Consultants() {
             },
           ]}
           rows={filtered}
+          pagination
+          pageSizeOptions={[25, 50, 100]}
+          paginationLabel={t("consultants_label")}
           rowKey={(consultant) => String(consultant.id)}
           onRowClick={(consultant) => navigate(`/consultants/${consultant.id}`)}
           rowAriaLabel={(consultant) => `${t("consultants_view")} ${consultantName(consultant)}`}
           emptyMessage={loading ? t("consultants_loading") : t("consultants_empty")}
         />
 
-        <div className="border-t border-app px-4 py-2.5 bg-app-surface">
-          <span className="text-[10px] text-app-faint">
-            {loading ? t("consultants_loading_short") : `${t("consultants_showing")} ${filtered.length} ${t("consultants_of")} ${consultants.length} ${t("consultants_label")}`}
-          </span>
-        </div>
+        
       </div>
     </div>
   );
