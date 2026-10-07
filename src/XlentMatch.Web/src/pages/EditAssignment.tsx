@@ -197,7 +197,7 @@ export default function EditAssignment() {
       onChange={(e) =>
         updateRequirement(index, { type: e.target.value as RequirementType })
       }
-      className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+      className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
     >
       <option value="Mandatory">{t("client_mandatory")}</option>
       <option value="Desired">{t("client_desired")}</option>
@@ -240,7 +240,7 @@ export default function EditAssignment() {
                       .value as AssignmentRequirementApi["proficiency"],
                   })
                 }
-                className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
               >
                 <option value="Not specified">
                   {t("common_not_specified")}
@@ -298,7 +298,7 @@ export default function EditAssignment() {
       return (
         <div
           key={`${item.id}-${index}`}
-          className="grid gap-2 rounded-lg border border-app bg-app-raised p-3 md:grid-cols-[minmax(180px,1fr)_150px_170px_auto] md:items-center"
+          className="grid gap-2 rounded-lg border border-app-border bg-app-raised p-3 md:grid-cols-[minmax(180px,1fr)_150px_170px_auto] md:items-center"
         >
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-app-primary">
@@ -376,7 +376,7 @@ export default function EditAssignment() {
               type="button"
               key={key}
               onClick={() => setStep(key)}
-              className={`rounded-lg border px-3 py-2 text-left text-xs ${step === key ? "border-app-brand bg-app-brand-soft text-app-primary" : "border-app text-app-muted"}`}
+              className={`rounded-lg border px-3 py-2 text-left text-xs ${step === key ? "border-app-brand bg-app-brand-soft text-app-primary" : "border-app-border text-app-muted"}`}
             >
               <span className="font-semibold">{index + 1}</span>
               <span className="ml-2">
@@ -392,12 +392,12 @@ export default function EditAssignment() {
         {error && (
           <div
             role="alert"
-            className="rounded-lg border border-app bg-app-surface px-4 py-3 text-xs text-app-secondary"
+            className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary"
           >
             {error}
           </div>
         )}
-        <section className="space-y-5 rounded-xl border border-app bg-app-surface p-5 shadow-app-surface">
+        <section className="space-y-5 rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
           {step === "basic" && (
             <>
               <h2 className="text-sm font-medium text-app-primary">
@@ -423,7 +423,7 @@ export default function EditAssignment() {
                   <select
                     value={draft.seniority ?? ""}
                     onChange={(e) => setSeniority(e.target.value)}
-                    className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                    className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
                   >
                     <option value="">{t("common_not_specified")}</option>
                     <option value="Junior">{t("seniority_junior")}</option>
@@ -450,7 +450,7 @@ export default function EditAssignment() {
                         },
                       )
                     }
-                    className="w-full rounded border border-app bg-app px-3 py-2 text-xs text-app-primary"
+                    className="w-full rounded border border-app-border bg-app px-3 py-2 text-xs text-app-primary"
                   >
                     <option value="Exact">{t("assignment_exact")}</option>
                     <option value="Minimum">{t("assignment_minimum")}</option>
@@ -615,7 +615,7 @@ export default function EditAssignment() {
               <p className="text-xs text-app-muted">
                 {t("assignment_review_description")}
               </p>
-              <section className="space-y-3 border-b border-app pb-4">
+              <section className="space-y-3 border-b border-app-border pb-4">
                 <h3 className="text-xs font-medium text-app-primary">
                   {t("assignment_review_basic")}
                 </h3>
@@ -684,7 +684,7 @@ export default function EditAssignment() {
                   items.map((item, index) => (
                     <div
                       key={`${item.id}-${index}`}
-                      className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_180px]"
+                      className="grid gap-1 border-b border-app-border py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_180px]"
                     >
                       <span className="text-app-primary">{item.name}</span>
                       <span className="text-app-muted">
@@ -724,7 +724,7 @@ export default function EditAssignment() {
                         <h3 className="text-xs font-medium text-app-primary">
                           {t("assignment_review_language_requirements")}
                         </h3>
-                        <div className="hidden grid-cols-[minmax(0,1fr)_150px_150px] gap-2 border-b border-app px-0 pb-1 text-[10px] text-app-muted md:grid">
+                        <div className="hidden grid-cols-[minmax(0,1fr)_150px_150px] gap-2 border-b border-app-border px-0 pb-1 text-[10px] text-app-muted md:grid">
                           <span>{t("assignment_language")}</span>
                           <span>{t("assignment_requirement_priority")}</span>
                           <span>{t("assignment_language_proficiency")}</span>
@@ -732,7 +732,7 @@ export default function EditAssignment() {
                         {languages.map((item, index) => (
                           <div
                             key={`${item.id}-${index}`}
-                            className="grid gap-1 border-b border-app py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_150px_150px]"
+                            className="grid gap-1 border-b border-app-border py-2 text-xs last:border-0 md:grid-cols-[minmax(0,1fr)_150px_150px]"
                           >
                             <span className="text-app-primary">
                               {item.name}
@@ -762,7 +762,7 @@ export default function EditAssignment() {
                         {other.map((item, index) => (
                           <div
                             key={`${item.id}-${index}`}
-                            className="flex flex-wrap justify-between gap-2 border-b border-app py-2 text-xs last:border-0"
+                            className="flex flex-wrap justify-between gap-2 border-b border-app-border py-2 text-xs last:border-0"
                           >
                             <span className="text-app-primary">
                               {item.name}
