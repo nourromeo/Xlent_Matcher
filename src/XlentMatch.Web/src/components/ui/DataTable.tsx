@@ -170,7 +170,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
           </span>
           <div className="flex items-center gap-3 text-[10px] text-app-muted">
             <label className="flex items-center gap-1.5">
-              <span>Rows per page:</span>
+              <span>{t("common_rows_per_page")}:</span>
               <select
                 value={pageSize}
                 onChange={(event) => {
@@ -185,7 +185,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
             <button type="button" aria-label={t("common_previous")} disabled={currentPage === 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary disabled:cursor-not-allowed disabled:opacity-35">
               <ChevronLeft size={13} />
             </button>
-            <span className="min-w-[68px] text-center">Page {currentPage} of {pageCount}</span>
+            <span className="min-w-[68px] text-center">{t("common_page")} {currentPage} {t("common_of")} {pageCount}</span>
             <button type="button" aria-label={t("common_next")} disabled={currentPage === pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary disabled:cursor-not-allowed disabled:opacity-35">
               <ChevronRight size={13} />
             </button>
