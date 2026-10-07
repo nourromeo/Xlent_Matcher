@@ -5,6 +5,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { Button } from "../components/ui/Button";
+import { RemoveButton } from "../components/ui/RemoveButton";
 import { useI18n } from "../i18n";
 import { assignmentsApi } from "../services/assignmentsApi";
 import type { AssignmentApi, AssignmentRequirementApi } from "../types";
@@ -348,14 +349,7 @@ export default function EditAssignment() {
             >
               {t("common_edit")}
             </button>
-            <button
-              type="button"
-              aria-label={`${t("common_remove")} ${item.name}`}
-              onClick={() => removeRequirement(index)}
-              className="text-xs text-app-danger"
-            >
-              {t("common_remove")}
-            </button>
+            <RemoveButton label={`${t("common_remove")} ${item.name}`} onClick={() => removeRequirement(index)} />
           </div>
         </div>
       );
@@ -598,14 +592,7 @@ export default function EditAssignment() {
                             }
                           />,
                         )}
-                        <button
-                          type="button"
-                          aria-label={`${t("common_remove")} ${item.name}`}
-                          onClick={() => removeRequirement(index)}
-                          className="mb-1 rounded px-2 py-2 text-app-muted hover:text-app-danger"
-                        >
-                          <X size={13} />
-                        </button>
+                        <RemoveButton compact label={`${t("common_remove")} ${item.name}`} onClick={() => removeRequirement(index)} />
                       </div>
                     ))}
                 </section>
