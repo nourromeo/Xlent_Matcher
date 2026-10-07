@@ -500,13 +500,16 @@ export default function Admin() {
                       <Button variant="ghost" icon={<Edit3 size={11} />} onClick={() => openSkillEditor(skill)}>
                         {t("admin_edit")}
                       </Button>
-                      <button
+                      <Button
+                        variant="danger"
+                        icon={<Trash2 size={12} />}
                         onClick={() => void deleteSkill(skill)}
-                        className="p-2 text-app-faint hover:text-app-secondary"
                         aria-label={t("common_delete") + " " + skill.canonical}
+                        title={t("common_delete") + " " + skill.canonical}
+                        className="px-2"
                       >
-                        <Trash2 size={12} />
-                      </button>
+                        <span className="sr-only">{t("common_delete")}</span>
+                      </Button>
                     </div>
                   ),
                 },
