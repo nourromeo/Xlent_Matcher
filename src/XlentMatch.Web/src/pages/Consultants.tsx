@@ -8,6 +8,7 @@ import { DataTable } from "../components/ui/DataTable";
 import { SkillTag } from "../components/ui/SkillTag";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Modal } from "../components/ui/Modal";
+import { Button } from "../components/ui/Button";
 import { consultantsApi } from "../services/consultantsApi";
 import type { Consultant } from "../types";
 import { formatDate, formatDateShort } from "../services/localeFormat";
@@ -307,8 +308,8 @@ export default function Consultants() {
                         </label>
                       )}
                       <div className="mt-3 flex justify-end gap-2">
-                        <button type="button" onClick={() => setAvailabilityConsultant(null)} className="rounded px-2 py-1 text-[10px] text-app-muted hover:bg-app-raised hover:text-app-primary">{t("common_cancel")}</button>
-                        <button type="button" disabled={updatingAvailabilityId === consultant.id} onClick={() => { setAvailabilityConsultant(null); void updateAvailability(consultant, availabilityDraft, availabilityDraft === "Available" ? null : availableAgainDraft); }} className="rounded bg-app-brand px-2 py-1 text-[10px] font-medium text-white disabled:opacity-50">{t("common_save")}</button>
+                        <Button variant="ghost" className="px-2 py-1 text-[10px]" onClick={() => setAvailabilityConsultant(null)}>{t("common_cancel")}</Button>
+                        <Button variant="primary" className="px-2 py-1 text-[10px] font-medium" disabled={updatingAvailabilityId === consultant.id} onClick={() => { setAvailabilityConsultant(null); void updateAvailability(consultant, availabilityDraft, availabilityDraft === "Available" ? null : availableAgainDraft); }}>{t("common_save")}</Button>
                       </div>
                     </div>
                     </Modal>
