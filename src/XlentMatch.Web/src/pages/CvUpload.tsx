@@ -19,74 +19,78 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function dateOnly(value: string | null) {
+function dateOnly(value: string | null): string | null {
   if (!value) return null;
-  return /^\d{4}-\d{2}$/.test(value) ? `${value}-01` : value;
+  const v = value.trim();
+  if (/^\d{4}$/.test(v)) return `${v}-01-01`;
+  if (/^\d{4}-\d{2}$/.test(v)) return `${v}-01`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return null;
 }
 
 function toConsultant(draft: ConsultantDraft): Consultant {
   return {
     id: 0,
-    firstName: draft.firstName.trim(),
-    lastName: draft.lastName.trim(),
+    firstName: draft.firstName?.trim() ?? "",
+    lastName: draft.lastName?.trim() ?? "",
     email: draft.email?.trim() || null,
     title: draft.title?.trim() || null,
     summary: draft.summary?.trim() || null,
     seniority: draft.seniority?.trim() || null,
-    yearsOfExperience: draft.yearsOfExperience,
+    yearsOfExperience: draft.yearsOfExperience ?? 0,
     yearsOfExperienceSource: draft.yearsOfExperienceSource,
     availableAgainDate: null,
     availability: "Available",
     office: draft.office?.trim() || null,
     originalCvText: null,
     fullName: undefined,
-    skills: draft.skills.filter((skill) => skill.name.trim()).map((skill) => ({
+    skills: (draft.skills ?? []).filter((skill) => skill.name?.trim()).map((skill) => ({
       id: 0,
       consultantId: 0,
-      name: skill.name.trim(),
+      name: skill.name?.trim() ?? "",
       category: null,
-      years: skill.years,
-      level: skill.level,
+      years: skill.years ?? 0,
+      level: skill.level ?? 0,
       evidence: skill.evidence?.trim() || null,
     })),
-    experiences: draft.experiences.filter((item) => item.company.trim() || item.role.trim()).map((item) => ({
+    experiences: (draft.experiences ?? []).filter((item) => item.company?.trim() || item.role?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      company: item.company.trim(),
-      role: item.role.trim(),
+      company: item.company?.trim() ?? "",
+      role: item.role?.trim() ?? "",
       description: item.description?.trim() || null,
       startDate: dateOnly(item.startDate),
       endDate: dateOnly(item.endDate),
     })),
-    projects: draft.projects.filter((item) => item.name.trim()).map((item) => ({
+    projects: (draft.projects ?? []).filter((item) => item.name?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      name: item.name.trim(),
+      name: item.name?.trim() ?? "",
       description: item.description?.trim() || null,
       technologies: item.technologies?.trim() || null,
     })),
-    education: draft.education.filter((item) => item.degree.trim()).map((item) => ({
+    education: (draft.education ?? []).filter((item) => item.degree?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      degree: item.degree.trim(),
+      degree: item.degree?.trim() ?? "",
       school: item.school?.trim() || null,
       year: item.year?.trim() || null,
     })),
-    languages: draft.languages.filter((item) => item.name.trim()).map((item) => ({
+    languages: (draft.languages ?? []).filter((item) => item.name?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      name: item.name.trim(),
-      proficiency: item.proficiency,
+      name: item.name?.trim() ?? "",
+      proficiency: item.proficiency ?? "Not specified",
     })),
-    industries: draft.industries.filter((name) => name.trim()).map((name) => ({
+    industries: (draft.industries ?? []).filter((name) => name?.trim()).map((name) => ({
       id: 0,
       consultantId: 0,
-      name: name.trim(),
+      name: name?.trim() ?? "",
     })),
-    certifications: draft.certifications.filter((item) => item.name.trim()).map((item) => ({
+    certifications: (draft.certifications ?? []).filter((item) => item.name?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      name: item.name.trim(),
+      name: item.name?.trim() ?? "",
       issuer: item.issuer?.trim() || null,
       issuedDate: dateOnly(item.issuedDate),
     })),
@@ -220,12 +224,12 @@ export default function CvUpload() {
 
     const currentDraft = activeFile.draft;
     if ((currentDraft.yearsOfExperience ?? 0) < 0 ||
-        currentDraft.skills.some((skill) => skill.years < 0 || skill.level < 0 || skill.level > 5)) {
+        (currentDraft.skills ?? []).some((skill) => (skill.years ?? 0) < 0 || (skill.level ?? 0) < 0 || (skill.level ?? 0) > 5)) {
       setError(t("upload_invalid_experience"));
       return;
     }
 
-    const invalidDateRange = currentDraft.experiences.some((item) => {
+    const invalidDateRange = (currentDraft.experiences ?? []).some((item) => {
       if (!item.startDate || !item.endDate) return false;
       return dateOnly(item.startDate)! > dateOnly(item.endDate)!;
     });
@@ -234,7 +238,7 @@ export default function CvUpload() {
       return;
     }
 
-    const normalizedLanguageNames = currentDraft.languages.map((item) => item.name.trim().toLocaleLowerCase()).filter(Boolean);
+    const normalizedLanguageNames = (currentDraft.languages ?? []).map((item) => item.name?.trim().toLocaleLowerCase()).filter(Boolean);
     if (new Set(normalizedLanguageNames).size !== normalizedLanguageNames.length) {
       setError(t("upload_duplicate_languages"));
       return;
@@ -454,7 +458,7 @@ export default function CvUpload() {
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">{t("consultant_total_experience")}</span>
-                  <Input type="number" min={0} value={draft.yearsOfExperience ?? ""} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: event.target.value ? Number(event.target.value) : null, yearsOfExperienceSource: "ManuallyConfirmed" })} />
+                  <Input type="number" min={0} value={draft.yearsOfExperience ?? 0} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: event.target.value ? Number(event.target.value) : null, yearsOfExperienceSource: "ManuallyConfirmed" })} />
                 </label>
                 <label>
                   <span className="text-[11px] text-app-muted block mb-1">{t("upload_email")}</span>
@@ -476,54 +480,54 @@ export default function CvUpload() {
 
             <section className={reviewStep === 1 ? "space-y-3" : "hidden"}>
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_skills")} ({draft.skills.length})</p>
+                <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_skills")} ({(draft.skills?.length ?? 0)})</p>
                 <Button
                   variant="ghost"
                   icon={<Plus size={11} />}
-                  onClick={() => updateDraft({
-                    ...draft,
-                    skills: [...draft.skills, { name: "", level: 0, years: 0, evidence: null }],
-                  })}
+onClick={() => updateDraft({
+                      ...draft,
+                      skills: [...(draft.skills ?? []), { name: "", level: 0, years: 0, evidence: null }],
+                    })}
                 >
                   {t("common_add")} {t("upload_field_skill").toLowerCase()}
                 </Button>
               </div>
 
               <div className="space-y-2">
-                {draft.skills.map((skill, index) => (
+                {(draft.skills ?? []).map((skill, index) => (
                   <div key={index} className="grid grid-cols-[1fr_80px_80px_30px] gap-2 items-center">
                     <Input
-                      value={skill.name}
+                      value={skill.name ?? ""}
                       aria-label={t("upload_field_skill")} placeholder={t("upload_field_skill")}
                       onChange={(event) => updateDraft({
                         ...draft,
-                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, name: event.target.value } : item),
+                        skills: (draft.skills ?? []).map((item, currentIndex) => currentIndex === index ? { ...item, name: event.target.value } : item),
                       })}
                     />
                     <Input
                       type="number"
                       min={0}
-                      value={skill.years}
+                      value={skill.years ?? 0}
                       aria-label={t("upload_field_years")} placeholder={t("upload_field_years")}
                       onChange={(event) => updateDraft({
                         ...draft,
-                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, years: Number(event.target.value) || 0 } : item),
+                        skills: (draft.skills ?? []).map((item, currentIndex) => currentIndex === index ? { ...item, years: Number(event.target.value) || 0 } : item),
                       })}
                     />
                     <Input
                       type="number"
                       min={0}
                       max={5}
-                      value={skill.level}
+                      value={skill.level ?? 0}
                       aria-label={t("upload_field_level")} placeholder={t("upload_field_level")}
                       onChange={(event) => updateDraft({
                         ...draft,
-                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, level: Number(event.target.value) || 0 } : item),
+                        skills: (draft.skills ?? []).map((item, currentIndex) => currentIndex === index ? { ...item, level: Number(event.target.value) || 0 } : item),
                       })}
                     />
                     <button
                       type="button"
-                      onClick={() => updateDraft({ ...draft, skills: draft.skills.filter((_, currentIndex) => currentIndex !== index) })}
+                      onClick={() => updateDraft({ ...draft, skills: (draft.skills ?? []).filter((_, currentIndex) => currentIndex !== index) })}
                       className="text-app-faint hover:text-app-secondary"
                       aria-label={t("upload_remove_skill")}
                     >
@@ -545,39 +549,39 @@ export default function CvUpload() {
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-app-primary">{t("upload_languages")} ({draft.languages.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", proficiency: "Not specified" }] })}>{t("upload_add_language")}</Button>
+                  <p className="text-xs font-medium text-app-primary">{t("upload_languages")} ({(draft.languages?.length ?? 0)})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, languages: [...(draft.languages ?? []), { name: "", proficiency: "Not specified" }] })}>{t("upload_add_language")}</Button>
                 </div>
-                {draft.languages.map((item, index) => (
+                {(draft.languages ?? []).map((item, index) => (
                   <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                    <Input aria-label={t("consultant_language")} placeholder={t("consultant_language")} value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                    <select aria-label={t("upload_language_proficiency")} value={item.proficiency} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
-                    <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label={t("upload_remove_language")}><X size={12} /></button>
+                    <Input aria-label={t("consultant_language")} placeholder={t("consultant_language")} value={item.name ?? ""} onChange={(event) => updateDraft({ ...draft, languages: (draft.languages ?? []).map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                    <select aria-label={t("upload_language_proficiency")} value={item.proficiency ?? "Not specified"} onChange={(event) => updateDraft({ ...draft, languages: (draft.languages ?? []).map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app rounded px-3 py-2 text-xs text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
+                    <button type="button" onClick={() => updateDraft({ ...draft, languages: (draft.languages ?? []).filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label={t("upload_remove_language")}><X size={12} /></button>
                   </div>
                 ))}
-                {draft.languages.length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_languages")}</p>}
+                {(draft.languages ?? []).length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_languages")}</p>}
               </div>
 
 </div>
               <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
               <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-app-primary">{t("upload_experience_section")} ({draft.experiences.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...draft.experiences, { company: "", role: "", description: null, startDate: null, endDate: null }] })}>{t("upload_add_experience")}</Button>
+                  <p className="text-xs font-medium text-app-primary">{t("upload_experience_section")} ({(draft.experiences?.length ?? 0)})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...(draft.experiences ?? []), { company: "", role: "", description: null, startDate: null, endDate: null }] })}>{t("upload_add_experience")}</Button>
                 </div>
-                {draft.experiences.map((item, index) => (
-                  <div key={index} className="rounded-md border border-app bg-app-surface p-3 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input aria-label={t("upload_role")} placeholder={t("upload_role")} value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
-                      <Input aria-label={t("consultant_company")} placeholder={t("consultant_company")} value={item.company} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
-                      <Input type="month" aria-label={t("upload_start_date")} value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
-                      <Input type="month" aria-label={t("upload_end_date")} value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
+{(draft.experiences ?? []).map((item, index) => (
+                    <div key={index} className="rounded-md border border-app bg-app-surface p-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input aria-label={t("upload_role")} placeholder={t("upload_role")} value={item.role ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: (draft.experiences ?? []).map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
+                        <Input aria-label={t("consultant_company")} placeholder={t("consultant_company")} value={item.company ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: (draft.experiences ?? []).map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
+                        <Input type="month" aria-label={t("upload_start_date")} value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: (draft.experiences ?? []).map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
+                        <Input type="month" aria-label={t("upload_end_date")} value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: (draft.experiences ?? []).map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
+                      </div>
+                      <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: (draft.experiences ?? []).map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                      <button type="button" onClick={() => updateDraft({ ...draft, experiences: (draft.experiences ?? []).filter((_, i) => i !== index) })} className="text-[11px] text-app-muted hover:text-app-secondary">{t("consultant_remove_experience")}</button>
                     </div>
-                    <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
-                    <button type="button" onClick={() => updateDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted hover:text-app-secondary">{t("consultant_remove_experience")}</button>
-                  </div>
-                ))}
-                {draft.experiences.length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_experience")}</p>}
+                  ))}
+                  {(draft.experiences ?? []).length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_experience")}</p>}
               </div>
 
 </div>
@@ -585,60 +589,60 @@ export default function CvUpload() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">{t("upload_projects")} ({draft.projects.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, projects: [...draft.projects, { name: "", description: null, technologies: null }] })}>{t("common_add")} {t("upload_projects").toLowerCase()}</Button>
+<p className="text-xs font-medium text-app-primary">{t("upload_projects")} ({(draft.projects?.length ?? 0)})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, projects: [...(draft.projects ?? []), { name: "", description: null, technologies: null }] })}>{t("common_add")} {t("upload_projects").toLowerCase()}</Button>
                   </div>
-                  {draft.projects.map((item, index) => (
-                    <div key={index} className="rounded border border-app bg-app-surface p-2 space-y-2">
-                      <Input aria-label={t("upload_project_name")} placeholder={t("upload_project_name")} value={item.name} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                      <Input aria-label={t("upload_technologies")} placeholder={t("upload_technologies")} value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
-                      <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted">{t("consultant_remove_project")}</button>
-                    </div>
-                  ))}
+{(draft.projects ?? []).map((item, index) => (
+                      <div key={index} className="rounded border border-app bg-app-surface p-2 space-y-2">
+                        <Input aria-label={t("upload_project_name")} placeholder={t("upload_project_name")} value={item.name ?? ""} onChange={(event) => updateDraft({ ...draft, projects: (draft.projects ?? []).map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                        <Input aria-label={t("upload_technologies")} placeholder={t("upload_technologies")} value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: (draft.projects ?? []).map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
+                        <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: (draft.projects ?? []).map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
+                        <button type="button" onClick={() => updateDraft({ ...draft, projects: (draft.projects ?? []).filter((_, i) => i !== index) })} className="text-[11px] text-app-muted">{t("consultant_remove_project")}</button>
+                      </div>
+                    ))}
                 </div>
 
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">{t("upload_education")} ({draft.education.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, education: [...draft.education, { degree: "", school: null, year: null }] })}>{t("common_add")} {t("upload_education").toLowerCase()}</Button>
+<p className="text-xs font-medium text-app-primary">{t("upload_education")} ({(draft.education?.length ?? 0)})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, education: [...(draft.education ?? []), { degree: "", school: null, year: null }] })}>{t("common_add")} {t("upload_education").toLowerCase()}</Button>
                   </div>
-                  {draft.education.map((item, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-center">
-                      <Input aria-label={t("upload_degree")} placeholder={t("upload_degree")} value={item.degree} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
-                      <Input aria-label={t("consultant_school")} placeholder={t("consultant_school")} value={item.school ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
-                      <Input aria-label={t("upload_year")} placeholder={t("upload_year")} value={item.year ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_education")}><X size={12} /></button>
-                    </div>
-                  ))}
+{(draft.education ?? []).map((item, index) => (
+                      <div key={index} className="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-center">
+                        <Input aria-label={t("upload_degree")} placeholder={t("upload_degree")} value={item.degree ?? ""} onChange={(event) => updateDraft({ ...draft, education: (draft.education ?? []).map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
+                        <Input aria-label={t("consultant_school")} placeholder={t("consultant_school")} value={item.school ?? ""} onChange={(event) => updateDraft({ ...draft, education: (draft.education ?? []).map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
+                        <Input aria-label={t("upload_year")} placeholder={t("upload_year")} value={item.year ?? ""} onChange={(event) => updateDraft({ ...draft, education: (draft.education ?? []).map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
+                        <button type="button" onClick={() => updateDraft({ ...draft, education: (draft.education ?? []).filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_education")}><X size={12} /></button>
+                      </div>
+                    ))}
                 </div>
 
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">{t("upload_certifications")} ({draft.certifications.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, certifications: [...draft.certifications, { name: "", issuer: null, issuedDate: null }] })}>{t("common_add")} {t("upload_certifications").toLowerCase()}</Button>
+<p className="text-xs font-medium text-app-primary">{t("upload_certifications")} ({(draft.certifications?.length ?? 0)})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, certifications: [...(draft.certifications ?? []), { name: "", issuer: null, issuedDate: null }] })}>{t("common_add")} {t("upload_certifications").toLowerCase()}</Button>
                   </div>
-                  {draft.certifications.map((item, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_1fr_110px_auto] gap-2 items-center">
-                      <Input aria-label={t("upload_certification")} placeholder={t("upload_certification")} value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                      <Input aria-label={t("upload_issuer")} placeholder={t("upload_issuer")} value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
-                      <Input type="month" aria-label={t("upload_issued_date")} value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_certification")}><X size={12} /></button>
-                    </div>
-                  ))}
+{(draft.certifications ?? []).map((item, index) => (
+                      <div key={index} className="grid grid-cols-[1fr_1fr_110px_auto] gap-2 items-center">
+                        <Input aria-label={t("upload_certification")} placeholder={t("upload_certification")} value={item.name ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: (draft.certifications ?? []).map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
+                        <Input aria-label={t("upload_issuer")} placeholder={t("upload_issuer")} value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: (draft.certifications ?? []).map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
+                        <Input type="month" aria-label={t("upload_issued_date")} value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: (draft.certifications ?? []).map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
+                        <button type="button" onClick={() => updateDraft({ ...draft, certifications: (draft.certifications ?? []).filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_certification")}><X size={12} /></button>
+                      </div>
+                    ))}
                 </div>
 
                 <div className="rounded-lg border border-app bg-app-raised p-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">{t("upload_industries")} ({draft.industries.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, industries: [...draft.industries, ""] })}>{t("common_add")} {t("upload_industries").toLowerCase()}</Button>
+<p className="text-xs font-medium text-app-primary">{t("upload_industries")} ({(draft.industries?.length ?? 0)})</p>
+                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, industries: [...(draft.industries ?? []), ""] })}>{t("common_add")} {t("upload_industries").toLowerCase()}</Button>
                   </div>
-                  {draft.industries.map((item, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input aria-label={t("upload_industry")} placeholder={t("upload_industry")} value={item} onChange={(event) => updateDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? event.target.value : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_industry")}><X size={12} /></button>
-                    </div>
-                  ))}
+{(draft.industries ?? []).map((item, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input aria-label={t("upload_industry")} placeholder={t("upload_industry")} value={item ?? ""} onChange={(event) => updateDraft({ ...draft, industries: (draft.industries ?? []).map((row, i) => i === index ? event.target.value : row) })} />
+                        <button type="button" onClick={() => updateDraft({ ...draft, industries: (draft.industries ?? []).filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_industry")}><X size={12} /></button>
+                      </div>
+                    ))}
                 </div>
               </div>
               </div>

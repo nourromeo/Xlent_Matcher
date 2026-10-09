@@ -30,7 +30,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
 
     [HttpPost]
     public async Task<ActionResult<Consultant>> Create(
-        Consultant consultant,
+        [FromBody] Consultant consultant,
         [FromQuery] int? cvUploadId,
         CancellationToken ct)
     {
