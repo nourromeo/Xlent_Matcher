@@ -284,7 +284,6 @@ export default function Matching() {
       });
 
       setResults(data);
-      setNewConsultants(0);
       setSelectedMatchId(data[0]?.id ?? null);
       setAssignments((current) =>
         current.map((item) =>
