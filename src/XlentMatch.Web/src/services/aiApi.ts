@@ -37,7 +37,7 @@ export type ConsultantDraft = {
   yearsOfExperience: number | null;
   yearsOfExperienceSource: string | null;
   office: string | null;
-  skills: Array<{ name: string; level: number; years: number; evidence: string | null }>;
+  skills: Array<{ name: string; level: number; years: number | null; evidence: string | null }>;
   experiences: Array<{ company: string; role: string; description: string | null; startDate: string | null; endDate: string | null }>;
   projects: Array<{ name: string; description: string | null; technologies: string | null }>;
   education: Array<{ degree: string; school: string | null; year: string | null }>;
