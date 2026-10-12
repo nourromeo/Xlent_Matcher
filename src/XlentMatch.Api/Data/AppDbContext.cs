@@ -68,6 +68,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(x => x.ConsultantId)
             .OnDelete(DeleteBehavior.SetNull);
         mb.Entity<CvUploadRecord>().HasIndex(x => x.ConsultantId);
+        mb.Entity<CvUploadRecord>().HasIndex(x => new { x.ConsultantId, x.IsActive }, "IX_CvUploads_OneActivePerConsultant")
+            .IsUnique()
+            .HasFilter("[IsActive] = 1 AND [ConsultantId] IS NOT NULL");
         mb.Entity<AiPromptVersion>().HasIndex(x => new { x.PromptKey, x.Version }).IsUnique();
         mb.Entity<AiPromptVersion>().HasIndex(x => new { x.PromptKey, x.IsActive })
             .HasFilter("[IsActive] = 1")
