@@ -207,6 +207,7 @@ export default function Matching() {
     try {
       const ranking = await matchingApi.rankWithAi(assignment.id);
       setAiRanking(ranking);
+      setRankingTab("ai");
     } catch (err) {
       setAiError(err instanceof Error ? err.message : "AI Ranking failed.");
     } finally {
@@ -593,8 +594,75 @@ export default function Matching() {
           </div>
         </div>
       ) : selected ? (
-        <div className="flex-1 flex min-h-0">
-          <aside className="w-80 flex-none border-r border-app-border bg-app-surface flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
+<div className="px-6 py-3 border-b border-app-border bg-app-surface">
+              <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-app p-1" role="tablist" aria-label="Ranking method">
+                <button type="button" role="tab" aria-selected={rankingTab === "match"} onClick={() => setRankingTab("match")} className={`rounded-md px-2 py-2 text-xs font-medium ${rankingTab === "match" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>Match Score</button>
+                <button type="button" role="tab" aria-selected={rankingTab === "ai"} onClick={() => setRankingTab("ai")} className={`rounded-md px-2 py-2 text-xs font-medium ${rankingTab === "ai" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>AI Ranking</button>
+              </div>
+            </div>
+            
+          {rankingTab === "ai" ? (
+            <main className="flex-1 min-h-0 overflow-auto bg-app">
+              <div className="p-6 space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-3"><div>
+                  <h2 className="text-sm font-semibold text-app-primary">AI Ranking · Original CVs</h2>
+                  <p className="mt-1 text-xs text-app-muted">Compare the top two eligible consultants using their original CV documents and this assignment. Match Score is unchanged.</p></div>
+                  {aiRanking && <button type="button" disabled={aiLoading} onClick={() => void runAiRanking()} className="rounded-md border border-app-border px-3 py-2 text-xs text-app-secondary disabled:opacity-50">{aiLoading ? "Analyzing..." : "Re-run AI Ranking"}</button>}
+                </div>
+                {!aiRanking && (
+                  <div className="rounded-xl border border-app-border bg-app-surface p-6 text-center">
+                    <p className="text-sm font-semibold text-app-primary">No AI ranking yet</p>
+                    <p className="mt-2 text-xs text-app-muted">Run the analysis after Matching. Consultants without an active original CV are skipped.</p>
+                    <button type="button" disabled={aiLoading} onClick={() => void runAiRanking()} className="mt-4 rounded-md bg-app-brand px-4 py-2 text-xs font-medium text-app-on-brand disabled:opacity-50">
+                      {aiLoading ? "Analyzing original CVs..." : "Rank Top Matches with AI"}
+                    </button>
+                  </div>
+                )}
+                {aiError && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-red-500">{aiError}</p>}
+                {aiRanking && (
+                  <>
+                    {aiRanking.skippedWithoutCv > 0 && <p className="text-xs text-app-muted">{aiRanking.skippedWithoutCv} higher-ranked consultant(s) were skipped because an original CV was unavailable.</p>}
+                    <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-2" aria-label="AI comparison summary">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">AI Comparison Summary</p>
+                      {(() => {
+                        const winner = aiRanking.rankings.find((item) => item.rank === 1);
+                        const second = aiRanking.rankings.find((item) => item.rank === 2);
+                        const winnerName = allResults.find((item) => item.consultantId === winner?.consultantId)?.consultantName ?? "Consultant";
+                        const secondName = allResults.find((item) => item.consultantId === second?.consultantId)?.consultantName ?? "the other consultant";
+                        return <>
+                          <h3 className="text-base font-semibold text-app-primary">Recommended: {winnerName}</h3>
+                          <p className="text-sm leading-relaxed text-app-secondary">{winner?.reason}</p>
+                          <p className="text-xs text-app-muted">Compared with {secondName}: {second?.reason}</p>
+                        </>;
+                      })()}
+                      <p className="border-t border-app-border pt-3 text-[11px] text-app-muted">AI assessment based on original CVs. No new numeric score. Final selection remains with the XLENT user.</p>
+                    </section>
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      {[...aiRanking.rankings].sort((a, b) => a.rank - b.rank).map((item) => {
+                        const original = allResults.find((r) => r.consultantId === item.consultantId);
+                        return (
+                          <article key={item.consultantId} className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
+                            <p className="text-xs font-semibold text-app-brand">AI Rank #{item.rank}</p>
+                            <h3 className="text-sm font-semibold text-app-primary">{original?.consultantName ?? `Consultant #${item.consultantId}`}</h3>
+                            <p className="text-xs text-app-muted">Original Match Score: {original?.score ?? "—"}%</p>
+                            <p className="text-xs text-app-secondary leading-relaxed">{item.reason}</p>
+                            <div><h4 className="text-xs font-semibold text-app-primary">Strengths</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.strengths.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
+                            <div><h4 className="text-xs font-semibold text-app-primary">Gaps</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.gaps.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
+                            <div><h4 className="text-xs font-semibold text-app-primary">CV Evidence</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.evidence.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
+                          </article>
+                        );
+                      })}
+                    </div>
+
+                  </>
+                )}
+              </div>
+            
+            </main>
+          ) : (
+            <div className="flex-1 flex min-h-0">
+              <aside className="w-80 flex-none border-r border-app-border bg-app-surface flex flex-col">
             <div className="px-4 py-3 border-b border-app-border">
               <p className="text-sm font-semibold text-app-primary">
                 {t("matching_consultants")}
@@ -759,54 +827,9 @@ export default function Matching() {
             </div>
           </aside>
 
-          <main className="flex-1 overflow-auto bg-app">
-            <div className="px-6 pt-4 border-b border-app-border bg-app-surface">
-              <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-app p-1" role="tablist" aria-label="Ranking method">
-                <button type="button" role="tab" aria-selected={rankingTab === "match"} onClick={() => setRankingTab("match")} className={`rounded-md px-2 py-2 text-xs font-medium ${rankingTab === "match" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>Match Score</button>
-                <button type="button" role="tab" aria-selected={rankingTab === "ai"} onClick={() => setRankingTab("ai")} className={`rounded-md px-2 py-2 text-xs font-medium ${rankingTab === "ai" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>AI Ranking</button>
-              </div>
-            </div>
-            {rankingTab === "ai" ? (
-              <div className="p-6 space-y-4">
-                <div>
-                  <h2 className="text-sm font-semibold text-app-primary">AI Ranking · Original CVs</h2>
-                  <p className="mt-1 text-xs text-app-muted">Compare the top two eligible consultants using their original CV documents and this assignment. Match Score is unchanged.</p>
-                </div>
-                {!aiRanking && (
-                  <div className="rounded-xl border border-app-border bg-app-surface p-6 text-center">
-                    <p className="text-sm font-semibold text-app-primary">No AI ranking yet</p>
-                    <p className="mt-2 text-xs text-app-muted">Run the analysis after Matching. Consultants without an active original CV are skipped.</p>
-                    <button type="button" disabled={aiLoading} onClick={() => void runAiRanking()} className="mt-4 rounded-md bg-app-brand px-4 py-2 text-xs font-medium text-app-on-brand disabled:opacity-50">
-                      {aiLoading ? "Analyzing original CVs..." : "Rank Top Matches with AI"}
-                    </button>
-                  </div>
-                )}
-                {aiError && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-red-500">{aiError}</p>}
-                {aiRanking && (
-                  <>
-                    {aiRanking.skippedWithoutCv > 0 && <p className="text-xs text-app-muted">{aiRanking.skippedWithoutCv} higher-ranked consultant(s) were skipped because an original CV was unavailable.</p>}
-                    <div className="grid gap-4 xl:grid-cols-2">
-                      {[...aiRanking.rankings].sort((a, b) => a.rank - b.rank).map((item) => {
-                        const original = allResults.find((r) => r.consultantId === item.consultantId);
-                        return (
-                          <article key={item.consultantId} className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
-                            <p className="text-xs font-semibold text-app-brand">AI Rank #{item.rank}</p>
-                            <h3 className="text-sm font-semibold text-app-primary">{original?.consultantName ?? `Consultant #${item.consultantId}`}</h3>
-                            <p className="text-xs text-app-muted">Original Match Score: {original?.score ?? "—"}%</p>
-                            <p className="text-xs text-app-secondary leading-relaxed">{item.reason}</p>
-                            <div><h4 className="text-xs font-semibold text-app-primary">Strengths</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.strengths.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
-                            <div><h4 className="text-xs font-semibold text-app-primary">Gaps</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.gaps.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
-                            <div><h4 className="text-xs font-semibold text-app-primary">CV Evidence</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.evidence.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                    <button type="button" disabled={aiLoading} onClick={() => void runAiRanking()} className="rounded-md border border-app-border px-3 py-2 text-xs text-app-secondary disabled:opacity-50">{aiLoading ? "Analyzing..." : "Re-run AI Ranking"}</button>
-                  </>
-                )}
-              </div>
-            ) : (
-            <div className="p-6 space-y-5">
+          
+              <main className="flex-1 overflow-auto bg-app">
+                <div className="p-6 space-y-5">
               <section className="flex items-start justify-between gap-5">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand flex-none">
@@ -1271,8 +1294,10 @@ export default function Matching() {
                 </>
               )}
             </div>
-            )}
-          </main>
+
+              </main>
+            </div>
+          )}
         </div>
       ) : null}
     </div>
