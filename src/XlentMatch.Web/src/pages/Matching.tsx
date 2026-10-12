@@ -134,6 +134,7 @@ export default function Matching() {
   const [aiRanking, setAiRanking] = useState<AiRankingResult | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [newConsultants, setNewConsultants] = useState(0);
 
   const assignmentId = Number(searchParams.get("assignment"));
   const assignment = assignments.find((item) => item.id === assignmentId);
@@ -168,6 +169,7 @@ export default function Matching() {
     if (!Number.isInteger(assignmentId) || assignmentId <= 0) {
       setResults([]);
       setSelectedMatchId(null);
+      setNewConsultants(0);
       return;
     }
 
@@ -179,6 +181,9 @@ export default function Matching() {
         if (cancelled) return;
         setResults(data);
         setSelectedMatchId(data[0]?.id ?? null);
+        matchingApi.getFreshness(assignmentId).then((freshness) => {
+          if (!cancelled) setNewConsultants(freshness.newConsultants);
+        }).catch(() => { if (!cancelled) setNewConsultants(0); });
       })
       .catch((requestError: unknown) => {
         if (!cancelled) {
@@ -200,7 +205,7 @@ export default function Matching() {
   }, [assignmentId]);
 
   const runAiRanking = async () => {
-    if (!assignment || aiLoading || results.length === 0) return;
+    if (!assignment || aiLoading || results.length === 0 || newConsultants > 0) return;
     setAiLoading(true);
     setAiError("");
     try {
@@ -257,6 +262,7 @@ export default function Matching() {
     setAiRanking(null);
     setAiError("");
     setResults([]);
+    setNewConsultants(0);
     setError("");
     setSearchParams(id ? { assignment: id } : {});
   };
@@ -278,6 +284,7 @@ export default function Matching() {
       });
 
       setResults(data);
+      setNewConsultants(0);
       setSelectedMatchId(data[0]?.id ?? null);
       setAssignments((current) =>
         current.map((item) =>
@@ -575,13 +582,19 @@ export default function Matching() {
         </div>
       ) : selected ? (
         <div className="flex-1 flex flex-col min-h-0">
-<div className="px-6 py-2 border-b border-app-border bg-app-surface">
+<div className="px-6 py-2 border-b border-app-border bg-app-surface flex flex-wrap items-center gap-3">
               <div className="inline-flex w-fit max-w-full gap-1 rounded-lg bg-app p-1" role="tablist" aria-label="Ranking method">
                 <button type="button" role="tab" aria-selected={rankingTab === "match"} onClick={() => setRankingTab("match")} className={`rounded-md px-4 py-1.5 text-xs font-medium ${rankingTab === "match" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>Match Score</button>
                 <button type="button" role="tab" aria-selected={rankingTab === "ai"} onClick={() => setRankingTab("ai")} className={`rounded-md px-4 py-1.5 text-xs font-medium ${rankingTab === "ai" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>AI Ranking</button>
               </div>
+              {newConsultants > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-500" role="status" title="New consultants are not included in the saved Match Score results.">
+                  <AlertTriangle size={12} />
+                  {newConsultants} new consultant{newConsultants === 1 ? "" : "s"} not matched · Re-run Matching
+                </span>
+              )}
             </div>
-            
+
           {rankingTab === "ai" ? (
             <main className="flex-1 min-h-0 overflow-auto bg-app">
               <div className="p-6 space-y-4">
