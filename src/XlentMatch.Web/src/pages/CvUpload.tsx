@@ -115,6 +115,8 @@ export default function CvUpload() {
   const [activeId, setActiveId] = useState<number | null>(null);
   const [reviewStep, setReviewStep] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -185,6 +187,7 @@ export default function CvUpload() {
       uploadId = created.id;
       setFiles((current) => [created, ...current]);
 
+      await cvUploadsApi.uploadFile(created.id, file);
       const result = await aiApi.extractConsultantFromFile(file);
       const updated = await cvUploadsApi.update(created.id, {
         status: "Review",
@@ -284,6 +287,7 @@ export default function CvUpload() {
     }
   };
 
+  const visibleFiles = files.filter((file) => file.fileName.toLowerCase().includes(search.toLowerCase()) && (statusFilter === "All" || file.status === statusFilter));
   const total = files.length;
   const processing = files.filter((file) => file.status === "Extracting" || file.status === "Review").length;
   const indexed = files.filter((file) => file.status === "Indexed").length;
@@ -304,7 +308,7 @@ export default function CvUpload() {
   return (
     <div className="p-6 space-y-5">
       <PageHeader
-        title={t("upload_title")}
+        title="CV Management"
         description={t("upload_description")}
       />
 
@@ -365,6 +369,7 @@ export default function CvUpload() {
         </div>
       )}
 
+      <div className="flex flex-wrap gap-3 items-center"><input aria-label="Search CV files" placeholder="Search CV library..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-3 py-2 rounded border border-app-border bg-app-surface text-app-primary text-sm" /><select aria-label="Filter CV status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded border border-app-border bg-app-surface text-app-primary text-sm">{["All", "Extracting", "Review", "Indexed", "Error"].map((status) => <option key={status} value={status}>{status}</option>)}</select></div>
       <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
         <div className="px-4 py-2.5 border-b border-app-border flex items-center justify-between">
           <span className="text-xs font-medium text-app-primary">{t("upload_processing_history")}</span>
@@ -375,13 +380,14 @@ export default function CvUpload() {
           <p className="px-4 py-6 text-xs text-app-faint text-center">{t("upload_no_history")}</p>
         )}
 
-        {files.map((file, index) => (
+        {visibleFiles.map((file, index) => (
           <div
             key={file.id}
             className="flex items-center gap-3 px-4 py-3"
             style={{ borderBottom: index < files.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
           >
             <FileText size={13} className="text-app-faint flex-none" />
+            {file.storageKey && <a href={cvUploadsApi.fileUrl(file.id)} className="text-xs text-app-brand" title="Download original CV">Download</a>}
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-3">
