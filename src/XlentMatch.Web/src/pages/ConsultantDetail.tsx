@@ -62,6 +62,7 @@ export default function ConsultantDetail() {
 
   const [consultant, setConsultant] = useState<Consultant | null>(null);
   const [cvFiles, setCvFiles] = useState<CvUploadRecord[]>([]);
+  const [activeTab, setActiveTab] = useState<"profile" | "cv">("profile");
   const [draft, setDraft] = useState<Consultant | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -225,7 +226,37 @@ export default function ConsultantDetail() {
 
       <div className="flex-1 overflow-auto bg-app">
         <div className="p-6 space-y-5">
-          <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface"><h2 className="text-sm font-medium text-app-primary mb-3">Curriculum Vitae</h2>{cvFiles.filter((file) => file.isActive).length === 0 ? <p className="text-xs text-app-muted">No stored CV available.</p> : cvFiles.filter((file) => file.isActive).map((file) => <div key={file.id} className="flex gap-3 items-center text-xs text-app-secondary"><span>{file.fileName}</span>{file.storageKey && <a className="text-app-brand" href={cvUploadsApi.fileUrl(file.id)}>Download CV</a>}</div>)}<Link className="inline-block mt-3 text-xs text-app-brand" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>{cvFiles.some((file) => file.isActive) ? "Replace CV" : "Upload CV"}</Link></section>
+          <div role="tablist" aria-label="Consultant information" className="flex gap-2 border-b border-app-border">
+            <button type="button" role="tab" aria-selected={activeTab === "profile"} onClick={() => setActiveTab("profile")} className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === "profile" ? "border-app-brand text-app-brand" : "border-transparent text-app-secondary hover:text-app-primary"}`}>Consultant Profile</button>
+            <button type="button" role="tab" aria-selected={activeTab === "cv"} onClick={() => setActiveTab("cv")} className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === "cv" ? "border-app-brand text-app-brand" : "border-transparent text-app-secondary hover:text-app-primary"}`}>Original CV</button>
+          </div>
+          {activeTab === "cv" ? (
+            <section role="tabpanel" aria-label="Original CV" className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface space-y-4">
+              {cvFiles.find((file) => file.isActive && file.storageKey) ? (() => {
+                const file = cvFiles.find((item) => item.isActive && item.storageKey)!;
+                const isPdf = file.contentType?.toLowerCase().includes("pdf") || file.fileName.toLowerCase().endsWith(".pdf");
+                return (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0"><h2 className="text-sm font-semibold text-app-primary">Original CV</h2><p className="text-xs text-app-muted mt-1 break-all">{file.fileName}</p></div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <a className="text-app-brand" href={cvUploadsApi.fileUrl(file.id)}>Download</a>
+                        <Link className="rounded-md bg-app-brand px-3 py-2 font-medium text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>Replace CV</Link>
+                      </div>
+                    </div>
+                    {isPdf ? (
+                      <iframe title={`Original CV: ${file.fileName}`} src={`${cvUploadsApi.fileUrl(file.id)}?inline=true`} className="w-full h-[75vh] min-h-[500px] rounded-lg border border-app-border bg-white" />
+                    ) : (
+                      <div className="rounded-lg border border-app-border p-6 text-sm text-app-secondary">Preview is available for PDF files. Download the original file to view it.</div>
+                    )}
+                  </>
+                );
+              })() : (
+                <div className="space-y-3"><p className="text-sm text-app-muted">No original CV file is available for this consultant.</p><Link className="inline-block rounded-md bg-app-brand px-4 py-2 text-xs font-medium text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>Upload CV</Link></div>
+              )}
+            </section>
+          ) : (
+          <>
           {consultant.summary && (
             <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
               <p className="text-sm font-medium text-app-primary mb-3">{t("consultant_summary")}</p>
@@ -323,6 +354,8 @@ export default function ConsultantDetail() {
             {consultant.projects.length === 0 ? <p className="px-5 py-4 text-[11px] text-app-faint">{t("consultant_no_projects")}</p> : visibleProjects.map((project, index) => <div key={project.id || index} className="px-5 py-4 space-y-1.5" style={{ borderBottom: index < visibleProjects.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}><p className="text-sm font-medium text-app-primary">{project.name}</p>{project.technologies && <p className="text-[10px] font-mono text-app-muted">{project.technologies}</p>}{project.description && <p className="text-[11px] text-app-muted leading-relaxed line-clamp-3">{project.description}</p>}</div>)}
             {consultant.projects.length > 3 && <button type="button" onClick={() => setProjectsExpanded((current) => !current)} className="mx-5 mb-4 text-xs text-app-brand hover:text-app-primary">{projectsExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_projects").replace("{count}", String(consultant.projects.length))} ↓`}</button>}
           </section>
+          </>
+          )}
         </div>
       </div>
 
