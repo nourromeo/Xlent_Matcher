@@ -29,7 +29,7 @@ export default function Layout() {
     { to: "/consultants", icon: Users, label: t("nav_consultants") },
     { to: "/client-assignments", icon: Briefcase, label: t("nav_assignments") },
     { to: "/matching", icon: GitMerge, label: t("nav_matching") },
-    { to: "/cv-upload", icon: Upload, label: t("nav_upload") },
+    { to: "/cv-upload", icon: Upload, label: "CV Management" },
     { to: "/cv-adaptation", icon: Sparkles, label: t("nav_coach") },
     { to: "/admin", icon: Settings, label: t("nav_admin") },
   ];
