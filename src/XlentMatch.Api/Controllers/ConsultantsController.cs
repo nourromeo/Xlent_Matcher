@@ -80,8 +80,11 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
 
         if (upload is not null)
         {
+            if (upload.StorageKey is null || upload.Status != "Review")
+                return BadRequest("A reviewed CV with a stored original file is required.");
             upload.Status = "Indexed";
             upload.ConsultantId = consultant.Id;
+            upload.IsActive = true;
             upload.ErrorMessage = null;
             upload.DraftJson = null;
             await db.SaveChangesAsync(ct);
