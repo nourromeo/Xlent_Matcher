@@ -89,7 +89,7 @@ export default function CvUpload() {
       <PageHeader title="CV Management" description="Manage consultant CVs, review AI extraction and keep profiles up to date." />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[
-          ["Total CVs", records.length],
+          ["Total CVs", records.filter((r) => r.status === "Indexed" && r.storageKey != null).length],
           ["Active CVs", records.filter((r) => r.isActive).length],
           ["Pending Review", records.filter((r) => r.status === "Review").length],
         ].map(([label, value]) => (
