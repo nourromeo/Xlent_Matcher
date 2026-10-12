@@ -5,6 +5,7 @@ export type AiRankedConsultant = { consultantId: number; rank: number; reason: s
 export type AiRankingResult = { rankings: AiRankedConsultant[]; skippedWithoutCv: number };
 
 export const matchingApi = {
+  getFreshness: (assignmentId: number) => apiRequest<{ isOutdated: boolean; newConsultants: number }>(`/matching/assignment/${assignmentId}/freshness`),
   rankWithAi: (assignmentId: number) =>
     apiRequest<AiRankingResult>(`/matching/assignment/${assignmentId}/ai-ranking`, { method: "POST" }),
 
