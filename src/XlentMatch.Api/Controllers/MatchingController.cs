@@ -127,6 +127,27 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         }
     }
 
+    [HttpGet("assignment/{assignmentId:int}/freshness")]
+    public async Task<ActionResult<object>> GetFreshness(int assignmentId, CancellationToken ct)
+    {
+        if (!await db.Assignments.AnyAsync(a => a.Id == assignmentId, ct))
+            return NotFound();
+
+        var matchedIds = await db.MatchResults.AsNoTracking()
+            .Where(m => m.AssignmentId == assignmentId)
+            .Select(m => m.ConsultantId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        if (matchedIds.Count == 0)
+            return Ok(new { isOutdated = false, newConsultants = 0 });
+
+        var newCount = await db.Consultants.AsNoTracking()
+            .CountAsync(c => !matchedIds.Contains(c.Id), ct);
+
+        return Ok(new { isOutdated = newCount > 0, newConsultants = newCount });
+    }
+
     [HttpGet("assignment/{assignmentId:int}")]
     public async Task<ActionResult<List<MatchResult>>> GetForAssignment(int assignmentId, CancellationToken ct)
     {
