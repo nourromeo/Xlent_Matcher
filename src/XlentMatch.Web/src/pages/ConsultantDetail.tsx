@@ -252,7 +252,16 @@ export default function ConsultantDetail() {
                   </>
                 );
               })() : (
-                <div className="space-y-3"><p className="text-sm text-app-muted">No original CV file is available for this consultant.</p><Link className="inline-block rounded-md bg-app-brand px-4 py-2 text-xs font-medium text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>Upload CV</Link></div>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold text-app-primary">Original CV</h2>
+                    <Link className="inline-flex rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>Upload New CV</Link>
+                  </div>
+                  <div className="rounded-lg border border-dashed border-app-border px-6 py-12 text-center">
+                    <p className="text-sm font-medium text-app-primary">No CV uploaded</p>
+                    <p className="mt-2 text-xs text-app-muted">Upload a CV to attach the original document to this consultant. The existing consultant profile will be kept.</p>
+                  </div>
+                </div>
               )}
             </section>
           ) : (
