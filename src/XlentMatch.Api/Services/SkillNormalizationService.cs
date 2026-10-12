@@ -259,7 +259,7 @@ public class SkillNormalizationService(AppDbContext db)
                 continue;
             }
 
-            if (consultantSkill.Years > existing.Years)
+            if (consultantSkill.Years is int knownYears && (existing.Years is null || knownYears > existing.Years))
                 existing.Years = consultantSkill.Years;
             if (consultantSkill.Level > existing.Level)
                 existing.Level = consultantSkill.Level;
