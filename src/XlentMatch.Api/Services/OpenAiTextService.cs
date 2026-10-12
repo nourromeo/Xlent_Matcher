@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
 using XlentMatch.Api.DTOs.Cv;
+using XlentMatch.Api.DTOs.Matching;
 
 namespace XlentMatch.Api.Services;
 
@@ -23,6 +24,30 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "STRICT RULES: Use ONLY information explicitly present in the provided text. " +
         "Never invent, assume or embellish skills, experiences, certifications, dates or numbers. " +
         "If something is unknown, use null, 0 or an empty list. Respond with valid JSON only.";
+
+
+    public async Task<AiRankingResultDto> RankOriginalCvsAsync(string assignmentText, IReadOnlyList<(int ConsultantId, string CvText)> cvs, CancellationToken ct)
+    {
+        const string operation = "ai_original_cv_ranking";
+        const string system = "You compare exactly two existing consultants for an internal customer assignment. " +
+            "Use ONLY the original CV text and the assignment text provided. Never invent qualifications. " +
+            "Return both consultant IDs once each, ordered by fit with rank 1 and 2. " +
+            "Give concise reasons, strengths, gaps, and specific factual evidence from the documents. " +
+            "Do not use or invent numeric match scores. Respond in valid JSON using the required schema.";
+        var input = JsonSerializer.Serialize(new
+        {
+            assignmentText,
+            consultants = cvs.Select(x => new { consultantId = x.ConsultantId, originalCvText = x.CvText })
+        }, Json);
+        var result = await AskForJsonAsync<AiRankingResultDto>(operation, system, input, ct);
+        var ids = cvs.Select(x => x.ConsultantId).ToHashSet();
+        if (result.Rankings.Count != 2 ||
+            result.Rankings.Select(x => x.ConsultantId).Distinct().Count() != 2 ||
+            result.Rankings.Any(x => !ids.Contains(x.ConsultantId)) ||
+            result.Rankings.Select(x => x.Rank).Order().SequenceEqual(new[] { 1, 2 }) == false)
+            throw new InvalidOperationException("AI returned an invalid consultant ranking.");
+        return result;
+    }
 
     public async Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {
@@ -170,6 +195,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
                 PromptKeys.AssignmentExtraction => "assignment_extraction",
                 PromptKeys.CvExtraction => "cv_extraction",
                 PromptKeys.CvAdaptation => "cv_adaptation",
+                "ai_original_cv_ranking" => "ai_original_cv_ranking",
                 _ => "ai_extraction"
             },
             strict = true,
@@ -178,6 +204,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
                 PromptKeys.AssignmentExtraction => AssignmentSchema(),
                 PromptKeys.CvExtraction => CvSchema(),
                 PromptKeys.CvAdaptation => CvAdaptationSchema(),
+                "ai_original_cv_ranking" => AiRankingSchema(),
                 _ => throw new InvalidOperationException($"No structured schema is configured for '{operation}'.")
             }
         }
@@ -242,6 +269,33 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             ["sourceText"] = NullableString()
         },
         ["required"] = Required("firstName", "lastName", "email", "title", "summary", "seniority", "suggestedSeniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "experiences", "projects", "education", "languages", "industries", "certifications", "sourceText")
+    };
+
+
+    private static JsonObject AiRankingSchema() => new()
+    {
+        ["type"] = "object",
+        ["additionalProperties"] = false,
+        ["properties"] = new JsonObject
+        {
+            ["rankings"] = ArrayOf(new JsonObject
+            {
+                ["type"] = "object",
+                ["additionalProperties"] = false,
+                ["properties"] = new JsonObject
+                {
+                    ["consultantId"] = new JsonObject { ["type"] = "integer" },
+                    ["rank"] = new JsonObject { ["type"] = "integer" },
+                    ["reason"] = new JsonObject { ["type"] = "string" },
+                    ["strengths"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+                    ["gaps"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+                    ["evidence"] = ArrayOf(new JsonObject { ["type"] = "string" })
+                },
+                ["required"] = Required("consultantId", "rank", "reason", "strengths", "gaps", "evidence")
+            }),
+            ["skippedWithoutCv"] = new JsonObject { ["type"] = "integer" }
+        },
+        ["required"] = Required("rankings", "skippedWithoutCv")
     };
 
     private static JsonObject CvAdaptationSchema() => new()
