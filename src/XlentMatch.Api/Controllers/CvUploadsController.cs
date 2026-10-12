@@ -7,7 +7,7 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/cv-uploads")]
-public class CvUploadsController(AppDbContext db) : ControllerBase
+public class CvUploadsController(AppDbContext db, IWebHostEnvironment environment) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<CvUploadRecord>>> GetAll(CancellationToken ct) =>
@@ -73,11 +73,64 @@ public class CvUploadsController(AppDbContext db) : ControllerBase
         return upload;
     }
 
-    [HttpDelete("{id:int}")]
+
+    private string CvDirectory => Path.Combine(environment.ContentRootPath, "private-cvs");
+
+    [HttpPost("{id:int}/file")]
+    [RequestSizeLimit(11 * 1024 * 1024)]
+    public async Task<ActionResult<CvUploadRecord>> UploadFile(int id, IFormFile file, CancellationToken ct)
+    {
+        var upload = await db.CvUploads.FindAsync([id], ct);
+        if (upload is null) return NotFound();
+        if (file.Length == 0 || file.Length > 10 * 1024 * 1024)
+            return BadRequest("File must be between 1 byte and 10 MB.");
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (extension is not (".pdf" or ".txt"))
+            return BadRequest("Only PDF and TXT files are supported.");
+
+        Directory.CreateDirectory(CvDirectory);
+        var key = Guid.NewGuid().ToString("N") + extension;
+        var target = Path.Combine(CvDirectory, key);
+        try
+        {
+            await using (var stream = new FileStream(target, FileMode.CreateNew))
+                await file.CopyToAsync(stream, ct);
+
+            var previousKey = upload.StorageKey;
+            upload.StorageKey = key;
+            upload.ContentType = extension == ".pdf" ? "application/pdf" : "text/plain";
+            upload.FileName = Path.GetFileName(file.FileName);
+            upload.FileSize = file.Length;
+            await db.SaveChangesAsync(ct);
+            if (previousKey is not null)
+                System.IO.File.Delete(Path.Combine(CvDirectory, Path.GetFileName(previousKey)));
+            return Ok(upload);
+        }
+        catch
+        {
+            if (System.IO.File.Exists(target)) System.IO.File.Delete(target);
+            throw;
+        }
+    }
+
+    [HttpGet("{id:int}/file")]
+    public async Task<IActionResult> DownloadFile(int id, CancellationToken ct)
+    {
+        var upload = await db.CvUploads.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (upload?.StorageKey is null) return NotFound();
+        var path = Path.Combine(CvDirectory, Path.GetFileName(upload.StorageKey));
+        if (!System.IO.File.Exists(path)) return NotFound();
+        return PhysicalFile(path, upload.ContentType ?? "application/octet-stream", upload.FileName);
+    }
+
+    [HttpDelete("{id:int")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var upload = await db.CvUploads.FindAsync([id], ct);
         if (upload is null) return NotFound();
+
+        if (upload.StorageKey is not null)
+            System.IO.File.Delete(Path.Combine(CvDirectory, Path.GetFileName(upload.StorageKey)));
 
         db.CvUploads.Remove(upload);
         await db.SaveChangesAsync(ct);
