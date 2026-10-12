@@ -105,23 +105,30 @@ export default function ConsultantReview() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const uploadId = params.get("uploadId");
+  const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
+  const [existing, setExisting] = useState<Consultant | null>(null);
+  const [approved, setApproved] = useState<string[]>([]);
+  const compareFields = ["firstName", "lastName", "email", "title", "summary", "seniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "languages", "experiences", "projects", "education", "industries", "certifications"] as const;
   const [draft, setDraft] = useState<ConsultantDraft | null>(null);
   const [step, setStep] = useState(0);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey(uploadId));
-      if (stored) setDraft(JSON.parse(stored) as ConsultantDraft);
-    } catch {
-      setError(t("upload_load_error"));
-    }
-  }, [uploadId, t]);
+    if (!uploadId) return;
+    let cancelled = false;
+    cvUploadsApi.getAll().then((items) => {
+      const item = items.find((x) => x.id === Number(uploadId));
+      if (!cancelled && item?.draftJson) setDraft(JSON.parse(item.draftJson) as ConsultantDraft);
+      if (!cancelled && !item?.draftJson) setError("No extracted data found for this CV.");
+    }).catch(() => { if (!cancelled) setError("Could not load CV review."); });
+    return () => { cancelled = true; };
+  }, [uploadId]);
   useEffect(() => {
-    if (draft)
-      localStorage.setItem(storageKey(uploadId), JSON.stringify(draft));
-  }, [draft, uploadId]);
+    if (!replaceConsultantId) return;
+    consultantsApi.getById(replaceConsultantId).then(setExisting)
+      .catch(() => setError("Could not load the current consultant profile."));
+  }, [replaceConsultantId]);
   const update = (patch: Partial<ConsultantDraft>) =>
     setDraft((current) => (current ? { ...current, ...patch } : current));
   const level = (value: number) =>
@@ -148,18 +155,26 @@ export default function ConsultantReview() {
     setSaving(true);
     setError("");
     try {
-      const saved = await consultantsApi.create(
-        toConsultant(draft),
-        uploadId ? Number(uploadId) : undefined,
-      );
-      if (uploadId)
-        await cvUploadsApi.update(Number(uploadId), {
-          status: "Indexed",
-          consultantId: saved.id,
-          errorMessage: null,
-          draftJson: JSON.stringify(draft),
-        });
-      localStorage.removeItem(storageKey(uploadId));
+      let saved: Consultant;
+      if (replaceConsultantId) {
+        if (!existing) throw new Error("Current consultant profile has not loaded.");
+        const extracted = toConsultant(draft);
+        const merged = { ...existing } as Consultant;
+        for (const key of approved) {
+          (merged as unknown as Record<string, unknown>)[key] =
+            (extracted as unknown as Record<string, unknown>)[key];
+        }
+        saved = approved.length ? await consultantsApi.update(replaceConsultantId, merged) : existing;
+        if (uploadId) {
+          await cvUploadsApi.update(Number(uploadId), {
+            status: "Indexed", consultantId: saved.id, errorMessage: null, draftJson: null,
+          });
+          await cvUploadsApi.activate(Number(uploadId));
+        }
+      } else {
+        saved = await consultantsApi.create(toConsultant(draft), uploadId ? Number(uploadId) : undefined);
+        if (uploadId) await cvUploadsApi.activate(Number(uploadId));
+      }
       navigate(`/consultants/${saved.id}`);
     } catch (requestError) {
       setError(
@@ -389,7 +404,7 @@ export default function ConsultantReview() {
     <div className="h-full overflow-auto">
       <div className="mx-auto max-w-6xl space-y-5 p-6">
         <PageHeader
-          title={t("upload_review_title")}
+          title={replaceConsultantId ? "Review replacement CV" : t("upload_review_title")}
           description={t("upload_review_description")}
           backTo="/cv-upload"
           actions={
@@ -984,6 +999,32 @@ export default function ConsultantReview() {
               )}
             </div>
           )}
+          {replaceConsultantId && step === 3 && (
+            <section className="rounded-lg border border-app-border bg-app-raised p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-app-primary">Compare with current consultant</h3>
+              <p className="text-xs text-app-muted">All changes are unchecked by default. Select only the fields you approve. The new CV will become active when you save.</p>
+              {!existing ? <p className="text-xs text-app-muted">Loading current profile...</p> : (
+                <div className="grid gap-2">
+                  {compareFields.map((key) => {
+                    const before = (existing as unknown as Record<string, unknown>)[key];
+                    const after = (toConsultant(draft) as unknown as Record<string, unknown>)[key];
+                    const display = (value: unknown) => Array.isArray(value) ? value.map((x) => typeof x === "object" && x !== null ? ("name" in x ? String(x.name) : "role" in x ? String(x.role) : JSON.stringify(x)) : String(x)).join(", ") : String(value ?? "—");
+                    if (JSON.stringify(before) === JSON.stringify(after)) return null;
+                    return (
+                      <label key={key} className="flex gap-3 items-start border-b border-app-border py-2 text-xs text-app-secondary">
+                        <input type="checkbox" className="mt-1" checked={approved.includes(key)}
+                          onChange={(e) => setApproved((prev) => e.target.checked ? [...prev, key] : prev.filter((x) => x !== key))} />
+                        <span className="min-w-0 flex-1"><strong className="block text-app-primary mb-1">{key}</strong>
+                          <span className="block break-words">Current: {display(before)}</span>
+                          <span className="block break-words text-app-brand">Extracted: {display(after)}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
           <div className="flex justify-between">
             <Button
               variant="ghost"
@@ -1000,7 +1041,7 @@ export default function ConsultantReview() {
             ) : (
               <Button
                 variant="primary"
-                disabled={saving}
+                disabled={saving || (Boolean(replaceConsultantId) && !existing)}
                 onClick={() => void save()}
               >
                 {saving ? t("common_saving") : t("upload_approve_save")}
