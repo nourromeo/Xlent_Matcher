@@ -20,6 +20,7 @@ import type { Consultant, ConsultantSkill } from "../types";
 type Translate = ReturnType<typeof useI18n>["t"];
 
 const levelLabel = (level: number, t: Translate) => {
+  if (level === 0) return t("common_not_specified");
   if (level >= 5) return t("consultant_level_expert");
   if (level >= 3) return t("consultant_level_proficient");
   return t("consultant_level_familiar");
