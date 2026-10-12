@@ -147,7 +147,7 @@ export default function EditConsultant() {
     }
     if (
       (draft.yearsOfExperience !== null && draft.yearsOfExperience < 0) ||
-      draft.skills.some((x) => x.years < 0 || x.level < 0 || x.level > 5)
+      draft.skills.some((x) => (x.years ?? 0) < 0 || x.level < 0 || x.level > 5)
     ) {
       setError(t("upload_invalid_experience"));
       setStep("competencies");
@@ -491,10 +491,10 @@ export default function EditConsultant() {
                             <Input
                               type="number"
                               min={0}
-                              value={item.years}
+                              value={item.years ?? ""}
                               onChange={(e) =>
                                 updateRow("skills", index, {
-                                  years: Number(e.target.value) || 0,
+                                  years: e.target.value === "" ? null : Number(e.target.value),
                                 })
                               }
                             />
@@ -558,7 +558,7 @@ export default function EditConsultant() {
                         {item.name || t("common_not_specified")}
                       </span>
                       <span className="text-xs text-app-muted">
-                        {item.years} {t("consultant_year_count")}
+                        {item.years == null ? "Not specified" : `${item.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-xs text-app-muted">
                         {levelLabel(item.level)} ({item.level}/5)
@@ -1126,7 +1126,7 @@ export default function EditConsultant() {
                     >
                       <span className="text-app-primary">{x.name}</span>
                       <span className="text-app-muted">
-                        {x.years} {t("consultant_year_count")}
+                        {x.years == null ? "Not specified" : `${x.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-app-muted">
                         {levelLabel(x.level)} ({x.level}/5)
