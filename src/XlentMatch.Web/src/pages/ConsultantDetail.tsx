@@ -14,6 +14,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
 import { consultantsApi } from "../services/consultantsApi";
+import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { formatDate } from "../services/localeFormat";
 import type { Consultant, ConsultantSkill } from "../types";
 
@@ -60,6 +61,7 @@ export default function ConsultantDetail() {
   const consultantId = Number(id);
 
   const [consultant, setConsultant] = useState<Consultant | null>(null);
+  const [cvFiles, setCvFiles] = useState<CvUploadRecord[]>([]);
   const [draft, setDraft] = useState<Consultant | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -108,6 +110,11 @@ export default function ConsultantDetail() {
       cancelled = true;
       controller.abort();
     };
+  }, [consultantId]);
+
+  useEffect(() => {
+    if (!Number.isInteger(consultantId) || consultantId <= 0) return;
+    cvUploadsApi.getAll().then((items) => setCvFiles(items.filter((item) => item.consultantId === consultantId && item.status === "Indexed"))).catch(() => {});
   }, [consultantId]);
 
   useEffect(() => {
@@ -218,6 +225,7 @@ export default function ConsultantDetail() {
 
       <div className="flex-1 overflow-auto bg-app">
         <div className="p-6 space-y-5">
+          <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface"><h2 className="text-sm font-medium text-app-primary mb-3">Curriculum Vitae</h2>{cvFiles.length === 0 ? <p className="text-xs text-app-muted">No stored CV available.</p> : cvFiles.map((file) => <div key={file.id} className="flex gap-3 items-center text-xs text-app-secondary"><span>{file.fileName}</span>{file.storageKey && <a className="text-app-brand" href={cvUploadsApi.fileUrl(file.id)}>Download CV</a>}</div>)}</section>
           {consultant.summary && (
             <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
               <p className="text-sm font-medium text-app-primary mb-3">{t("consultant_summary")}</p>
