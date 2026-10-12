@@ -10,4 +10,7 @@ public class CvUploadRecord
     public string? ErrorMessage { get; set; }
     public int? ConsultantId { get; set; }
     public string? DraftJson { get; set; }
+    public string? StorageKey { get; set; }
+    public string? ContentType { get; set; }
+    public bool IsActive { get; set; }
 }
