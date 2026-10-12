@@ -30,17 +30,6 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
 
         var fileName = request.FileName.Trim();
 
-        var duplicate = await db.CvUploads
-            .AsNoTracking()
-            .AnyAsync(x =>
-                x.FileName == fileName &&
-                x.FileSize == request.FileSize &&
-                x.Status != "Error",
-                ct);
-
-        if (duplicate)
-            return Conflict("This CV file already exists in the upload history.");
-
         var upload = new CvUploadRecord
         {
             FileName = fileName,
@@ -82,6 +71,8 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
     {
         var upload = await db.CvUploads.FindAsync([id], ct);
         if (upload is null) return NotFound();
+        if (upload.StorageKey is not null || upload.Status != "Extracting")
+            return Conflict("This upload already has a stored file. Create a new upload to replace a CV.");
         if (file.Length == 0 || file.Length > 10 * 1024 * 1024)
             return BadRequest("File must be between 1 byte and 10 MB.");
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -114,13 +105,15 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
     }
 
     [HttpGet("{id:int}/file")]
-    public async Task<IActionResult> DownloadFile(int id, CancellationToken ct)
+    public async Task<IActionResult> DownloadFile(int id, [FromQuery] bool inline, CancellationToken ct)
     {
         var upload = await db.CvUploads.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (upload?.StorageKey is null) return NotFound();
         var path = Path.Combine(CvDirectory, Path.GetFileName(upload.StorageKey));
         if (!System.IO.File.Exists(path)) return NotFound();
-        return PhysicalFile(path, upload.ContentType ?? "application/octet-stream", upload.FileName);
+        return inline
+            ? PhysicalFile(path, upload.ContentType ?? "application/octet-stream")
+            : PhysicalFile(path, upload.ContentType ?? "application/octet-stream", upload.FileName);
     }
 
     [HttpPost("{id:int}/activate")]
