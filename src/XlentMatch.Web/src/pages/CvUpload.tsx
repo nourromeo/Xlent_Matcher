@@ -99,7 +99,7 @@ export default function CvUpload() {
           {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>Back to consultant</Link>}
         </div>
         <input ref={input} type="file" accept=".pdf,.txt,application/pdf,text/plain" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
-        <button type="button" disabled={busy} onClick={() => input.current?.click()} className="rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+        <button type="button" disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex flex-row items-center justify-start gap-2 self-start rounded-md bg-app-brand px-4 py-2 text-left text-xs font-semibold text-white disabled:opacity-50">
           {busy ? "Uploading and extracting..." : replaceConsultantId ? "Choose replacement CV" : "+ Upload CV"}
         </button>
       </section>
