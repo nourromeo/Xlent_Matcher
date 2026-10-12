@@ -583,7 +583,7 @@ export default function EditConsultant() {
                         consultantId: draft.id,
                         name: "",
                         category: null,
-                        years: 0,
+                        years: null,
                         level: 0,
                         evidence: null,
                       },
