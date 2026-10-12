@@ -64,4 +64,5 @@ public class CertificationDraftDto
     public string Name { get; set; } = "";
     public string? Issuer { get; set; }
     public string? IssuedDate { get; set; }
+    public string? IssuedYear { get; set; }
 }
