@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Code, Briefcase, GraduationCap, Globe, Edit3, Trash2 } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { EntitySummary } from "../components/ui/EntitySummary";
@@ -58,11 +58,13 @@ export default function ConsultantDetail() {
   const { t, locale } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const consultantId = Number(id);
 
   const [consultant, setConsultant] = useState<Consultant | null>(null);
   const [cvFiles, setCvFiles] = useState<CvUploadRecord[]>([]);
-  const [activeTab, setActiveTab] = useState<"profile" | "cv">("profile");
+  const activeTab = searchParams.get("tab") === "cv" ? "cv" : "profile";
+  const setActiveTab = (tab: "profile" | "cv") => setSearchParams(tab === "cv" ? { tab: "cv" } : {});
   const [draft, setDraft] = useState<Consultant | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
