@@ -380,8 +380,9 @@ namespace XlentMatch.Api.Migrations
 
                     b.HasIndex("ConsultantId");
 
-                    b.HasIndex("ConsultantId", "IsActive", "IX_CvUploads_OneActivePerConsultant")
+                    b.HasIndex("ConsultantId", "IsActive")
                         .IsUnique()
+                        .HasDatabaseName("IX_CvUploads_OneActivePerConsultant")
                         .HasFilter("[IsActive] = 1 AND [ConsultantId] IS NOT NULL");
 
                     b.ToTable("CvUploads");
