@@ -40,6 +40,28 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         var validation = ValidateConsultant(consultant);
         if (validation is not null) return BadRequest(validation);
 
+        // CV imports must not silently create a second consultant with the same identity.
+        if (cvUploadId.HasValue)
+        {
+            var first = consultant.FirstName.Trim();
+            var last = consultant.LastName.Trim();
+            var email = consultant.Email?.Trim();
+            var existingProfiles = await db.Consultants.AsNoTracking()
+                .Select(x => new { x.Id, x.FirstName, x.LastName, x.Email })
+                .ToListAsync(ct);
+            var duplicate = existingProfiles.FirstOrDefault(x =>
+                (!string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(x.Email) &&
+                 string.Equals(x.Email.Trim(), email, StringComparison.OrdinalIgnoreCase)) ||
+                (string.Equals(x.FirstName.Trim(), first, StringComparison.OrdinalIgnoreCase) &&
+                 string.Equals(x.LastName.Trim(), last, StringComparison.OrdinalIgnoreCase)));
+            if (duplicate is not null)
+                return Conflict(new {
+                    code = "CONSULTANT_ALREADY_EXISTS",
+                    consultantId = duplicate.Id,
+                    message = "An existing consultant matches this CV. Link the CV to that consultant instead of creating a duplicate."
+                });
+        }
+
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
         CvUploadRecord? upload = null;
