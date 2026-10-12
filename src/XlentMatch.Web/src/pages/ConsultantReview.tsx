@@ -195,13 +195,10 @@ export default function ConsultantReview() {
           (merged as unknown as Record<string, unknown>)[key] =
             (extracted as unknown as Record<string, unknown>)[key];
         }
-        saved = approved.length ? await consultantsApi.update(linkedConsultantId, merged) : existing;
-        if (uploadId) {
-          await cvUploadsApi.update(Number(uploadId), {
-            status: "Indexed", consultantId: saved.id, errorMessage: null, draftJson: null,
-          });
-          await cvUploadsApi.activate(Number(uploadId));
-        }
+        // Approve profile fields and activate the CV in one database transaction.
+        // Unchecked fields remain exactly as they were in the existing profile.
+        if (!uploadId) throw new Error("The CV upload is missing.");
+        saved = await consultantsApi.approveCv(linkedConsultantId, Number(uploadId), merged);
       } else {
         saved = await consultantsApi.create(toConsultant(draft), uploadId ? Number(uploadId) : undefined);
         if (uploadId) await cvUploadsApi.activate(Number(uploadId));
@@ -1071,7 +1068,7 @@ export default function ConsultantReview() {
               )}
             </div>
           )}
-          {replaceConsultantId && step === 3 && (
+          {linkedConsultantId && step === 3 && (
             <section className="rounded-lg border border-app-border bg-app-raised p-4 space-y-3">
               <h3 className="text-sm font-semibold text-app-primary">Compare with current consultant</h3>
               <p className="text-xs text-app-muted">All changes are unchecked by default. Select only the fields you approve. The new CV will become active when you save.</p>
@@ -1114,7 +1111,7 @@ export default function ConsultantReview() {
             ) : (
               <Button
                 variant="primary"
-                disabled={saving || (Boolean(replaceConsultantId) && !existing)}
+                disabled={saving || !identityResolved || detectionPending || (Boolean(linkedConsultantId) && !existing)}
                 onClick={() => void save()}
               >
                 {saving ? t("common_saving") : t("upload_approve_save")}
