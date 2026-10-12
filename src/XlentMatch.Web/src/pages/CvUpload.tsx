@@ -105,6 +105,20 @@ export default function CvUpload() {
           </div>
         ))}
       </div>
+      {records.some((r) => !r.storageKey && !r.consultantId && !r.draftJson && !r.isActive &&
+        (r.status === "Error" || r.status === "Extracting") &&
+        Date.now() - new Date(r.uploadedAt).getTime() > 24 * 60 * 60 * 1000) && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-app-border p-3">
+          <p className="text-xs text-app-muted">Old unfinished upload attempts were found. Approved CVs will not be affected.</p>
+          <button type="button" className="text-xs text-app-brand" onClick={async () => {
+            try {
+              const result = await cvUploadsApi.cleanupAbandoned();
+              await refresh();
+              setError(result.removed + " abandoned upload attempt(s) removed.");
+            } catch { setError("Could not clean up abandoned uploads."); }
+          }}>Clean up</button>
+        </div>
+      )}
       <section className="rounded-xl border border-app-border bg-app-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
