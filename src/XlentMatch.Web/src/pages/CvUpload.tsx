@@ -92,6 +92,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
       name: item.name?.trim() ?? "",
       issuer: item.issuer?.trim() || null,
       issuedDate: dateOnly(item.issuedDate),
+      issuedYear: item.issuedYear || item.issuedDate?.slice(0, 4) || null,
     })),
   };
 }
@@ -633,7 +634,8 @@ export default function CvUpload() {
                     <div key={index} className="grid grid-cols-[1fr_1fr_110px_auto] gap-2 items-center">
                       <Input aria-label={t("upload_certification")} placeholder={t("upload_certification")} value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
                       <Input aria-label={t("upload_issuer")} placeholder={t("upload_issuer")} value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
-                      <Input type="month" aria-label={t("upload_issued_date")} value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
+                      <Input aria-label="Issue year" placeholder="YYYY" value={item.issuedYear ?? item.issuedDate?.slice(0, 4) ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedYear: event.target.value || null } : row) })} />
+                      <Input type="month" aria-label={t("upload_issued_date")} value={item.issuedDate?.slice(0, 7) ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
                       <button type="button" onClick={() => updateDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_certification")}><X size={12} /></button>
                     </div>
                   ))}
