@@ -5,7 +5,7 @@ import { aiApi } from "../services/aiApi";
 import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { validateDocumentFile } from "../services/fileValidation";
 
-type Tab = "library" | "review" | "history";
+type Tab = "library" | "review";
 const formatSize = (bytes: number) => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
 
 export default function CvUpload() {
@@ -70,7 +70,7 @@ export default function CvUpload() {
 
   const list = records.filter((r) => {
     const belongs = tab === "review" ? r.status === "Review" :
-      tab === "library" ? r.status === "Indexed" : true;
+      tab === "library" ? r.status === "Indexed" : false;
     return belongs && (status === "All" || r.status === status) &&
       r.fileName.toLowerCase().includes(search.toLowerCase());
   });
@@ -110,7 +110,6 @@ export default function CvUpload() {
           <div className="flex flex-wrap gap-1">
             <button className={tabClass("library")} onClick={() => setTab("library")}>CV Library</button>
             <button className={tabClass("review")} onClick={() => setTab("review")}>Review Queue ({records.filter((r) => r.status === "Review").length})</button>
-            <button className={tabClass("history")} onClick={() => setTab("history")}>Upload History</button>
           </div>
           <div className="flex gap-2">
             <input aria-label="Search CV library" className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" placeholder="Search by file name..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -131,9 +130,9 @@ export default function CvUpload() {
                   <td className="px-4 py-3">{formatSize(r.fileSize)}</td>
                   <td className="px-4 py-3">{r.isActive ? "Active" : r.status}</td>
                   <td className="px-4 py-3"><div className="flex justify-end flex-wrap gap-3">
-                    {r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">View</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">Download</a></>}
-                    {r.status === "Review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`}>Review</Link>}
-                    {r.consultantId && r.status === "Indexed" && <Link className="text-app-brand" to={`/cv-upload?replaceConsultantId=${r.consultantId}`}>Replace</Link>}
+                    {tab === "library" && r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">View</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">Download</a></>}
+                    {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`}>Review</Link>}
+                    {tab === "library" && r.consultantId && <Link className="text-app-brand" to={`/cv-upload?replaceConsultantId=${r.consultantId}`}>Replace</Link>}
                     <button type="button" className="text-app-muted hover:text-red-500" onClick={() => void remove(r)}>Delete</button>
                   </div></td>
                 </tr>
