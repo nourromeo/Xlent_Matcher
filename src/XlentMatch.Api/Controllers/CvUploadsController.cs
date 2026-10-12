@@ -18,6 +18,41 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
             .OrderByDescending(x => x.UploadedAt)
             .ToListAsync(ct);
 
+    [HttpPost("detect-consultant")]
+    public async Task<ActionResult<ConsultantDetectionResult>> DetectConsultant(
+        DetectConsultantRequest request, CancellationToken ct)
+    {
+        var email = request.Email?.Trim();
+        var firstName = request.FirstName?.Trim();
+        var lastName = request.LastName?.Trim();
+        if (string.IsNullOrWhiteSpace(email) && (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName)))
+            return BadRequest("Email or both first and last name are required.");
+
+        var consultants = await db.Consultants.AsNoTracking()
+            .Select(x => new { x.Id, x.FirstName, x.LastName, x.Email, x.Title })
+            .ToListAsync(ct);
+
+        var emailMatches = !string.IsNullOrWhiteSpace(email)
+            ? consultants.Where(x => !string.IsNullOrWhiteSpace(x.Email) &&
+                string.Equals(x.Email.Trim(), email, StringComparison.OrdinalIgnoreCase)).ToList()
+            : [];
+        var nameMatches = !string.IsNullOrWhiteSpace(firstName) && !string.IsNullOrWhiteSpace(lastName)
+            ? consultants.Where(x =>
+                string.Equals(x.FirstName.Trim(), firstName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.LastName.Trim(), lastName, StringComparison.OrdinalIgnoreCase)).ToList()
+            : [];
+
+        var matches = emailMatches.Concat(nameMatches).DistinctBy(x => x.Id)
+            .Select(x => new ConsultantDetectionMatch(
+                x.Id, x.FirstName, x.LastName, x.Email, x.Title,
+                emailMatches.Any(e => e.Id == x.Id) ? "Email" : "Name"))
+            .OrderBy(x => x.MatchReason == "Email" ? 0 : 1)
+            .ThenBy(x => x.FirstName)
+            .ToList();
+
+        return Ok(new ConsultantDetectionResult(matches));
+    }
+
     [HttpPost]
     public async Task<ActionResult<CvUploadRecord>> Create(CreateCvUploadRequest request, CancellationToken ct)
     {
@@ -220,3 +255,7 @@ public class UpdateCvUploadRequest
     public int? ConsultantId { get; set; }
     public string? DraftJson { get; set; }
 }
+
+public record DetectConsultantRequest(string? FirstName, string? LastName, string? Email);
+public record ConsultantDetectionMatch(int Id, string FirstName, string LastName, string? Email, string? Title, string MatchReason);
+public record ConsultantDetectionResult(List<ConsultantDetectionMatch> Matches);
