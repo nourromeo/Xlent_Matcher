@@ -21,6 +21,12 @@ export const consultantsApi = {
       body: JSON.stringify(consultant),
     }),
 
+  approveCv: (id: number, uploadId: number, consultant: Consultant) =>
+    apiRequest<Consultant>(`/consultants/${id}/approve-cv/${uploadId}`, {
+      method: "PUT",
+      body: JSON.stringify(consultant),
+    }),
+
   remove: (id: number) =>
     apiRequest<void>(`/consultants/${id}`, {
       method: "DELETE",
