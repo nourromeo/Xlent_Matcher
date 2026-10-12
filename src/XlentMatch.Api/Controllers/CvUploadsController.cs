@@ -188,11 +188,19 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
         var upload = await db.CvUploads.FindAsync([id], ct);
         if (upload is null) return NotFound();
 
-        if (upload.StorageKey is not null)
-            System.IO.File.Delete(Path.Combine(CvDirectory, Path.GetFileName(upload.StorageKey)));
-
+        // Keep the consultant and its structured profile untouched.
+        // Remove the database record first so a failed save never loses the original file.
+        var storageKey = upload.StorageKey;
         db.CvUploads.Remove(upload);
         await db.SaveChangesAsync(ct);
+
+        if (storageKey is not null)
+        {
+            var path = Path.Combine(CvDirectory, Path.GetFileName(storageKey));
+            try { if (System.IO.File.Exists(path)) System.IO.File.Delete(path); }
+            catch (IOException) { /* The unreferenced file can be cleaned up later. */ }
+            catch (UnauthorizedAccessException) { /* Preserve successful database deletion. */ }
+        }
         return NoContent();
     }
 }
