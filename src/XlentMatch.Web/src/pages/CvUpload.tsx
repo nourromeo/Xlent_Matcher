@@ -48,7 +48,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
       consultantId: 0,
       name: skill.name?.trim() ?? "",
       category: null,
-      years: skill.years ?? 0,
+      years: skill.years ?? null,
       level: skill.level ?? 0,
       evidence: skill.evidence?.trim() || null,
     })),
@@ -514,11 +514,11 @@ export default function CvUpload() {
                     <Input
                       type="number"
                       min={0}
-                      value={skill.years}
+                      value={skill.years ?? ""}
                       aria-label={t("upload_field_years")} placeholder={t("upload_field_years")}
                       onChange={(event) => updateDraft({
                         ...draft,
-                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, years: Number(event.target.value) || 0 } : item),
+                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, years: event.target.value === "" ? null : Number(event.target.value) } : item),
                       })}
                     />
                     <Input
@@ -543,7 +543,7 @@ export default function CvUpload() {
                   </div>
                 ))}
               </div>
-              <button type="button" onClick={() => updateDraft({ ...draft, skills: [...draft.skills, { name: "", level: 0, years: 0, evidence: null }] })} className="inline-flex items-center gap-1 text-xs text-app-brand"><Plus size={13} />{t("common_add")} {t("upload_field_skill").toLowerCase()}</button>
+              <button type="button" onClick={() => updateDraft({ ...draft, skills: [...draft.skills, { name: "", level: 0, years: null, evidence: null }] })} className="inline-flex items-center gap-1 text-xs text-app-brand"><Plus size={13} />{t("common_add")} {t("upload_field_skill").toLowerCase()}</button>
             </section>
 
             <section className={reviewStep >= 2 ? "space-y-5" : "hidden"}>
