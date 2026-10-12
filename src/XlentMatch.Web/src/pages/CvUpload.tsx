@@ -30,8 +30,8 @@ function dateOnly(value: string | null | undefined) {
 function toConsultant(draft: ConsultantDraft): Consultant {
   return {
     id: 0,
-    firstName: draft.firstName?.trim(),
-    lastName: draft.lastName?.trim(),
+    firstName: draft.firstName?.trim() ?? "",
+    lastName: draft.lastName?.trim() ?? "",
     email: draft.email?.trim() || null,
     title: draft.title?.trim() || null,
     summary: draft.summary?.trim() || null,
@@ -246,15 +246,17 @@ export default function CvUpload() {
     }
 
     const invalidDateRange = (currentDraft.experiences ?? []).some((item) => {
-      if (!item.startDate || !item.endDate) return false;
-      return dateOnly(item.startDate)! > dateOnly(item.endDate)!;
+      if (!item?.startDate || !item?.endDate) return false;
+      const start = dateOnly(item.startDate);
+      const end = dateOnly(item.endDate);
+      return Boolean(start && end && start > end);
     });
     if (invalidDateRange) {
       setError(t("upload_invalid_date_range"));
       return;
     }
 
-    const normalizedLanguageNames = (currentDraft.languages ?? []).map((item) => item.name?.trim() ?? "".toLocaleLowerCase()).filter(Boolean);
+    const normalizedLanguageNames = (currentDraft.languages ?? []).map((item) => (item?.name?.trim() ?? "").toLocaleLowerCase()).filter(Boolean);
     if (new Set(normalizedLanguageNames).size !== normalizedLanguageNames.length) {
       setError(t("upload_duplicate_languages"));
       return;
