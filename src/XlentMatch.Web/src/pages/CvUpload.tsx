@@ -54,7 +54,14 @@ export default function CvUpload() {
       const message = e instanceof Error ? e.message : "CV processing failed";
       setError(message);
       if (uploadId !== null) {
-        try { await cvUploadsApi.update(uploadId, { status: "Error", errorMessage: message }); } catch { /* preserve initial error */ }
+        try {
+          if (message.includes("DUPLICATE_CV")) {
+            await cvUploadsApi.remove(uploadId);
+            setError("This CV already exists in the library. Upload cancelled; AI extraction was not started.");
+          } else {
+            await cvUploadsApi.update(uploadId, { status: "Error", errorMessage: message });
+          }
+        } catch { /* preserve initial error */ }
       }
       await refresh().catch(() => {});
     } finally { setBusy(false); }
