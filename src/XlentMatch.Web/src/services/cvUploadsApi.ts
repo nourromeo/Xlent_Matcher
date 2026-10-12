@@ -39,6 +39,8 @@ export const cvUploadsApi = {
 
   getAll: () => apiRequest<CvUploadRecord[]>("/cv-uploads"),
 
+  cleanupAbandoned: () => apiRequest<{ removed: number }>("/cv-uploads/cleanup-abandoned", { method: "POST" }),
+
   create: (fileName: string, fileSize: number, status: CvUploadStatus = "Extracting", errorMessage: string | null = null) =>
     apiRequest<CvUploadRecord>("/cv-uploads", {
       method: "POST",
