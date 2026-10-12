@@ -494,6 +494,9 @@ export default function CvAdaptation() {
             )}
 
             {consultantMode === "upload" && (
+              <p className="text-[11px] text-app-muted">Upload a CV directly for this adaptation only. The document is sent for AI extraction; it is not added to CV Library or linked to a consultant profile. PDF or TXT, max 10 MB.</p>
+            )}
+            {consultantMode === "upload" && (
               <label className="block space-y-2 rounded-lg border border-dashed border-app-border p-5 text-center cursor-pointer">
                 <span className="block text-left text-[11px] text-app-muted">
                   {t("adaptation_consultant_cv")}
@@ -585,6 +588,9 @@ export default function CvAdaptation() {
               </label>
             )}
 
+            {assignmentMode === "upload" && (
+              <p className="text-[11px] text-app-muted">Upload the customer's requirements for this adaptation. No client assignment is created in the database.</p>
+            )}
             {assignmentMode === "upload" && (
               <label className="block space-y-2 rounded-lg border border-dashed border-app-border p-5 text-center cursor-pointer">
                 <span className="block text-left text-[11px] text-app-muted">
