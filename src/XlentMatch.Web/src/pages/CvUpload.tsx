@@ -19,16 +19,19 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function dateOnly(value: string | null) {
-  if (!value) return null;
-  return /^\d{4}-\d{2}$/.test(value) ? `${value}-01` : value;
+function dateOnly(value: string | null | undefined) {
+  const normalized = value?.trim();
+  if (!normalized) return null;
+  if (/^\d{4}$/.test(normalized)) return `${normalized}-01-01`;
+  if (/^\d{4}-\d{2}$/.test(normalized)) return `${normalized}-01`;
+  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : null;
 }
 
 function toConsultant(draft: ConsultantDraft): Consultant {
   return {
     id: 0,
-    firstName: draft.firstName.trim(),
-    lastName: draft.lastName.trim(),
+    firstName: draft.firstName?.trim(),
+    lastName: draft.lastName?.trim(),
     email: draft.email?.trim() || null,
     title: draft.title?.trim() || null,
     summary: draft.summary?.trim() || null,
@@ -40,53 +43,53 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     office: draft.office?.trim() || null,
     originalCvText: null,
     fullName: undefined,
-    skills: draft.skills.filter((skill) => skill.name.trim()).map((skill) => ({
+    skills: (draft.skills ?? []).filter((skill) => skill?.name?.trim()).map((skill) => ({
       id: 0,
       consultantId: 0,
-      name: skill.name.trim(),
+      name: skill.name?.trim() ?? "",
       category: null,
-      years: skill.years,
-      level: skill.level,
+      years: skill.years ?? 0,
+      level: skill.level ?? 0,
       evidence: skill.evidence?.trim() || null,
     })),
-    experiences: draft.experiences.filter((item) => item.company.trim() || item.role.trim()).map((item) => ({
+    experiences: (draft.experiences ?? []).filter((item) => item && (item.company?.trim() || item.role?.trim())).map((item) => ({
       id: 0,
       consultantId: 0,
-      company: item.company.trim(),
-      role: item.role.trim(),
+      company: item.company?.trim() ?? "",
+      role: item.role?.trim() ?? "",
       description: item.description?.trim() || null,
       startDate: dateOnly(item.startDate),
       endDate: dateOnly(item.endDate),
     })),
-    projects: draft.projects.filter((item) => item.name.trim()).map((item) => ({
+    projects: (draft.projects ?? []).filter((item) => item?.name?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      name: item.name.trim(),
+      name: item.name?.trim() ?? "",
       description: item.description?.trim() || null,
       technologies: item.technologies?.trim() || null,
     })),
-    education: draft.education.filter((item) => item.degree.trim()).map((item) => ({
+    education: (draft.education ?? []).filter((item) => item?.degree?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      degree: item.degree.trim(),
+      degree: item.degree?.trim() ?? "",
       school: item.school?.trim() || null,
       year: item.year?.trim() || null,
     })),
-    languages: draft.languages.filter((item) => item.name.trim()).map((item) => ({
+    languages: (draft.languages ?? []).filter((item) => item?.name?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      name: item.name.trim(),
+      name: item.name?.trim() ?? "",
       proficiency: item.proficiency,
     })),
-    industries: draft.industries.filter((name) => name.trim()).map((name) => ({
+    industries: (draft.industries ?? []).filter((name) => name?.trim()).map((name) => ({
       id: 0,
       consultantId: 0,
-      name: name.trim(),
+      name: name?.trim() ?? "",
     })),
-    certifications: draft.certifications.filter((item) => item.name.trim()).map((item) => ({
+    certifications: (draft.certifications ?? []).filter((item) => item?.name?.trim()).map((item) => ({
       id: 0,
       consultantId: 0,
-      name: item.name.trim(),
+      name: item.name?.trim() ?? "",
       issuer: item.issuer?.trim() || null,
       issuedDate: dateOnly(item.issuedDate),
     })),
@@ -230,19 +233,19 @@ export default function CvUpload() {
   const saveConsultant = async () => {
     if (!activeFile?.draft) return;
 
-    if (!activeFile.draft.firstName.trim() || !activeFile.draft.lastName.trim()) {
+    if (!activeFile.draft.firstName?.trim() || !activeFile.draft.lastName?.trim()) {
       setError(t("upload_required_names"));
       return;
     }
 
     const currentDraft = activeFile.draft;
     if ((currentDraft.yearsOfExperience ?? 0) < 0 ||
-        currentDraft.skills.some((skill) => skill.years < 0 || skill.level < 0 || skill.level > 5)) {
+        (currentDraft.skills ?? []).some((skill) => (skill.years ?? 0) < 0 || (skill.level ?? 0) < 0 || (skill.level ?? 0) > 5)) {
       setError(t("upload_invalid_experience"));
       return;
     }
 
-    const invalidDateRange = currentDraft.experiences.some((item) => {
+    const invalidDateRange = (currentDraft.experiences ?? []).some((item) => {
       if (!item.startDate || !item.endDate) return false;
       return dateOnly(item.startDate)! > dateOnly(item.endDate)!;
     });
@@ -251,7 +254,7 @@ export default function CvUpload() {
       return;
     }
 
-    const normalizedLanguageNames = currentDraft.languages.map((item) => item.name.trim().toLocaleLowerCase()).filter(Boolean);
+    const normalizedLanguageNames = (currentDraft.languages ?? []).map((item) => item.name?.trim() ?? "".toLocaleLowerCase()).filter(Boolean);
     if (new Set(normalizedLanguageNames).size !== normalizedLanguageNames.length) {
       setError(t("upload_duplicate_languages"));
       return;
