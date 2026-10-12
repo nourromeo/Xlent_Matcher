@@ -55,7 +55,7 @@ export type ConsultantCertification = {
   name: string;
   issuer: string | null;
   issuedDate: string | null;
-  issuedYear: string | null;
+  issuedYear?: string | null;
 };
 
 export type Consultant = {
