@@ -105,13 +105,13 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
     }
 
     [HttpGet("{id:int}/file")]
-    public async Task<IActionResult> DownloadFile(int id, [FromQuery] bool inline, CancellationToken ct)
+    public async Task<IActionResult> DownloadFile(int id, [FromQuery(Name = "inline")] bool inlineView, CancellationToken ct)
     {
         var upload = await db.CvUploads.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (upload?.StorageKey is null) return NotFound();
         var path = Path.Combine(CvDirectory, Path.GetFileName(upload.StorageKey));
         if (!System.IO.File.Exists(path)) return NotFound();
-        return inline
+        return inlineView
             ? PhysicalFile(path, upload.ContentType ?? "application/octet-stream")
             : PhysicalFile(path, upload.ContentType ?? "application/octet-stream", upload.FileName);
     }
