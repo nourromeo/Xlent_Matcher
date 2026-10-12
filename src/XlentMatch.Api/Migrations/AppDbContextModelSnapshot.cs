@@ -380,6 +380,10 @@ namespace XlentMatch.Api.Migrations
 
                     b.HasIndex("ConsultantId");
 
+                    b.HasIndex("ConsultantId", "IsActive", "IX_CvUploads_OneActivePerConsultant")
+                        .IsUnique()
+                        .HasFilter("[IsActive] = 1 AND [ConsultantId] IS NOT NULL");
+
                     b.ToTable("CvUploads");
                 });
 
