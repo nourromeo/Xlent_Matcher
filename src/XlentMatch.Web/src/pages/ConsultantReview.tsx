@@ -551,14 +551,14 @@ export default function ConsultantReview() {
                             <Input
                               type="number"
                               min={0}
-                              value={item.years}
+                              value={item.years ?? ""}
                               onChange={(e) =>
                                 update({
                                   skills: draft.skills.map((x, i) =>
                                     i === index
                                       ? {
                                           ...x,
-                                          years: Number(e.target.value) || 0,
+                                          years: e.target.value === "" ? null : Number(e.target.value),
                                         }
                                       : x,
                                   ),
@@ -632,7 +632,7 @@ export default function ConsultantReview() {
                         {item.name || t("common_not_specified")}
                       </span>
                       <span className="text-xs text-app-muted">
-                        {item.years} {t("consultant_year_count")}
+                        {item.years == null ? "Not specified" : `${item.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-xs text-app-muted">
                         {level(item.level)} ({item.level}/5)
@@ -657,7 +657,7 @@ export default function ConsultantReview() {
                     update({
                       skills: [
                         ...draft.skills,
-                        { name: "", level: 0, years: 0, evidence: null },
+                        { name: "", level: 0, years: null, evidence: null },
                       ],
                     });
                     setEditing(`skill-${draft.skills.length}`);
@@ -934,7 +934,7 @@ export default function ConsultantReview() {
                       >
                         <span>{x.name}</span>
                         <span>
-                          {x.years} {t("consultant_year_count")}
+                          {x.years == null ? "Not specified" : `${x.years} ${t("consultant_year_count")}`}
                         </span>
                         <span>
                           {level(x.level)} ({x.level}/5)
