@@ -206,11 +206,11 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             matched = yearsOk && levelOk;
 
             var skillName = skill.Skill?.CanonicalName ?? skill.Name;
-            evidence.Add($"Skill '{skillName}': level {skill.Level}/5, {(skill.Years is null ? "years not specified" : $"{skill.Years} years")}");
+            evidence.Add($"Skill '{skillName}': {(skill.Level <= 0 ? "level not specified" : $"level {skill.Level}/5")}, {(skill.Years is null ? "years not specified" : $"{skill.Years} years")}");
             if (!string.IsNullOrWhiteSpace(skill.Evidence))
                 evidence.Add(skill.Evidence);
             if (!yearsOk) evidence.Add(skill.Years is null ? $"Requires {req.MinYears} years; consultant skill experience is unknown." : $"Requires {req.MinYears} years, consultant has {skill.Years}");
-            if (!levelOk) evidence.Add($"Requires level {req.MinLevel}, consultant has {skill.Level}");
+            if (!levelOk) evidence.Add(skill.Level <= 0 ? $"Requires level {req.MinLevel}; consultant skill level is unknown." : $"Requires level {req.MinLevel}, consultant has {skill.Level}");
         }
 
         }
