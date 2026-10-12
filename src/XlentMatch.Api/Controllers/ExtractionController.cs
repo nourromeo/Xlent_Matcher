@@ -27,6 +27,7 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
         {
             var draft = await ai.ExtractConsultantProfileAsync(input.Text!, ct);
             RemoveIncompleteCollectionItems(draft);
+            NormalizeCertificationIssueYears(draft);
             draft.Seniority ??= draft.SuggestedSeniority;
             SetExperienceYears(draft);
             foreach (var language in draft.Languages)
@@ -81,6 +82,34 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
             requirement.Proficiency = string.IsNullOrWhiteSpace(requirement.Proficiency)
                 ? null
                 : SkillNormalizationService.NormalizeLanguageProficiency(requirement.Proficiency);
+        }
+    }
+
+    public static void NormalizeCertificationIssueYears(ConsultantDraftDto draft)
+    {
+        foreach (var certification in draft.Certifications)
+        {
+            var date = certification.IssuedDate?.Trim();
+            var year = certification.IssuedYear?.Trim();
+            if (date is { Length: 4 } && int.TryParse(date, out var parsedYear) && parsedYear is >= 1900 and <= 2100)
+            {
+                certification.IssuedYear = date;
+                certification.IssuedDate = null;
+            }
+            else if (date is { Length: >= 7 } && DateOnly.TryParse(date, out var parsedDate))
+            {
+                certification.IssuedYear = parsedDate.Year.ToString();
+            }
+            else if (year is { Length: 4 } && int.TryParse(year, out var yearValue) && yearValue is >= 1900 and <= 2100)
+            {
+                certification.IssuedYear = year;
+                certification.IssuedDate = null;
+            }
+            else
+            {
+                certification.IssuedYear = null;
+                certification.IssuedDate = null;
+            }
         }
     }
 
