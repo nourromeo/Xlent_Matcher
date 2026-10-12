@@ -595,10 +595,10 @@ export default function Matching() {
         </div>
       ) : selected ? (
         <div className="flex-1 flex flex-col min-h-0">
-<div className="px-6 py-3 border-b border-app-border bg-app-surface">
-              <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-app p-1" role="tablist" aria-label="Ranking method">
-                <button type="button" role="tab" aria-selected={rankingTab === "match"} onClick={() => setRankingTab("match")} className={`rounded-md px-2 py-2 text-xs font-medium ${rankingTab === "match" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>Match Score</button>
-                <button type="button" role="tab" aria-selected={rankingTab === "ai"} onClick={() => setRankingTab("ai")} className={`rounded-md px-2 py-2 text-xs font-medium ${rankingTab === "ai" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>AI Ranking</button>
+<div className="px-6 py-2 border-b border-app-border bg-app-surface">
+              <div className="inline-flex w-fit max-w-full gap-1 rounded-lg bg-app p-1" role="tablist" aria-label="Ranking method">
+                <button type="button" role="tab" aria-selected={rankingTab === "match"} onClick={() => setRankingTab("match")} className={`rounded-md px-4 py-1.5 text-xs font-medium ${rankingTab === "match" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>Match Score</button>
+                <button type="button" role="tab" aria-selected={rankingTab === "ai"} onClick={() => setRankingTab("ai")} className={`rounded-md px-4 py-1.5 text-xs font-medium ${rankingTab === "ai" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>AI Ranking</button>
               </div>
             </div>
             
@@ -661,8 +661,8 @@ export default function Matching() {
             
             </main>
           ) : (
-            <div className="flex-1 flex min-h-0">
-              <aside className="w-80 flex-none border-r border-app-border bg-app-surface flex flex-col">
+            <div className="flex-1 min-h-0 overflow-y-auto flex items-start">
+              <aside className="w-80 flex-none border-r border-app-border bg-app-surface flex flex-col self-stretch">
             <div className="px-4 py-3 border-b border-app-border">
               <p className="text-sm font-semibold text-app-primary">
                 {t("matching_consultants")}
@@ -735,7 +735,7 @@ export default function Matching() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1">
               {visibleResults.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-5 text-center">
                   <div>
@@ -828,7 +828,7 @@ export default function Matching() {
           </aside>
 
           
-              <main className="flex-1 overflow-auto bg-app">
+              <main className="flex-1 min-w-0 bg-app">
                 <div className="p-6 space-y-5">
               <section className="flex items-start justify-between gap-5">
                 <div className="flex items-center gap-3 min-w-0">
