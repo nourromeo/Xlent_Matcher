@@ -64,7 +64,7 @@ export default function CvUpload() {
       if (uploadId !== null) {
         try {
           if (message.includes("DUPLICATE_CV")) {
-            await cvUploadsApi.remove(uploadId);
+            await cvUploadsApi.remove(uploadId).catch(() => {});
             setError("This CV already exists in the library. Upload cancelled; AI extraction was not started.");
           } else {
             await cvUploadsApi.update(uploadId, { status: "Error", errorMessage: message });
