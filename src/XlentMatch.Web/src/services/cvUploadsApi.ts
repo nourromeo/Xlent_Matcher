@@ -64,7 +64,17 @@ export const cvUploadsApi = {
     form.append("file", file);
     const base = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
     const response = await fetch(`${base}/cv-uploads/${id}/file`, { method: "POST", body: form });
-    if (!response.ok) throw new Error(await response.text());
+    if (!response.ok) {
+      const raw = await response.text();
+      let code: string | undefined;
+      try { code = (JSON.parse(raw) as { code?: string }).code; } catch { /* Plain text error. */ }
+      if (response.status === 409 && code === "DUPLICATE_CV") {
+        throw new Error("DUPLICATE_CV");
+      }
+      throw new Error(response.status === 413
+        ? "The CV file is too large (maximum 10 MB)."
+        : "Could not upload the CV. Please try again.");
+    }
     return response.json() as Promise<CvUploadRecord>;
   },
 
