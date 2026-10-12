@@ -1027,6 +1027,7 @@ export default function ConsultantReview() {
               )}
             </section>
           )}
+          {error && <div role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-xs text-red-400">Save failed: {error}</div>}
           <div className="flex justify-between">
             <Button
               variant="ghost"
