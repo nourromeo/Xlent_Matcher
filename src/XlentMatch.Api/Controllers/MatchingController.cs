@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.DTOs.Matching;
@@ -9,7 +10,7 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/matching")]
-public class MatchingController(AppDbContext db, MatchingService matching, ConsultantAvailabilityService availability) : ControllerBase
+public class MatchingController(AppDbContext db, MatchingService matching, ConsultantAvailabilityService availability, IWebHostEnvironment environment, IPdfTextExtractor pdf, IAiTextService ai) : ControllerBase
 {
     [HttpPost("run")]
     public async Task<ActionResult<List<MatchResult>>> Run(RunMatchingRequestDto request, CancellationToken ct)
@@ -56,6 +57,74 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         await db.SaveChangesAsync(ct);
 
         return results;
+    }
+
+
+    [HttpPost("assignment/{assignmentId:int}/ai-ranking")]
+    public async Task<ActionResult<AiRankingResultDto>> RankOriginalCvs(int assignmentId, CancellationToken ct)
+    {
+        var assignment = await db.Assignments.Include(a => a.Requirements)
+            .AsNoTracking().FirstOrDefaultAsync(a => a.Id == assignmentId, ct);
+        if (assignment is null) return NotFound("Assignment not found.");
+
+        var ranked = await db.MatchResults.AsNoTracking()
+            .Where(m => m.AssignmentId == assignmentId)
+            .OrderBy(m => m.Rank).ThenByDescending(m => m.Score)
+            .Select(m => m.ConsultantId).Distinct().ToListAsync(ct);
+        if (ranked.Count == 0) return BadRequest("Run Matching before AI Ranking.");
+
+        var originals = await db.CvUploads.AsNoTracking()
+            .Where(cv => cv.IsActive && cv.Status == "Indexed" && cv.StorageKey != null && cv.ConsultantId != null && ranked.Contains(cv.ConsultantId.Value))
+            .ToListAsync(ct);
+        var byConsultant = originals.GroupBy(cv => cv.ConsultantId!.Value)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(cv => cv.UploadedAt).First());
+
+        var eligible = new List<(int ConsultantId, string CvText)>();
+        var skipped = 0;
+        foreach (var id in ranked)
+        {
+            if (eligible.Count == 2) break;
+            if (!byConsultant.TryGetValue(id, out var cv)) { skipped++; continue; }
+            var path = Path.Combine(environment.ContentRootPath, "private-cvs", Path.GetFileName(cv.StorageKey!));
+            if (!System.IO.File.Exists(path)) { skipped++; continue; }
+            string text;
+            try
+            {
+                var extension = Path.GetExtension(path).ToLowerInvariant();
+                if (extension == ".pdf")
+                {
+                    await using var stream = System.IO.File.OpenRead(path);
+                    text = pdf.Extract(stream);
+                }
+                else if (extension == ".txt")
+                    text = await System.IO.File.ReadAllTextAsync(path, ct);
+                else { skipped++; continue; }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                skipped++;
+                continue;
+            }
+            if (string.IsNullOrWhiteSpace(text)) { skipped++; continue; }
+            eligible.Add((id, text.Length > 30000 ? text[..30000] : text));
+        }
+        if (eligible.Count < 2)
+            return BadRequest($"AI Ranking needs two original CVs. Found {eligible.Count} eligible consultant(s).");
+
+        var requirements = string.Join("\n", assignment.Requirements.Select(r =>
+            $"{r.Type}: {r.Name}; minimum years: {r.MinYears?.ToString() ?? "not specified"}; proficiency: {r.Proficiency ?? "not specified"}"));
+        var assignmentText = $"Title: {assignment.Title}\nCustomer: {assignment.CustomerName}\nDescription: {assignment.Description}\nSeniority: {assignment.Seniority}\nMinimum experience: {assignment.MinYearsExperience}\nLocation: {assignment.Location}\nRequirements:\n{requirements}";
+        try
+        {
+            var result = await ai.RankOriginalCvsAsync(assignmentText, eligible, ct);
+            result.SkippedWithoutCv = skipped;
+            return Ok(result);
+        }
+        catch (InvalidOperationException)
+        {
+            return Problem(statusCode: StatusCodes.Status502BadGateway, title: "AI Ranking unavailable",
+                detail: "The AI service could not complete the ranking. Try again later.");
+        }
     }
 
     [HttpGet("assignment/{assignmentId:int}")]
