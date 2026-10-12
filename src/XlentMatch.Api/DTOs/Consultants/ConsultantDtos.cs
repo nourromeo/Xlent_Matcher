@@ -26,7 +26,7 @@ public class SkillDraftDto
 {
     public string Name { get; set; } = "";
     public int Level { get; set; }
-    public int Years { get; set; }
+    public int? Years { get; set; }
     public string? Evidence { get; set; }
 }
 
