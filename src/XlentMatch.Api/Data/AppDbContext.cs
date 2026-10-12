@@ -49,6 +49,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<Consultant>().HasMany(c => c.Languages).WithOne().HasForeignKey(l => l.ConsultantId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<Consultant>().HasMany(c => c.Industries).WithOne().HasForeignKey(i => i.ConsultantId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<Consultant>().HasMany(c => c.Certifications).WithOne().HasForeignKey(c => c.ConsultantId).OnDelete(DeleteBehavior.Cascade);
+        mb.Entity<Certification>().Property(c => c.IssuedYear).HasMaxLength(4);
 
         mb.Entity<Assignment>().HasMany(a => a.Requirements).WithOne().HasForeignKey(r => r.AssignmentId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<AssignmentRequirement>()
