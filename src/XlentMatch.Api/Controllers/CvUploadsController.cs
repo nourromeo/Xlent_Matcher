@@ -138,12 +138,17 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
                 await using var stored = System.IO.File.OpenRead(existingPath);
                 var storedHash = Convert.ToHexString(await SHA256.HashDataAsync(stored, ct));
                 if (incomingHash == storedHash)
+                {
+                    // The rejected upload must not leave a placeholder in the database.
+                    db.CvUploads.Remove(upload);
+                    await db.SaveChangesAsync(ct);
                     return Conflict(new
                     {
                         code = "DUPLICATE_CV",
                         message = "This CV already exists in the library. No extraction was started.",
                         existingUploadId = existing.Id
                     });
+                }
             }
 
             var key = Guid.NewGuid().ToString("N") + extension;
