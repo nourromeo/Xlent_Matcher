@@ -13,6 +13,7 @@ export default function CvUpload() {
   const [params] = useSearchParams();
   const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
   const input = useRef<HTMLInputElement>(null);
+  const [existingCvForConsultant, setExistingCvForConsultant] = useState(false);
   const [records, setRecords] = useState<CvUploadRecord[]>([]);
   const [tab, setTab] = useState<Tab>("library");
   const [search, setSearch] = useState("");
@@ -24,10 +25,11 @@ export default function CvUpload() {
   const refresh = async () => {
     const data = await cvUploadsApi.getAll();
     setRecords(data);
+    setExistingCvForConsultant(Boolean(replaceConsultantId && data.some((item) => item.consultantId === replaceConsultantId && item.isActive && item.status === "Indexed")));
   };
   useEffect(() => {
     let cancelled = false;
-    cvUploadsApi.getAll().then((data) => { if (!cancelled) setRecords(data); })
+    cvUploadsApi.getAll().then((data) => { if (!cancelled) { setRecords(data); setExistingCvForConsultant(Boolean(replaceConsultantId && data.some((item) => item.consultantId === replaceConsultantId && item.isActive && item.status === "Indexed"))); } })
       .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : "Could not load CVs"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -54,7 +56,14 @@ export default function CvUpload() {
       const message = e instanceof Error ? e.message : "CV processing failed";
       setError(message);
       if (uploadId !== null) {
-        try { await cvUploadsApi.update(uploadId, { status: "Error", errorMessage: message }); } catch { /* preserve initial error */ }
+        try {
+          if (message.includes("DUPLICATE_CV")) {
+            await cvUploadsApi.remove(uploadId);
+            setError("This CV already exists in the library. Upload cancelled; AI extraction was not started.");
+          } else {
+            await cvUploadsApi.update(uploadId, { status: "Error", errorMessage: message });
+          }
+        } catch { /* preserve initial error */ }
       }
       await refresh().catch(() => {});
     } finally { setBusy(false); }
@@ -93,14 +102,14 @@ export default function CvUpload() {
       <section className="rounded-xl border border-app-border bg-app-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId ? "Replace Consultant CV" : "Upload CV"}</h2>
+            <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId && existingCvForConsultant ? "Replace Consultant CV" : replaceConsultantId ? "Upload New CV" : "Upload CV"}</h2>
             <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? "The existing profile will not change without your approval." : "PDF or TXT, maximum 10 MB. AI extraction requires review before saving."}</p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
             {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>Back to consultant</Link>}
             <input ref={input} type="file" accept=".pdf,.txt,application/pdf,text/plain" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
             <button type="button" disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex w-fit items-center justify-center rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
-              {busy ? "Uploading and extracting..." : replaceConsultantId ? "Choose replacement CV" : "+ Upload CV"}
+              {busy ? "Uploading and extracting..." : replaceConsultantId && existingCvForConsultant ? "Choose replacement CV" : replaceConsultantId ? "Upload New CV" : "+ Upload CV"}
             </button>
           </div>
         </div>
