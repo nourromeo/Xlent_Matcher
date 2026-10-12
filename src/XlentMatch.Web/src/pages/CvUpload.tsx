@@ -90,18 +90,20 @@ export default function CvUpload() {
           </div>
         ))}
       </div>
-      <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+      <section className="rounded-xl border border-app-border bg-app-surface p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId ? "Replace Consultant CV" : "Upload CV"}</h2>
             <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? "The existing profile will not change without your approval." : "PDF or TXT, maximum 10 MB. AI extraction requires review before saving."}</p>
           </div>
-          {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>Back to consultant</Link>}
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>Back to consultant</Link>}
+            <input ref={input} type="file" accept=".pdf,.txt,application/pdf,text/plain" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
+            <button type="button" disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex w-fit items-center justify-center rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+              {busy ? "Uploading and extracting..." : replaceConsultantId ? "Choose replacement CV" : "+ Upload CV"}
+            </button>
+          </div>
         </div>
-        <input ref={input} type="file" accept=".pdf,.txt,application/pdf,text/plain" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
-        <button type="button" disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="ml-auto flex w-fit flex-row items-center justify-center gap-2 rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
-          {busy ? "Uploading and extracting..." : replaceConsultantId ? "Choose replacement CV" : "+ Upload CV"}
-        </button>
       </section>
       <section className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
         <div className="flex flex-wrap gap-2 items-center justify-between px-4 py-3 border-b border-app-border">
