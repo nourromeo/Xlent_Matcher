@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using XlentMatch.Api.Data;
@@ -9,6 +10,7 @@ namespace XlentMatch.Api.Controllers;
 [Route("api/cv-uploads")]
 public class CvUploadsController(AppDbContext db, IWebHostEnvironment environment) : ControllerBase
 {
+    private static readonly SemaphoreSlim UploadLock = new(1, 1);
     [HttpGet]
     public async Task<ActionResult<List<CvUploadRecord>>> GetAll(CancellationToken ct) =>
         await db.CvUploads
@@ -79,28 +81,59 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
         if (extension is not (".pdf" or ".txt"))
             return BadRequest("Only PDF and TXT files are supported.");
 
-        Directory.CreateDirectory(CvDirectory);
-        var key = Guid.NewGuid().ToString("N") + extension;
-        var target = Path.Combine(CvDirectory, key);
+        // Reject identical content before saving a file or starting AI extraction.
+        // The lock prevents two concurrent uploads on this API instance from bypassing the check.
+        await UploadLock.WaitAsync(ct);
         try
         {
-            await using (var stream = new FileStream(target, FileMode.CreateNew))
-                await file.CopyToAsync(stream, ct);
+            Directory.CreateDirectory(CvDirectory);
+            await using var incoming = file.OpenReadStream();
+            var incomingHash = Convert.ToHexString(await SHA256.HashDataAsync(incoming, ct));
 
-            var previousKey = upload.StorageKey;
-            upload.StorageKey = key;
-            upload.ContentType = extension == ".pdf" ? "application/pdf" : "text/plain";
-            upload.FileName = Path.GetFileName(file.FileName);
-            upload.FileSize = file.Length;
-            await db.SaveChangesAsync(ct);
-            if (previousKey is not null)
-                System.IO.File.Delete(Path.Combine(CvDirectory, Path.GetFileName(previousKey)));
-            return Ok(upload);
+            var storedKeys = await db.CvUploads.AsNoTracking()
+                .Where(x => x.StorageKey != null && x.Id != id)
+                .Select(x => new { x.Id, x.StorageKey })
+                .ToListAsync(ct);
+
+            foreach (var existing in storedKeys)
+            {
+                var existingPath = Path.Combine(CvDirectory, Path.GetFileName(existing.StorageKey!));
+                if (!System.IO.File.Exists(existingPath)) continue;
+
+                await using var stored = System.IO.File.OpenRead(existingPath);
+                var storedHash = Convert.ToHexString(await SHA256.HashDataAsync(stored, ct));
+                if (incomingHash == storedHash)
+                    return Conflict(new
+                    {
+                        code = "DUPLICATE_CV",
+                        message = "This CV already exists in the library. No extraction was started.",
+                        existingUploadId = existing.Id
+                    });
+            }
+
+            var key = Guid.NewGuid().ToString("N") + extension;
+            var target = Path.Combine(CvDirectory, key);
+            try
+            {
+                await using (var stream = new FileStream(target, FileMode.CreateNew))
+                    await file.CopyToAsync(stream, ct);
+
+                upload.StorageKey = key;
+                upload.ContentType = extension == ".pdf" ? "application/pdf" : "text/plain";
+                upload.FileName = Path.GetFileName(file.FileName);
+                upload.FileSize = file.Length;
+                await db.SaveChangesAsync(ct);
+                return Ok(upload);
+            }
+            catch
+            {
+                if (System.IO.File.Exists(target)) System.IO.File.Delete(target);
+                throw;
+            }
         }
-        catch
+        finally
         {
-            if (System.IO.File.Exists(target)) System.IO.File.Delete(target);
-            throw;
+            UploadLock.Release();
         }
     }
 
