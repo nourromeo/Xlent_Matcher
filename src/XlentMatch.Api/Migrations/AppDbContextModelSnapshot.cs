@@ -180,6 +180,10 @@ namespace XlentMatch.Api.Migrations
                     b.Property<DateOnly?>("IssuedDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("IssuedYear")
+                        .HasColumnType("nvarchar(4)")
+                        .HasMaxLength(4);
+
                     b.Property<string>("Issuer")
                         .HasColumnType("nvarchar(max)");
 
