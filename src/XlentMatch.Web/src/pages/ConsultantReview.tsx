@@ -114,14 +114,16 @@ export default function ConsultantReview() {
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [loadingDraft, setLoadingDraft] = useState(true);
   useEffect(() => {
-    if (!uploadId) return;
+    if (!uploadId) { setLoadingDraft(false); return; }
     let cancelled = false;
     cvUploadsApi.getAll().then((items) => {
       const item = items.find((x) => x.id === Number(uploadId));
       if (!cancelled && item?.draftJson) setDraft(JSON.parse(item.draftJson) as ConsultantDraft);
       if (!cancelled && !item?.draftJson) setError("No extracted data found for this CV.");
-    }).catch(() => { if (!cancelled) setError("Could not load CV review."); });
+    }).catch(() => { if (!cancelled) setError("Could not load CV review."); })
+      .finally(() => { if (!cancelled) setLoadingDraft(false); });
     return () => { cancelled = true; };
   }, [uploadId]);
   useEffect(() => {
@@ -397,7 +399,7 @@ export default function ConsultantReview() {
   if (empty)
     return (
       <div className="p-6 text-sm text-app-secondary">
-        {error || t("upload_load_error")}
+        {loadingDraft ? "Loading extracted CV data..." : error || t("upload_load_error")}
       </div>
     );
   return (
