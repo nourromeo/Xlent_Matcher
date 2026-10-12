@@ -134,7 +134,6 @@ export default function Matching() {
   const [aiRanking, setAiRanking] = useState<AiRankingResult | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
-  const [newConsultants, setNewConsultants] = useState(0);
 
   const assignmentId = Number(searchParams.get("assignment"));
   const assignment = assignments.find((item) => item.id === assignmentId);
@@ -169,7 +168,6 @@ export default function Matching() {
     if (!Number.isInteger(assignmentId) || assignmentId <= 0) {
       setResults([]);
       setSelectedMatchId(null);
-      setNewConsultants(0);
       return;
     }
 
@@ -181,9 +179,6 @@ export default function Matching() {
         if (cancelled) return;
         setResults(data);
         setSelectedMatchId(data[0]?.id ?? null);
-        matchingApi.getFreshness(assignmentId).then((freshness) => {
-          if (!cancelled) setNewConsultants(freshness.newConsultants);
-        }).catch(() => { if (!cancelled) setNewConsultants(0); });
       })
       .catch((requestError: unknown) => {
         if (!cancelled) {
@@ -203,6 +198,12 @@ export default function Matching() {
     setAiError("");
     setRankingTab("match");
   }, [assignmentId]);
+
+  const newConsultants = useMemo(() => {
+    if (results.length === 0 || loading) return 0;
+    const matchedIds = new Set(results.map((result) => result.consultantId));
+    return consultants.filter((consultant) => !matchedIds.has(consultant.id)).length;
+  }, [consultants, results, loading]);
 
   const runAiRanking = async () => {
     if (!assignment || aiLoading || results.length === 0 || newConsultants > 0) return;
@@ -262,7 +263,6 @@ export default function Matching() {
     setAiRanking(null);
     setAiError("");
     setResults([]);
-    setNewConsultants(0);
     setError("");
     setSearchParams(id ? { assignment: id } : {});
   };
