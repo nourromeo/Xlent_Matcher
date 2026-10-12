@@ -654,7 +654,7 @@ export default function ConsultantReview() {
                         {item.years == null ? "Not specified" : `${item.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-xs text-app-muted">
-                        {level(item.level)} ({item.level}/5)
+                        {item.level > 0 ? `${level(item.level)} (${item.level}/5)` : t("common_not_specified")}
                       </span>
                       <div className="flex gap-2">
                         <button
