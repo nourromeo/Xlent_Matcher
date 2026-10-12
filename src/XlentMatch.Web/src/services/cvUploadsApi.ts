@@ -53,7 +53,7 @@ export const cvUploadsApi = {
     return response.json() as Promise<CvUploadRecord>;
   },
 
-  fileUrl: (id: number) => `${(import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "")}/cv-uploads/${id}/file`,
+  fileUrl: (id: number) => `${(import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "")}/cv-uploads/${id}/file`,
 
   activate: (id: number) => apiRequest<CvUploadRecord>(`/cv-uploads/${id}/activate`, { method: "POST" }),
 
