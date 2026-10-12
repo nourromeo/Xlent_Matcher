@@ -18,6 +18,23 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
             .OrderByDescending(x => x.UploadedAt)
             .ToListAsync(ct);
 
+    [HttpPost("cleanup-abandoned")]
+    public async Task<ActionResult<object>> CleanupAbandoned(CancellationToken ct)
+    {
+        // Only delete old, fileless, unlinked attempts. Never touch approved CVs,
+        // review drafts, or recently started uploads.
+        var cutoff = DateTime.UtcNow.AddHours(-24);
+        var abandoned = await db.CvUploads
+            .Where(x => x.StorageKey == null && x.ConsultantId == null &&
+                        x.DraftJson == null && !x.IsActive &&
+                        x.UploadedAt < cutoff &&
+                        (x.Status == "Extracting" || x.Status == "Error"))
+            .ToListAsync(ct);
+        db.CvUploads.RemoveRange(abandoned);
+        await db.SaveChangesAsync(ct);
+        return Ok(new { removed = abandoned.Count });
+    }
+
     [HttpPost("detect-consultant")]
     public async Task<ActionResult<ConsultantDetectionResult>> DetectConsultant(
         DetectConsultantRequest request, CancellationToken ct)
