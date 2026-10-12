@@ -123,6 +123,24 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
         return PhysicalFile(path, upload.ContentType ?? "application/octet-stream", upload.FileName);
     }
 
+    [HttpPost("{id:int}/activate")]
+    public async Task<ActionResult<CvUploadRecord>> Activate(int id, CancellationToken ct)
+    {
+        var upload = await db.CvUploads.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (upload is null) return NotFound();
+        if (upload.ConsultantId is null || upload.Status != "Indexed" || upload.StorageKey is null)
+            return BadRequest("A saved consultant and original CV file are required.");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var active = await db.CvUploads.Where(x => x.ConsultantId == upload.ConsultantId && x.IsActive && x.Id != id).ToListAsync(ct);
+        foreach (var previous in active) previous.IsActive = false;
+        await db.SaveChangesAsync(ct);
+        upload.IsActive = true;
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return Ok(upload);
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
