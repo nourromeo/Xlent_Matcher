@@ -129,7 +129,7 @@ export default function CvUpload() {
                   <td className="px-4 py-3">{formatSize(r.fileSize)}</td>
                   <td className="px-4 py-3">{r.isActive ? "Active" : r.status}</td>
                   <td className="px-4 py-3"><div className="flex justify-end flex-wrap gap-3">
-                    {r.storageKey && <a href={cvUploadsApi.fileUrl(r.id)} target="_blank" rel="noreferrer" className="text-app-brand">Download</a>}
+                    {r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">View</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">Download</a></>}
                     {r.status === "Review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`}>Review</Link>}
                     {r.consultantId && r.status === "Indexed" && <Link className="text-app-brand" to={`/cv-upload?replaceConsultantId=${r.consultantId}`}>Replace</Link>}
                     <button type="button" className="text-app-muted hover:text-red-500" onClick={() => void remove(r)}>Delete</button>
