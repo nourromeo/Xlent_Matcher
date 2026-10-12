@@ -136,11 +136,12 @@ export default function CvUpload() {
         {error && <p role="alert" className="mx-4 mt-3 text-xs text-red-500">{error}</p>}
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="bg-app-raised text-app-muted"><tr><th className="px-4 py-3">CV file</th><th className="px-4 py-3">Uploaded</th><th className="px-4 py-3">Size</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
+            <thead className="bg-app-raised text-app-muted"><tr><th className="px-4 py-3">CV file</th><th className="px-4 py-3">Consultant</th><th className="px-4 py-3">Uploaded</th><th className="px-4 py-3">Size</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
             <tbody>
               {list.map((r) => (
                 <tr key={r.id} className="border-t border-app-border text-app-secondary">
-                  <td className="px-4 py-3 font-medium text-app-primary">{r.fileName}{r.consultantId && <Link className="block text-app-brand font-normal mt-1" to={`/consultants/${r.consultantId}`}>View Consultant</Link>}</td>
+                  <td className="px-4 py-3 font-medium text-app-primary">{r.fileName}</td>
+                  <td className="px-4 py-3">{r.consultantId ? <Link className="text-app-brand" to={`/consultants/${r.consultantId}`}>{consultantNames[r.consultantId] || "Consultant #" + r.consultantId}</Link> : <span className="text-app-muted">Not assigned</span>}</td>
                   <td className="px-4 py-3">{new Date(r.uploadedAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3">{formatSize(r.fileSize)}</td>
                   <td className="px-4 py-3">{r.isActive ? "Active" : r.status}</td>
