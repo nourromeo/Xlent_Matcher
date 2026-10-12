@@ -320,7 +320,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int?>("SkillId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Years")
+                    b.Property<int?>("Years")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
