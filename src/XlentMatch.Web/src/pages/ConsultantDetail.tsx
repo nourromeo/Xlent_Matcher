@@ -292,7 +292,7 @@ export default function ConsultantDetail() {
 
             {consultant.certifications.length > 0 && <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface md:min-h-[172px]">
               <p className="text-sm font-medium text-app-primary mb-4">{t("consultant_certifications")}</p>
-              <div className="space-y-2">{visibleCertifications.map((certification) => <p key={certification.id || certification.name} className="text-sm text-app-secondary">{certification.name}{certification.issuer ? ` — ${certification.issuer}` : ""}</p>)}</div>
+              <div className="space-y-2">{visibleCertifications.map((certification) => <p key={certification.id || certification.name} className="text-sm text-app-secondary">{certification.name}{certification.issuer ? ` — ${certification.issuer}` : ""}{certification.issuedYear || certification.issuedDate ? ` · ${certification.issuedYear || certification.issuedDate?.slice(0, 4)}` : ""}</p>)}</div>
               {consultant.certifications.length > 3 && <button type="button" onClick={() => setCertificationsExpanded((current) => !current)} className="mt-4 text-xs text-app-brand hover:text-app-primary">{certificationsExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_certifications").replace("{count}", String(consultant.certifications.length))} ↓`}</button>}
             </section>}
 
