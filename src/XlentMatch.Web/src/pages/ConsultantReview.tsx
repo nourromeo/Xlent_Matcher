@@ -95,6 +95,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
         name: x.name.trim(),
         issuer: x.issuer?.trim() || null,
         issuedDate: dateOnly(x.issuedDate),
+      issuedYear: x.issuedYear || x.issuedDate?.slice(0, 4) || null,
       })),
   };
 }
@@ -251,6 +252,7 @@ export default function ConsultantReview() {
             <>
               {input(t("upload_certification"), "name")}
               {input(t("upload_issuer"), "issuer")}
+              {input("Issue year", "issuedYear")}
               {input(t("upload_issued_date"), "issuedDate", "month")}
             </>
           )}
@@ -812,6 +814,9 @@ export default function ConsultantReview() {
                           <p className="mt-1 text-xs text-app-muted">
                             {t("upload_year")}: {item.year}
                           </p>
+                        )}
+                        {"issuedDate" in item && (item.issuedYear || item.issuedDate) && (
+                          <p className="mt-1 text-xs text-app-muted">Year: {item.issuedYear || item.issuedDate?.slice(0, 4)}</p>
                         )}
                         {"description" in item && item.description && (
                           <p className="mt-1 text-xs text-app-secondary">
