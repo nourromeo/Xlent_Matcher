@@ -123,7 +123,7 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
         return PhysicalFile(path, upload.ContentType ?? "application/octet-stream", upload.FileName);
     }
 
-    [HttpDelete("{id:int")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var upload = await db.CvUploads.FindAsync([id], ct);
