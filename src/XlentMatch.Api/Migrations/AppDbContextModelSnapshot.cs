@@ -347,6 +347,9 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int?>("ConsultantId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ContentType")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("DraftJson")
                         .HasColumnType("nvarchar(max)");
 
@@ -360,8 +363,14 @@ namespace XlentMatch.Api.Migrations
                     b.Property<long>("FileSize")
                         .HasColumnType("bigint");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StorageKey")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UploadedAt")
