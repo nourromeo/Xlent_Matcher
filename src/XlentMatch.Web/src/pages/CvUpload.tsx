@@ -108,8 +108,8 @@ export default function CvUpload() {
       <section className="rounded-xl border border-app-border bg-app-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId && existingCvForConsultant ? "Replace Consultant CV" : replaceConsultantId ? "Upload New CV" : "Upload CV"}</h2>
-            <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? "The existing profile will not change without your approval." : "PDF or TXT, maximum 10 MB. AI extraction requires review before saving."}</p>
+            <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId && existingCvForConsultant ? "Replace CV for " + (consultantNames[replaceConsultantId] || "Consultant #" + replaceConsultantId) : replaceConsultantId ? "Upload CV for " + (consultantNames[replaceConsultantId] || "Consultant #" + replaceConsultantId) : "Upload CV"}</h2>
+            <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? "The current CV and consultant profile remain unchanged until you review and approve the replacement." : "PDF or TXT, maximum 10 MB. AI extraction requires review before saving."}</p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
             {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>Back to consultant</Link>}
