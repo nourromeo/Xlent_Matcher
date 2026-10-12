@@ -131,6 +131,7 @@ export default function Matching() {
   >("Overview");
   const [listFilter, setListFilter] = useState<MatchCategory>("All");
   const [query, setQuery] = useState("");
+  const [rankingTab, setRankingTab] = useState<"match" | "ai">("match");
 
   const assignmentId = Number(searchParams.get("assignment"));
   const assignment = assignments.find((item) => item.id === assignmentId);
@@ -229,6 +230,7 @@ export default function Matching() {
   const selectAssignment = (id: string) => {
     setSelectedMatchId(null);
     setExpanded(false);
+    setRankingTab("match");
     setResults([]);
     setError("");
     setSearchParams(id ? { assignment: id } : {});
@@ -238,6 +240,7 @@ export default function Matching() {
     if (!assignment || matching || consultants.length === 0) return;
 
     setMatching(true);
+    setRankingTab("match");
     setError("");
     setSuccess("");
     setExpanded(false);
@@ -572,6 +575,18 @@ export default function Matching() {
               <p className="text-[10px] text-app-muted mt-0.5">
                 {t("matching_ranked")}
               </p>
+              <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg bg-app p-1" role="tablist" aria-label="Ranking method">
+                <button type="button" role="tab" aria-selected={rankingTab === "match"} onClick={() => setRankingTab("match")} className={`rounded-md px-2 py-2 text-xs font-medium ${rankingTab === "match" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>Match Score</button>
+                <button type="button" role="tab" aria-selected={rankingTab === "ai"} onClick={() => setRankingTab("ai")} className={`rounded-md px-2 py-2 text-xs font-medium ${rankingTab === "ai" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>AI Ranking</button>
+              </div>
+              {rankingTab === "ai" ? (
+                <div className="mt-5 rounded-lg border border-app-border bg-app p-4 text-center" role="tabpanel">
+                  <p className="text-sm font-semibold text-app-primary">No AI ranking yet</p>
+                  <p className="mt-2 text-xs leading-relaxed text-app-muted">Matching is complete. Original-document AI ranking has not been implemented yet. Switch to Match Score to review the current ranking.</p>
+                  <button type="button" disabled title="Available after the AI Ranking service is implemented" className="mt-4 w-full rounded-md bg-app-brand px-3 py-2 text-xs font-medium text-app-on-brand opacity-50 cursor-not-allowed">Rank Top Matches with AI · Coming soon</button>
+                </div>
+              ) : (
+                <>
               <div className="relative mt-3">
                 <input
                   value={query}
@@ -635,9 +650,11 @@ export default function Matching() {
                   )
                 </button>
               </div>
+                </>
+              )}
             </div>
 
-            <div className="flex-1 overflow-auto">
+            {rankingTab === "match" && <div className="flex-1 overflow-auto">
               {visibleResults.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-5 text-center">
                   <div>
@@ -726,10 +743,13 @@ export default function Matching() {
                   );
                 })
               )}
-            </div>
+            </div>}
           </aside>
 
           <main className="flex-1 overflow-auto bg-app">
+            {rankingTab === "ai" ? (
+              <div className="flex h-full items-center justify-center p-8 text-center"><div><p className="text-sm font-semibold text-app-primary">AI Ranking</p><p className="mt-2 max-w-md text-xs text-app-muted">No AI analysis has been run for this assignment. Switch to Match Score to review the existing results.</p></div></div>
+            ) : (
             <div className="p-6 space-y-5">
               <section className="flex items-start justify-between gap-5">
                 <div className="flex items-center gap-3 min-w-0">
@@ -1195,6 +1215,7 @@ export default function Matching() {
                 </>
               )}
             </div>
+            )}
           </main>
         </div>
       ) : null}
