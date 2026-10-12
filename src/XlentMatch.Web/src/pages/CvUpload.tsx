@@ -130,12 +130,12 @@ export default function CvUpload() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId && existingCvForConsultant ? "Replace CV for " + (consultantNames[replaceConsultantId] || "Consultant #" + replaceConsultantId) : replaceConsultantId ? "Upload CV for " + (consultantNames[replaceConsultantId] || "Consultant #" + replaceConsultantId) : "Upload CV"}</h2>
-            <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? "The current CV and consultant profile remain unchanged until you review and approve the replacement." : "PDF or TXT, maximum 10 MB. AI extraction requires review before saving."}</p>
+            <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? "The current CV and consultant profile remain unchanged until you review and approve the replacement." : "Choose an original PDF or TXT (max 10 MB). AI extracts a draft; review and approve it before linking the CV to a consultant."}</p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
             {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>Back to consultant</Link>}
             <input ref={input} type="file" accept=".pdf,.txt,application/pdf,text/plain" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
-            <button type="button" disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex w-fit items-center justify-center rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+            <button type="button" title="Upload an original CV for AI extraction and manual review. This does not immediately overwrite a consultant profile." disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex w-fit items-center justify-center rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
               {busy ? "Uploading and extracting..." : replaceConsultantId && existingCvForConsultant ? "Choose replacement CV" : replaceConsultantId ? "Upload New CV" : "+ Upload CV"}
             </button>
           </div>
@@ -157,7 +157,7 @@ export default function CvUpload() {
         {error && <p role="alert" className="mx-4 mt-3 text-xs text-red-500">{error}</p>}
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="bg-app-raised text-app-muted"><tr><th className="px-4 py-3">CV file</th><th className="px-4 py-3">Consultant</th><th className="px-4 py-3">Uploaded</th><th className="px-4 py-3">Size</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
+            <thead className="bg-app-raised text-app-muted"><tr><th title="Original uploaded document name" className="px-4 py-3">CV file ⓘ</th><th title="Consultant linked to this CV; click the name to open their profile" className="px-4 py-3">Consultant ⓘ</th><th title="Date the CV was uploaded" className="px-4 py-3">Uploaded ⓘ</th><th title="Size of the original uploaded document" className="px-4 py-3">Size ⓘ</th><th title="Active means approved and currently linked; Review means awaiting confirmation" className="px-4 py-3">Status ⓘ</th><th title="View or download the original, replace it, or delete only the CV" className="px-4 py-3 text-right">Actions ⓘ</th></tr></thead>
             <tbody>
               {visibleList.map((r) => (
                 <tr key={r.id} className="border-t border-app-border text-app-secondary">
