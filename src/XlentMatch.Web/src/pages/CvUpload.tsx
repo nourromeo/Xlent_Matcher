@@ -18,6 +18,8 @@ export default function CvUpload() {
   const [records, setRecords] = useState<CvUploadRecord[]>([]);
   const [consultantNames, setConsultantNames] = useState<Record<number, string>>({});
   const [tab, setTab] = useState<Tab>("library");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [busy, setBusy] = useState(false);
@@ -89,6 +91,11 @@ export default function CvUpload() {
     return belongs && (status === "All" || r.status === status) &&
       r.fileName.toLowerCase().includes(search.toLowerCase());
   });
+  const pageCount = Math.max(1, Math.ceil(list.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleList = list.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const firstRow = list.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const lastRow = Math.min(currentPage * pageSize, list.length);
   const tabClass = (value: Tab) => `rounded-md px-4 py-2 text-xs font-medium ${tab === value ? "bg-app-brand-subtle text-app-brand" : "text-app-secondary hover:bg-app-raised"}`;
   return (
     <div className="p-6 space-y-5 max-w-7xl mx-auto">
@@ -137,12 +144,12 @@ export default function CvUpload() {
       <section className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
         <div className="flex flex-wrap gap-2 items-center justify-between px-4 py-3 border-b border-app-border">
           <div className="flex flex-wrap gap-1">
-            <button className={tabClass("library")} onClick={() => setTab("library")}>CV Library</button>
-            <button className={tabClass("review")} onClick={() => setTab("review")}>Review Queue ({records.filter((r) => r.status === "Review").length})</button>
+            <button className={tabClass("library")} onClick={() => { setTab("library"); setPage(1); }}>CV Library</button>
+            <button className={tabClass("review")} onClick={() => { setTab("review"); setPage(1); }}>Review Queue ({records.filter((r) => r.status === "Review").length})</button>
           </div>
           <div className="flex gap-2">
-            <input aria-label="Search CV library" className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" placeholder="Search by file name..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            <select aria-label="Filter by status" className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <input aria-label="Search CV library" className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" placeholder="Search by file name..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+            <select aria-label="Filter by status" className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
               {["All", "Extracting", "Review", "Indexed", "Error"].map((x) => <option key={x} value={x}>{x === "All" ? "All statuses" : x}</option>)}
             </select>
           </div>
@@ -152,7 +159,7 @@ export default function CvUpload() {
           <table className="w-full text-xs text-left">
             <thead className="bg-app-raised text-app-muted"><tr><th className="px-4 py-3">CV file</th><th className="px-4 py-3">Consultant</th><th className="px-4 py-3">Uploaded</th><th className="px-4 py-3">Size</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
             <tbody>
-              {list.map((r) => (
+              {visibleList.map((r) => (
                 <tr key={r.id} className="border-t border-app-border text-app-secondary">
                   <td className="px-4 py-3 font-medium text-app-primary">{r.fileName}</td>
                   <td className="px-4 py-3">{r.consultantId ? <Link className="text-app-brand" to={`/consultants/${r.consultantId}`}>{consultantNames[r.consultantId] || "Consultant #" + r.consultantId}</Link> : <span className="text-app-muted">Not assigned</span>}</td>
@@ -169,6 +176,17 @@ export default function CvUpload() {
               ))}
             </tbody>
           </table>
+          {!loading && list.length > 0 && (
+            <div className="flex items-center justify-between gap-3 border-t border-app-border bg-app-surface px-4 py-2.5 text-[10px] text-app-muted">
+              <span>{firstRow}–{lastRow} of {list.length} CVs</span>
+              <div className="flex items-center gap-3">
+                <span>Rows per page: 10</span>
+                <button type="button" aria-label="Previous page" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded px-2 py-1 hover:bg-app-raised disabled:opacity-35">‹</button>
+                <span>Page {currentPage} of {pageCount}</span>
+                <button type="button" aria-label="Next page" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="rounded px-2 py-1 hover:bg-app-raised disabled:opacity-35">›</button>
+              </div>
+            </div>
+          )}
           {!loading && list.length === 0 && <p className="p-8 text-center text-xs text-app-muted">No CVs found for this view.</p>}
           {loading && <p className="p-8 text-center text-xs text-app-muted">Loading CVs...</p>}
         </div>
