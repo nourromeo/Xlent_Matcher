@@ -202,7 +202,7 @@ export default function ConsultantReview() {
         label,
         <Input
           type={type}
-          value={item[name] ?? ""}
+          value={type === "month" ? (item[name] ?? "").slice(0, 7) : (item[name] ?? "")}
           onChange={(e) => setField(name, e.target.value)}
         />,
       );
