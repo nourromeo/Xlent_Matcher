@@ -253,7 +253,7 @@ export default function ConsultantDetail() {
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={levelStyle(skill.level)}>
                           {levelLabel(skill.level, t)}
                         </span>
-                        <span className="text-[10px] font-mono text-app-muted">{skill.years}y</span>
+                        <span className="text-[10px] font-mono text-app-muted">{skill.years == null ? "Not specified" : `${skill.years}y`}</span>
                       </div>
                       <p className="flex-1 text-[11px] text-app-muted italic leading-relaxed">
                         {skill.evidence || t("consultant_no_evidence")}
@@ -375,13 +375,13 @@ export default function ConsultantDetail() {
               {draft.skills.map((item, index) => (
                 <div key={index} className="grid grid-cols-[minmax(140px,1fr)_90px_90px_minmax(140px,1fr)_auto] gap-2 items-center">
                   <Input aria-label={t("consultant_skill")} placeholder={t("consultant_skill")} value={item.name} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                  <Input type="number" min={0} aria-label={t("upload_field_years")} placeholder={t("upload_field_years")} value={item.years} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, years: Number(event.target.value) || 0 } : row) })} />
+                  <Input type="number" min={0} aria-label={t("upload_field_years")} placeholder={t("upload_field_years")} value={item.years ?? ""} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, years: event.target.value === "" ? null : Number(event.target.value) } : row) })} />
                   <Input type="number" min={0} max={5} aria-label={t("upload_field_level")} placeholder={t("upload_field_level")} value={item.level} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, level: Number(event.target.value) || 0 } : row) })} />
                   <Input placeholder={t("consultant_evidence")} value={item.evidence ?? ""} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, evidence: event.target.value || null } : row) })} />
                   <RemoveButton onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, i) => i !== index) })} />
                 </div>
               ))}
-              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, skills: [...draft.skills, { id: 0, consultantId: draft.id, name: "", category: null, years: 0, level: 0, evidence: null }] })}>+ {t("consultant_add_skill")}</button>
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, skills: [...draft.skills, { id: 0, consultantId: draft.id, name: "", category: null, years: null, level: 0, evidence: null }] })}>+ {t("consultant_add_skill")}</button>
             </div>
           </FormSection>
 
