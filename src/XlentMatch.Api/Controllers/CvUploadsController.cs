@@ -158,12 +158,27 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
             return BadRequest("A saved consultant and original CV file are required.");
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var active = await db.CvUploads.Where(x => x.ConsultantId == upload.ConsultantId && x.IsActive && x.Id != id).ToListAsync(ct);
-        foreach (var previous in active) previous.IsActive = false;
+        // Retain the current CV until the replacement has passed review and is ready.
+        var previousCvs = await db.CvUploads
+            .Where(x => x.ConsultantId == upload.ConsultantId && x.Id != id && x.IsActive)
+            .ToListAsync(ct);
+        foreach (var previous in previousCvs) previous.IsActive = false;
         await db.SaveChangesAsync(ct);
         upload.IsActive = true;
         await db.SaveChangesAsync(ct);
+        db.CvUploads.RemoveRange(previousCvs);
+        await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+
+        // Delete old originals only after the database transaction succeeds.
+        // If filesystem cleanup fails, the new active CV must remain available.
+        foreach (var previous in previousCvs.Where(x => x.StorageKey is not null))
+        {
+            var oldPath = Path.Combine(CvDirectory, Path.GetFileName(previous.StorageKey!));
+            try { if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath); }
+            catch (IOException) { /* An orphaned file can be cleaned up later. */ }
+            catch (UnauthorizedAccessException) { /* Do not undo the approved replacement. */ }
+        }
         return Ok(upload);
     }
 
