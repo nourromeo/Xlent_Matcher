@@ -8,7 +8,7 @@ import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { useI18n } from "../i18n";
 import { consultantsApi } from "../services/consultantsApi";
-import { cvUploadsApi } from "../services/cvUploadsApi";
+import { cvUploadsApi, type ConsultantDetectionMatch } from "../services/cvUploadsApi";
 import type { ConsultantDraft } from "../services/aiApi";
 import type { Consultant } from "../types";
 
@@ -106,6 +106,11 @@ export default function ConsultantReview() {
   const [params] = useSearchParams();
   const uploadId = params.get("uploadId");
   const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
+  const [detectedConsultantId, setDetectedConsultantId] = useState<number | null>(null);
+  const [detectionMatches, setDetectionMatches] = useState<ConsultantDetectionMatch[]>([]);
+  const [detectionPending, setDetectionPending] = useState(false);
+  const [identityResolved, setIdentityResolved] = useState(Boolean(replaceConsultantId));
+  const linkedConsultantId = replaceConsultantId ?? detectedConsultantId;
   const [existing, setExisting] = useState<Consultant | null>(null);
   const [approved, setApproved] = useState<string[]>([]);
   const compareFields = ["firstName", "lastName", "email", "title", "summary", "seniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "languages", "experiences", "projects", "education", "industries", "certifications"] as const;
@@ -131,6 +136,26 @@ export default function ConsultantReview() {
     consultantsApi.getById(replaceConsultantId).then(setExisting)
       .catch(() => setError("Could not load the current consultant profile."));
   }, [replaceConsultantId]);
+  useEffect(() => {
+    if (replaceConsultantId || !draft || identityResolved) return;
+    let cancelled = false;
+    setDetectionPending(true);
+    cvUploadsApi.detectConsultant(draft).then((result) => {
+      if (!cancelled) setDetectionMatches(result.matches);
+    }).catch(() => {
+      if (!cancelled) setError("Could not check existing consultants. Try again before saving.");
+    }).finally(() => {
+      if (!cancelled) setDetectionPending(false);
+    });
+    return () => { cancelled = true; };
+  }, [replaceConsultantId, draft?.firstName, draft?.lastName, draft?.email, identityResolved]);
+
+  useEffect(() => {
+    if (!detectedConsultantId) return;
+    consultantsApi.getById(detectedConsultantId).then(setExisting)
+      .catch(() => setError("Could not load the selected consultant profile."));
+  }, [detectedConsultantId]);
+
   const update = (patch: Partial<ConsultantDraft>) =>
     setDraft((current) => (current ? { ...current, ...patch } : current));
   const level = (value: number) =>
@@ -149,6 +174,10 @@ export default function ConsultantReview() {
   );
   const empty = !draft;
   const save = async () => {
+    if (!identityResolved || detectionPending) {
+      setError("Confirm the consultant identity before saving.");
+      return;
+    }
     if (!draft || !draft.firstName.trim() || !draft.lastName.trim()) {
       setError(t("upload_required_names"));
       setStep(0);
@@ -158,7 +187,7 @@ export default function ConsultantReview() {
     setError("");
     try {
       let saved: Consultant;
-      if (replaceConsultantId) {
+      if (linkedConsultantId) {
         if (!existing) throw new Error("Current consultant profile has not loaded.");
         const extracted = toConsultant(draft);
         const merged = { ...existing } as Consultant;
@@ -166,7 +195,7 @@ export default function ConsultantReview() {
           (merged as unknown as Record<string, unknown>)[key] =
             (extracted as unknown as Record<string, unknown>)[key];
         }
-        saved = approved.length ? await consultantsApi.update(replaceConsultantId, merged) : existing;
+        saved = approved.length ? await consultantsApi.update(linkedConsultantId, merged) : existing;
         if (uploadId) {
           await cvUploadsApi.update(Number(uploadId), {
             status: "Indexed", consultantId: saved.id, errorMessage: null, draftJson: null,
@@ -406,7 +435,7 @@ export default function ConsultantReview() {
     <div className="h-full overflow-auto">
       <div className="mx-auto max-w-6xl space-y-5 p-6">
         <PageHeader
-          title={replaceConsultantId ? "Review replacement CV" : t("upload_review_title")}
+          title={linkedConsultantId ? "Review existing consultant CV" : t("upload_review_title")}
           description={t("upload_review_description")}
           backTo="/cv-upload"
           actions={
@@ -415,6 +444,47 @@ export default function ConsultantReview() {
             </Button>
           }
         />
+        {!replaceConsultantId && !identityResolved && (
+          <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-app-primary">Identify CV owner</h2>
+            <p className="text-xs text-app-muted">Check whether this CV belongs to an existing consultant before creating a new profile.</p>
+            {detectionPending ? <p className="text-xs text-app-muted">Checking existing consultants...</p> : (
+              <>
+                {detectionMatches.length ? (
+                  <div className="space-y-2">
+                    {detectionMatches.map((match) => (
+                      <button type="button" key={match.id} onClick={() => {
+                        setDetectedConsultantId(match.id);
+                        setIdentityResolved(true);
+                        setError("");
+                      }} className="w-full rounded-lg border border-app-border p-3 text-left text-xs hover:border-app-brand">
+                        <span className="font-semibold text-app-primary">{match.firstName} {match.lastName}</span>
+                        <span className="ml-2 text-app-muted">{match.email || "No email"} · {match.matchReason} match</span>
+                        <span className="block mt-1 text-app-brand">Use this existing consultant</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : <p className="text-xs text-app-muted">No existing consultant match found.</p>}
+                <button type="button" className="rounded-md border border-app-border px-4 py-2 text-xs text-app-primary" onClick={() => {
+                  setDetectedConsultantId(null);
+                  setExisting(null);
+                  setIdentityResolved(true);
+                  setError("");
+                }}>Create a new consultant instead</button>
+              </>
+            )}
+          </section>
+        )}
+        {!replaceConsultantId && identityResolved && (
+          <div className="flex items-center justify-between rounded-lg border border-app-border bg-app-surface p-3 text-xs">
+            <span className="text-app-secondary">{detectedConsultantId ? `Linking to existing consultant #${detectedConsultantId}` : "Creating a new consultant"}</span>
+            <button type="button" className="text-app-brand" onClick={() => {
+              setIdentityResolved(false);
+              setDetectedConsultantId(null);
+              setExisting(null);
+            }}>Change</button>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {steps.map((label, index) => (
             <button
