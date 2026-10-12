@@ -124,7 +124,6 @@ export default function Matching() {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
-  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
     "Overview" | "Requirements" | "Experience"
@@ -270,7 +269,6 @@ export default function Matching() {
     setAiRanking(null);
     setAiError("");
     setError("");
-    setSuccess("");
     setExpanded(false);
 
     try {
@@ -286,7 +284,6 @@ export default function Matching() {
           item.id === assignment.id ? { ...item, status: "Done" } : item,
         ),
       );
-      setSuccess(t("assignment_match_complete"));
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -530,23 +527,6 @@ export default function Matching() {
             </button>
           </div>
         ) : null}
-
-        {success && (
-          <div
-            className="mt-3 rounded-lg px-4 py-3 text-xs text-app-secondary"
-            style={{
-              background: "var(--color-success-soft)",
-              border: "1px solid var(--color-success-border)",
-            }}
-          >
-            <CheckCircle
-              size={11}
-              className="inline mr-1.5"
-              style={{ color: "var(--color-success)" }}
-            />
-            {success}
-          </div>
-        )}
 
         {error && (
           <div className="mt-3 rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
