@@ -201,7 +201,6 @@ export default function ConsultantReview() {
         saved = await consultantsApi.approveCv(linkedConsultantId, Number(uploadId), merged);
       } else {
         saved = await consultantsApi.create(toConsultant(draft), uploadId ? Number(uploadId) : undefined);
-        if (uploadId) await cvUploadsApi.activate(Number(uploadId));
       }
       navigate(`/consultants/${saved.id}`);
     } catch (requestError) {
