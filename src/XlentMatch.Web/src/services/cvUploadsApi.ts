@@ -21,7 +21,22 @@ export type CvUploadView = CvUploadRecord & {
   draft?: ConsultantDraft;
 };
 
+export type ConsultantDetectionMatch = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  title: string | null;
+  matchReason: "Email" | "Name";
+};
+
 export const cvUploadsApi = {
+  detectConsultant: (draft: Pick<ConsultantDraft, "firstName" | "lastName" | "email">) =>
+    apiRequest<{ matches: ConsultantDetectionMatch[] }>("/cv-uploads/detect-consultant", {
+      method: "POST",
+      body: JSON.stringify(draft),
+    }),
+
   getAll: () => apiRequest<CvUploadRecord[]>("/cv-uploads"),
 
   create: (fileName: string, fileSize: number, status: CvUploadStatus = "Extracting", errorMessage: string | null = null) =>
