@@ -14,7 +14,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { LinkButton } from "../components/ui/LinkButton";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { consultantsApi } from "../services/consultantsApi";
-import { matchingApi } from "../services/matchingApi";
+import { matchingApi, type AiRankingResult } from "../services/matchingApi";
 import type { AssignmentApi, Consultant, MatchResultApi } from "../types";
 import { matchCategory } from "../services/matchCategory";
 
@@ -132,6 +132,9 @@ export default function Matching() {
   const [listFilter, setListFilter] = useState<MatchCategory>("All");
   const [query, setQuery] = useState("");
   const [rankingTab, setRankingTab] = useState<"match" | "ai">("match");
+  const [aiRanking, setAiRanking] = useState<AiRankingResult | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const assignmentId = Number(searchParams.get("assignment"));
   const assignment = assignments.find((item) => item.id === assignmentId);
@@ -191,6 +194,26 @@ export default function Matching() {
     };
   }, [assignmentId]);
 
+  useEffect(() => {
+    setAiRanking(null);
+    setAiError("");
+    setRankingTab("match");
+  }, [assignmentId]);
+
+  const runAiRanking = async () => {
+    if (!assignment || aiLoading || results.length === 0) return;
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const ranking = await matchingApi.rankWithAi(assignment.id);
+      setAiRanking(ranking);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "AI Ranking failed.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const allResults = useMemo(
     () => [...results].sort((a, b) => a.rank - b.rank || b.score - a.score),
     [results],
@@ -231,6 +254,8 @@ export default function Matching() {
     setSelectedMatchId(null);
     setExpanded(false);
     setRankingTab("match");
+    setAiRanking(null);
+    setAiError("");
     setResults([]);
     setError("");
     setSearchParams(id ? { assignment: id } : {});
@@ -241,6 +266,8 @@ export default function Matching() {
 
     setMatching(true);
     setRankingTab("match");
+    setAiRanking(null);
+    setAiError("");
     setError("");
     setSuccess("");
     setExpanded(false);
@@ -740,12 +767,43 @@ export default function Matching() {
               </div>
             </div>
             {rankingTab === "ai" ? (
-              <div className="flex min-h-[300px] items-center justify-center p-8 text-center">
-                <div className="max-w-md rounded-xl border border-app-border bg-app-surface p-6">
-                  <p className="text-sm font-semibold text-app-primary">No AI ranking yet</p>
-                  <p className="mt-2 text-xs leading-relaxed text-app-muted">Matching is complete. AI ranking of original CV documents has not been implemented yet. You can review the existing results under Match Score.</p>
-                  <button type="button" disabled title="Available after the AI Ranking service is implemented" className="mt-4 rounded-md bg-app-brand px-4 py-2 text-xs font-medium text-app-on-brand opacity-50 cursor-not-allowed">Rank Top Matches with AI · Coming soon</button>
+              <div className="p-6 space-y-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-app-primary">AI Ranking · Original CVs</h2>
+                  <p className="mt-1 text-xs text-app-muted">Compare the top two eligible consultants using their original CV documents and this assignment. Match Score is unchanged.</p>
                 </div>
+                {!aiRanking && (
+                  <div className="rounded-xl border border-app-border bg-app-surface p-6 text-center">
+                    <p className="text-sm font-semibold text-app-primary">No AI ranking yet</p>
+                    <p className="mt-2 text-xs text-app-muted">Run the analysis after Matching. Consultants without an active original CV are skipped.</p>
+                    <button type="button" disabled={aiLoading} onClick={() => void runAiRanking()} className="mt-4 rounded-md bg-app-brand px-4 py-2 text-xs font-medium text-app-on-brand disabled:opacity-50">
+                      {aiLoading ? "Analyzing original CVs..." : "Rank Top Matches with AI"}
+                    </button>
+                  </div>
+                )}
+                {aiError && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-red-500">{aiError}</p>}
+                {aiRanking && (
+                  <>
+                    {aiRanking.skippedWithoutCv > 0 && <p className="text-xs text-app-muted">{aiRanking.skippedWithoutCv} higher-ranked consultant(s) were skipped because an original CV was unavailable.</p>}
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      {[...aiRanking.rankings].sort((a, b) => a.rank - b.rank).map((item) => {
+                        const original = allResults.find((r) => r.consultantId === item.consultantId);
+                        return (
+                          <article key={item.consultantId} className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
+                            <p className="text-xs font-semibold text-app-brand">AI Rank #{item.rank}</p>
+                            <h3 className="text-sm font-semibold text-app-primary">{original?.consultantName ?? `Consultant #${item.consultantId}`}</h3>
+                            <p className="text-xs text-app-muted">Original Match Score: {original?.score ?? "—"}%</p>
+                            <p className="text-xs text-app-secondary leading-relaxed">{item.reason}</p>
+                            <div><h4 className="text-xs font-semibold text-app-primary">Strengths</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.strengths.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
+                            <div><h4 className="text-xs font-semibold text-app-primary">Gaps</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.gaps.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
+                            <div><h4 className="text-xs font-semibold text-app-primary">CV Evidence</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.evidence.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                    <button type="button" disabled={aiLoading} onClick={() => void runAiRanking()} className="rounded-md border border-app-border px-3 py-2 text-xs text-app-secondary disabled:opacity-50">{aiLoading ? "Analyzing..." : "Re-run AI Ranking"}</button>
+                  </>
+                )}
               </div>
             ) : (
             <div className="p-6 space-y-5">
