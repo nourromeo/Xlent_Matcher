@@ -43,7 +43,7 @@ export type ConsultantDraft = {
   education: Array<{ degree: string; school: string | null; year: string | null }>;
   languages: Array<{ name: string; proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" }>;
   industries: string[];
-  certifications: Array<{ name: string; issuer: string | null; issuedDate: string | null; issuedYear: string | null }>;
+  certifications: Array<{ name: string; issuer: string | null; issuedDate: string | null; issuedYear?: string | null }>;
   sourceText: string | null;
 };
 
