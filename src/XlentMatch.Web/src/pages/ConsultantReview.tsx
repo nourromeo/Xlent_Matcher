@@ -803,6 +803,16 @@ export default function ConsultantReview() {
                               ? `${item.degree}${item.school ? ` · ${item.school}` : ""}`
                               : item.name}
                         </p>
+                        {"company" in item && (item.startDate || item.endDate) && (
+                          <p className="mt-1 text-xs text-app-muted">
+                            {item.startDate || t("common_not_specified")} – {item.endDate || t("common_not_specified")}
+                          </p>
+                        )}
+                        {"degree" in item && item.year && (
+                          <p className="mt-1 text-xs text-app-muted">
+                            {t("upload_year")}: {item.year}
+                          </p>
+                        )}
                         {"description" in item && item.description && (
                           <p className="mt-1 text-xs text-app-secondary">
                             {item.description}
