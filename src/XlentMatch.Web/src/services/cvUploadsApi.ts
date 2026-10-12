@@ -12,6 +12,9 @@ export type CvUploadRecord = {
   errorMessage: string | null;
   consultantId: number | null;
   draftJson: string | null;
+  storageKey: string | null;
+  contentType: string | null;
+  isActive: boolean;
 };
 
 export type CvUploadView = CvUploadRecord & {
@@ -40,6 +43,17 @@ export const cvUploadsApi = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
+
+  uploadFile: async (id: number, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const base = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+    const response = await fetch(`${base}/cv-uploads/${id}/file`, { method: "POST", body: form });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json() as Promise<CvUploadRecord>;
+  },
+
+  fileUrl: (id: number) => `${(import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "")}/cv-uploads/${id}/file`,
 
   remove: (id: number) =>
     apiRequest<void>(`/cv-uploads/${id}`, {
