@@ -8,7 +8,7 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/consultants")]
-public class ConsultantsController(AppDbContext db, SkillNormalizationService skills, ConsultantAvailabilityService availability) : ControllerBase
+public class ConsultantsController(AppDbContext db, SkillNormalizationService skills, ConsultantAvailabilityService availability, IWebHostEnvironment environment) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<Consultant>>> GetAll(CancellationToken ct)
@@ -142,6 +142,53 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
 
         await db.SaveChangesAsync(ct);
         return await LoadFull(id, ct) ?? existing;
+    }
+
+    [HttpPut("{id:int}/approve-cv/{uploadId:int}")]
+    public async Task<ActionResult<Consultant>> ApproveCv(
+        int id, int uploadId, Consultant input, CancellationToken ct)
+    {
+        var upload = await db.CvUploads.FirstOrDefaultAsync(x => x.Id == uploadId, ct);
+        if (upload is null) return NotFound("CV upload not found.");
+        if (upload.StorageKey is null || upload.Status is not ("Review" or "Indexed"))
+            return BadRequest("A reviewed CV with a stored original file is required.");
+        if (upload.ConsultantId is not null && upload.ConsultantId != id)
+            return Conflict("This CV belongs to another consultant.");
+        if (!await db.Consultants.AnyAsync(x => x.Id == id, ct))
+            return NotFound("Consultant not found.");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var updated = await Update(id, input, ct);
+        if (updated.Result is BadRequestObjectResult or NotFoundResult or NotFoundObjectResult)
+            return updated;
+
+        // The consultant update and CV activation commit together.
+        var previous = await db.CvUploads
+            .Where(x => x.ConsultantId == id && x.IsActive && x.Id != uploadId)
+            .ToListAsync(ct);
+        foreach (var item in previous) item.IsActive = false;
+        await db.SaveChangesAsync(ct);
+
+        upload.ConsultantId = id;
+        upload.Status = "Indexed";
+        upload.DraftJson = null;
+        upload.ErrorMessage = null;
+        upload.IsActive = true;
+        await db.SaveChangesAsync(ct);
+
+        db.CvUploads.RemoveRange(previous);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        var directory = Path.Combine(environment.ContentRootPath, "private-cvs");
+        foreach (var item in previous.Where(x => x.StorageKey is not null))
+        {
+            var path = Path.Combine(directory, Path.GetFileName(item.StorageKey!));
+            try { if (System.IO.File.Exists(path)) System.IO.File.Delete(path); }
+            catch (IOException) { /* Unreferenced file can be cleaned up later. */ }
+            catch (UnauthorizedAccessException) { /* Approval already committed. */ }
+        }
+        return await LoadFull(id, ct) ?? input;
     }
 
     [HttpDelete("{id:int}")]
