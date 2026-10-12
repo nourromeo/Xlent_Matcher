@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../components/ui/PageHeader";
 import { aiApi } from "../services/aiApi";
+import { consultantsApi } from "../services/consultantsApi";
 import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { validateDocumentFile } from "../services/fileValidation";
 
@@ -15,12 +16,17 @@ export default function CvUpload() {
   const input = useRef<HTMLInputElement>(null);
   const [existingCvForConsultant, setExistingCvForConsultant] = useState(false);
   const [records, setRecords] = useState<CvUploadRecord[]>([]);
+  const [consultantNames, setConsultantNames] = useState<Record<number, string>>({});
   const [tab, setTab] = useState<Tab>("library");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    consultantsApi.getAll().then((items) => setConsultantNames(Object.fromEntries(items.map((item) => [item.id, item.firstName + " " + item.lastName])))).catch(() => {});
+  }, []);
 
   const refresh = async () => {
     const data = await cvUploadsApi.getAll();
