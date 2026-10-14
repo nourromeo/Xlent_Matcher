@@ -16,7 +16,31 @@ export function normalizeApiError(status?: number, hasValidationErrors = false):
   return new ApiError("The request could not be completed. Please try again.", "unknown", status);
 }
 
-export async function apiRequest<T>(
+// Share only concurrent identical GETs (e.g. React StrictMode remounts).
+// No response caching: later navigations always request fresh data.
+const pendingGets = new Map<string, Promise<unknown>>();
+
+export function apiRequest<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const canDeduplicate = method === "GET" && !init?.signal && !init?.headers && !init?.body;
+  if (canDeduplicate) {
+    const pending = pendingGets.get(path);
+    if (pending) return pending as Promise<T>;
+    const request = executeApiRequest<T>(path, init);
+    pendingGets.set(path, request);
+    void request.then(
+      () => { if (pendingGets.get(path) === request) pendingGets.delete(path); },
+      () => { if (pendingGets.get(path) === request) pendingGets.delete(path); },
+    );
+    return request;
+  }
+  return executeApiRequest<T>(path, init);
+}
+
+async function executeApiRequest<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
