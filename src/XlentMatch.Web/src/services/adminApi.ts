@@ -24,6 +24,7 @@ export type AdminCapability = {
 
 export type AdminSuggestion = { id: number; name: string; category: string; occurrences: number; firstSeenAt: string };
 export type PromptSummary = { promptKey: string; displayName: string; activeVersion: number | null; versionCount: number; updatedAt: string };
+export type PromptRuntimeContract = { promptKey: string; content: string; note: string };
 export type PromptVersion = { promptKey: string; displayName: string; version: number; content: string; isActive: boolean; changeNote: string | null; createdAt: string };
 
 export type AdminOverview = {
@@ -77,6 +78,7 @@ export const adminApi = {
     }),
 
   getPrompts: () => apiRequest<PromptSummary[]>("/admin/prompts"),
+  getPromptRuntimeContract: (promptKey: string) => apiRequest<PromptRuntimeContract>(`/admin/prompts/${promptKey}/runtime-contract`),
   getPromptVersions: (promptKey: string) => apiRequest<PromptVersion[]>(`/admin/prompts/${promptKey}/versions`),
   createPromptVersion: (promptKey: string, input: { content: string; changeNote?: string }) =>
     apiRequest<PromptVersion>(`/admin/prompts/${promptKey}/versions`, { method: "POST", body: JSON.stringify(input) }),
