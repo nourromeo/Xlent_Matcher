@@ -29,11 +29,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     public async Task<AiRankingResultDto> RankOriginalCvsAsync(string assignmentText, IReadOnlyList<(int ConsultantId, string CvText)> cvs, CancellationToken ct)
     {
         const string operation = "ai_original_cv_ranking";
-        const string system = "You compare exactly two existing consultants for an internal customer assignment. " +
-            "Use ONLY the original CV text and the assignment text provided. Never invent qualifications. " +
-            "Return both consultant IDs once each, ordered by fit with rank 1 and 2. " +
-            "Give concise reasons, strengths, gaps, and specific factual evidence from the documents. " +
-            "Do not use or invent numeric match scores. Respond in valid JSON using the required schema.";
+        var system = (await GetPromptAsync(PromptKeys.AiRanking, ct)).Content;
         var input = JsonSerializer.Serialize(new
         {
             assignmentText,
@@ -211,6 +207,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
                 PromptKeys.AssignmentExtraction => "assignment_extraction",
                 PromptKeys.CvExtraction => "cv_extraction",
                 PromptKeys.CvAdaptation => "cv_adaptation",
+                PromptKeys.AiRanking => "ai_original_cv_ranking",
                 "ai_original_cv_ranking" => "ai_original_cv_ranking",
                 _ => "ai_extraction"
             },
@@ -220,6 +217,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
                 PromptKeys.AssignmentExtraction => AssignmentSchema(),
                 PromptKeys.CvExtraction => CvSchema(),
                 PromptKeys.CvAdaptation => CvAdaptationSchema(),
+                PromptKeys.AiRanking => AiRankingSchema(),
                 "ai_original_cv_ranking" => AiRankingSchema(),
                 _ => throw new InvalidOperationException($"No structured schema is configured for '{operation}'.")
             }
