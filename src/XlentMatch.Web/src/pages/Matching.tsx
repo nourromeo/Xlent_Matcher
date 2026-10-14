@@ -464,7 +464,7 @@ export default function Matching() {
                   onClick={runMatching}
                   disabled={!assignment || matching || consultants.length === 0}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-app-on-brand px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: "var(--color-brand)" }}
+                  
                 >
                   {matching ? (
                     <Loader size={12} className="animate-spin" />
@@ -518,7 +518,7 @@ export default function Matching() {
               onClick={runMatching}
               disabled={matching || consultants.length === 0}
               className="inline-flex items-center gap-1.5 text-xs font-medium text-app-on-brand px-3 py-2 rounded-md shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: "var(--color-brand)" }}
+              
             >
               {matching ? (
                 <Loader size={12} className="animate-spin" />
@@ -587,7 +587,7 @@ export default function Matching() {
                 <button type="button" role="tab" aria-selected={rankingTab === "ai"} onClick={() => setRankingTab("ai")} className={`rounded-md px-4 py-1.5 text-xs font-medium ${rankingTab === "ai" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>AI Ranking</button>
               </div>
               {newConsultants > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-500" role="status" title="New consultants are not included in the saved Match Score results.">
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-app-warning" role="status" title="New consultants are not included in the saved Match Score results.">
                   <AlertTriangle size={12} />
                   {newConsultants} new consultant{newConsultants === 1 ? "" : "s"} not matched · Re-run Matching
                 </span>
@@ -611,7 +611,7 @@ export default function Matching() {
                     </button>
                   </div>
                 )}
-                {aiError && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-red-500">{aiError}</p>}
+                {aiError && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-app-danger">{aiError}</p>}
                 {aiRanking && (
                   <>
                     {aiRanking.skippedWithoutCv > 0 && <p className="text-xs text-app-muted">{aiRanking.skippedWithoutCv} higher-ranked consultant(s) were skipped because an original CV was unavailable.</p>}
@@ -753,15 +753,7 @@ export default function Matching() {
                     <button
                       key={result.id}
                       onClick={() => setSelectedMatchId(result.id)}
-                      className="w-full text-left px-4 py-3.5 transition-colors border-b border-app-border-subtle"
-                      style={
-                        isSelected
-                          ? {
-                              background: "var(--color-brand-subtle)",
-                              borderLeft: "3px solid var(--color-brand)",
-                            }
-                          : { borderLeft: "3px solid transparent" }
-                      }
+                      className={`w-full text-left px-4 py-3.5 transition-colors border-b border-app-border-subtle border-l-[3px] ${isSelected ? "bg-app-brand-subtle border-l-app-brand" : "bg-app-surface border-l-transparent"}`}
                     >
                       <div className="flex items-start gap-2.5">
                         <span className="text-[10px] font-mono text-app-faint w-4 pt-1">
@@ -787,7 +779,7 @@ export default function Matching() {
                             {missing.length === 0 ? (
                               <div
                                 className="flex items-center gap-1 text-[10px]"
-                                style={{ color: "var(--color-success)" }}
+                                className="text-app-success"
                               >
                                 <CheckCircle size={9} />
                                 {result.matchedMandatory}/
@@ -796,7 +788,7 @@ export default function Matching() {
                             ) : (
                               <div
                                 className="flex items-center gap-1 text-[10px]"
-                                style={{ color: "var(--color-warning)" }}
+                                className="text-app-warning"
                               >
                                 <AlertTriangle size={9} />
                                 {t("matching_missing_prefix")}{" "}
@@ -981,7 +973,7 @@ export default function Matching() {
                           >
                             <CheckCircle
                               size={11}
-                              style={{ color: "var(--color-success)" }}
+                              className="text-app-success"
                             />
                             <span className="text-xs font-mono text-app-primary">
                               {detail.requirementName}
@@ -1019,11 +1011,11 @@ export default function Matching() {
                             >
                               <AlertTriangle
                                 size={11}
-                                style={{ color: "var(--color-warning)" }}
+                                className="text-app-warning"
                               />
                               <span
                                 className="text-xs font-mono"
-                                style={{ color: "var(--color-warning)" }}
+                                className="text-app-warning"
                               >
                                 {detail.requirementName}
                               </span>
@@ -1044,7 +1036,7 @@ export default function Matching() {
                         <div className="flex items-center gap-2">
                           <CheckCircle
                             size={11}
-                            style={{ color: "var(--color-success)" }}
+                            className="text-app-success"
                           />
                           <span className="text-xs text-app-secondary">
                             {t("match_none_missing")}
@@ -1135,7 +1127,7 @@ export default function Matching() {
                             >
                               <CheckCircle
                                 size={11}
-                                style={{ color: "var(--color-brand)" }}
+                                className="text-app-brand"
                               />
                               <span className="text-xs font-mono text-app-secondary">
                                 {detail.requirementName}
@@ -1170,13 +1162,13 @@ export default function Matching() {
                             {item.isMatched === true ? (
                               <CheckCircle
                                 size={11}
-                                style={{ color: "var(--color-success)" }}
+                                className="text-app-success"
                                 className="mt-0.5 flex-none"
                               />
                             ) : item.isMatched === false ? (
                               <AlertTriangle
                                 size={11}
-                                style={{ color: "var(--color-warning)" }}
+                                className="text-app-warning"
                                 className="mt-0.5 flex-none"
                               />
                             ) : (
@@ -1260,12 +1252,12 @@ export default function Matching() {
                               {detail.isMatched ? (
                                 <CheckCircle
                                   size={10}
-                                  style={{ color: "var(--color-success)" }}
+                                  className="text-app-success"
                                 />
                               ) : (
                                 <AlertTriangle
                                   size={10}
-                                  style={{ color: "var(--color-warning)" }}
+                                  className="text-app-warning"
                                 />
                               )}
                               <span className="text-[10px] font-mono font-medium text-app-brand">
