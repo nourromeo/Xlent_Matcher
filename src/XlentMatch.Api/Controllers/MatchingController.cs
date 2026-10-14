@@ -128,8 +128,21 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
             result.SkippedWithoutCv = skipped;
             return Ok(result);
         }
-        catch (InvalidOperationException)
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
+            logger.LogWarning("AI Ranking timed out for AssignmentId={AssignmentId}", assignmentId);
+            return Problem(statusCode: StatusCodes.Status504GatewayTimeout, title: "AI Ranking timed out",
+                detail: "The AI service took too long to respond. Try again later.");
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning(ex, "AI Ranking request failed for AssignmentId={AssignmentId}", assignmentId);
+            return Problem(statusCode: StatusCodes.Status502BadGateway, title: "AI Ranking unavailable",
+                detail: "The AI service is currently unavailable. Try again later.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(ex, "AI Ranking failed for AssignmentId={AssignmentId}", assignmentId);
             return Problem(statusCode: StatusCodes.Status502BadGateway, title: "AI Ranking unavailable",
                 detail: "The AI service could not complete the ranking. Try again later.");
         }
@@ -164,12 +177,16 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
             .FirstOrDefaultAsync(a => a.Id == assignmentId, ct);
         if (assignment is null) return NotFound();
 
+        var readTimer = Stopwatch.StartNew();
         var results = await db.MatchResults
             .Include(m => m.Details)
             .Where(m => m.AssignmentId == assignmentId)
             .OrderByDescending(m => m.Score)
+            .AsSplitQuery()
             .AsNoTracking()
             .ToListAsync(ct);
+        logger.LogInformation("Matching results read: AssignmentId={AssignmentId}, Results={ResultCount}, ReadMs={ReadMs}",
+            assignmentId, results.Count, readTimer.ElapsedMilliseconds);
 
         var consultantIds = results.Select(result => result.ConsultantId).Distinct().ToList();
         var consultants = await db.Consultants
