@@ -67,10 +67,17 @@ export default function Admin() {
   const [promptVersions, setPromptVersions] = useState<PromptVersion[]>([]);
   const [runtimeContract, setRuntimeContract] = useState<PromptRuntimeContract | null>(null);
   const [copiedItem, setCopiedItem] = useState<"prompt" | "contract" | null>(null);
+  const [copyFeedbackSequence, setCopyFeedbackSequence] = useState(0);
+  useEffect(() => {
+    if (!copiedItem) return;
+    const timeoutId = window.setTimeout(() => setCopiedItem(null), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [copiedItem, copyFeedbackSequence]);
   const copyText = async (value: string, item: "prompt" | "contract") => {
     try {
       await navigator.clipboard.writeText(value);
       setCopiedItem(item);
+      setCopyFeedbackSequence((sequence) => sequence + 1);
     } catch {
       setError("Could not copy text. Check browser clipboard permissions.");
     }
