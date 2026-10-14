@@ -53,8 +53,9 @@ public sealed class PromptService(AppDbContext db) : IPromptService
         var nextVersion = versions.Count == 0 ? 1 : versions.Max(x => x.Version) + 1;
         // SQL Server's filtered unique index permits only one active version per key.
         // Persist deactivation first, within the same transaction, before inserting the new active row.
-        foreach (var version in versions.Where(x => x.IsActive)) version.IsActive = false;
-        if (versions.Any(x => x.IsActive == false))
+        var activeVersions = versions.Where(x => x.IsActive).ToList();
+        foreach (var version in activeVersions) version.IsActive = false;
+        if (activeVersions.Count > 0)
             await db.SaveChangesAsync(ct);
 
         var created = new AiPromptVersion
