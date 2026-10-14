@@ -429,7 +429,7 @@ export default function Matching() {
                     <span>
                       {t("assignment_availability")}:{" "}
                       <strong className="font-medium text-app-secondary">
-                        {assignment.availability || "—"}
+                        {assignment.availability || "—"}{" · Start: "}{assignment.startDateDescription || assignment.requiredStartDate || "—"}
                       </strong>
                     </span>
                     <span>
@@ -502,7 +502,7 @@ export default function Matching() {
                 <span>
                   {t("assignment_availability")}:{" "}
                   <strong className="font-medium text-app-secondary">
-                    {assignment.availability || "—"}
+                    {assignment.availability || "—"}{" · Start: "}{assignment.startDateDescription || assignment.requiredStartDate || "—"}
                   </strong>
                 </span>
                 <span>
