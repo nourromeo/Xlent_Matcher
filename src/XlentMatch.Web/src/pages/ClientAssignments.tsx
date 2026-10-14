@@ -70,6 +70,7 @@ export function NewAssignmentPage() {
   const [maximumSeniority, setMaximumSeniority] = useState("");
   const [availability, setAvailability] = useState("");
   const [requiredStartDate, setRequiredStartDate] = useState("");
+  const [startDateDescription, setStartDateDescription] = useState("");
   const [location, setLocation] = useState("");
   const [minYears, setMinYears] = useState<number | null>(null);
   const [requirements, setRequirements] = useState<AssignmentRequirementApi[]>(
@@ -138,6 +139,7 @@ export function NewAssignmentPage() {
       if (extracted.availability) setAvailability(extracted.availability);
       if (extracted.requiredStartDate)
         setRequiredStartDate(extracted.requiredStartDate);
+      setStartDateDescription(extracted.startDateDescription ?? "");
       if (extracted.location) setLocation(extracted.location);
       setMinYears(extracted.minYearsExperience);
 
@@ -382,6 +384,7 @@ export function NewAssignmentPage() {
       minYearsExperience: minYears ?? 0,
       availability: availability.trim() || null,
       requiredStartDate: requiredStartDate || null,
+       startDateDescription: startDateDescription.trim() || null,
       location: location.trim() || null,
       status: "Draft",
       createdAt: new Date().toISOString(),
