@@ -153,6 +153,7 @@ public class PromptServiceTests
     [InlineData("ASSIGNMENT_EXTRACTION")]
     [InlineData("CV_EXTRACTION")]
     [InlineData("CV_ADAPTATION")]
+    [InlineData("AI_RANKING")]
     public void StructuredResponseFormatUsesStrictAzureJsonSchema(string operation)
     {
         var json = JsonSerializer.Serialize(OpenAiTextService.CreateStructuredResponseFormat(operation));
@@ -164,6 +165,15 @@ public class PromptServiceTests
         Assert.Equal(JsonValueKind.Object, root.GetProperty("json_schema").GetProperty("schema").ValueKind);
         Assert.DoesNotContain("\"minimum\":null", json, StringComparison.Ordinal);
         Assert.DoesNotContain("\"maximum\":null", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AiRankingPromptIsRegisteredAndSeeded()
+    {
+        Assert.Equal("AI Ranking", PromptService.DisplayNameFor(PromptKeys.AiRanking));
+        var definition = Assert.Single(PromptSeedData.Definitions, x => x.Key == PromptKeys.AiRanking);
+        Assert.Contains("existing consultants", definition.Content);
+        Assert.Contains("Do not use or invent numeric match scores", definition.Content);
     }
 
     [Fact]
