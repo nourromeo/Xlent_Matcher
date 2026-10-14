@@ -223,7 +223,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             ["maximumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
             ["minYearsExperience"] = NullableInteger(),
             ["availability"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
-            ["requiredStartDate"] = new JsonObject { ["type"] = new JsonArray("string", "null"), ["pattern"] = "^\\d{4}-\\d{2}-\\d{2}$" },
+            ["requiredStartDate"] = NullableString(),
             ["startDateDescription"] = NullableString(),
             ["location"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
             ["requirements"] = new JsonObject
