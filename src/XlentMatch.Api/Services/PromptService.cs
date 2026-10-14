@@ -9,6 +9,7 @@ public static class PromptKeys
     public const string CvExtraction = "CV_EXTRACTION";
     public const string AssignmentExtraction = "ASSIGNMENT_EXTRACTION";
     public const string CvAdaptation = "CV_ADAPTATION";
+    public const string AiRanking = "AI_RANKING";
 }
 
 public sealed record PromptDefinition(string Key, string DisplayName, string Content);
@@ -22,6 +23,7 @@ public interface IPromptService
     Task<AiPromptVersion?> GetVersionAsync(string promptKey, int version, CancellationToken ct = default);
     Task<AiPromptVersion> CreateVersionAsync(string promptKey, string content, string? changeNote, CancellationToken ct = default);
     Task<AiPromptVersion?> ActivateVersionAsync(string promptKey, int version, CancellationToken ct = default);
+    Task<bool> DeleteVersionAsync(string promptKey, int version, CancellationToken ct = default);
 }
 
 public sealed class PromptService(AppDbContext db) : IPromptService
@@ -82,6 +84,21 @@ public sealed class PromptService(AppDbContext db) : IPromptService
         return selected;
     }
 
+    public async Task<bool> DeleteVersionAsync(string promptKey, int version, CancellationToken ct = default)
+    {
+        if (version <= 0) return false;
+        await using var transaction = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct) : null;
+        var versions = await db.AiPromptVersions.Where(x => x.PromptKey == promptKey).ToListAsync(ct);
+        var selected = versions.SingleOrDefault(x => x.Version == version);
+        if (selected is null) return false;
+        if (selected.IsActive) throw new InvalidOperationException("The active prompt version cannot be deleted.");
+        if (versions.Count <= 1) throw new InvalidOperationException("At least one prompt version must remain.");
+        db.AiPromptVersions.Remove(selected);
+        await db.SaveChangesAsync(ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return true;
+    }
+
     public static void Validate(string promptKey, string content)
     {
         if (string.IsNullOrWhiteSpace(promptKey)) throw new ArgumentException("Prompt key is required.");
@@ -94,6 +111,7 @@ public sealed class PromptService(AppDbContext db) : IPromptService
         PromptKeys.CvExtraction => "CV Extraction",
         PromptKeys.AssignmentExtraction => "Assignment Extraction",
         PromptKeys.CvAdaptation => "CV Adaptation",
+        PromptKeys.AiRanking => "AI Ranking",
         _ => throw new ArgumentException("Unknown prompt key.")
     };
 }
