@@ -51,7 +51,11 @@ public sealed class PromptService(AppDbContext db) : IPromptService
             : null;
         var versions = await db.AiPromptVersions.Where(x => x.PromptKey == promptKey).ToListAsync(ct);
         var nextVersion = versions.Count == 0 ? 1 : versions.Max(x => x.Version) + 1;
-        foreach (var version in versions) version.IsActive = false;
+        // SQL Server's filtered unique index permits only one active version per key.
+        // Persist deactivation first, within the same transaction, before inserting the new active row.
+        foreach (var version in versions.Where(x => x.IsActive)) version.IsActive = false;
+        if (versions.Any(x => x.IsActive == false))
+            await db.SaveChangesAsync(ct);
 
         var created = new AiPromptVersion
         {
@@ -78,7 +82,12 @@ public sealed class PromptService(AppDbContext db) : IPromptService
         var versions = await db.AiPromptVersions.Where(x => x.PromptKey == promptKey).ToListAsync(ct);
         var selected = versions.SingleOrDefault(x => x.Version == version);
         if (selected is null) return null;
-        foreach (var item in versions) item.IsActive = item.Id == selected.Id;
+        if (selected.IsActive) return selected;
+        // EF Core does not guarantee UPDATE ordering across rows. Avoid transient
+        // duplicate active versions by flushing deactivation before activation.
+        foreach (var item in versions.Where(x => x.IsActive)) item.IsActive = false;
+        await db.SaveChangesAsync(ct);
+        selected.IsActive = true;
         await db.SaveChangesAsync(ct);
         if (transaction is not null) await transaction.CommitAsync(ct);
         return selected;
