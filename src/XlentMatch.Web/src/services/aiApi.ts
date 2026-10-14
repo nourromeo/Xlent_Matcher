@@ -21,6 +21,7 @@ export type RequirementExtractionResult = {
   minYearsExperience: number | null;
   availability: string | null;
   requiredStartDate: string | null;
+  startDateDescription: string | null;
   location: string | null;
   requirements: RequirementDraft[];
   sourceText: string | null;
@@ -55,6 +56,7 @@ export type TemporaryAssignmentDraft = {
   minYearsExperience: number;
   availability: string | null;
   requiredStartDate: string | null;
+  startDateDescription: string | null;
   location: string | null;
   requirements: RequirementDraft[];
 };
@@ -131,6 +133,7 @@ export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssig
     minYearsExperience: assignment.minYearsExperience,
     availability: assignment.availability,
     requiredStartDate: assignment.requiredStartDate,
+    startDateDescription: assignment.startDateDescription,
     location: assignment.location,
     requirements: assignment.requirements.map((item) => ({
       name: item.name,
