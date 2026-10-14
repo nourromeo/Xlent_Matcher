@@ -8,7 +8,6 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     public List<MatchResult> MatchAndRank(Assignment assignment, IEnumerable<Consultant> consultants)
     {
         var results = consultants
-            .Where(c => string.Equals(c.Availability, ConsultantAvailability.Available, StringComparison.OrdinalIgnoreCase))
             .Select(c => Match(assignment, c))
             .OrderByDescending(r => r.Score)
             .ThenByDescending(r => r.MatchedMandatory)
@@ -119,6 +118,23 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             });
         }
 
+        if (assignment.RequiredStartDate is not null || !string.IsNullOrWhiteSpace(assignment.StartDateDescription))
+        {
+            bool? available = consultant.Availability switch
+            {
+                ConsultantAvailability.Available => true,
+                ConsultantAvailability.Unavailable when consultant.AvailableAgainDate is not null && assignment.RequiredStartDate is not null
+                    => consultant.AvailableAgainDate <= assignment.RequiredStartDate,
+                _ => null
+            };
+            details.Add(new MatchContextResult
+            {
+                Name = "Availability Match",
+                IsMatched = available,
+                AffectsScore = false,
+                Evidence = $"Assignment start: {assignment.RequiredStartDate?.ToString("yyyy-MM-dd") ?? assignment.StartDateDescription}; consultant availability: {consultant.Availability}; available again: {consultant.AvailableAgainDate?.ToString("yyyy-MM-dd") ?? "unknown"}. Relative timing requires manual confirmation."
+            });
+        }
         return details;
     }
 
