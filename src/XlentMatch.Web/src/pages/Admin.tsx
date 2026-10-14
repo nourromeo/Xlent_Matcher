@@ -11,7 +11,7 @@ import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { SkillEditModal } from "../components/SkillEditModal";
-import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion, type PromptSummary, type PromptVersion } from "../services/adminApi";
+import { adminApi, type AdminOverview, type AdminSkill, type AdminSuggestion, type PromptSummary, type PromptVersion, type PromptRuntimeContract } from "../services/adminApi";
 import { formatDate, formatDateTime } from "../services/localeFormat";
 
 const ADMIN_TABS = ["taxonomy", "weights", "flags", "prompts"] as const;
@@ -65,6 +65,8 @@ export default function Admin() {
   const [prompts, setPrompts] = useState<PromptSummary[]>([]);
   const [promptKey, setPromptKey] = useState<string | null>(null);
   const [promptVersions, setPromptVersions] = useState<PromptVersion[]>([]);
+  const [runtimeContract, setRuntimeContract] = useState<PromptRuntimeContract | null>(null);
+  const [runtimeContractError, setRuntimeContractError] = useState(false);
   const [selectedPromptVersion, setSelectedPromptVersion] = useState<PromptVersion | null>(null);
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [promptContent, setPromptContent] = useState("");
@@ -108,6 +110,9 @@ export default function Admin() {
 
   useEffect(() => {
     if (!promptKey) return;
+    setRuntimeContract(null);
+    setRuntimeContractError(false);
+    adminApi.getPromptRuntimeContract(promptKey).then(setRuntimeContract).catch(() => setRuntimeContractError(true));
     setPromptLoading(true);
     adminApi.getPromptVersions(promptKey).then((items) => {
       setPromptVersions(items);
@@ -384,10 +389,21 @@ export default function Admin() {
                   </div>
                   <div className="bg-app-surface border border-app-border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between gap-3"><div><span className="text-xs font-semibold text-app-primary">v{selectedPromptVersion.version}</span>{selectedPromptVersion.isActive && <StatusBadge tone="success">{t("prompt_active")}</StatusBadge>} {!selectedPromptVersion.isActive && <span className="ml-2 text-[10px] text-app-muted">{t("prompt_previous")}</span>}</div><span className="text-[10px] text-app-faint">{formatDateTime(selectedPromptVersion.createdAt, locale)}</span></div>
+                    <p className="text-[11px] text-app-muted">Active version: <span className="font-semibold text-app-primary">{promptVersions.find((item) => item.isActive)?.version != null ? `v${promptVersions.find((item) => item.isActive)?.version}` : "None"}</span>. Editing creates a new active version; existing versions remain unchanged.</p>
                     {selectedPromptVersion.changeNote && <p className="text-xs text-app-muted">{selectedPromptVersion.changeNote}</p>}
                     {editingPrompt ? <><p className="text-[11px] text-app-brand">{t("prompt_editing_based")} v{selectedPromptVersion.version}</p><textarea value={promptContent} onChange={(event) => setPromptContent(event.target.value)} rows={18} className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-xs font-mono text-app-primary outline-none focus:border-app-brand" /><input value={promptChangeNote} onChange={(event) => setPromptChangeNote(event.target.value)} placeholder={t("prompt_change_note")} className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" /><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingPrompt(false)}>{t("common_cancel")}</Button><Button variant="primary" onClick={() => void savePromptVersion()}>{t("prompt_save_version")}</Button></div></> : <><pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-md border border-app-border bg-app px-3 py-3 text-[11px] leading-relaxed text-app-secondary">{selectedPromptVersion.content}</pre><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setPromptContent(selectedPromptVersion.content); setPromptChangeNote(""); setEditingPrompt(true); }}>{t("common_edit")}</Button>{!selectedPromptVersion.isActive && <Button variant="primary" onClick={() => void activatePromptVersion()}>{t("prompt_set_active")}</Button>}{!selectedPromptVersion.isActive && promptVersions.length > 1 && <Button variant="danger" onClick={deletePromptVersion}>{t("common_delete")}</Button>}</div></>}
                   </div>
                 </div>
+                <section className="rounded-lg border border-app-border bg-app-surface p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-xs font-semibold text-app-primary">Runtime Contract</h3>
+                    <span className="text-[10px] rounded border border-app-border px-2 py-1 text-app-muted">Read-only · Backend</span>
+                  </div>
+                  <p className="text-[11px] text-app-muted">Additional runtime rules are enforced by the API. They are not part of the editable prompt version. The JSON Schema and validation remain backend-controlled.</p>
+                  {runtimeContract && <><p className="text-[11px] text-app-muted">{runtimeContract.note}</p><pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-md border border-app-border bg-app px-3 py-3 text-[11px] leading-relaxed text-app-secondary">{runtimeContract.content}</pre></>}
+                  {!runtimeContract && !runtimeContractError && <p className="text-xs text-app-muted">Loading runtime contract…</p>}
+                  {runtimeContractError && <p className="text-xs text-app-muted">Runtime contract could not be loaded.</p>}
+                </section>
               </>
             )}
           </section>
