@@ -80,7 +80,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "Skill requirements may populate skill-specific minYears only when skill-specific years are explicitly stated, and may populate MinLevel only when an explicit numeric skill level on the existing 1-5 scale is stated; otherwise return null. Do not use MinLevel for language proficiency or seniority labels. " +
         "HumanLanguage requirements may populate Proficiency only with exactly null or one of: Not specified, Low, Medium, High, Native; MinYears and MinLevel must be null. Never return display translations or CEFR levels. " +
         "Extract assignment seniority only into the root seniority, seniorityMatchMode, minimumSeniority and maximumSeniority fields. Do not create a Seniority item in requirements[]. Requirements[] may contain only Skill and HumanLanguage items. " +
-        "For requiredStartDate, return only an explicitly stated complete calendar date as an ISO 8601 yyyy-MM-dd string, or JSON null. Relative or imprecise start times such as 'inom 1-2 månader', 'ASAP', 'next month', month-only or year-only expressions must result in requiredStartDate: null. Preserve the original relative wording in sourceText; never invent a calendar day. " +
+        "Set startDateDescription to the exact source wording for relative or imprecise assignment start timing (e.g. 'Inom 1-2 månader'); otherwise null. For requiredStartDate, return only an explicitly stated complete calendar date as an ISO 8601 yyyy-MM-dd string, or JSON null. Relative or imprecise start times such as 'inom 1-2 månader', 'ASAP', 'next month', month-only or year-only expressions must result in requiredStartDate: null. Preserve the original relative wording in sourceText; never invent a calendar day. " +
         "Arrays must remain arrays, and fields that do not apply or are not explicitly present in the source must be JSON null. Preserve the no-invention rule.";
 
     public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
@@ -224,6 +224,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             ["minYearsExperience"] = NullableInteger(),
             ["availability"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
             ["requiredStartDate"] = new JsonObject { ["type"] = new JsonArray("string", "null"), ["pattern"] = "^\\d{4}-\\d{2}-\\d{2}$" },
+            ["startDateDescription"] = NullableString(),
             ["location"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
             ["requirements"] = new JsonObject
             {
@@ -232,7 +233,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             },
             ["sourceText"] = new JsonObject { ["type"] = new JsonArray("string", "null") }
         },
-        ["required"] = Required("seniority", "seniorityMatchMode", "minimumSeniority", "maximumSeniority", "minYearsExperience", "availability", "requiredStartDate", "location", "requirements", "sourceText")
+        ["required"] = Required("seniority", "seniorityMatchMode", "minimumSeniority", "maximumSeniority", "minYearsExperience", "availability", "requiredStartDate", "startDateDescription", "location", "requirements", "sourceText")
     };
 
     private static JsonObject RequirementSchema() => new()
