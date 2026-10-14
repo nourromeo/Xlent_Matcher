@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using XlentMatch.Api.Data;
@@ -42,17 +43,31 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
 var app = builder.Build();
+var startupTimer = Stopwatch.StartNew();
+var startupLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("StartupPerformance");
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     if (app.Environment.IsDevelopment())
+    {
+        var step = Stopwatch.StartNew();
         await db.Database.MigrateAsync();
+        startupLogger.LogInformation("Startup database migrations completed in {ElapsedMs} ms", step.ElapsedMilliseconds);
+    }
 
     var skillNormalization = scope.ServiceProvider.GetRequiredService<SkillNormalizationService>();
+    var stepTimer = Stopwatch.StartNew();
     await skillNormalization.EnsureCatalogAsync();
+    startupLogger.LogInformation("Startup skill catalog completed in {ElapsedMs} ms", stepTimer.ElapsedMilliseconds);
+
+    stepTimer.Restart();
     await SeedData.InitializeAsync(db);
+    startupLogger.LogInformation("Startup seed data completed in {ElapsedMs} ms", stepTimer.ElapsedMilliseconds);
+
+    stepTimer.Restart();
     await PromptSeedData.InitializeAsync(db);
+    startupLogger.LogInformation("Startup prompt seed completed in {ElapsedMs} ms", stepTimer.ElapsedMilliseconds);
 }
 
 if (app.Environment.IsDevelopment())
@@ -63,4 +78,5 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 app.MapControllers();
+startupLogger.LogInformation("Startup initialization completed in {ElapsedMs} ms", startupTimer.ElapsedMilliseconds);
 app.Run();
