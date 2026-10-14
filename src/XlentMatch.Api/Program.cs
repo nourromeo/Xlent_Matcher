@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.Services;
 
@@ -76,6 +77,30 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Return a safe, consistent response when SQL Server is unavailable.
+// Never include connection strings, SQL commands, or CV data in the response.
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next(context);
+    }
+    catch (Exception ex) when (ex is SqlException or DbUpdateException)
+    {
+        var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("DatabaseFailure");
+        logger.LogError(ex, "Database request failed. Path={Path}", context.Request.Path);
+        if (context.Response.HasStarted) throw;
+        context.Response.Clear();
+        context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            title = "Database temporarily unavailable",
+            status = 503,
+            detail = "The database request could not be completed. Please try again later."
+        });
+    }
+});
 app.UseCors();
 app.MapControllers();
 startupLogger.LogInformation("Startup initialization completed in {ElapsedMs} ms", startupTimer.ElapsedMilliseconds);
