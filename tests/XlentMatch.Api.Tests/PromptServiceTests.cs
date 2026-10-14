@@ -167,6 +167,17 @@ public class PromptServiceTests
         Assert.DoesNotContain("\"maximum\":null", json, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(PromptKeys.CvExtraction)]
+    [InlineData(PromptKeys.AssignmentExtraction)]
+    [InlineData(PromptKeys.CvAdaptation)]
+    [InlineData(PromptKeys.AiRanking)]
+    public void RuntimeContractIsAvailableForEachManagedPrompt(string promptKey)
+    {
+        var contract = OpenAiTextService.RuntimeContractFor(promptKey);
+        Assert.False(string.IsNullOrWhiteSpace(contract));
+    }
+
     [Fact]
     public void AiRankingPromptIsRegisteredAndSeeded()
     {
