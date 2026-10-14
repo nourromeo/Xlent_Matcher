@@ -429,13 +429,29 @@ public class AdminController(
         return prompt is null ? NotFound() : Ok(ToDto(prompt));
     }
 
+    [HttpDelete("prompts/{promptKey}/versions/{version:int}")]
+    public async Task<IActionResult> DeletePromptVersion(string promptKey, int version, CancellationToken ct)
+    {
+        promptKey = CanonicalPromptKey(promptKey);
+        if (!IsKnownPrompt(promptKey)) return NotFound("Unknown prompt key.");
+        try
+        {
+            return await promptService.DeleteVersionAsync(promptKey, version, ct) ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+
     private static bool IsKnownPrompt(string promptKey) =>
         PromptKeys.CvExtraction.Equals(promptKey, StringComparison.OrdinalIgnoreCase) ||
         PromptKeys.AssignmentExtraction.Equals(promptKey, StringComparison.OrdinalIgnoreCase) ||
-        PromptKeys.CvAdaptation.Equals(promptKey, StringComparison.OrdinalIgnoreCase);
+        PromptKeys.CvAdaptation.Equals(promptKey, StringComparison.OrdinalIgnoreCase) ||
+        PromptKeys.AiRanking.Equals(promptKey, StringComparison.OrdinalIgnoreCase);
 
     private static string CanonicalPromptKey(string promptKey) =>
-        new[] { PromptKeys.CvExtraction, PromptKeys.AssignmentExtraction, PromptKeys.CvAdaptation }
+        new[] { PromptKeys.CvExtraction, PromptKeys.AssignmentExtraction, PromptKeys.CvAdaptation, PromptKeys.AiRanking }
             .FirstOrDefault(key => key.Equals(promptKey, StringComparison.OrdinalIgnoreCase)) ?? promptKey;
 
     private static AiPromptVersionDto ToDto(AiPromptVersion prompt) => new()
