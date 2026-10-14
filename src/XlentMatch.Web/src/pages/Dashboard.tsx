@@ -67,11 +67,11 @@ function StatCard({
 
 const uploadIcon = (status: CvUploadRecord["status"]) =>
   status === "Indexed" ? (
-    <CheckCircle size={10} style={{ color: "var(--color-success)" }} />
+    <CheckCircle size={10} className="text-app-success" />
   ) : status === "Error" ? (
-    <AlertCircle size={10} style={{ color: "var(--color-danger)" }} />
+    <AlertCircle size={10} className="text-app-danger" />
   ) : (
-    <Clock size={10} style={{ color: "var(--color-brand)" }} />
+    <Clock size={10} className="text-app-brand" />
   );
 
 export default function Dashboard() {
