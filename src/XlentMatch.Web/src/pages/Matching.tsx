@@ -778,8 +778,7 @@ export default function Matching() {
                           <div className="mt-2">
                             {missing.length === 0 ? (
                               <div
-                                className="flex items-center gap-1 text-[10px]"
-                                className="text-app-success"
+                                className="flex items-center gap-1 text-[10px] text-app-success"
                               >
                                 <CheckCircle size={9} />
                                 {result.matchedMandatory}/
@@ -787,8 +786,7 @@ export default function Matching() {
                               </div>
                             ) : (
                               <div
-                                className="flex items-center gap-1 text-[10px]"
-                                className="text-app-warning"
+                                className="flex items-center gap-1 text-[10px] text-app-warning"
                               >
                                 <AlertTriangle size={9} />
                                 {t("matching_missing_prefix")}{" "}
@@ -1014,8 +1012,7 @@ export default function Matching() {
                                 className="text-app-warning"
                               />
                               <span
-                                className="text-xs font-mono"
-                                className="text-app-warning"
+                                className="text-xs font-mono text-app-warning"
                               >
                                 {detail.requirementName}
                               </span>
