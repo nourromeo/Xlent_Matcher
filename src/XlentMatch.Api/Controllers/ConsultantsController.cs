@@ -18,6 +18,7 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
             .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .AsNoTracking()
             .ToListAsync(ct);
+
     }
 
     [HttpGet("{id:int}")]
