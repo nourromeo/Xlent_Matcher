@@ -47,6 +47,24 @@ export default function HowItWorks() {
         })}
       </section>
 
+      <section aria-label={t("how_ai_title")} className="rounded-lg border border-app-border bg-app-surface p-4">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="rounded-md border border-app-border bg-app-raised px-4 py-2 text-xs font-semibold text-app-primary">{t("how_simple_score")}</div>
+          <GitMerge size={17} className="text-app-brand" />
+          <div className="grid w-full max-w-2xl grid-cols-2 gap-3">
+            <div className="rounded-lg border border-app-border bg-app-raised px-3 py-3">
+              <p className="text-xs font-semibold text-app-primary">{t("how_standard_title")}</p>
+              <p className="mt-1 text-[11px] leading-5 text-app-muted">{t("how_standard_short")}</p>
+            </div>
+            <div className="rounded-lg border border-app-brand/30 bg-app-brand-subtle/30 px-3 py-3">
+              <p className="text-xs font-semibold text-app-primary">{t("how_ai_title")} · {t("how_optional")}</p>
+              <p className="mt-1 text-[11px] leading-5 text-app-muted">{t("how_ai_short")}</p>
+            </div>
+          </div>
+          <ArrowRight size={16} className="rotate-90 text-app-brand" />
+          <div className="rounded-md border border-app-border bg-app-raised px-4 py-2 text-xs font-semibold text-app-primary">{t("how_simple_review")}</div>
+        </div>
+      </section>
       <section className="border-t border-app-border pt-6"><h2 className="text-base font-semibold text-app-primary">{t("how_detail_title")}</h2><p className="mt-1 text-xs text-app-muted">{t("how_detail_intro")}</p></section>
       <div className="space-y-6">
         <DetailSection number="01" icon={Users} title={t("how_simple_consultant")} body={t("how_detail_consultant_body")} technical={t("how_detail_consultant_technical")} example="React.js → React → SkillId" flow={[t("how_flow_cv"), t("how_flow_extraction"), t("how_flow_normalization"), t("how_flow_catalog"), t("how_flow_profile")]} />
