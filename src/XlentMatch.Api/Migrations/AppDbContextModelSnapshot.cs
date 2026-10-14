@@ -99,6 +99,9 @@ namespace XlentMatch.Api.Migrations
                     b.Property<DateOnly?>("RequiredStartDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("StartDateDescription")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Seniority")
                         .HasColumnType("nvarchar(max)");
 
