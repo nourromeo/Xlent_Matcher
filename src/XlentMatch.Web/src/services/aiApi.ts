@@ -21,7 +21,7 @@ export type RequirementExtractionResult = {
   minYearsExperience: number | null;
   availability: string | null;
   requiredStartDate: string | null;
-  startDateDescription: string | null;
+  startDateDescription?: string | null;
   location: string | null;
   requirements: RequirementDraft[];
   sourceText: string | null;
@@ -56,7 +56,7 @@ export type TemporaryAssignmentDraft = {
   minYearsExperience: number;
   availability: string | null;
   requiredStartDate: string | null;
-  startDateDescription: string | null;
+  startDateDescription?: string | null;
   location: string | null;
   requirements: RequirementDraft[];
 };
