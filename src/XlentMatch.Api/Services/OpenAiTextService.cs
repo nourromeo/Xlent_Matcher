@@ -177,6 +177,21 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         var hasCodeFence = content.Contains("```", StringComparison.Ordinal);
         try
         {
+            if (typeof(T) == typeof(RequirementExtractionResultDto))
+            {
+                var root = JsonNode.Parse(content) as JsonObject;
+                if (root is not null && root["requiredStartDate"] is JsonValue value &&
+                    value.TryGetValue<string>(out var rawDate) &&
+                    !DateOnly.TryParseExact(rawDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.None, out _))
+                {
+                    // Preserve imprecise timing rather than fail the entire extraction or invent a day.
+                    if (root["startDateDescription"] is null && !string.IsNullOrWhiteSpace(rawDate))
+                        root["startDateDescription"] = rawDate;
+                    root["requiredStartDate"] = null;
+                    return root.Deserialize<T>(Json) ?? new T();
+                }
+            }
             return JsonSerializer.Deserialize<T>(content, Json) ?? new T();
         }
         catch (JsonException exception)
