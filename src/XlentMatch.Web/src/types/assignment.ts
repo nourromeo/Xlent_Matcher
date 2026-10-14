@@ -43,6 +43,7 @@ export type AssignmentApi = {
   minYearsExperience: number;
   availability: string | null;
   requiredStartDate: string | null;
+  startDateDescription: string | null;
   location: string | null;
   updatedAt: string | null;
   status: AssignmentStatusApi;
