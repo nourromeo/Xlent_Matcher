@@ -335,7 +335,7 @@ export default function Admin() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-6 space-y-5">
-        <ConfirmDialog open={confirmation !== null} title={confirmation?.title ?? t("common_delete")} confirmLabel={confirmation?.confirmLabel} message={confirmation?.message ?? ""} onClose={() => setConfirmation(null)} onConfirm={async () => { if (confirmation) await confirmation.onConfirm(); setConfirmation(null); }} />
+        <ConfirmDialog open={confirmation !== null} title={confirmation?.title ?? t("common_delete")} confirmLabel={confirmation?.confirmLabel} confirmVariant={confirmation?.title === t("prompt_set_active") ? "primary" : "danger"} message={confirmation?.message ?? ""} onClose={() => setConfirmation(null)} onConfirm={async () => { if (confirmation) await confirmation.onConfirm(); setConfirmation(null); }} />
         <PageHeader title={t("admin_title")} description={t("admin_description")} />
 
         {error && (
