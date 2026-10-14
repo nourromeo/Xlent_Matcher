@@ -8,11 +8,12 @@ type ConfirmDialogProps = {
   title: string;
   message: string;
   confirmLabel?: string;
+  confirmVariant?: "primary" | "danger";
   onConfirm: () => void | Promise<void>;
   onClose: () => void;
 };
 
-export function ConfirmDialog({ open, title, message, confirmLabel, onConfirm, onClose }: ConfirmDialogProps) {
+export function ConfirmDialog({ open, title, message, confirmLabel, confirmVariant = "danger", onConfirm, onClose }: ConfirmDialogProps) {
   const { t } = useI18n();
   const [pending, setPending] = useState(false);
 
@@ -31,7 +32,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel, onConfirm, o
         <p className="text-sm text-app-secondary">{message}</p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={pending}>{t("common_cancel")}</Button>
-          <Button variant="danger" onClick={() => void confirm()} disabled={pending}>{pending ? t("common_saving") : confirmLabel ?? t("common_delete")}</Button>
+          <Button variant={confirmVariant} onClick={() => void confirm()} disabled={pending}>{pending ? t("common_saving") : confirmLabel ?? t("common_delete")}</Button>
         </div>
       </div>
     </Modal>
