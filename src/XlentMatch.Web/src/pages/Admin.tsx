@@ -66,6 +66,15 @@ export default function Admin() {
   const [promptKey, setPromptKey] = useState<string | null>(null);
   const [promptVersions, setPromptVersions] = useState<PromptVersion[]>([]);
   const [runtimeContract, setRuntimeContract] = useState<PromptRuntimeContract | null>(null);
+  const [copiedItem, setCopiedItem] = useState<"prompt" | "contract" | null>(null);
+  const copyText = async (value: string, item: "prompt" | "contract") => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedItem(item);
+    } catch {
+      setError("Could not copy text. Check browser clipboard permissions.");
+    }
+  };
   const [runtimeContractError, setRuntimeContractError] = useState(false);
   const [runtimeExpanded, setRuntimeExpanded] = useState(false);
   const [runtimeShowFull, setRuntimeShowFull] = useState(false);
@@ -113,6 +122,7 @@ export default function Admin() {
   useEffect(() => {
     if (!promptKey) return;
     setRuntimeContract(null);
+    setCopiedItem(null);
     setRuntimeContractError(false);
     setRuntimeExpanded(false);
     setRuntimeShowFull(false);
@@ -400,7 +410,7 @@ export default function Admin() {
                   <aside className="rounded-lg border border-app-border bg-app-surface p-3 space-y-2">
                     <h3 className="text-xs font-semibold text-app-primary">{t("prompt_history")}</h3>
                     {promptVersions.map((version) => (
-                      <button key={version.version} type="button" onClick={() => { setSelectedPromptVersion(version); setEditingPrompt(false); }}
+                      <button key={version.version} type="button" onClick={() => { setSelectedPromptVersion(version); setEditingPrompt(false); setCopiedItem(null); }}
                         aria-current={selectedPromptVersion.version === version.version ? "true" : undefined}
                         className={`w-full rounded-md border px-3 py-3 text-left transition-colors ${selectedPromptVersion.version === version.version ? "border-app-brand bg-app-brand-soft" : "border-app-border hover:bg-app"}`}>
                         <span className="flex items-center justify-between gap-2">
@@ -420,7 +430,7 @@ export default function Admin() {
                         </div>
                         <div className="flex items-center gap-2">
                           {selectedPromptVersion.isActive && <StatusBadge tone="success">{t("prompt_active")}</StatusBadge>}
-                          <Button variant="ghost" onClick={() => void navigator.clipboard.writeText(selectedPromptVersion.content)}>Copy prompt</Button>
+                          <Button variant="ghost" onClick={() => void copyText(selectedPromptVersion.content, "prompt")}>{copiedItem === "prompt" ? "✓ Copied" : "Copy prompt"}</Button>
                         </div>
                       </div>
                       <p className="text-xs text-app-muted">Created {formatDateTime(selectedPromptVersion.createdAt, locale)}{selectedPromptVersion.changeNote ? ` · ${selectedPromptVersion.changeNote}` : ""}</p>
@@ -462,7 +472,7 @@ export default function Admin() {
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="text-xs font-medium text-app-secondary">Output instructions · Full original text</span>
                                 <div className="flex gap-2">
-                                  <Button variant="ghost" onClick={() => void navigator.clipboard.writeText(runtimeContract.content)}>Copy contract</Button>
+                                  <Button variant="ghost" onClick={() => void copyText(runtimeContract.content, "contract")}>{copiedItem === "contract" ? "✓ Copied" : "Copy contract"}</Button>
                                   <Button variant="ghost" onClick={() => setRuntimeShowFull((value) => !value)}>{runtimeShowFull ? "Collapse text" : "Show full text"}</Button>
                                 </div>
                               </div>
