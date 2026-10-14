@@ -80,6 +80,8 @@ export const adminApi = {
   getPromptVersions: (promptKey: string) => apiRequest<PromptVersion[]>(`/admin/prompts/${promptKey}/versions`),
   createPromptVersion: (promptKey: string, input: { content: string; changeNote?: string }) =>
     apiRequest<PromptVersion>(`/admin/prompts/${promptKey}/versions`, { method: "POST", body: JSON.stringify(input) }),
+  deletePromptVersion: (promptKey: string, version: number) =>
+    apiRequest<void>(`/admin/prompts/${promptKey}/versions/${version}`, { method: "DELETE" }),
   activatePromptVersion: (promptKey: string, version: number) =>
     apiRequest<PromptVersion>(`/admin/prompts/${promptKey}/versions/${version}/activate`, { method: "POST" }),
 };
