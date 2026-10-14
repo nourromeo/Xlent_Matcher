@@ -113,7 +113,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
 
         var requirements = string.Join("\n", assignment.Requirements.Select(r =>
             $"{r.Type}: {r.Name}; minimum years: {r.MinYears?.ToString() ?? "not specified"}; proficiency: {r.Proficiency ?? "not specified"}"));
-        var assignmentText = $"Title: {assignment.Title}\nCustomer: {assignment.CustomerName}\nDescription: {assignment.Description}\nSeniority: {assignment.Seniority}\nMinimum experience: {assignment.MinYearsExperience}\nLocation: {assignment.Location}\nRequirements:\n{requirements}";
+        var assignmentText = $"Start date: {assignment.RequiredStartDate?.ToString("yyyy-MM-dd") ?? "not specified"}\nStart timing: {assignment.StartDateDescription ?? "not specified"}\nAvailability requirement: {assignment.Availability ?? "not specified"}\nTitle: {assignment.Title}\nCustomer: {assignment.CustomerName}\nDescription: {assignment.Description}\nSeniority: {assignment.Seniority}\nMinimum experience: {assignment.MinYearsExperience}\nLocation: {assignment.Location}\nRequirements:\n{requirements}";
         try
         {
             var result = await ai.RankOriginalCvsAsync(assignmentText, eligible, ct);
