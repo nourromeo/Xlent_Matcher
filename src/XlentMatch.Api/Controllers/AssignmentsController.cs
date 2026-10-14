@@ -125,6 +125,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         existing.Seniority = input.Seniority;
         existing.MinYearsExperience = input.MinYearsExperience;
         existing.Availability = input.Availability;
+        existing.RequiredStartDate = input.RequiredStartDate;
+        existing.StartDateDescription = input.StartDateDescription?.Trim();
         existing.Location = input.Location;
         existing.UpdatedAt = DateTime.UtcNow;
         // Any meaningful edit invalidates the previous matching snapshot.
