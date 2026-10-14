@@ -388,6 +388,19 @@ public class AdminController(
         return prompts;
     }
 
+    [HttpGet("prompts/{promptKey}/runtime-contract")]
+    public ActionResult<PromptRuntimeContractDto> GetPromptRuntimeContract(string promptKey)
+    {
+        promptKey = CanonicalPromptKey(promptKey);
+        if (!IsKnownPrompt(promptKey)) return NotFound("Unknown prompt key.");
+        return new PromptRuntimeContractDto
+        {
+            PromptKey = promptKey,
+            Content = OpenAiTextService.RuntimeContractFor(promptKey),
+            Note = "Read-only backend instructions. The structured JSON Schema and validation are enforced by the API."
+        };
+    }
+
     [HttpGet("prompts/{promptKey}/versions")]
     public async Task<ActionResult<List<AiPromptVersionDto>>> GetPromptVersions(string promptKey, CancellationToken ct)
     {
@@ -553,4 +566,11 @@ public class AdminCapabilityDto
     public string Label { get; set; } = "";
     public string Description { get; set; } = "";
     public bool Enabled { get; set; }
+}
+
+public class PromptRuntimeContractDto
+{
+    public string PromptKey { get; set; } = "";
+    public string Content { get; set; } = "";
+    public string Note { get; set; } = "";
 }
