@@ -10,6 +10,7 @@ public class Assignment
     public int MinYearsExperience { get; set; }
     public string? Availability { get; set; }
     public DateOnly? RequiredStartDate { get; set; }
+    public string? StartDateDescription { get; set; }
     public string? Location { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public AssignmentStatus Status { get; set; } = AssignmentStatus.Draft;
