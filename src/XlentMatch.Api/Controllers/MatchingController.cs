@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -10,11 +11,12 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/matching")]
-public class MatchingController(AppDbContext db, MatchingService matching, ConsultantAvailabilityService availability, IWebHostEnvironment environment, IPdfTextExtractor pdf, IAiTextService ai) : ControllerBase
+public class MatchingController(AppDbContext db, MatchingService matching, ConsultantAvailabilityService availability, IWebHostEnvironment environment, IPdfTextExtractor pdf, IAiTextService ai, ILogger<MatchingController> logger) : ControllerBase
 {
     [HttpPost("run")]
     public async Task<ActionResult<List<MatchResult>>> Run(RunMatchingRequestDto request, CancellationToken ct)
     {
+        var totalTimer = Stopwatch.StartNew();
         await availability.ResolveExpiredAsync(ct);
         if (request.ConsultantIds.Count == 0)
             return BadRequest("Select at least one consultant before running matching.");
@@ -28,6 +30,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         if (assignment.Requirements.Count == 0)
             return BadRequest("The assignment has no requirements to match.");
 
+        var queryTimer = Stopwatch.StartNew();
         var consultants = await db.Consultants
             .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .Include(c => c.Projects)
@@ -42,7 +45,10 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         if (consultants.Count == 0)
             return BadRequest("No consultants found for the given ids.");
 
+        var queryMs = queryTimer.ElapsedMilliseconds;
+        var matchTimer = Stopwatch.StartNew();
         var results = matching.MatchAndRank(assignment, consultants);
+        var matchingMs = matchTimer.ElapsedMilliseconds;
 
         var old = await db.MatchResults
             .Where(m => m.AssignmentId == assignment.Id && request.ConsultantIds.Contains(m.ConsultantId))
@@ -55,6 +61,8 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         trackedAssignment.Status = AssignmentStatus.Done;
 
         await db.SaveChangesAsync(ct);
+        logger.LogInformation("Matching completed: AssignmentId={AssignmentId}, Consultants={ConsultantCount}, Requirements={RequirementCount}, QueryMs={QueryMs}, CalculationMs={CalculationMs}, TotalMs={TotalMs}",
+            assignment.Id, consultants.Count, assignment.Requirements.Count, queryMs, matchingMs, totalTimer.ElapsedMilliseconds);
 
         return results;
     }
