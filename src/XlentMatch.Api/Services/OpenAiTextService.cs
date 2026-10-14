@@ -29,7 +29,9 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     public async Task<AiRankingResultDto> RankOriginalCvsAsync(string assignmentText, IReadOnlyList<(int ConsultantId, string CvText)> cvs, CancellationToken ct)
     {
         const string operation = "ai_original_cv_ranking";
-        var system = (await GetPromptAsync(PromptKeys.AiRanking, ct)).Content;
+        var prompt = await GetPromptAsync(PromptKeys.AiRanking, ct);
+        LogPromptExecution(prompt);
+        var system = prompt.Content;
         var input = JsonSerializer.Serialize(new
         {
             assignmentText,
@@ -47,7 +49,9 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
 
     public async Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {
-        var system = (await GetPromptAsync(PromptKeys.CvExtraction, ct)).Content + "\n\nRUNTIME OUTPUT CONTRACT:\n" + CvExtractionSchemaInstruction;
+        var prompt = await GetPromptAsync(PromptKeys.CvExtraction, ct);
+        LogPromptExecution(prompt);
+        var system = prompt.Content + "\n\nRUNTIME OUTPUT CONTRACT:\n" + CvExtractionSchemaInstruction;
         return await AskForJsonAsync<ConsultantDraftDto>(PromptKeys.CvExtraction, system, text, ct);
     }
 
@@ -59,6 +63,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
         var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
         var prompt = await GetPromptAsync(PromptKeys.AssignmentExtraction, ct);
+        LogPromptExecution(prompt);
         var system = prompt.Content.Replace("{{today}}", today, StringComparison.Ordinal) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + AssignmentExtractionSchemaInstruction;
         var result = await AskForJsonAsync<RequirementExtractionResultDto>(PromptKeys.AssignmentExtraction, system, text, ct);
         var diagnostic = CreateAssignmentExtractionDiagnostic(prompt, options.Value.Model, result);
@@ -81,7 +86,9 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
 
     public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
     {
-        var system = (await GetPromptAsync(PromptKeys.CvAdaptation, ct)).Content + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
+        var prompt = await GetPromptAsync(PromptKeys.CvAdaptation, ct);
+        LogPromptExecution(prompt);
+        var system = prompt.Content + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
         var user = JsonSerializer.Serialize(new { assignment, consultant }, Json);
         return await AskForJsonAsync<CvAdaptationSuggestionDto>(PromptKeys.CvAdaptation, system, user, ct);
     }
@@ -98,6 +105,19 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "Return exactly one JSON object with exactly these properties: overallAssessment (string), strengths (array of strings), relevantExperience (array of strings), missingOrWeakAreas (array of strings), suggestedImprovements (array of strings), and evidence (array of strings). " +
         "Strengths and relevantExperience must describe only facts supported by the consultant CV. MissingOrWeakAreas must identify assignment requirements that are absent, unclear or weakly evidenced in the CV. SuggestedImprovements must tell the consultant what to clarify, emphasize or verify in their own CV without inventing experience. Evidence must cite concise supporting facts from the provided CV data. " +
         "Do not rename properties. Every array item must be a string. Change only textual values to the requested language, never the JSON structure or types.";
+
+    private void LogPromptExecution(ActivePromptContext prompt) =>
+        logger.LogInformation("AI prompt execution. TraceId={TraceId} PromptKey={PromptKey} PromptVersion={PromptVersion} Model={Model}",
+            Activity.Current?.TraceId.ToString() ?? "none", prompt.Key, prompt.Version, options.Value.Model);
+
+    public static string RuntimeContractFor(string key) => key switch
+    {
+        PromptKeys.CvExtraction => "RUNTIME OUTPUT CONTRACT:\\n" + CvExtractionSchemaInstruction,
+        PromptKeys.AssignmentExtraction => "RUNTIME OUTPUT CONTRACT:\\n" + AssignmentExtractionSchemaInstruction,
+        PromptKeys.CvAdaptation => "RUNTIME OUTPUT LANGUAGE INSTRUCTION: determined by requested locale (Swedish, English or Spanish).\\n\\nRUNTIME JSON SCHEMA INSTRUCTION:\\n" + AdaptationSchemaInstruction,
+        PromptKeys.AiRanking => "No additional runtime text instructions. Backend enforces a strict JSON Schema, two distinct consultant IDs, and ranks 1 and 2.",
+        _ => throw new ArgumentException("Unknown prompt key.", nameof(key))
+    };
 
     private async Task<ActivePromptContext> GetPromptAsync(string key, CancellationToken ct)
     {
