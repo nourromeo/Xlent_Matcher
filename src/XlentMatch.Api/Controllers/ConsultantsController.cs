@@ -15,8 +15,34 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
     {
         await availability.ResolveExpiredAsync(ct);
         return await db.Consultants
-            .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .AsNoTracking()
+            .Select(c => new Consultant
+            {
+                Id = c.Id,
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+                Email = c.Email,
+                Title = c.Title,
+                Summary = c.Summary,
+                Seniority = c.Seniority,
+                YearsOfExperience = c.YearsOfExperience,
+                YearsOfExperienceSource = c.YearsOfExperienceSource,
+                Availability = c.Availability,
+                AvailableAgainDate = c.AvailableAgainDate,
+                Office = c.Office,
+                // Full original CV text is only needed by the consultant detail/edit flow.
+                Skills = c.Skills.Select(skill => new ConsultantSkill
+                {
+                    Id = skill.Id,
+                    ConsultantId = skill.ConsultantId,
+                    SkillId = skill.SkillId,
+                    Skill = skill.Skill,
+                    Name = skill.Name,
+                    Years = skill.Years,
+                    Level = skill.Level,
+                    Evidence = skill.Evidence
+                }).ToList()
+            })
             .ToListAsync(ct);
 
     }
