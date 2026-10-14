@@ -167,7 +167,9 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.AvailableAgainDate = input.AvailableAgainDate;
         existing.Availability = NormalizeAvailability(input.Availability);
         existing.Office = input.Office;
-        existing.OriginalCvText = input.OriginalCvText;
+        // List responses omit original CV text; an availability update must not erase it.
+        if (input.OriginalCvText is not null)
+            existing.OriginalCvText = input.OriginalCvText;
 
         input.Skills.ForEach(x => { x.Id = 0; x.ConsultantId = 0; x.SkillId = 0; x.Skill = null; });
         input.Experiences.ForEach(x => x.Id = 0);
