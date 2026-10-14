@@ -70,7 +70,7 @@ export default function Admin() {
   const [promptContent, setPromptContent] = useState("");
   const [promptChangeNote, setPromptChangeNote] = useState("");
   const [promptLoading, setPromptLoading] = useState(false);
-  const [confirmation, setConfirmation] = useState<{ message: string; onConfirm: () => void | Promise<void> } | null>(null);
+  const [confirmation, setConfirmation] = useState<{ title?: string; confirmLabel?: string; message: string; onConfirm: () => void | Promise<void> } | null>(null);
   const skillsPerPage = 10;
 
   useEffect(() => {
@@ -129,15 +129,31 @@ export default function Admin() {
 
   const activatePromptVersion = async () => {
     if (!promptKey || !selectedPromptVersion || selectedPromptVersion.isActive) return;
-    setConfirmation({ message: `${t("prompt_set_active")} v${selectedPromptVersion.version}?`, onConfirm: async () => {
-    try {
-      await adminApi.activatePromptVersion(promptKey, selectedPromptVersion.version);
-      const versions = await adminApi.getPromptVersions(promptKey);
-      setPromptVersions(versions);
-      setSelectedPromptVersion(versions.find((item) => item.version === selectedPromptVersion.version) ?? null);
-      const updatedPrompts = await adminApi.getPrompts();
-      setPrompts(updatedPrompts);
-    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : t("admin_prompt_activate_error")); }
+    const key = promptKey;
+    const version = selectedPromptVersion.version;
+    setConfirmation({ title: t("prompt_set_active"), confirmLabel: t("prompt_set_active"), message: `${t("prompt_set_active")} v${version}?`, onConfirm: async () => {
+      try {
+        await adminApi.activatePromptVersion(key, version);
+        const versions = await adminApi.getPromptVersions(key);
+        setPromptVersions(versions);
+        setSelectedPromptVersion(versions.find((item) => item.version === version) ?? null);
+        setPrompts(await adminApi.getPrompts());
+      } catch (requestError) { setError(requestError instanceof Error ? requestError.message : t("admin_prompt_activate_error")); }
+    } });
+  };
+
+  const deletePromptVersion = () => {
+    if (!promptKey || !selectedPromptVersion || selectedPromptVersion.isActive || promptVersions.length <= 1) return;
+    const key = promptKey;
+    const version = selectedPromptVersion.version;
+    setConfirmation({ title: t("common_delete"), confirmLabel: t("common_delete"), message: `Delete v${version}? This cannot be undone.`, onConfirm: async () => {
+      try {
+        await adminApi.deletePromptVersion(key, version);
+        const versions = await adminApi.getPromptVersions(key);
+        setPromptVersions(versions);
+        setSelectedPromptVersion(versions.find((item) => item.isActive) ?? versions[0] ?? null);
+        setPrompts(await adminApi.getPrompts());
+      } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Could not delete prompt version."); }
     } });
   };
 
@@ -319,7 +335,7 @@ export default function Admin() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-6 space-y-5">
-        <ConfirmDialog open={confirmation !== null} title={t("common_delete")} message={confirmation?.message ?? ""} onClose={() => setConfirmation(null)} onConfirm={async () => { if (confirmation) await confirmation.onConfirm(); setConfirmation(null); }} />
+        <ConfirmDialog open={confirmation !== null} title={confirmation?.title ?? t("common_delete")} confirmLabel={confirmation?.confirmLabel} message={confirmation?.message ?? ""} onClose={() => setConfirmation(null)} onConfirm={async () => { if (confirmation) await confirmation.onConfirm(); setConfirmation(null); }} />
         <PageHeader title={t("admin_title")} description={t("admin_description")} />
 
         {error && (
@@ -369,7 +385,7 @@ export default function Admin() {
                   <div className="bg-app-surface border border-app-border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between gap-3"><div><span className="text-xs font-semibold text-app-primary">v{selectedPromptVersion.version}</span>{selectedPromptVersion.isActive && <StatusBadge tone="success">{t("prompt_active")}</StatusBadge>} {!selectedPromptVersion.isActive && <span className="ml-2 text-[10px] text-app-muted">{t("prompt_previous")}</span>}</div><span className="text-[10px] text-app-faint">{formatDateTime(selectedPromptVersion.createdAt, locale)}</span></div>
                     {selectedPromptVersion.changeNote && <p className="text-xs text-app-muted">{selectedPromptVersion.changeNote}</p>}
-                    {editingPrompt ? <><p className="text-[11px] text-app-brand">{t("prompt_editing_based")} v{selectedPromptVersion.version}</p><textarea value={promptContent} onChange={(event) => setPromptContent(event.target.value)} rows={18} className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-xs font-mono text-app-primary outline-none focus:border-app-brand" /><input value={promptChangeNote} onChange={(event) => setPromptChangeNote(event.target.value)} placeholder={t("prompt_change_note")} className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" /><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingPrompt(false)}>{t("common_cancel")}</Button><Button variant="primary" onClick={() => void savePromptVersion()}>{t("prompt_save_version")}</Button></div></> : <><pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-md border border-app-border bg-app px-3 py-3 text-[11px] leading-relaxed text-app-secondary">{selectedPromptVersion.content}</pre><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setPromptContent(selectedPromptVersion.content); setPromptChangeNote(""); setEditingPrompt(true); }}>{t("common_edit")}</Button>{!selectedPromptVersion.isActive && <Button variant="primary" onClick={() => void activatePromptVersion()}>{t("prompt_set_active")}</Button>}</div></>}
+                    {editingPrompt ? <><p className="text-[11px] text-app-brand">{t("prompt_editing_based")} v{selectedPromptVersion.version}</p><textarea value={promptContent} onChange={(event) => setPromptContent(event.target.value)} rows={18} className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-xs font-mono text-app-primary outline-none focus:border-app-brand" /><input value={promptChangeNote} onChange={(event) => setPromptChangeNote(event.target.value)} placeholder={t("prompt_change_note")} className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary outline-none focus:border-app-brand" /><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEditingPrompt(false)}>{t("common_cancel")}</Button><Button variant="primary" onClick={() => void savePromptVersion()}>{t("prompt_save_version")}</Button></div></> : <><pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-md border border-app-border bg-app px-3 py-3 text-[11px] leading-relaxed text-app-secondary">{selectedPromptVersion.content}</pre><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setPromptContent(selectedPromptVersion.content); setPromptChangeNote(""); setEditingPrompt(true); }}>{t("common_edit")}</Button>{!selectedPromptVersion.isActive && <Button variant="primary" onClick={() => void activatePromptVersion()}>{t("prompt_set_active")}</Button>}{!selectedPromptVersion.isActive && promptVersions.length > 1 && <Button variant="danger" onClick={deletePromptVersion}>{t("common_delete")}</Button>}</div></>}
                   </div>
                 </div>
               </>
