@@ -486,6 +486,7 @@ export default function EditAssignment() {
                     }
                   />,
                 )}
+                {field("Start timing (relative)", <Input value={draft.startDateDescription ?? ""} onChange={(e) => update({ startDateDescription: e.target.value || null })} placeholder="e.g. Inom 1–2 månader" />)}
                 {field(
                   t("assignment_minimum_years"),
                   <Input
@@ -643,6 +644,7 @@ export default function EditAssignment() {
                       t("client_required_start_date"),
                       draft.requiredStartDate || t("common_not_specified"),
                     ],
+                    ["Start timing (relative)", draft.startDateDescription || t("common_not_specified")],
                     [
                       t("assignment_seniority_mode"),
                       seniority?.matchMode
