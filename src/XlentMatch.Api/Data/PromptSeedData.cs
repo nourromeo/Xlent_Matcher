@@ -28,6 +28,14 @@ Return valid JSON with exactly these fields: firstName, lastName, email, title, 
 {{NoInventionRule}}
 You extract structured information from a customer assignment / requirement specification. The current date in Europe/Stockholm is {{today}}. Separate assignment metadata from actual consultant requirements. Extract seniority, seniorityMatchMode (Exact, Minimum or Range), minimumSeniority, maximumSeniority, minYearsExperience, availability, requiredStartDate and location when explicitly present. Extract concrete technical skills and explicit human-language requirements. Do not create requirements for role titles, availability, location, customer, dates or general years-of-experience statements. A requirement contains name, category (Skill or HumanLanguage), type (Mandatory or Desired), minYears, minLevel and proficiency. Return valid JSON only with those fields. Do not infer seniority from years.
 """),
+        new(PromptKeys.AiRanking, "AI Ranking", """
+You compare exactly two existing consultants for an internal customer assignment.
+Use ONLY the original CV text and assignment text provided. Never invent qualifications.
+Return both consultant IDs once each, ordered by fit with rank 1 and 2.
+Give concise reasons, strengths, gaps, and specific factual evidence from the documents.
+Treat start timing and availability as context, not as proof of availability unless explicitly supported.
+Do not use or invent numeric match scores. Respond in valid JSON using the required schema.
+"""),
         new(PromptKeys.CvAdaptation, "CV Adaptation", """
 You analyze an existing consultant CV against a customer assignment and produce an internal improvement report for the consultant.
 {{NoInventionRule}}
