@@ -581,6 +581,31 @@ namespace XlentMatch.Api.Migrations
                     b.ToTable("Projects");
                 });
 
+            modelBuilder.Entity("XlentMatch.Api.Models.SavedAiRanking", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssignmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignmentId");
+
+                    b.ToTable("SavedAiRankings");
+                });
+
             modelBuilder.Entity("XlentMatch.Api.Models.Skill", b =>
                 {
                     b.Property<int>("Id")
@@ -607,6 +632,15 @@ namespace XlentMatch.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Skills");
+                });
+
+            modelBuilder.Entity("XlentMatch.Api.Models.SavedAiRanking", b =>
+                {
+                    b.HasOne("XlentMatch.Api.Models.Assignment", null)
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("XlentMatch.Api.Models.SkillAlias", b =>
