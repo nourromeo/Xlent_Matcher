@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import type { AiRankingResult } from "../services/matchingApi";
 import type { MatchResultApi } from "../types";
@@ -10,6 +11,10 @@ export default function AiRankingResults() {
   const state = location.state as ResultState | null;
   const aiRanking = state?.ranking;
   const allResults = state?.matches ?? [];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const ranked = [...(aiRanking?.rankings ?? [])].sort((a, b) => a.rank - b.rank);
+  const multiple = ranked.length > 2;
+  const displayed = multiple ? ranked.slice(activeIndex, activeIndex + 1) : ranked;
 
   return (
     <div className="h-full overflow-auto bg-app p-6">
@@ -17,7 +22,7 @@ export default function AiRankingResults() {
         <Link to={`/matching/${assignmentId}/ai-ranking`} className="text-xs text-app-muted hover:text-app-brand">← Tillbaka till val av konsulter</Link>
         <div>
           <h1 className="text-sm font-semibold text-app-primary">AI Ranking · Original CVs</h1>
-          <p className="mt-1 text-xs text-app-muted">AI comparison based on the two selected original CV documents and the assignment. Match Score is unchanged.</p>
+          <p className="mt-1 text-xs text-app-muted">AI comparison based on the selected original CV documents and the assignment. Match Score is unchanged.</p>
         </div>
         {!aiRanking ? (
           <div className="rounded-xl border border-app-border bg-app-surface p-6">
@@ -37,13 +42,29 @@ export default function AiRankingResults() {
                         return <>
                           <h3 className="text-base font-semibold text-app-primary">Recommended: {winnerName}</h3>
                           <p className="text-sm leading-relaxed text-app-secondary">{winner?.reason}</p>
-                          <p className="text-xs text-app-muted">Compared with {secondName}: {second?.reason}</p>
+                          {multiple ? <p className="text-xs text-app-muted">Compared with {ranked.length - 1} other consultants. {ranked.length} original CVs assessed.</p> : <p className="text-xs text-app-muted">Compared with {secondName}: {second?.reason}</p>}
                         </>;
                       })()}
                       <p className="border-t border-app-border pt-3 text-[11px] text-app-muted">AI assessment based on original CVs. No new numeric score. Final selection remains with the XLENT user.</p>
                     </section>
-                    <div className="grid gap-4 xl:grid-cols-2">
-                      {[...aiRanking.rankings].sort((a, b) => a.rank - b.rank).map((item) => {
+                    {multiple && (
+                      <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3" aria-label="AI Ranking Overview">
+                        <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-app-primary">AI Ranking Overview</h3><span className="text-xs text-app-muted">{ranked.length} jämförda</span></div>
+                        <div className="space-y-2">
+                          {ranked.map((item, index) => {
+                            const original = allResults.find(r => r.consultantId === item.consultantId);
+                            return <button key={item.consultantId} type="button" onClick={() => setActiveIndex(index)} aria-pressed={activeIndex === index} className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${activeIndex === index ? "border-app-brand bg-app-raised" : "border-app-border hover:bg-app-raised"}`}>
+                              <span className="w-9 shrink-0 text-sm font-semibold text-app-primary">#{item.rank}</span>
+                              <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-app-primary">{original?.consultantName ?? `Consultant #${item.consultantId}`}</span><span className="block text-xs text-app-muted">Original Match Score: {original?.score ?? "—"}%</span></span>
+                              {index === 0 && <span className="text-xs text-app-brand">Recommended</span>}
+                              <span className="text-app-muted">›</span>
+                            </button>;
+                          })}
+                        </div>
+                      </section>
+                    )}
+                    <div className={`grid gap-4 ${multiple ? "grid-cols-1" : "xl:grid-cols-2"}`}>
+                      {displayed.map((item) => {
                         const original = allResults.find((r) => r.consultantId === item.consultantId);
                         return (
                           <article key={item.consultantId} className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
@@ -58,6 +79,7 @@ export default function AiRankingResults() {
                         );
                       })}
                     </div>
+                    {multiple && <div className="flex items-center justify-between gap-3"><button type="button" disabled={activeIndex === 0} onClick={() => setActiveIndex(i => Math.max(0, i - 1))} className="rounded-md border border-app-border px-4 py-2 text-xs text-app-primary disabled:opacity-40">← Föregående</button><span className="text-xs text-app-muted">{activeIndex + 1} av {ranked.length}</span><button type="button" disabled={activeIndex === ranked.length - 1} onClick={() => setActiveIndex(i => Math.min(ranked.length - 1, i + 1))} className="rounded-md border border-app-border px-4 py-2 text-xs text-app-primary disabled:opacity-40">Nästa konsult →</button></div>}
           </>
         )}
       </div>
