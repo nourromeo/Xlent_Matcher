@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../i18n";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { assignmentsApi } from "../services/assignmentsApi";
-import { matchingApi } from "../services/matchingApi";
+import { matchingApi, type SavedAiRankingSummary } from "../services/matchingApi";
 import type { AssignmentApi, MatchResultApi } from "../types";
 
 export default function AiRankingSelection() {
@@ -19,6 +19,9 @@ export default function AiRankingSelection() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
+  const [saved, setSaved] = useState<SavedAiRankingSummary[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedError, setSavedError] = useState("");
   const [activeTab, setActiveTab] = useState<"new" | "saved">("new");
 
   useEffect(() => {
@@ -38,6 +41,18 @@ export default function AiRankingSelection() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab !== "saved" || !Number.isInteger(id) || id <= 0) return;
+    let cancelled = false;
+    setSavedLoading(true);
+    setSavedError("");
+    matchingApi.listSavedAiRankings(id)
+      .then(data => { if (!cancelled) setSaved(data); })
+      .catch(e => { if (!cancelled) setSavedError(e instanceof Error ? e.message : "Could not load saved rankings."); })
+      .finally(() => { if (!cancelled) setSavedLoading(false); });
+    return () => { cancelled = true; };
+  }, [id, activeTab]);
 
   const options = useMemo(() => results.filter(r =>
     eligible.includes(r.consultantId) && !selected.includes(r.consultantId) &&
@@ -73,7 +88,14 @@ export default function AiRankingSelection() {
         {activeTab === "saved" ? (
           <section role="tabpanel" className="rounded-xl border border-app-border bg-app-surface p-6 space-y-2">
             <h2 className="text-sm font-semibold text-app-primary">Saved AI Rankings</h2>
-            <p className="text-sm text-app-muted">No saved rankings yet. Saved comparisons will appear here once result saving is available.</p>
+            {savedLoading ? <p className="text-sm text-app-muted">Loading saved rankings...</p> : savedError ? <p role="alert" className="text-sm text-app-danger">{savedError}</p> : saved.length === 0 ? <p className="text-sm text-app-muted">No saved rankings yet.</p> : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead><tr className="border-b border-app-border text-xs text-app-muted"><th className="py-3 pr-4">Saved date</th><th className="py-3 pr-4">Best match</th><th className="py-3 pr-4">Consultants</th><th className="py-3">Action</th></tr></thead>
+                  <tbody>{saved.map(item => <tr key={item.id} className="border-b border-app-border-subtle last:border-0"><td className="py-3 pr-4">{new Date(item.createdAt).toLocaleString()}</td><td className="py-3 pr-4">{item.bestMatch}</td><td className="py-3 pr-4">{item.consultantCount}</td><td className="py-3"><Link className="text-app-brand hover:underline" to={`/matching/${id}/ai-ranking/saved/${item.id}`}>View →</Link></td></tr>)}</tbody>
+                </table>
+              </div>
+            )}
           </section>
         ) : loading ? <p className="text-sm text-app-muted">{t("ai_loading")}</p> : (
           <>
