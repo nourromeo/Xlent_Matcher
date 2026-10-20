@@ -1,5 +1,7 @@
+using System.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.Models;
 using XlentMatch.Api.Services;
@@ -51,6 +53,7 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         if (validation is not null) return BadRequest(validation);
 
         assignment.Id = 0;
+        assignment.ReferenceNumber = "";
         assignment.Status = AssignmentStatus.Draft;
         assignment.CreatedAt = DateTime.UtcNow;
         assignment.UpdatedAt = assignment.CreatedAt;
@@ -67,8 +70,25 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         var duplicateError = ValidateDuplicateRequirements(assignment.Requirements);
         if (duplicateError is not null) return BadRequest(duplicateError);
 
-        db.Assignments.Add(assignment);
-        await db.SaveChangesAsync(ct);
+        await using (var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct))
+        {
+            var prefix = $"UPP-{assignment.CreatedAt.Year}-";
+            var connection = db.Database.GetDbConnection();
+            await using var command = connection.CreateCommand();
+            command.Transaction = db.Database.CurrentTransaction!.GetDbTransaction();
+            command.CommandText = @"SELECT COALESCE(MAX(TRY_CONVERT(int, SUBSTRING([ReferenceNumber], 10, 32))), 0)
+                                    FROM [Assignments] WITH (TABLOCKX, HOLDLOCK)
+                                    WHERE [ReferenceNumber] LIKE @prefix";
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@prefix";
+            parameter.Value = prefix + "%";
+            command.Parameters.Add(parameter);
+            var current = Convert.ToInt32(await command.ExecuteScalarAsync(ct));
+            assignment.ReferenceNumber = $"{prefix}{current + 1:D4}";
+            db.Assignments.Add(assignment);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
 
         var created = await db.Assignments
             .Include(a => a.Requirements).ThenInclude(r => r.Skill)
