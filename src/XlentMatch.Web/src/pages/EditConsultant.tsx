@@ -333,14 +333,6 @@ export default function EditConsultant() {
                       onChange={(e) => update({ lastName: e.target.value })}
                     />
                   </FormField>
-                  <FormField label={t("consultant_role")}>
-                    <Input
-                      value={draft.title ?? ""}
-                      onChange={(e) =>
-                        update({ title: e.target.value || null })
-                      }
-                    />
-                  </FormField>
                   <FormField label={t("consultant_seniority")}>
                     <select
                       value={draft.seniority ?? ""}
@@ -1068,10 +1060,6 @@ export default function EditConsultant() {
                   [
                     t("consultant_full_name"),
                     `${draft.firstName} ${draft.lastName}`,
-                  ],
-                  [
-                    t("consultant_role"),
-                    draft.title || t("common_not_specified"),
                   ],
                   [
                     t("consultant_seniority"),
