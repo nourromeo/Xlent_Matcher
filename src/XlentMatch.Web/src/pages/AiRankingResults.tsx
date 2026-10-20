@@ -43,8 +43,8 @@ export default function AiRankingResults() {
                         </>;
                       })()}
                     </section>
-                    <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3" aria-label="{t("ai_overview")}">
-                        <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-app-primary">AI Ranking Overview</h3><span className="text-xs text-app-muted">{ranked.length} {t("ai_compared")}</span></div>
+                    <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3" aria-label={t("ai_overview")}>
+                        <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-app-primary">{t("ai_overview")}</h3><span className="text-xs text-app-muted">{ranked.length} {t("ai_compared")}</span></div>
                         <div className="space-y-2">
                           {ranked.map((item, index) => {
                             const original = allResults.find(r => r.consultantId === item.consultantId);
