@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle,
@@ -114,7 +114,7 @@ export default function Matching() {
         ? t("matching_partial")
         : t("matching_low");
   };
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { assignmentId: assignmentIdParam } = useParams<{ assignmentId: string }>();
   const location = useLocation();
 
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
@@ -136,7 +136,7 @@ export default function Matching() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
 
-  const assignmentId = Number(searchParams.get("assignment"));
+  const assignmentId = Number(assignmentIdParam);
   const assignment = assignments.find((item) => item.id === assignmentId);
   const fromAssignment = Boolean(
     (location.state as { fromAssignment?: boolean } | null)?.fromAssignment,
@@ -257,17 +257,6 @@ export default function Matching() {
     [consultants],
   );
 
-  const selectAssignment = (id: string) => {
-    setSelectedMatchId(null);
-    setExpanded(false);
-    setRankingTab("match");
-    setAiRanking(null);
-    setAiError("");
-    setResults([]);
-    setError("");
-    setSearchParams(id ? { assignment: id } : {});
-  };
-
   const required =
     assignment?.requirements.filter(
       (requirement) => requirement.type === "Mandatory",
@@ -349,89 +338,17 @@ export default function Matching() {
           description={
             assignment
               ? t("matching_review_selected")
-              : t("matching_select_assignment")
+              : t("matching_choose_title")
           }
           backTo={
             fromAssignment && assignment
               ? "/client-assignments/" + assignment.id
-              : undefined
+              : "/matching"
           }
-          backLabel={t("matching_back_assignment")}
+          backLabel={fromAssignment ? t("matching_back_assignment") : t("matching_back_selection")}
         />
 
-        {!fromAssignment ? (
-          <div className="mt-4 rounded-lg border border-app-border bg-app px-4 py-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
-                  {t("matching_client_assignment")}
-                </label>
-
-                <select
-                  value={assignment?.id ?? ""}
-                  onChange={(event) => selectAssignment(event.target.value)}
-                  className="w-full max-w-xl text-xs font-medium rounded px-3 py-2 focus:outline-none"
-                  style={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  <option value="">{t("matching_select_assignment")}</option>
-                  {assignments.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.title} · {item.customerName}
-                    </option>
-                  ))}
-                </select>
-
-                {assignment && (
-                  <div className="mt-2 flex items-center gap-x-3 gap-y-1 flex-wrap text-[10px] text-app-muted">
-                    <span>
-                      {t("assignment_seniority")}:{" "}
-                      <strong className="font-medium text-app-secondary">
-                        {assignment.seniority || "—"}
-                      </strong>
-                    </span>
-                    <span>
-                      {t("assignment_availability")}:{" "}
-                      <strong className="font-medium text-app-secondary">
-                        {assignment.availability || "—"}{" · Start: "}{assignment.startDateDescription || assignment.requiredStartDate || "—"}
-                      </strong>
-                    </span>
-                    <span>
-                      {t("assignment_required_skills")}:{" "}
-                      <strong className="font-medium text-app-secondary">
-                        {required.length}
-                      </strong>
-                    </span>
-                    <span className="truncate max-w-xl">
-                      {required
-                        .slice(0, 4)
-                        .map((item) => item.name)
-                        .join(" · ")}
-                      {required.length > 4 ? " +" + (required.length - 4) : ""}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 self-end">
-                {assignment && (
-                  <LinkButton
-                    to={"/client-assignments/" + assignment.id}
-                    variant="secondary"
-                    icon={<Eye size={12} />}
-                  >
-                    {t("matching_view_assignment")}
-                  </LinkButton>
-                )}
-
-                
-              </div>
-            </div>
-          </div>
-        ) : assignment ? (
+        {assignment ? (
           <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-app-border bg-app px-4 py-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
