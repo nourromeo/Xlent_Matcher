@@ -687,7 +687,7 @@ export default function CvAdaptation() {
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={printResult}>
-                  Print report
+                  {t("adapt_print")}
                 </Button>
                 <Button variant="ghost" onClick={clearResult}>
                   {t("adaptation_close")}
@@ -697,7 +697,7 @@ export default function CvAdaptation() {
 
             <section className="rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
               <p className="mb-3 text-sm font-medium text-app-primary">
-                Overall assessment
+                {t("adapt_overall")}
               </p>
               <p className="max-w-5xl text-sm leading-7 text-app-secondary">
                 {result.overallAssessment}
@@ -735,7 +735,7 @@ export default function CvAdaptation() {
 
             <section className="rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
               <p className="mb-3 text-sm font-medium text-app-primary">
-                Evidence from your CV
+                {t("adapt_evidence")}
               </p>
               <div className="space-y-2">
                 {result.evidence.length === 0 ? (
