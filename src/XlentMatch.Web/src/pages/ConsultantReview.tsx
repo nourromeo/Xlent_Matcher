@@ -26,7 +26,6 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     firstName: draft.firstName.trim(),
     lastName: draft.lastName.trim(),
     email: draft.email?.trim() || null,
-    title: draft.title?.trim() || null,
     summary: draft.summary?.trim() || null,
     seniority: draft.seniority?.trim() || null,
     yearsOfExperience: draft.yearsOfExperience,
@@ -113,7 +112,7 @@ export default function ConsultantReview() {
   const linkedConsultantId = replaceConsultantId ?? detectedConsultantId;
   const [existing, setExisting] = useState<Consultant | null>(null);
   const [approved, setApproved] = useState<string[]>([]);
-  const compareFields = ["firstName", "lastName", "email", "title", "summary", "seniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "languages", "experiences", "projects", "education", "industries", "certifications"] as const;
+  const compareFields = ["firstName", "lastName", "email", "summary", "seniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "languages", "experiences", "projects", "education", "industries", "certifications"] as const;
   const [draft, setDraft] = useState<ConsultantDraft | null>(null);
   const [step, setStep] = useState(0);
   const [editing, setEditing] = useState<string | null>(null);
@@ -521,13 +520,6 @@ export default function ConsultantReview() {
                   <Input
                     value={draft.lastName}
                     onChange={(e) => update({ lastName: e.target.value })}
-                  />,
-                )}
-                {field(
-                  t("upload_job_title"),
-                  <Input
-                    value={draft.title ?? ""}
-                    onChange={(e) => update({ title: e.target.value || null })}
                   />,
                 )}
                 {field(
@@ -983,12 +975,6 @@ export default function ConsultantReview() {
                     <p>
                       {draft.firstName} {draft.lastName}
                     </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-app-muted">
-                      {t("consultant_role")}
-                    </p>
-                    <p>{draft.title || t("common_not_specified")}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-app-muted">
