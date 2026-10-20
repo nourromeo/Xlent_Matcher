@@ -78,7 +78,7 @@ export default function AiRankingSelection() {
                   <div key={consultantId} className="flex items-center gap-3 rounded-lg border border-app-border p-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-app-primary">{person?.consultantName ?? consultantId}</p>
-                      <p className="text-xs text-app-muted">Match Score {person?.score ?? "—"}% · CV finns</p>
+                      <p className="text-xs text-app-muted">Match Score {person?.score ?? "—"}%</p>
                     </div>
                     <button type="button" onClick={() => { setSelected(v => v.filter(x => x !== consultantId)); }} className="text-xs text-app-muted hover:text-app-primary" aria-label={`Ta bort ${person?.consultantName}`}>Ta bort ×</button>
                   </div>
@@ -95,7 +95,6 @@ export default function AiRankingSelection() {
                       return (
                         <button key={person.consultantId} type="button" disabled={selected.length >= 5} onClick={() => { setSelected(v => v.length >= 5 ? v : [...v, person.consultantId]); setSearch(""); setOpen(false); }} className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-app-raised disabled:opacity-50 disabled:cursor-not-allowed">
                           <span className="min-w-0"><span className="block text-sm text-app-primary">{person.consultantName}</span><span className="text-xs text-app-muted">Match Score {person.score}%</span></span>
-                          <span className="shrink-0 text-xs text-app-success">CV finns</span>
                         </button>
                       );
                     })}
