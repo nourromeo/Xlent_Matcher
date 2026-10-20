@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FileText,
   Briefcase,
-  GitMerge,
   Users,
-  Clock,
   CheckCircle,
   AlertCircle,
   ArrowUpRight,
@@ -19,7 +17,6 @@ import { matchingApi } from "../services/matchingApi";
 import type { AssignmentApi, Consultant, MatchResultApi } from "../types";
 import { useI18n } from "../i18n";
 import { formatDateTime } from "../services/localeFormat";
-import { matchCategory } from "../services/matchCategory";
 
 function StatCard({
   label,
@@ -82,15 +79,6 @@ export default function Dashboard() {
   const [matches, setMatches] = useState<MatchResultApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [dismissedMatchIds, setDismissedMatchIds] = useState<number[]>(() => {
-    try {
-      const stored = window.localStorage.getItem("dashboard.dismissedMatchIds");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
-
   useEffect(() => {
     let cancelled = false;
 
@@ -170,42 +158,20 @@ export default function Dashboard() {
     return best;
   }, [matches]);
   const matchedAssignments = bestMatchByAssignment.size;
-  const assignmentsNeedingMatching = Math.max(
-    0,
-    assignments.length - matchedAssignments,
-  );
-  const orderedAssignments = useMemo(
-    () =>
-      assignments
-        .map((assignment, index) => ({ assignment, index }))
-        .sort((a, b) => {
-          const aNeedsMatching = !bestMatchByAssignment.has(a.assignment.id);
-          const bNeedsMatching = !bestMatchByAssignment.has(b.assignment.id);
-          return (
-            Number(bNeedsMatching) - Number(aNeedsMatching) || a.index - b.index
-          );
-        })
-        .map(({ assignment }) => assignment),
-    [assignments, bestMatchByAssignment],
-  );
-  const visibleAssignments = orderedAssignments.slice(0, 6);
-  const processingUploads = uploads.filter(
-    (item) => item.status === "Extracting" || item.status === "Review",
-  ).length;
+  const latestMatchedAssignments = useMemo(() => {
+    return [...bestMatchByAssignment.entries()]
+      .map(([assignmentId, match]) => ({
+        assignment: assignmentById.get(assignmentId),
+        match,
+        lastMatchedAt: matches
+          .filter((item) => item.assignmentId === assignmentId)
+          .reduce((latest, item) => Math.max(latest, new Date(item.createdAt).getTime()), 0),
+      }))
+      .filter((item) => item.assignment !== undefined)
+      .sort((a, b) => b.lastMatchedAt - a.lastMatchedAt)
+      .slice(0, 5);
+  }, [assignmentById, bestMatchByAssignment, matches]);
   const recentUploads = uploads.slice(0, 5);
-  const recentMatches = matches
-    .filter((match) => !dismissedMatchIds.includes(match.id))
-    .slice(0, 6);
-
-  const clearRecentMatches = () => {
-    const idsToDismiss = matches.map((match) => match.id);
-    setDismissedMatchIds(idsToDismiss);
-    window.localStorage.setItem(
-      "dashboard.dismissedMatchIds",
-      JSON.stringify(idsToDismiss),
-    );
-  };
-
   return (
     <div className="p-6 space-y-6">
       <PageHeader
@@ -219,7 +185,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard
           label={t("dashboard_consultants_label")}
           value={loading ? "—" : String(consultants.length)}
@@ -239,12 +205,7 @@ export default function Dashboard() {
           sub={t("dashboard_matched_sub")}
           icon={GitMerge}
         />
-        <StatCard
-          label={t("dashboard_needs_matching")}
-          value={loading ? "—" : String(assignmentsNeedingMatching)}
-          sub={t("dashboard_needs_matching_sub")}
-          icon={Clock}
-        />
+
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -307,14 +268,12 @@ export default function Dashboard() {
         <section className="order-first xl:col-span-2 bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
           <div className="flex items-center justify-between px-4 py-3 border-b border-app-border">
             <div>
-              <p className="text-xs font-medium text-app-primary">
-                {t("dashboard_overview")}
-              </p>
+              <p className="text-xs font-medium text-app-primary">Senaste matchningar</p>
               <p className="text-[10px] text-app-muted mt-0.5">
-                {t("dashboard_matches_sub")}
+                De 5 senast beräknade kunduppdragen
               </p>
             </div>
-            {assignments.length > 6 && (
+            {assignments.length > 5 && (
               <Link
                 to="/client-assignments"
                 className="shrink-0 text-[10px] text-app-brand hover:text-app-primary"
@@ -324,75 +283,35 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_90px_120px] gap-3 px-4 py-2 border-b border-app-border text-[10px] uppercase tracking-wide text-app-faint">
+          <div className="hidden md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_110px_24px] gap-3 px-4 py-2 border-b border-app-border text-[10px] uppercase tracking-wide text-app-faint">
             <span>{t("dashboard_assignment")}</span>
             <span>{t("dashboard_best_consultant")}</span>
             <span>{t("dashboard_score")}</span>
-            <span>{t("dashboard_status")}</span>
+            <span>Senast</span>
             <span />
           </div>
 
-          {assignments.length === 0 && !loading ? (
+          {latestMatchedAssignments.length === 0 && !loading ? (
             <p className="px-4 py-8 text-xs text-app-faint text-center">
               {t("dashboard_no_matches")}
             </p>
           ) : (
             <div>
-              {visibleAssignments.map((assignment) => {
-                const match = bestMatchByAssignment.get(assignment.id);
-                const row = match
-                  ? `/matching?assignment=${assignment.id}`
-                  : `/matching?assignment=${assignment.id}`;
-                const content = (
-                  <div className="grid grid-cols-1 gap-2 px-4 py-3 border-b border-app-border-subtle last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_90px_120px] md:items-center md:gap-3">
-                    <p className="text-xs font-medium text-app-primary truncate">
-                      {assignment.title}
-                    </p>
-                    <p className="text-xs text-app-secondary truncate">
-                      {match?.consultantName || "—"}
-                    </p>
-                    <span className="text-xs font-mono text-app-primary">
-                      {match ? `${match.score}%` : "—"}
-                    </span>
-                    <span
-                      className={`text-[10px] ${match ? "text-app-secondary" : "text-app-muted"}`}
-                    >
-                      {match
-                        ? t(
-                            `matching_${matchCategory(match.score).toLowerCase()}` as never,
-                          )
-                        : t("dashboard_unmatched")}
-                    </span>
-                    {match ? (
-                      <ChevronRight
-                        size={14}
-                        className="text-app-muted md:justify-self-end"
-                      />
-                    ) : (
-                      <span className="whitespace-nowrap text-[10px] text-app-brand md:justify-self-end">
-                        {t("dashboard_run_matching")}
-                      </span>
-                    )}
+              {latestMatchedAssignments.map(({ assignment, match }) => (
+                <Link
+                  key={assignment!.id}
+                  to={`/matching?assignment=${assignment!.id}`}
+                  className="block hover:bg-app-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand"
+                >
+                  <div className="grid grid-cols-1 gap-2 px-4 py-3 border-b border-app-border-subtle last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_110px_24px] md:items-center md:gap-3">
+                    <p className="text-xs font-medium text-app-primary truncate">{assignment!.title}</p>
+                    <p className="text-xs text-app-secondary truncate">{match.consultantName}</p>
+                    <span className="text-xs font-mono text-app-primary">{match.score}%</span>
+                    <span className="text-[10px] text-app-muted">{formatDateTime(match.createdAt, locale)}</span>
+                    <ChevronRight size={14} className="text-app-muted md:justify-self-end" />
                   </div>
-                );
-                return match ? (
-                  <Link
-                    key={assignment.id}
-                    to={row}
-                    className="block hover:bg-app-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand"
-                  >
-                    {content}
-                  </Link>
-                ) : (
-                  <Link
-                    key={assignment.id}
-                    to={row}
-                    className="block hover:bg-app-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand"
-                  >
-                    {content}
-                  </Link>
-                );
-              })}
+                </Link>
+              ))}
             </div>
           )}
         </section>
