@@ -357,7 +357,7 @@ export default function Matching() {
                 </p>
                 <span className="text-[10px] text-app-faint">·</span>
                 <p className="text-xs text-app-secondary truncate">
-                  {assignment.customerName}
+                  {assignment.customerName} · {assignment.referenceNumber}
                 </p>
               </div>
               <div className="mt-1.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[10px] text-app-muted">
