@@ -34,9 +34,7 @@ export default function AiRankingResults() {
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">AI Comparison Summary</p>
                       {(() => {
                         const winner = aiRanking.rankings.find((item) => item.rank === 1);
-                        const second = aiRanking.rankings.find((item) => item.rank === 2);
                         const winnerName = allResults.find((item) => item.consultantId === winner?.consultantId)?.consultantName ?? "Consultant";
-                        const secondName = allResults.find((item) => item.consultantId === second?.consultantId)?.consultantName ?? "the other consultant";
                         return <>
                           <h3 className="text-base font-semibold text-app-primary">Recommended: {winnerName}</h3>
                           <p className="text-sm leading-relaxed text-app-secondary">{winner?.reason}</p>
@@ -66,7 +64,6 @@ export default function AiRankingResults() {
                           <article key={item.consultantId} className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
                             <p className="text-xs font-semibold text-app-brand">AI Rank #{item.rank}</p>
                             <h3 className="text-sm font-semibold text-app-primary">{original?.consultantName ?? `Consultant #${item.consultantId}`}</h3>
-                            <p className="text-xs text-app-muted">Original Match Score: {original?.score ?? "—"}%</p>
                             <p className="text-xs text-app-secondary leading-relaxed">{item.reason}</p>
                             <div><h4 className="text-xs font-semibold text-app-primary">Strengths</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.strengths.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
                             <div><h4 className="text-xs font-semibold text-app-primary">Gaps</h4><ul className="mt-1 list-disc pl-4 text-xs text-app-secondary space-y-1">{item.gaps.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
