@@ -40,6 +40,7 @@ export default function App() {
           <Route path="matching/:assignmentId" element={<Matching />} />
           <Route path="matching/:assignmentId/ai-ranking" element={<AiRankingSelection />} />
           <Route path="matching/:assignmentId/ai-ranking/results" element={<AiRankingResults />} />
+          <Route path="matching/:assignmentId/ai-ranking/saved/:savedId" element={<AiRankingResults />} />
           <Route path="how-it-works" element={<HowItWorks />} />
           <Route path="cv-upload" element={<CvUpload />} />
           <Route path="cv-upload/review" element={<ConsultantReview />} />
