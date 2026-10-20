@@ -249,10 +249,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Summary")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Title")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("YearsOfExperience")
+                                        b.Property<int?>("YearsOfExperience")
                         .HasColumnType("int");
 
                     b.Property<string>("YearsOfExperienceSource")
