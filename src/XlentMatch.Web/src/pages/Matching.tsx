@@ -230,10 +230,6 @@ export default function Matching() {
     [consultants],
   );
 
-  const required =
-    assignment?.requirements.filter(
-      (requirement) => requirement.type === "Mandatory",
-    ) ?? [];
   const selectedConsultant = selected
     ? consultantById.get(selected.consultantId)
     : undefined;
