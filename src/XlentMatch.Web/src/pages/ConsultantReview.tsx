@@ -15,9 +15,18 @@ import type { Consultant } from "../types";
 const storageKey = (id: string | null) => `xlent-cv-review-${id ?? "unknown"}`;
 const dateOnly = (value: string | null) => {
   const normalized = value?.trim() || null;
-  if (!normalized) return null;
-  if (/^\d{4}-\d{2}$/.test(normalized)) return `${normalized}-01`;
-  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : null;
+  if (!normalized || /^(nuvarande|pågående|present|current|ongoing)$/i.test(normalized)) return null;
+  // DateOnly requires a day. Do not fabricate January for year-only CV dates.
+  if (/^\\d{4}$/.test(normalized)) return null;
+  const candidate = /^\\d{4}-\\d{2}$/.test(normalized) ? `${normalized}-01` : normalized;
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(candidate)) return null;
+  const date = new Date(`${candidate}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === candidate ? candidate : null;
+};
+const invalidCvDate = (value: string | null) => {
+  const raw = value?.trim();
+  return !!raw && !/^(nuvarande|pågående|present|current|ongoing)$/i.test(raw)
+    && !/^\\d{4}$/.test(raw) && dateOnly(raw) === null;
 };
 
 function toConsultant(draft: ConsultantDraft): Consultant {
@@ -194,6 +203,15 @@ export default function ConsultantReview() {
     if (!draft || !draft.firstName.trim() || !draft.lastName.trim()) {
       setError(t("upload_required_names"));
       setStep(0);
+      return;
+    }
+    const invalidExperience = draft.experiences.findIndex((x) =>
+      invalidCvDate(x.startDate) || invalidCvDate(x.endDate) ||
+      (dateOnly(x.startDate) && dateOnly(x.endDate) && dateOnly(x.endDate)! < dateOnly(x.startDate)!)
+    );
+    if (invalidExperience !== -1) {
+      setError(`Invalid employment date in experience ${invalidExperience + 1}. Review start/end dates (YYYY-MM or YYYY-MM-DD). For ongoing employment, leave end date empty.`);
+      setStep(2);
       return;
     }
     setSaving(true);
