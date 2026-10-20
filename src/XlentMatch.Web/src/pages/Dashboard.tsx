@@ -167,7 +167,7 @@ export default function Dashboard() {
           .filter((item) => item.assignmentId === assignmentId)
           .reduce((latest, item) => Math.max(latest, new Date(item.createdAt).getTime()), 0),
       }))
-      .filter((item) => item.assignment !== undefined)
+      .filter((item): item is typeof item & { assignment: AssignmentApi } => item.assignment !== undefined)
       .sort((a, b) => b.lastMatchedAt - a.lastMatchedAt)
       .slice(0, 5);
   }, [assignmentById, bestMatchByAssignment, matches]);
@@ -297,17 +297,17 @@ export default function Dashboard() {
             </p>
           ) : (
             <div>
-              {latestMatchedAssignments.map(({ assignment, match }) => (
+              {latestMatchedAssignments.map(({ assignment, match, lastMatchedAt }) => (
                 <Link
-                  key={assignment!.id}
-                  to={`/matching?assignment=${assignment!.id}`}
+                  key={assignment.id}
+                  to={`/matching?assignment=${assignment.id}`}
                   className="block hover:bg-app-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-app-brand"
                 >
                   <div className="grid grid-cols-1 gap-2 px-4 py-3 border-b border-app-border-subtle last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_80px_110px_24px] md:items-center md:gap-3">
-                    <p className="text-xs font-medium text-app-primary truncate">{assignment!.title}</p>
+                    <p className="text-xs font-medium text-app-primary truncate">{assignment.title}</p>
                     <p className="text-xs text-app-secondary truncate">{match.consultantName}</p>
                     <span className="text-xs font-mono text-app-primary">{match.score}%</span>
-                    <span className="text-[10px] text-app-muted">{formatDateTime(match.createdAt, locale)}</span>
+                    <span className="text-[10px] text-app-muted">{formatDateTime(new Date(lastMatchedAt).toISOString(), locale)}</span>
                     <ChevronRight size={14} className="text-app-muted md:justify-self-end" />
                   </div>
                 </Link>
