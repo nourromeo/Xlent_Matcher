@@ -96,6 +96,11 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("MinYearsExperience")
                         .HasColumnType("int");
 
+                    b.Property<string>("ReferenceNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<DateOnly?>("RequiredStartDate")
                         .HasColumnType("date");
 
@@ -116,6 +121,9 @@ namespace XlentMatch.Api.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ReferenceNumber")
+                        .IsUnique();
 
                     b.ToTable("Assignments");
                 });
