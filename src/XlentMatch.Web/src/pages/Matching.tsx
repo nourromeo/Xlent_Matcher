@@ -501,31 +501,7 @@ export default function Matching() {
                               t("consultant_role")}
                           </p>
                           {cvEligible !== null && <p className={`mt-1 text-[10px] ${cvEligible.has(result.consultantId) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(result.consultantId) ? "CV finns" : "CV saknas"}</p>}
-                          <div className="mt-2">
-                            {missing.length === 0 ? (
-                              <div
-                                className="flex items-center gap-1 text-[10px] text-app-success"
-                              >
-                                <CheckCircle size={9} />
-                                {result.matchedMandatory}/
-                                {result.totalMandatory} {t("matching_matched")}
-                              </div>
-                            ) : (
-                              <div
-                                className="flex items-center gap-1 text-[10px] text-app-warning"
-                              >
-                                <AlertTriangle size={9} />
-                                {t("matching_missing_prefix")}{" "}
-                                {missing
-                                  .slice(0, 2)
-                                  .map((item) => item.requirementName)
-                                  .join(", ")}
-                                {missing.length > 2
-                                  ? ` +${missing.length - 2}`
-                                  : ""}
-                              </div>
-                            )}
-                          </div>
+
                         </div>
                       </div>
                     </button>
