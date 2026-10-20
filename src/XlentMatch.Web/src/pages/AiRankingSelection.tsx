@@ -19,6 +19,7 @@ export default function AiRankingSelection() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"new" | "saved">("new");
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +66,16 @@ export default function AiRankingSelection() {
           <h1 className="text-xl font-semibold text-app-primary">{t("ai_select_title")}</h1>
           <p className="mt-1 text-xs text-app-muted">{assignment ? `${assignment.title} · ${assignment.referenceNumber}` : t("ai_select_hint")}</p>
         </div>
-        {loading ? <p className="text-sm text-app-muted">{t("ai_loading")}</p> : (
+        <div className="flex gap-1 border-b border-app-border" role="tablist" aria-label="AI Ranking views">
+          <button type="button" role="tab" aria-selected={activeTab === "new"} onClick={() => setActiveTab("new")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "new" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>New AI Ranking</button>
+          <button type="button" role="tab" aria-selected={activeTab === "saved"} onClick={() => setActiveTab("saved")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "saved" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>Saved Rankings</button>
+        </div>
+        {activeTab === "saved" ? (
+          <section role="tabpanel" className="rounded-xl border border-app-border bg-app-surface p-6 space-y-2">
+            <h2 className="text-sm font-semibold text-app-primary">Saved AI Rankings</h2>
+            <p className="text-sm text-app-muted">No saved rankings yet. Saved comparisons will appear here once result saving is available.</p>
+          </section>
+        ) : loading ? <p className="text-sm text-app-muted">{t("ai_loading")}</p> : (
           <>
             <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
               <div className="flex items-center justify-between">
