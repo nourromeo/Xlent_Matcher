@@ -241,7 +241,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         var record = new SavedAiRanking
         {
             AssignmentId = assignmentId,
-            SnapshotJson = System.Text.Json.JsonSerializer.Serialize(snapshot)
+            SnapshotJson = System.Text.Json.JsonSerializer.Serialize(snapshot, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))
         };
         db.SavedAiRankings.Add(record);
         await db.SaveChangesAsync(ct);
@@ -262,10 +262,10 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
             using var doc = System.Text.Json.JsonDocument.Parse(x.SnapshotJson);
             var ranks = doc.RootElement.GetProperty("rankings");
             var matches = doc.RootElement.GetProperty("matches");
-            var firstId = ranks.EnumerateArray().First().GetProperty("ConsultantId").GetInt32();
+            var firstId = ranks.EnumerateArray().First().GetProperty("consultantId").GetInt32();
             var winner = matches.EnumerateArray().FirstOrDefault(m => m.GetProperty("ConsultantId").GetInt32() == firstId);
             return new { x.Id, x.CreatedAt, consultantCount = ranks.GetArrayLength(),
-                bestMatch = winner.ValueKind == System.Text.Json.JsonValueKind.Undefined ? "Consultant" : winner.GetProperty("ConsultantName").GetString() };
+                bestMatch = winner.ValueKind == System.Text.Json.JsonValueKind.Undefined ? "Consultant" : winner.GetProperty("consultantName").GetString() };
         }).ToList());
     }
 
