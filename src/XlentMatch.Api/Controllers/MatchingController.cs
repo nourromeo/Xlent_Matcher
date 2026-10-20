@@ -58,7 +58,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         db.MatchResults.AddRange(results);
 
         var trackedAssignment = await db.Assignments.FirstAsync(a => a.Id == assignment.Id, ct);
-        trackedAssignment.Status = AssignmentStatus.Done;
+        trackedAssignment.Status = AssignmentStatus.Matched;
 
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Matching completed: AssignmentId={AssignmentId}, Consultants={ConsultantCount}, Requirements={RequirementCount}, QueryMs={QueryMs}, CalculationMs={CalculationMs}, TotalMs={TotalMs}",
