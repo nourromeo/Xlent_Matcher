@@ -18,7 +18,7 @@ export type Assignment = {
 export type RequirementTypeApi = "Mandatory" | "Desired";
 export type RequirementCategoryApi = "Skill" | "HumanLanguage" | "Seniority";
 export type SeniorityMatchModeApi = "Exact" | "Minimum" | "Range";
-export type AssignmentStatusApi = "Draft" | "Matching" | "Done" | "Closed";
+export type AssignmentStatusApi = "Draft" | "Matched" | "Matching" | "Done" | "Closed";
 
 export type AssignmentRequirementApi = {
   id: number;
