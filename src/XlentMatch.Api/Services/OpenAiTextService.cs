@@ -293,7 +293,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         ["properties"] = new JsonObject
         {
             ["firstName"] = new JsonObject { ["type"] = "string" }, ["lastName"] = new JsonObject { ["type"] = "string" },
-            ["email"] = NullableString(), ["title"] = NullableString(), ["summary"] = NullableString(), ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["suggestedSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["yearsOfExperience"] = NullableInteger(), ["yearsOfExperienceSource"] = NullableString(), ["office"] = NullableString(),
+            ["email"] = NullableString(), ["summary"] = NullableString(), ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["suggestedSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["yearsOfExperience"] = NullableInteger(), ["yearsOfExperienceSource"] = NullableString(), ["office"] = NullableString(),
             ["skills"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["level"] = new JsonObject { ["type"] = "integer" }, ["years"] = NullableInteger(), ["evidence"] = NullableString() }, ["required"] = Required("name", "level", "years", "evidence") }),
             ["experiences"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["company"] = new JsonObject { ["type"] = "string" }, ["role"] = new JsonObject { ["type"] = "string" }, ["description"] = NullableString(), ["startDate"] = NullableString(), ["endDate"] = NullableString() }, ["required"] = Required("company", "role", "description", "startDate", "endDate") }),
             ["projects"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["description"] = NullableString(), ["technologies"] = NullableString() }, ["required"] = Required("name", "description", "technologies") }),
@@ -303,7 +303,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             ["certifications"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["issuer"] = NullableString(), ["issuedDate"] = NullableString(), ["issuedYear"] = NullableString() }, ["required"] = Required("name", "issuer", "issuedDate", "issuedYear") }),
             ["sourceText"] = NullableString()
         },
-        ["required"] = Required("firstName", "lastName", "email", "title", "summary", "seniority", "suggestedSeniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "experiences", "projects", "education", "languages", "industries", "certifications", "sourceText")
+        ["required"] = Required("firstName", "lastName", "email", "summary", "seniority", "suggestedSeniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "experiences", "projects", "education", "languages", "industries", "certifications", "sourceText")
     };
 
 
