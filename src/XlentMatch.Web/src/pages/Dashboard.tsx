@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FileText,
   Briefcase,
+  GitMerge,
   Users,
   CheckCircle,
   AlertCircle,
