@@ -117,6 +117,7 @@ export default function ConsultantReview() {
   const [identityChoice, setIdentityChoice] = useState<number | "new" | null>(null);
   const [consultantOptions, setConsultantOptions] = useState<Consultant[]>([]);
   const [identityError, setIdentityError] = useState(false);
+  const identityStepShown = !replaceConsultantId && (detectionMatches.length > 0 || identityChoice !== null);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -520,7 +521,7 @@ export default function ConsultantReview() {
               onClick={() => setStep(index)}
               className={`rounded-lg border px-3 py-2 text-left text-xs ${step === index ? "border-app-brand bg-app-brand-soft text-app-primary" : "border-app-border text-app-muted"}`}
             >
-              <span className="font-semibold">{index + 1}</span>
+              <span className="font-semibold">{index + 1 + (identityStepShown ? 1 : 0)}</span>
               <span className="ml-2">{label}</span>
             </button>
           ))}
