@@ -355,6 +355,10 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int?>("ConsultantId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ContentHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("ContentType")
                         .HasColumnType("nvarchar(max)");
 
@@ -387,6 +391,8 @@ namespace XlentMatch.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ConsultantId");
+
+                    b.HasIndex("ContentHash");
 
                     b.HasIndex("ConsultantId", "IsActive")
                         .IsUnique()
