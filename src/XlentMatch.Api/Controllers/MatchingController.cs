@@ -68,8 +68,40 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
     }
 
 
+    [HttpGet("assignment/{assignmentId:int}/ai-eligibility")]
+    public async Task<ActionResult<object>> GetAiEligibility(int assignmentId, CancellationToken ct)
+    {
+        if (!await db.Assignments.AnyAsync(a => a.Id == assignmentId, ct)) return NotFound();
+        var ranked = await db.MatchResults.AsNoTracking()
+            .Where(m => m.AssignmentId == assignmentId)
+            .OrderBy(m => m.Rank).ThenByDescending(m => m.Score)
+            .Select(m => m.ConsultantId).Distinct().ToListAsync(ct);
+        var uploads = await db.CvUploads.AsNoTracking()
+            .Where(cv => cv.IsActive && cv.Status == "Indexed" && cv.StorageKey != null
+                && cv.ConsultantId != null && ranked.Contains(cv.ConsultantId.Value))
+            .OrderByDescending(cv => cv.UploadedAt).ToListAsync(ct);
+        var latest = uploads.GroupBy(cv => cv.ConsultantId!.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+        var eligible = new List<int>();
+        foreach (var id in ranked)
+        {
+            if (!latest.TryGetValue(id, out var cv)) continue;
+            var path = Path.Combine(environment.ContentRootPath, "private-cvs", Path.GetFileName(cv.StorageKey!));
+            if (System.IO.File.Exists(path) &&
+                (Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase) ||
+                 Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase)))
+                eligible.Add(id);
+        }
+        return Ok(new { eligibleConsultantIds = eligible });
+    }
+
+    public sealed class AiRankingRequest
+    {
+        public List<int>? ConsultantIds { get; set; }
+    }
+
     [HttpPost("assignment/{assignmentId:int}/ai-ranking")]
-    public async Task<ActionResult<AiRankingResultDto>> RankOriginalCvs(int assignmentId, CancellationToken ct)
+    public async Task<ActionResult<AiRankingResultDto>> RankOriginalCvs(int assignmentId, [FromBody] AiRankingRequest? request, CancellationToken ct)
     {
         var assignment = await db.Assignments.Include(a => a.Requirements)
             .AsNoTracking().FirstOrDefaultAsync(a => a.Id == assignmentId, ct);
@@ -80,6 +112,15 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
             .OrderBy(m => m.Rank).ThenByDescending(m => m.Score)
             .Select(m => m.ConsultantId).Distinct().ToListAsync(ct);
         if (ranked.Count == 0) return BadRequest("Run Matching before AI Ranking.");
+
+        if (request?.ConsultantIds is { } chosen)
+        {
+            if (chosen.Count != 2 || chosen.Distinct().Count() != 2)
+                return BadRequest("Select exactly two different consultants.");
+            if (chosen.Any(id => !ranked.Contains(id)))
+                return BadRequest("Selected consultants must belong to this assignment's matching results.");
+            ranked = chosen;
+        }
 
         var originals = await db.CvUploads.AsNoTracking()
             .Where(cv => cv.IsActive && cv.Status == "Indexed" && cv.StorageKey != null && cv.ConsultantId != null && ranked.Contains(cv.ConsultantId.Value))
