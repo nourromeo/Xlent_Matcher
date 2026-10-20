@@ -48,6 +48,18 @@ public partial class AddAssignmentReferenceNumber : Migration
             oldMaxLength: 32,
             oldNullable: true);
 
+        migrationBuilder.Sql(@"
+            CREATE TABLE [AssignmentReferenceCounters] (
+                [Year] int NOT NULL PRIMARY KEY,
+                [LastNumber] int NOT NULL
+            );
+            INSERT INTO [AssignmentReferenceCounters] ([Year], [LastNumber])
+            SELECT YEAR([CreatedAt]),
+                   MAX(TRY_CONVERT(int, SUBSTRING([ReferenceNumber], 10, 32)))
+            FROM [Assignments]
+            GROUP BY YEAR([CreatedAt]);
+        ");
+
         migrationBuilder.CreateIndex(
             name: "IX_Assignments_ReferenceNumber",
             table: "Assignments",
@@ -57,6 +69,7 @@ public partial class AddAssignmentReferenceNumber : Migration
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
+        migrationBuilder.Sql("DROP TABLE [AssignmentReferenceCounters]");
         migrationBuilder.DropIndex(name: "IX_Assignments_ReferenceNumber", table: "Assignments");
         migrationBuilder.DropColumn(name: "ReferenceNumber", table: "Assignments");
     }
