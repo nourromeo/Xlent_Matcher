@@ -1284,6 +1284,7 @@ export default function ClientAssignments() {
 
     return (
       assignment.title.toLowerCase().includes(search) ||
+      assignment.referenceNumber.toLowerCase().includes(search) ||
       assignment.customerName.toLowerCase().includes(search) ||
       (assignment.description ?? "").toLowerCase().includes(search) ||
       (assignment.seniority ?? "").toLowerCase().includes(search) ||
@@ -1345,7 +1346,7 @@ export default function ClientAssignments() {
                 <div className="min-w-0">
                   <p className="truncate font-medium text-app-primary">{assignment.title}</p>
                   <p className="truncate text-[10px] text-app-muted">
-                    {assignment.location || t("assignment_location_unspecified")}
+                    {assignment.referenceNumber}
                   </p>
                 </div>
               ),
