@@ -706,10 +706,10 @@ export default function CvAdaptation() {
 
             <section className="grid lg:grid-cols-2 gap-4">
               {[
-                ["Your strengths", result.strengths],
-                ["Relevant experience to highlight", result.relevantExperience],
-                ["Missing / weak areas", result.missingOrWeakAreas],
-                ["Suggested improvements", result.suggestedImprovements],
+                [t("adapt_strengths"), result.strengths],
+                [t("adapt_experience"), result.relevantExperience],
+                [t("adapt_weak"), result.missingOrWeakAreas],
+                [t("adapt_improve"), result.suggestedImprovements],
               ].map(([title, items]) => (
                 <div
                   key={title as string}
@@ -720,7 +720,7 @@ export default function CvAdaptation() {
                   </p>
                   <div className="space-y-2">
                     {(items as string[]).length === 0 ? (
-                      <p className="text-xs text-app-faint">No items identified.</p>
+                      <p className="text-xs text-app-faint">{t("adapt_empty")}</p>
                     ) : (
                       (items as string[]).map((item, index) => (
                         <p key={index} className="text-sm leading-6 text-app-secondary">
@@ -739,7 +739,7 @@ export default function CvAdaptation() {
               </p>
               <div className="space-y-2">
                 {result.evidence.length === 0 ? (
-                  <p className="text-xs text-app-faint">No supporting evidence identified.</p>
+                  <p className="text-xs text-app-faint">{t("adapt_no_evidence")}</p>
                 ) : (
                   result.evidence.map((item, index) => (
                     <p key={index} className="text-sm leading-6 text-app-secondary">
@@ -782,16 +782,16 @@ export default function CvAdaptation() {
             </header>
 
             <section>
-              <h2 className="cv-print-section-title">Overall assessment</h2>
+              <h2 className="cv-print-section-title">{t("adapt_overall")}</h2>
               <p className="cv-print-paragraph">{result.overallAssessment}</p>
             </section>
 
             {[
-              ["Your strengths", result.strengths],
-              ["Relevant experience to highlight", result.relevantExperience],
-              ["Missing / weak areas", result.missingOrWeakAreas],
-              ["Suggested improvements", result.suggestedImprovements],
-              ["Evidence from your CV", result.evidence],
+              [t("adapt_strengths"), result.strengths],
+              [t("adapt_experience"), result.relevantExperience],
+              [t("adapt_weak"), result.missingOrWeakAreas],
+              [t("adapt_improve"), result.suggestedImprovements],
+              [t("adapt_evidence"), result.evidence],
             ].map(([title, items]) => (
               <section key={title as string}>
                 <h2 className="cv-print-section-title">{title as string}</h2>
