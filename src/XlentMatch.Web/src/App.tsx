@@ -8,6 +8,14 @@ import ClientAssignments, { NewAssignmentPage } from "./pages/ClientAssignments"
 import AssignmentDetail from "./pages/AssignmentDetail";
 import EditAssignment from "./pages/EditAssignment";
 import Matching from "./pages/Matching";
+import MatchingSelection from "./pages/MatchingSelection";
+import { useSearchParams, Navigate as MatchingRedirect } from "react-router-dom";
+
+function LegacyMatchingRedirect() {
+  const [params] = useSearchParams();
+  const id = params.get("assignment");
+  return id && /^[1-9]\\d*$/.test(id) ? <MatchingRedirect to={`/matching/${id}`} replace /> : <MatchingSelection />;
+}
 import HowItWorks from "./pages/HowItWorks";
 import CvUpload from "./pages/CvUpload";
 import ConsultantReview from "./pages/ConsultantReview";
@@ -27,7 +35,8 @@ export default function App() {
           <Route path="client-assignments/new" element={<NewAssignmentPage />} />
           <Route path="client-assignments/:id/edit" element={<EditAssignment />} />
           <Route path="client-assignments/:id" element={<AssignmentDetail />} />
-          <Route path="matching" element={<Matching />} />
+          <Route path="matching" element={<LegacyMatchingRedirect />} />
+          <Route path="matching/:assignmentId" element={<Matching />} />
           <Route path="how-it-works" element={<HowItWorks />} />
           <Route path="cv-upload" element={<CvUpload />} />
           <Route path="cv-upload/review" element={<ConsultantReview />} />
