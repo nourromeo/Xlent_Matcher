@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route, useSearchParams } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Consultants from "./pages/Consultants";
@@ -9,18 +9,17 @@ import AssignmentDetail from "./pages/AssignmentDetail";
 import EditAssignment from "./pages/EditAssignment";
 import Matching from "./pages/Matching";
 import MatchingSelection from "./pages/MatchingSelection";
-import { useSearchParams, Navigate as MatchingRedirect } from "react-router-dom";
-
-function LegacyMatchingRedirect() {
-  const [params] = useSearchParams();
-  const id = params.get("assignment");
-  return id && /^[1-9]\\d*$/.test(id) ? <MatchingRedirect to={`/matching/${id}`} replace /> : <MatchingSelection />;
-}
 import HowItWorks from "./pages/HowItWorks";
 import CvUpload from "./pages/CvUpload";
 import ConsultantReview from "./pages/ConsultantReview";
 import CvAdaptation from "./pages/CvAdaptation";
 import Admin from "./pages/Admin";
+
+function LegacyMatchingRedirect() {
+  const [params] = useSearchParams();
+  const id = params.get("assignment");
+  return id && /^[1-9]\d*$/.test(id) ? <Navigate to={`/matching/${id}`} replace /> : <MatchingSelection />;
+}
 
 export default function App() {
   return (
