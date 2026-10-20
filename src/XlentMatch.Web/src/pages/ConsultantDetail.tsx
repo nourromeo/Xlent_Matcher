@@ -63,6 +63,7 @@ export default function ConsultantDetail() {
 
   const [consultant, setConsultant] = useState<Consultant | null>(null);
   const [cvFiles, setCvFiles] = useState<CvUploadRecord[]>([]);
+  const [cvEligible, setCvEligible] = useState<boolean | null>(null);
   const activeTab = searchParams.get("tab") === "cv" ? "cv" : "profile";
   const setActiveTab = (tab: "profile" | "cv") => setSearchParams(tab === "cv" ? { tab: "cv" } : {});
   const [draft, setDraft] = useState<Consultant | null>(null);
@@ -118,6 +119,7 @@ export default function ConsultantDetail() {
   useEffect(() => {
     if (!Number.isInteger(consultantId) || consultantId <= 0) return;
     cvUploadsApi.getAll().then((items) => setCvFiles(items.filter((item) => item.consultantId === consultantId && item.status === "Indexed"))).catch(() => {});
+    consultantsApi.getCvEligibility().then(data => setCvEligible(data.eligibleConsultantIds.includes(consultantId))).catch(() => setCvEligible(null));
   }, [consultantId]);
 
   useEffect(() => {
@@ -214,7 +216,7 @@ export default function ConsultantDetail() {
         title={fullName(consultant)}
         subtitle={consultant.title || t("consultant_role")}
         metadata={`${consultant.office || "—"} · ${consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}`}
-        badges={consultant.availability ? <StatusBadge tone={consultant.availability === "Available" ? "success" : "danger"}>{availabilityLabel(consultant, t, locale)}</StatusBadge> : undefined}
+        badges={<div className="flex flex-wrap items-center gap-2">{consultant.availability && <StatusBadge tone={consultant.availability === "Available" ? "success" : "danger"}>{availabilityLabel(consultant, t, locale)}</StatusBadge>}{cvEligible !== null && <StatusBadge tone={cvEligible ? "success" : "danger"}>{cvEligible ? "CV finns" : "CV saknas"}</StatusBadge>}</div>}
         actions={<div className="flex items-center gap-2"><Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-app-border text-app-secondary transition-colors hover:text-app-primary"><Edit3 size={12} /> {t("consultant_edit")}</Link><Button variant="danger" icon={<Trash2 size={12} />} onClick={() => setDeleteConfirmOpen(true)} disabled={deleting}>{deleting ? t("client_deleting") : t("common_delete")}</Button></div>}
       />
 
