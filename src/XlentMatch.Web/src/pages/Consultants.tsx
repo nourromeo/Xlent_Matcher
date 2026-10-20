@@ -64,6 +64,7 @@ export default function Consultants() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
+  const [cvEligible, setCvEligible] = useState<Set<number> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
@@ -78,6 +79,8 @@ export default function Consultants() {
 
   useEffect(() => {
     let cancelled = false;
+
+    consultantsApi.getCvEligibility().then(data => { if (!cancelled) setCvEligible(new Set(data.eligibleConsultantIds)); }).catch(() => { if (!cancelled) setCvEligible(null); });
 
     consultantsApi
       .getAll()
@@ -210,7 +213,7 @@ export default function Consultants() {
           columns={[
             {
               key: "consultant",
-              width: "25%",
+              width: "24%",
               header: t("col_consultant"),
               sortable: true,
               sortValue: (consultant) => consultantName(consultant),
@@ -246,7 +249,7 @@ export default function Consultants() {
             },
             {
               key: "skills",
-              width: "28%",
+              width: "21%",
               header: t("col_skills"),
               render: (consultant) => (
                 <div className="flex max-h-7 flex-wrap gap-1 overflow-hidden">
@@ -256,8 +259,14 @@ export default function Consultants() {
               ),
             },
             {
+              key: "cv",
+              width: "9%",
+              header: "CV",
+              render: (consultant) => cvEligible === null ? <span className="text-app-muted">—</span> : <span className={`whitespace-nowrap text-[11px] ${cvEligible.has(consultant.id) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(consultant.id) ? "✓ Finns" : "– Saknas"}</span>,
+            },
+            {
               key: "availability",
-              width: "21%",
+              width: "22%",
               header: t("col_avail"),
               sortable: true,
               sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99,
