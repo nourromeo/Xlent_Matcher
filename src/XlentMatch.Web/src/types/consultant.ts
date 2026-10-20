@@ -63,7 +63,6 @@ export type Consultant = {
   firstName: string;
   lastName: string;
   email: string | null;
-  title: string | null;
   summary: string | null;
   seniority: string | null;
   yearsOfExperience: number | null;
