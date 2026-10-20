@@ -3,6 +3,7 @@ import {
   FileText,
   Briefcase,
   GitMerge,
+  Clock,
   Users,
   CheckCircle,
   AlertCircle,
