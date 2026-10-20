@@ -33,7 +33,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     availableAgainDate: null,
     availability: "Available",
     office: draft.office?.trim() || null,
-    originalCvText: null,
+    originalCvText: draft.sourceText?.trim() || null,
     skills: draft.skills
       .filter((x) => x.name.trim())
       .map((x) => ({
@@ -209,7 +209,7 @@ export default function ConsultantReview() {
           id: existing.id,
           availability: existing.availability,
           availableAgainDate: existing.availableAgainDate,
-          originalCvText: existing.originalCvText,
+          originalCvText: extracted.originalCvText,
         };
         if (!uploadId) throw new Error("The CV upload is missing.");
         saved = await consultantsApi.approveCv(linkedConsultantId, Number(uploadId), merged);
