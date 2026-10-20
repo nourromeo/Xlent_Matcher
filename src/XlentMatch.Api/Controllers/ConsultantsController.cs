@@ -248,18 +248,8 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         upload.IsActive = true;
         await db.SaveChangesAsync(ct);
 
-        db.CvUploads.RemoveRange(previous);
-        await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        var directory = Path.Combine(environment.ContentRootPath, "private-cvs");
-        foreach (var item in previous.Where(x => x.StorageKey is not null))
-        {
-            var path = Path.Combine(directory, Path.GetFileName(item.StorageKey!));
-            try { if (System.IO.File.Exists(path)) System.IO.File.Delete(path); }
-            catch (IOException) { /* Unreferenced file can be cleaned up later. */ }
-            catch (UnauthorizedAccessException) { /* Approval already committed. */ }
-        }
         return await LoadFull(id, ct) ?? input;
     }
 
