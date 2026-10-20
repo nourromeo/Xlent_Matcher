@@ -390,9 +390,6 @@ export default function ConsultantDetail() {
               <FormField label={t("consultant_last_name")}>
                 <Input value={draft.lastName} onChange={(event) => setDraft({ ...draft, lastName: event.target.value })} />
               </FormField>
-              <FormField label={t("consultant_role")}>
-                <Input value={draft.title ?? ""} onChange={(event) => setDraft({ ...draft, title: event.target.value || null })} />
-              </FormField>
               <FormField label={t("consultant_seniority")}>
                 <select value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("common_not_specified")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>
               </FormField>
