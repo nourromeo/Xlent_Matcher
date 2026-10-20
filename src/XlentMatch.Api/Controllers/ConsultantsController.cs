@@ -10,6 +10,26 @@ namespace XlentMatch.Api.Controllers;
 [Route("api/consultants")]
 public class ConsultantsController(AppDbContext db, SkillNormalizationService skills, ConsultantAvailabilityService availability, IWebHostEnvironment environment) : ControllerBase
 {
+    [HttpGet("cv-eligibility")]
+    public async Task<ActionResult<object>> GetCvEligibility(CancellationToken ct)
+    {
+        var uploads = await db.CvUploads.AsNoTracking()
+            .Where(cv => cv.IsActive && cv.Status == "Indexed"
+                && cv.StorageKey != null && cv.ConsultantId != null)
+            .OrderByDescending(cv => cv.UploadedAt)
+            .ToListAsync(ct);
+        var latest = uploads.GroupBy(cv => cv.ConsultantId!.Value)
+            .Select(g => g.First());
+        var eligible = latest.Where(cv =>
+        {
+            var path = Path.Combine(environment.ContentRootPath, "private-cvs", Path.GetFileName(cv.StorageKey!));
+            return System.IO.File.Exists(path)
+                && (Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase)
+                    || Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase));
+        }).Select(cv => cv.ConsultantId!.Value).ToArray();
+        return Ok(new { eligibleConsultantIds = eligible });
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<Consultant>>> GetAll(CancellationToken ct)
     {
