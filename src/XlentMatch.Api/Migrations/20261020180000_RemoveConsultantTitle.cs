@@ -1,9 +1,13 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using XlentMatch.Api.Data;
 
 #nullable disable
 
 namespace XlentMatch.Api.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20261020180000_RemoveConsultantTitle")]
     public partial class RemoveConsultantTitle : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
