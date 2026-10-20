@@ -9,6 +9,8 @@ import AssignmentDetail from "./pages/AssignmentDetail";
 import EditAssignment from "./pages/EditAssignment";
 import Matching from "./pages/Matching";
 import MatchingSelection from "./pages/MatchingSelection";
+import AiRankingSelection from "./pages/AiRankingSelection";
+import AiRankingResults from "./pages/AiRankingResults";
 import HowItWorks from "./pages/HowItWorks";
 import CvUpload from "./pages/CvUpload";
 import ConsultantReview from "./pages/ConsultantReview";
@@ -36,6 +38,8 @@ export default function App() {
           <Route path="client-assignments/:id" element={<AssignmentDetail />} />
           <Route path="matching" element={<LegacyMatchingRedirect />} />
           <Route path="matching/:assignmentId" element={<Matching />} />
+          <Route path="matching/:assignmentId/ai-ranking" element={<AiRankingSelection />} />
+          <Route path="matching/:assignmentId/ai-ranking/results" element={<AiRankingResults />} />
           <Route path="how-it-works" element={<HowItWorks />} />
           <Route path="cv-upload" element={<CvUpload />} />
           <Route path="cv-upload/review" element={<ConsultantReview />} />
