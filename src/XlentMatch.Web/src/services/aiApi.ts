@@ -31,7 +31,6 @@ export type ConsultantDraft = {
   firstName: string;
   lastName: string;
   email: string | null;
-  title: string | null;
   summary: string | null;
   seniority: string | null;
   suggestedSeniority: string | null;
@@ -82,7 +81,6 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
     firstName: consultant.firstName,
     lastName: consultant.lastName,
     email: consultant.email,
-    title: consultant.title,
     summary: consultant.summary,
     seniority: consultant.seniority,
     suggestedSeniority: null,
