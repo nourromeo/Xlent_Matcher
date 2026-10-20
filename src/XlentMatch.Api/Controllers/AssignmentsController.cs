@@ -76,6 +76,18 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
             var connection = db.Database.GetDbConnection();
             await using var command = connection.CreateCommand();
             command.Transaction = db.Database.CurrentTransaction!.GetDbTransaction();
+            command.CommandText = @"DECLARE @result int;
+                                    EXEC @result = sp_getapplock
+                                        @Resource = @resource,
+                                        @LockMode = 'Exclusive',
+                                        @LockOwner = 'Transaction';
+                                    SELECT @result;";
+            var lockParameter = command.CreateParameter();
+            lockParameter.ParameterName = "@resource";
+            lockParameter.Value = "AssignmentReference-" + assignment.CreatedAt.Year;
+            command.Parameters.Add(lockParameter);
+            if (Convert.ToInt32(await command.ExecuteScalarAsync(ct)) < 0)
+                throw new InvalidOperationException("Could not acquire assignment reference lock.");
             command.CommandText = @"UPDATE [AssignmentReferenceCounters] WITH (UPDLOCK, HOLDLOCK)
                                     SET [LastNumber] = [LastNumber] + 1
                                     OUTPUT INSERTED.[LastNumber]
