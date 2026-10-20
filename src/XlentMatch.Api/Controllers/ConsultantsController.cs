@@ -42,7 +42,6 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
                 FirstName = c.FirstName,
                 LastName = c.LastName,
                 Email = c.Email,
-                Title = c.Title,
                 Summary = c.Summary,
                 Seniority = c.Seniority,
                 YearsOfExperience = c.YearsOfExperience,
@@ -178,7 +177,6 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.FirstName = input.FirstName;
         existing.LastName = input.LastName;
         existing.Email = input.Email;
-        existing.Title = input.Title;
         existing.Summary = input.Summary;
         existing.Seniority = input.Seniority;
         existing.YearsOfExperience = input.YearsOfExperience;
