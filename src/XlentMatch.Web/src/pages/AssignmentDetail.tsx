@@ -290,8 +290,8 @@ export default function AssignmentDetail() {
   const viewSeniorityRequirement = assignment.requirements.find((requirement) => requirement.category === "Seniority");
   const otherRequirements = assignment.requirements.filter((requirement) => !["Skill", "HumanLanguage", "Seniority"].includes(requirement.category));
   const hasLongOverview = (assignment.description?.length ?? 0) > 280;
-  const statusTone = assignment.status === "Done" ? "success" : "neutral";
-  const statusLabel = assignment.status === "Done" ? t("assignment_done") : assignment.status === "Closed" ? t("assignment_closed") : assignment.status === "Draft" ? t("assignment_draft") : assignment.status === "Matching" ? t("assignment_matching") : assignment.status;
+  const statusTone = ["Matched", "Done"].includes(assignment.status) ? "success" : "neutral";
+  const statusLabel = ["Matched", "Done"].includes(assignment.status) ? t("assignment_done") : t("assignment_draft");
 
   return (
     <div className="flex flex-col h-full">
