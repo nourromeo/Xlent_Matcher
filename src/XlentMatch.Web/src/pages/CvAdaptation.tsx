@@ -485,8 +485,7 @@ export default function CvAdaptation() {
                   {consultants.map((consultant) => (
                     <option key={consultant.id} value={consultant.id}>
                       {consultant.fullName ||
-                        `${consultant.firstName} ${consultant.lastName}`}{" "}
-                      
+                        `${consultant.firstName} ${consultant.lastName}`}
                     </option>
                   ))}
                 </select>
@@ -772,11 +771,7 @@ export default function CvAdaptation() {
                   .filter(Boolean)
                   .join(" ") || t("adaptation_consultant_cv")}
               </h1>
-              <div className="cv-print-title">
-                {[usedConsultant.seniority]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </div>
+              {usedConsultant.seniority && <div className="cv-print-title">{usedConsultant.seniority}</div>}
               <div className="cv-print-target">
                 <strong>{t("adaptation_adapted_for")}</strong>{" "}
                 {usedAssignment.title || t("adaptation_client_assignment")}
