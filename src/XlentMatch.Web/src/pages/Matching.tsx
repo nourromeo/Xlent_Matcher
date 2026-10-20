@@ -11,6 +11,7 @@ import {
 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { PageHeader } from "../components/ui/PageHeader";
+import { EntitySummary } from "../components/ui/EntitySummary";
 import { LinkButton } from "../components/ui/LinkButton";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { consultantsApi } from "../services/consultantsApi";
@@ -320,10 +321,13 @@ export default function Matching() {
         />
 
         {assignment && (
-          <div className="mt-3 flex min-h-9 flex-wrap items-center gap-x-2 gap-y-3 text-xs text-app-secondary">
-            <span className="font-semibold text-app-primary">{assignment.title}</span>
-            <span>· {assignment.customerName} · {assignment.referenceNumber}</span>
-            <div className="ml-auto flex shrink-0 items-center gap-3"><Link to={`/client-assignments/${assignment.id}`} className="text-app-brand hover:underline">Visa uppdrag</Link><Link to={`/matching/${assignmentId}/ai-ranking`} className="inline-flex items-center rounded-md bg-app-brand px-3 py-1.5 text-xs font-medium text-app-on-brand hover:opacity-90">AI Ranking →</Link></div>
+          <div className="-mx-6 mt-2">
+            <EntitySummary
+              variant="compact"
+              title={assignment.title}
+              metadata={[assignment.customerName, assignment.referenceNumber].filter(Boolean).join(" · ")}
+              actions={<><Link to={`/client-assignments/${assignment.id}`} className="text-xs text-app-brand hover:underline">Visa uppdrag</Link><Link to={`/matching/${assignmentId}/ai-ranking`} className="inline-flex items-center rounded-md bg-app-brand px-3 py-1.5 text-xs font-medium text-app-on-brand hover:opacity-90">AI Ranking →</Link></>}
+            />
           </div>
         )}
 
