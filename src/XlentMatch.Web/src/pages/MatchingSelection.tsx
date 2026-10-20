@@ -26,7 +26,7 @@ export default function MatchingSelection() {
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     return assignments
-      .filter((item) => !term || (item.title + " " + item.customerName).toLocaleLowerCase().includes(term))
+      .filter((item) => !term || (item.title + " " + item.customerName + " " + item.referenceNumber).toLocaleLowerCase().includes(term))
       .sort((a, b) => sortBy === "name"
         ? a.title.localeCompare(b.title)
         : sortBy === "oldest"
@@ -84,7 +84,7 @@ export default function MatchingSelection() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-app-primary">{item.title}</p>
-                    <p className="mt-1 truncate text-xs text-app-muted">{item.customerName} · #{item.id}</p>
+                    <p className="mt-1 truncate text-xs text-app-muted">{item.customerName} · {item.referenceNumber}</p>
                   </div>
                   <span aria-hidden="true" className="shrink-0 text-app-muted">→</span>
                 </Link>
