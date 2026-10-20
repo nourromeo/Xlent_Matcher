@@ -51,6 +51,7 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         if (validation is not null) return BadRequest(validation);
 
         assignment.Id = 0;
+        assignment.Status = AssignmentStatus.Draft;
         assignment.CreatedAt = DateTime.UtcNow;
         assignment.UpdatedAt = assignment.CreatedAt;
 
