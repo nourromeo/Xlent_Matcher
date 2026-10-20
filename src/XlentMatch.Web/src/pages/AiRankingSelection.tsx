@@ -13,6 +13,7 @@ export default function AiRankingSelection() {
   const [eligible, setEligible] = useState<number[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [search, setSearch] = useState("");
+  const [replaceId, setReplaceId] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
@@ -71,6 +72,7 @@ export default function AiRankingSelection() {
                 <span className="text-xs text-app-muted">{selected.length} av 2</span>
               </div>
               <p className="text-xs text-app-muted">De två högst rankade konsulterna med tillgängligt CV är förvalda. Du kan byta ut dem.</p>
+              {selected.length === 2 && <p className="text-xs text-app-muted">Två platser är fyllda. Klicka på Byt vid en konsult för att välja en ersättare.</p>}
               {selected.map(consultantId => {
                 const person = results.find(r => r.consultantId === consultantId);
                 return (
@@ -79,12 +81,13 @@ export default function AiRankingSelection() {
                       <p className="text-sm font-medium text-app-primary">{person?.consultantName ?? consultantId}</p>
                       <p className="text-xs text-app-muted">Match Score {person?.score ?? "—"}% · CV finns</p>
                     </div>
-                    <button type="button" onClick={() => setSelected(v => v.filter(x => x !== consultantId))} className="text-xs text-app-muted hover:text-app-primary" aria-label={`Ta bort ${person?.consultantName}`}>Ta bort ×</button>
+                    <button type="button" onClick={() => { setReplaceId(consultantId); setOpen(true); }} className="text-xs text-app-brand hover:underline">Byt</button>
+                    <button type="button" onClick={() => { setSelected(v => v.filter(x => x !== consultantId)); setReplaceId(null); }} className="text-xs text-app-muted hover:text-app-primary" aria-label={`Ta bort ${person?.consultantName}`}>Ta bort ×</button>
                   </div>
                 );
               })}
               <button type="button" onClick={() => setOpen(v => !v)} className="w-full rounded-md border border-app-border bg-app px-4 py-2.5 text-left text-sm text-app-secondary hover:bg-app-raised">
-                Sök och välj konsult {open ? "⌃" : "⌄"}
+                {replaceId !== null ? "Välj ersättare" : "Sök och välj konsult"} {open ? "⌃" : "⌄"}
               </button>
               {open && (
                 <div className="rounded-lg border border-app-border p-2 space-y-2">
@@ -93,7 +96,7 @@ export default function AiRankingSelection() {
                     {options.map(person => {
                       const hasCv = eligible.includes(person.consultantId);
                       return (
-                        <button key={person.consultantId} type="button" disabled={!hasCv || selected.length >= 2} onClick={() => { setSelected(v => [...v, person.consultantId]); setSearch(""); setOpen(false); }} className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-app-raised disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button key={person.consultantId} type="button" disabled={!hasCv} onClick={() => { setSelected(v => replaceId !== null ? v.map(id => id === replaceId ? person.consultantId : id) : v.length >= 2 ? [...v.slice(0, 1), person.consultantId] : [...v, person.consultantId]); setReplaceId(null); setSearch(""); setOpen(false); }} className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-app-raised disabled:opacity-50 disabled:cursor-not-allowed">
                           <span className="min-w-0"><span className="block text-sm text-app-primary">{person.consultantName}</span><span className="text-xs text-app-muted">Match Score {person.score}%</span></span>
                           <span className={`shrink-0 text-xs ${hasCv ? "text-app-success" : "text-app-warning"}`}>{hasCv ? "CV finns" : "CV saknas"}</span>
                         </button>
@@ -103,7 +106,7 @@ export default function AiRankingSelection() {
                   </div>
                 </div>
               )}
-              <button type="button" onClick={() => setSelected(results.filter(r => eligible.includes(r.consultantId)).slice(0, 2).map(r => r.consultantId))} className="text-xs text-app-brand hover:underline">Återställ automatiskt val</button>
+              <button type="button" onClick={() => { setSelected(results.filter(r => eligible.includes(r.consultantId)).slice(0, 2).map(r => r.consultantId)); setReplaceId(null); }} className="text-xs text-app-brand hover:underline">Återställ automatiskt val</button>
             </section>
             {eligible.length < 2 && <p className="rounded-lg border border-app-border p-3 text-xs text-app-warning">Minst två konsulter med tillgängliga original-CV:n krävs för AI Ranking.</p>}
             {error && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-app-danger">{error}</p>}
