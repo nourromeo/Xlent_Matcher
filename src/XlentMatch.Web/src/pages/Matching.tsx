@@ -321,7 +321,7 @@ export default function Matching() {
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-app-secondary">
             <span className="font-semibold text-app-primary">{assignment.title}</span>
             <span>· {assignment.customerName} · {assignment.referenceNumber}</span>
-            <Link to={`/client-assignments/${assignment.id}`} className="ml-auto text-app-brand hover:underline">Visa uppdrag</Link>
+            <div className="ml-auto flex shrink-0 items-center gap-3"><Link to={`/client-assignments/${assignment.id}`} className="text-app-brand hover:underline">Visa uppdrag</Link><Link to={`/matching/${assignmentId}/ai-ranking`} className="inline-flex items-center rounded-md bg-app-brand px-3 py-1.5 text-xs font-medium text-app-on-brand hover:opacity-90">AI Ranking →</Link></div>
           </div>
         )}
 
@@ -375,9 +375,7 @@ export default function Matching() {
         </div>
       ) : selected ? (
         <div className="flex-1 flex flex-col min-h-0">
-<div className="flex-none px-6 py-2 border-b border-app-border bg-app-surface flex items-center justify-end">
-            <Link to={`/matching/${assignmentId}/ai-ranking`} className="inline-flex items-center gap-2 rounded-md bg-app-brand px-4 py-2 text-xs font-medium text-app-on-brand hover:opacity-90">AI Ranking →</Link>
-          </div>
+
                       <div className="flex-1 min-h-0 overflow-y-auto flex items-start">
               <aside className="w-80 flex-none border-r border-app-border bg-app-surface flex flex-col self-stretch">
             <div className="px-4 py-3 border-b border-app-border">
