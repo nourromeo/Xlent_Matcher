@@ -470,7 +470,8 @@ export default function Matching() {
 
         {error && (
           <div className="mt-3 rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
-            {error}
+            <span>{error}</span>
+            {assignment && !matching && <button type="button" onClick={() => setMatchingAttempt((n) => n + 1)} className="ml-3 underline text-app-brand">Retry</button>}
           </div>
         )}
       </div>
@@ -501,6 +502,8 @@ export default function Matching() {
             </p>
           </div>
         </div>
+      ) : error ? (
+        <div className="flex-1 bg-app" />
       ) : results.length === 0 ? (
         <div className="flex-1 flex items-center justify-center bg-app p-6">
           <div className="bg-app-surface border border-app-border rounded-xl p-8 text-center max-w-md shadow-app-surface">
@@ -509,7 +512,7 @@ export default function Matching() {
               {t("matching_ready_title")}
             </h2>
             <p className="text-xs text-app-muted mt-2 leading-relaxed">
-              {t("matching_ready_help")}
+              {t("matching_choose_help")}
             </p>
           </div>
         </div>
