@@ -486,7 +486,7 @@ export default function CvAdaptation() {
                     <option key={consultant.id} value={consultant.id}>
                       {consultant.fullName ||
                         `${consultant.firstName} ${consultant.lastName}`}{" "}
-                      · {consultant.title || "Consultant"}
+                      
                     </option>
                   ))}
                 </select>
@@ -773,7 +773,7 @@ export default function CvAdaptation() {
                   .join(" ") || t("adaptation_consultant_cv")}
               </h1>
               <div className="cv-print-title">
-                {[usedConsultant.title, usedConsultant.seniority]
+                {[usedConsultant.seniority]
                   .filter(Boolean)
                   .join(" · ")}
               </div>
