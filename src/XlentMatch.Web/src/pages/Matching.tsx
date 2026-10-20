@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
-  AlertTriangle,
   CheckCircle,
   ChevronDown,
   Eye,
@@ -124,6 +123,7 @@ export default function Matching() {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
+  const [matchingAttempt, setMatchingAttempt] = useState(0);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
     "Overview" | "Requirements" | "Experience"
@@ -165,33 +165,39 @@ export default function Matching() {
   }, []);
 
   useEffect(() => {
-    if (!Number.isInteger(assignmentId) || assignmentId <= 0) {
+    if (!Number.isInteger(assignmentId) || assignmentId <= 0 || loading) {
       setResults([]);
       setSelectedMatchId(null);
       return;
     }
 
     let cancelled = false;
+    setMatching(true);
+    setError("");
+    setResults([]);
+    setSelectedMatchId(null);
+    setExpanded(false);
+    setRankingTab("match");
+    setAiRanking(null);
+    setAiError("");
 
-    matchingApi
-      .getForAssignment(assignmentId)
-      .then((data) => {
-        if (cancelled) return;
-        setResults(data);
-        setSelectedMatchId(data[0]?.id ?? null);
-      })
-      .catch((requestError: unknown) => {
-        if (!cancelled) {
-          setResults([]);
-          setSelectedMatchId(null);
-          setError(t("matching_load_results_error"));
-        }
-      });
+    // Recalculate on every page entry, assignment selection, or explicit retry.
+    matchingApi.run({
+      assignmentId,
+      consultantIds: consultants.map((consultant) => consultant.id),
+    }).then((data) => {
+      if (cancelled) return;
+      setResults(data);
+      setSelectedMatchId(data[0]?.id ?? null);
+    }).catch((requestError: unknown) => {
+      if (cancelled) return;
+      setError(requestError instanceof Error ? requestError.message : t("matching_failed"));
+    }).finally(() => {
+      if (!cancelled) setMatching(false);
+    });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [assignmentId]);
+    return () => { cancelled = true; };
+  }, [assignmentId, loading, matchingAttempt]);
 
   useEffect(() => {
     setAiRanking(null);
@@ -199,14 +205,8 @@ export default function Matching() {
     setRankingTab("match");
   }, [assignmentId]);
 
-  const newConsultants = useMemo(() => {
-    if (results.length === 0 || loading) return 0;
-    const matchedIds = new Set(results.map((result) => result.consultantId));
-    return consultants.filter((consultant) => !matchedIds.has(consultant.id)).length;
-  }, [consultants, results, loading]);
-
   const runAiRanking = async () => {
-    if (!assignment || aiLoading || results.length === 0 || newConsultants > 0) return;
+    if (!assignment || aiLoading || results.length === 0 || matching) return;
     setAiLoading(true);
     setAiError("");
     try {
@@ -265,40 +265,6 @@ export default function Matching() {
     setResults([]);
     setError("");
     setSearchParams(id ? { assignment: id } : {});
-  };
-
-  const runMatching = async () => {
-    if (!assignment || matching || consultants.length === 0) return;
-
-    setMatching(true);
-    setRankingTab("match");
-    setAiRanking(null);
-    setAiError("");
-    setError("");
-    setExpanded(false);
-
-    try {
-      const data = await matchingApi.run({
-        assignmentId: assignment.id,
-        consultantIds: consultants.map((consultant) => consultant.id),
-      });
-
-      setResults(data);
-      setSelectedMatchId(data[0]?.id ?? null);
-      setAssignments((current) =>
-        current.map((item) =>
-          item.id === assignment.id ? { ...item, status: "Done" } : item,
-        ),
-      );
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t("matching_failed"),
-      );
-    } finally {
-      setMatching(false);
-    }
   };
 
   const required =
@@ -382,7 +348,7 @@ export default function Matching() {
           description={
             assignment
               ? t("matching_review_selected")
-              : t("matching_select_then_run")
+              : t("matching_select_assignment")
           }
           backTo={
             fromAssignment && assignment
@@ -460,23 +426,7 @@ export default function Matching() {
                   </LinkButton>
                 )}
 
-                <button
-                  onClick={runMatching}
-                  disabled={!assignment || matching || consultants.length === 0}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-app-on-brand px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
-                  
-                >
-                  {matching ? (
-                    <Loader size={12} className="animate-spin" />
-                  ) : (
-                    <Zap size={12} />
-                  )}
-                  {matching
-                    ? t("matching_running")
-                    : results.length > 0
-                      ? t("matching_rerun")
-                      : t("matching_run")}
-                </button>
+                
               </div>
             </div>
           </div>
@@ -514,23 +464,7 @@ export default function Matching() {
               </div>
             </div>
 
-            <button
-              onClick={runMatching}
-              disabled={matching || consultants.length === 0}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-app-on-brand px-3 py-2 rounded-md shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-              
-            >
-              {matching ? (
-                <Loader size={12} className="animate-spin" />
-              ) : (
-                <Zap size={12} />
-              )}
-              {matching
-                ? t("matching_running")
-                : results.length > 0
-                  ? t("matching_rerun")
-                  : t("matching_run")}
-            </button>
+            
           </div>
         ) : null}
 
@@ -586,12 +520,6 @@ export default function Matching() {
                 <button type="button" role="tab" aria-selected={rankingTab === "match"} onClick={() => setRankingTab("match")} className={`rounded-md px-4 py-1.5 text-xs font-medium ${rankingTab === "match" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>Match Score</button>
                 <button type="button" role="tab" aria-selected={rankingTab === "ai"} onClick={() => setRankingTab("ai")} className={`rounded-md px-4 py-1.5 text-xs font-medium ${rankingTab === "ai" ? "bg-app-brand-subtle text-app-brand" : "text-app-muted hover:text-app-primary"}`}>AI Ranking</button>
               </div>
-              {newConsultants > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-[11px] text-app-warning" role="status" title="New consultants are not included in the saved Match Score results.">
-                  <AlertTriangle size={12} />
-                  {newConsultants} new consultant{newConsultants === 1 ? "" : "s"} not matched · Re-run Matching
-                </span>
-              )}
             </div>
 
           {rankingTab === "ai" ? (
