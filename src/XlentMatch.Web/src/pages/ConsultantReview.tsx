@@ -111,10 +111,12 @@ export default function ConsultantReview() {
   const [identityResolved, setIdentityResolved] = useState(Boolean(replaceConsultantId));
   const linkedConsultantId = replaceConsultantId ?? detectedConsultantId;
   const [existing, setExisting] = useState<Consultant | null>(null);
-  const [approved, setApproved] = useState<string[]>([]);
-  const compareFields = ["firstName", "lastName", "email", "summary", "seniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "languages", "experiences", "projects", "education", "industries", "certifications"] as const;
   const [draft, setDraft] = useState<ConsultantDraft | null>(null);
   const [step, setStep] = useState(0);
+  const [identitySearch, setIdentitySearch] = useState("");
+  const [identityChoice, setIdentityChoice] = useState<number | "new" | null>(null);
+  const [consultantOptions, setConsultantOptions] = useState<Consultant[]>([]);
+  const [identityError, setIdentityError] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -140,7 +142,13 @@ export default function ConsultantReview() {
     let cancelled = false;
     setDetectionPending(true);
     cvUploadsApi.detectConsultant(draft).then((result) => {
-      if (!cancelled) setDetectionMatches(result.matches);
+      if (!cancelled) {
+        setDetectionMatches(result.matches);
+        if (result.matches.length === 0) {
+          setIdentityResolved(true);
+          setDetectedConsultantId(null);
+        }
+      }
     }).catch(() => {
       if (!cancelled) setError("Could not check existing consultants. Try again before saving.");
     }).finally(() => {
@@ -149,6 +157,11 @@ export default function ConsultantReview() {
     return () => { cancelled = true; };
   }, [replaceConsultantId, draft?.firstName, draft?.lastName, draft?.email, identityResolved]);
 
+  useEffect(() => {
+    if (replaceConsultantId || identityResolved) return;
+    consultantsApi.getAll().then(setConsultantOptions)
+      .catch(() => setIdentityError(true));
+  }, [replaceConsultantId, identityResolved]);
   useEffect(() => {
     if (!detectedConsultantId) return;
     consultantsApi.getById(detectedConsultantId).then(setExisting)
@@ -189,13 +202,15 @@ export default function ConsultantReview() {
       if (linkedConsultantId) {
         if (!existing) throw new Error("Current consultant profile has not loaded.");
         const extracted = toConsultant(draft);
-        const merged = { ...existing } as Consultant;
-        for (const key of approved) {
-          (merged as unknown as Record<string, unknown>)[key] =
-            (extracted as unknown as Record<string, unknown>)[key];
-        }
-        // Approve profile fields and activate the CV in one database transaction.
-        // Unchecked fields remain exactly as they were in the existing profile.
+        // The reviewed active CV is the source of truth for CV-derived profile data.
+        // Keep internal availability and scheduling information from the existing profile.
+        const merged: Consultant = {
+          ...extracted,
+          id: existing.id,
+          availability: existing.availability,
+          availableAgainDate: existing.availableAgainDate,
+          originalCvText: existing.originalCvText,
+        };
         if (!uploadId) throw new Error("The CV upload is missing.");
         saved = await consultantsApi.approveCv(linkedConsultantId, Number(uploadId), merged);
       } else {
@@ -440,47 +455,64 @@ export default function ConsultantReview() {
           }
         />
         {!replaceConsultantId && !identityResolved && (
-          <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-app-primary">Identify CV owner</h2>
-            <p className="text-xs text-app-muted">Check whether this CV belongs to an existing consultant before creating a new profile.</p>
-            {detectionPending ? <p className="text-xs text-app-muted">Checking existing consultants...</p> : (
+          <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-app-primary">Steg 1 · Identifiera konsult</h2>
+            <p className="text-xs text-app-muted">Vi hittade möjliga konsulter. Kontrollera vem CV:t tillhör innan du fortsätter.</p>
+            {detectionPending ? <p className="text-xs text-app-muted">Söker efter befintliga konsulter...</p> : (
               <>
-                {detectionMatches.length ? (
+                {detectionMatches.length > 0 && (
                   <div className="space-y-2">
+                    <p className="text-xs font-semibold text-app-primary">Föreslagna konsulter</p>
                     {detectionMatches.map((match) => (
-                      <button type="button" key={match.id} onClick={() => {
-                        setDetectedConsultantId(match.id);
-                        setIdentityResolved(true);
-                        setError("");
-                      }} className="w-full rounded-lg border border-app-border p-3 text-left text-xs hover:border-app-brand">
-                        <span className="font-semibold text-app-primary">{match.firstName} {match.lastName}</span>
-                        <span className="ml-2 text-app-muted">{match.email || "No email"} · {match.matchReason} match</span>
-                        <span className="block mt-1 text-app-brand">Use this existing consultant</span>
-                      </button>
+                      <label key={match.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
+                        <input type="radio" name="cv-owner" checked={identityChoice === match.id} onChange={() => setIdentityChoice(match.id)} />
+                        <span className="flex-1"><strong className="block text-app-primary">{match.firstName} {match.lastName}</strong>
+                          <span className="text-app-muted">{match.email || "Ingen e-post"} · {match.matchReason === "Email" ? "Matchning via e-post" : "Liknande namn"}</span></span>
+                      </label>
                     ))}
                   </div>
-                ) : <p className="text-xs text-app-muted">No existing consultant match found.</p>}
-                <button type="button" className="rounded-md border border-app-border px-4 py-2 text-xs text-app-primary" onClick={() => {
-                  setDetectedConsultantId(null);
+                )}
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-app-primary">Sök bland alla konsulter</label>
+                  <Input value={identitySearch} onChange={(e) => setIdentitySearch(e.target.value)} placeholder="Sök namn eller e-post..." />
+                  {identitySearch.trim() && consultantOptions.filter((c) =>
+                    [c.firstName, c.lastName, c.email].join(" ").toLowerCase().includes(identitySearch.toLowerCase())
+                  ).slice(0, 10).map((c) => (
+                    <label key={c.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
+                      <input type="radio" name="cv-owner" checked={identityChoice === c.id} onChange={() => setIdentityChoice(c.id)} />
+                      <span>{c.firstName} {c.lastName} · {c.email || "Ingen e-post"}</span>
+                    </label>
+                  ))}
+                  {identityError && <p className="text-xs text-red-500">Kunde inte ladda konsultlistan.</p>}
+                </div>
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
+                  <input type="radio" name="cv-owner" checked={identityChoice === "new"} onChange={() => setIdentityChoice("new")} />
+                  <span>Ingen av dessa – skapa ny konsult</span>
+                </label>
+                <Button variant="primary" disabled={identityChoice === null || detectionPending} onClick={() => {
+                  setDetectedConsultantId(identityChoice === "new" ? null : identityChoice as number);
                   setExisting(null);
                   setIdentityResolved(true);
                   setError("");
-                }}>Create a new consultant instead</button>
+                }}>Bekräfta och fortsätt</Button>
               </>
             )}
           </section>
         )}
-        {!replaceConsultantId && identityResolved && (
+        {identityResolved && (
           <div className="flex items-center justify-between rounded-lg border border-app-border bg-app-surface p-3 text-xs">
-            <span className="text-app-secondary">{detectedConsultantId ? `Linking to existing consultant #${detectedConsultantId}` : "Creating a new consultant"}</span>
-            <button type="button" className="text-app-brand" onClick={() => {
+            <span className="text-app-secondary">{linkedConsultantId
+              ? `Befintlig konsult: ${existing ? `${existing.firstName} ${existing.lastName}` : `#${linkedConsultantId}`}`
+              : "Ny konsult"}</span>
+            {!replaceConsultantId && <button type="button" className="text-app-brand" onClick={() => {
               setIdentityResolved(false);
               setDetectedConsultantId(null);
               setExisting(null);
-            }}>Change</button>
+              setIdentityChoice(null);
+            }}>Ändra konsult</button>}
           </div>
         )}
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {identityResolved && <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {steps.map((label, index) => (
             <button
               type="button"
@@ -492,8 +524,8 @@ export default function ConsultantReview() {
               <span className="ml-2">{label}</span>
             </button>
           ))}
-        </div>
-        {error && (
+        </div>}
+        {identityResolved && error && (
           <div
             role="alert"
             className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary"
@@ -501,7 +533,7 @@ export default function ConsultantReview() {
             {error}
           </div>
         )}
-        <section className="space-y-5 rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
+        {identityResolved && <section className="space-y-5 rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
           {step === 0 && (
             <>
               <h2 className="text-sm font-medium text-app-primary">
@@ -1054,30 +1086,10 @@ export default function ConsultantReview() {
             </div>
           )}
           {linkedConsultantId && step === 3 && (
-            <section className="rounded-lg border border-app-border bg-app-raised p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-app-primary">Compare with current consultant</h3>
-              <p className="text-xs text-app-muted">All changes are unchecked by default. Select only the fields you approve. The new CV will become active when you save.</p>
-              {!existing ? <p className="text-xs text-app-muted">Loading current profile...</p> : (
-                <div className="grid gap-2">
-                  {compareFields.map((key) => {
-                    const before = (existing as unknown as Record<string, unknown>)[key];
-                    const after = (toConsultant(draft) as unknown as Record<string, unknown>)[key];
-                    const display = (value: unknown) => Array.isArray(value) ? value.map((x) => typeof x === "object" && x !== null ? ("name" in x ? String(x.name) : "role" in x ? String(x.role) : JSON.stringify(x)) : String(x)).join(", ") : String(value ?? "—");
-                    if (JSON.stringify(before) === JSON.stringify(after)) return null;
-                    return (
-                      <label key={key} className="flex gap-3 items-start border-b border-app-border py-2 text-xs text-app-secondary">
-                        <input type="checkbox" className="mt-1" checked={approved.includes(key)}
-                          onChange={(e) => setApproved((prev) => e.target.checked ? [...prev, key] : prev.filter((x) => x !== key))} />
-                        <span className="min-w-0 flex-1"><strong className="block text-app-primary mb-1">{key}</strong>
-                          <span className="block break-words">Current: {display(before)}</span>
-                          <span className="block break-words text-app-brand">Extracted: {display(after)}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+            <div className="rounded-lg border border-app-border bg-app-raised p-4 text-xs text-app-secondary">
+              Det granskade CV:t blir aktivt och ersätter tidigare CV-baserade uppgifter i konsultprofilen.
+              Tidigare CV-versioner sparas som inaktiva. Tillgänglighet och tillgänglighetsdatum behålls.
+            </div>
           )}
           {error && <div role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-xs text-red-400">Save failed: {error}</div>}
           <div className="flex justify-between">
@@ -1103,7 +1115,7 @@ export default function ConsultantReview() {
               </Button>
             )}
           </div>
-        </section>
+        </section>}
       </div>
     </div>
   );
