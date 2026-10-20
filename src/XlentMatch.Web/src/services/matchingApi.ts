@@ -6,8 +6,10 @@ export type AiRankingResult = { rankings: AiRankedConsultant[]; skippedWithoutCv
 
 export const matchingApi = {
   getFreshness: (assignmentId: number) => apiRequest<{ isOutdated: boolean; newConsultants: number }>(`/matching/assignment/${assignmentId}/freshness`),
-  rankWithAi: (assignmentId: number) =>
-    apiRequest<AiRankingResult>(`/matching/assignment/${assignmentId}/ai-ranking`, { method: "POST" }),
+  getAiEligibility: (assignmentId: number) =>
+    apiRequest<{ eligibleConsultantIds: number[] }>(`/matching/assignment/${assignmentId}/ai-eligibility`),
+  rankWithAi: (assignmentId: number, consultantIds: number[]) =>
+    apiRequest<AiRankingResult>(`/matching/assignment/${assignmentId}/ai-ranking`, { method: "POST", body: JSON.stringify({ consultantIds }) }),
 
   run: (request: RunMatchingRequest) =>
     apiRequest<MatchResultApi[]>("/matching/run", {
