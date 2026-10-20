@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { useI18n } from "../i18n";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { matchingApi } from "../services/matchingApi";
 import type { AssignmentApi, MatchResultApi } from "../types";
 
 export default function AiRankingSelection() {
+  const { t } = useI18n();
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const id = Number(assignmentId);
   const navigate = useNavigate();
@@ -58,20 +60,20 @@ export default function AiRankingSelection() {
   return (
     <div className="h-full overflow-auto bg-app p-6">
       <div className="mx-auto max-w-4xl space-y-5">
-        <Link to={`/matching/${id}`} className="text-xs text-app-muted hover:text-app-brand">← Tillbaka till matchningsresultat</Link>
+        <Link to={`/matching/${id}`} className="text-xs text-app-muted hover:text-app-brand">← {t("ai_back")}</Link>
         <div>
-          <h1 className="text-xl font-semibold text-app-primary">AI Ranking · Välj konsulter</h1>
-          <p className="mt-1 text-xs text-app-muted">{assignment ? `${assignment.title} · ${assignment.referenceNumber}` : "Välj 2–5 konsulter med original-CV för jämförelse."}</p>
+          <h1 className="text-xl font-semibold text-app-primary">{t("ai_select_title")}</h1>
+          <p className="mt-1 text-xs text-app-muted">{assignment ? `${assignment.title} · ${assignment.referenceNumber}` : t("ai_select_hint")}</p>
         </div>
-        {loading ? <p className="text-sm text-app-muted">Laddar konsulter och CV-status...</p> : (
+        {loading ? <p className="text-sm text-app-muted">{t("ai_loading")}</p> : (
           <>
             <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-app-primary">Valda för AI-jämförelse</h2>
-                <span className="text-xs text-app-muted">{selected.length} av 5</span>
+                <h2 className="text-sm font-semibold text-app-primary">{t("ai_selected")}</h2>
+                <span className="text-xs text-app-muted">{selected.length} {t("ai_of_five")}</span>
               </div>
-              <p className="text-xs text-app-muted">De två högst rankade konsulterna med tillgängligt CV är förvalda. Välj upp till fem konsulter.</p>
-              {selected.length === 5 && <p className="text-xs text-app-muted">Fem platser är fyllda. Ta bort en konsult för att lägga till en annan.</p>}
+              <p className="text-xs text-app-muted">{t("ai_selected_help")}</p>
+              {selected.length === 5 && <p className="text-xs text-app-muted">{t("ai_full")}</p>}
               {selected.map(consultantId => {
                 const person = results.find(r => r.consultantId === consultantId);
                 return (
@@ -80,16 +82,16 @@ export default function AiRankingSelection() {
                       <p className="text-sm font-medium text-app-primary">{person?.consultantName ?? consultantId}</p>
                       <p className="text-xs text-app-muted">Match Score {person?.score ?? "—"}%</p>
                     </div>
-                    <button type="button" onClick={() => { setSelected(v => v.filter(x => x !== consultantId)); }} className="text-xs text-app-muted hover:text-app-primary" aria-label={`Ta bort ${person?.consultantName}`}>Ta bort ×</button>
+                    <button type="button" onClick={() => { setSelected(v => v.filter(x => x !== consultantId)); }} className="text-xs text-app-muted hover:text-app-primary" aria-label={`Ta bort ${person?.consultantName}`}>{t("ai_remove")} ×</button>
                   </div>
                 );
               })}
               <button type="button" onClick={() => setOpen(v => !v)} className="w-full rounded-md border border-app-border bg-app px-4 py-2.5 text-left text-sm text-app-secondary hover:bg-app-raised">
-                Sök och välj konsult {open ? "⌃" : "⌄"}
+                {t("ai_search_toggle")} {open ? "⌃" : "⌄"}
               </button>
               {open && (
                 <div className="rounded-lg border border-app-border p-2 space-y-2">
-                  <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Sök namn..." aria-label="Sök konsult" className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-sm text-app-primary outline-none focus:border-app-brand" />
+                  <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder={t("ai_search_placeholder")} aria-label={t("ai_search_label")} className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-sm text-app-primary outline-none focus:border-app-brand" />
                   <div className="max-h-64 overflow-y-auto space-y-1">
                     {options.map(person => {
                       return (
@@ -105,7 +107,7 @@ export default function AiRankingSelection() {
               <p className="text-xs text-app-muted">Endast konsulter med tillgängligt CV visas.</p>
               <button type="button" onClick={() => { setSelected(results.filter(r => eligible.includes(r.consultantId)).slice(0, 2).map(r => r.consultantId)); }} className="text-xs text-app-brand hover:underline">Återställ automatiskt val</button>
             </section>
-            {eligible.length < 2 && <p className="rounded-lg border border-app-border p-3 text-xs text-app-warning">Minst två konsulter med tillgängliga original-CV:n krävs för AI Ranking.</p>}
+            {eligible.length < 2 && <p className="rounded-lg border border-app-border p-3 text-xs text-app-warning">{t("ai_min_two")}</p>}
             {error && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-app-danger">{error}</p>}
             <div className="flex justify-end">
               <button type="button" disabled={selected.length < 2 || selected.length > 5 || running} onClick={() => void run()} className="rounded-md bg-app-brand px-5 py-2.5 text-sm font-medium text-app-on-brand disabled:opacity-50">{running ? "Analyserar original-CV:n..." : "Jämför med AI →"}</button>
