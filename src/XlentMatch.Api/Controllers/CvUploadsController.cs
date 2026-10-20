@@ -46,7 +46,7 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
             return BadRequest("Email or both first and last name are required.");
 
         var consultants = await db.Consultants.AsNoTracking()
-            .Select(x => new { x.Id, x.FirstName, x.LastName, x.Email, x.Title })
+            .Select(x => new { x.Id, x.FirstName, x.LastName, x.Email })
             .ToListAsync(ct);
 
         var emailMatches = !string.IsNullOrWhiteSpace(email)
@@ -61,7 +61,7 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
 
         var matches = emailMatches.Concat(nameMatches).DistinctBy(x => x.Id)
             .Select(x => new ConsultantDetectionMatch(
-                x.Id, x.FirstName, x.LastName, x.Email, x.Title,
+                x.Id, x.FirstName, x.LastName, x.Email,
                 emailMatches.Any(e => e.Id == x.Id) ? "Email" : "Name"))
             .OrderBy(x => x.MatchReason == "Email" ? 0 : 1)
             .ThenBy(x => x.FirstName)
@@ -279,5 +279,5 @@ public class UpdateCvUploadRequest
 }
 
 public record DetectConsultantRequest(string? FirstName, string? LastName, string? Email);
-public record ConsultantDetectionMatch(int Id, string FirstName, string LastName, string? Email, string? Title, string MatchReason);
+public record ConsultantDetectionMatch(int Id, string FirstName, string LastName, string? Email, string MatchReason);
 public record ConsultantDetectionResult(List<ConsultantDetectionMatch> Matches);
