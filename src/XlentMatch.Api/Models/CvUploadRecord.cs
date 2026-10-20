@@ -11,6 +11,7 @@ public class CvUploadRecord
     public int? ConsultantId { get; set; }
     public string? DraftJson { get; set; }
     public string? StorageKey { get; set; }
+    public string? ContentHash { get; set; }
     public string? ContentType { get; set; }
     public bool IsActive { get; set; }
 }
