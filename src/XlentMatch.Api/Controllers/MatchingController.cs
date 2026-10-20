@@ -263,7 +263,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
             var ranks = doc.RootElement.GetProperty("rankings");
             var matches = doc.RootElement.GetProperty("matches");
             var firstId = ranks.EnumerateArray().First().GetProperty("consultantId").GetInt32();
-            var winner = matches.EnumerateArray().FirstOrDefault(m => m.GetProperty("ConsultantId").GetInt32() == firstId);
+            var winner = matches.EnumerateArray().FirstOrDefault(m => m.GetProperty("consultantId").GetInt32() == firstId);
             return new { x.Id, x.CreatedAt, consultantCount = ranks.GetArrayLength(),
                 bestMatch = winner.ValueKind == System.Text.Json.JsonValueKind.Undefined ? "Consultant" : winner.GetProperty("consultantName").GetString() };
         }).ToList());
