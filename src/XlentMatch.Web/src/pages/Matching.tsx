@@ -497,8 +497,7 @@ export default function Matching() {
                             </span>
                           </div>
                           <p className="text-[10px] text-app-muted truncate mt-0.5">
-                            {consultantById.get(result.consultantId)?.title ||
-                              t("consultant_role")}
+                            {consultantById.get(result.consultantId)?.seniority || "—"}
                           </p>
                           {cvEligible !== null && <p className={`mt-1 text-[10px] ${cvEligible.has(result.consultantId) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(result.consultantId) ? "CV finns" : "CV saknas"}</p>}
 
@@ -524,7 +523,7 @@ export default function Matching() {
                       {selected.consultantName}
                     </h2>
                     <p className="text-xs text-app-muted truncate">
-                      {selectedConsultant?.title || t("consultant_role")} ·{" "}
+                      {selectedConsultant?.seniority ? `${selectedConsultant.seniority} · ` : ""}
                       {selectedConsultant?.yearsOfExperience ?? 0}{" "}
                       {t("consultant_year_count")}
                     </p>
