@@ -43,7 +43,7 @@ export default function AiRankingSelection() {
   ), [results, selected, search]);
 
   const run = async () => {
-    if (selected.length !== 2 || running) return;
+    if (selected.length < 2 || selected.length > 5 || running) return;
     setRunning(true);
     setError("");
     try {
@@ -62,17 +62,17 @@ export default function AiRankingSelection() {
         <Link to={`/matching/${id}`} className="text-xs text-app-muted hover:text-app-brand">← Tillbaka till matchningsresultat</Link>
         <div>
           <h1 className="text-xl font-semibold text-app-primary">AI Ranking · Välj konsulter</h1>
-          <p className="mt-1 text-xs text-app-muted">{assignment ? `${assignment.title} · ${assignment.referenceNumber}` : "Välj två konsulter med original-CV för jämförelse."}</p>
+          <p className="mt-1 text-xs text-app-muted">{assignment ? `${assignment.title} · ${assignment.referenceNumber}` : "Välj 2–5 konsulter med original-CV för jämförelse."}</p>
         </div>
         {loading ? <p className="text-sm text-app-muted">Laddar konsulter och CV-status...</p> : (
           <>
             <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-app-primary">Valda för AI-jämförelse</h2>
-                <span className="text-xs text-app-muted">{selected.length} av 2</span>
+                <span className="text-xs text-app-muted">{selected.length} av 5</span>
               </div>
               <p className="text-xs text-app-muted">De två högst rankade konsulterna med tillgängligt CV är förvalda. Du kan byta ut dem.</p>
-              {selected.length === 2 && <p className="text-xs text-app-muted">Två platser är fyllda. Klicka på Byt vid en konsult för att välja en ersättare.</p>}
+              {selected.length === 5 && <p className="text-xs text-app-muted">Fem platser är fyllda. Klicka på Byt vid en konsult för att välja en ersättare.</p>}
               {selected.map(consultantId => {
                 const person = results.find(r => r.consultantId === consultantId);
                 return (
@@ -96,7 +96,7 @@ export default function AiRankingSelection() {
                     {options.map(person => {
                       const hasCv = eligible.includes(person.consultantId);
                       return (
-                        <button key={person.consultantId} type="button" disabled={!hasCv} onClick={() => { setSelected(v => replaceId !== null ? v.map(id => id === replaceId ? person.consultantId : id) : v.length >= 2 ? [...v.slice(0, 1), person.consultantId] : [...v, person.consultantId]); setReplaceId(null); setSearch(""); setOpen(false); }} className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-app-raised disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button key={person.consultantId} type="button" disabled={!hasCv || (replaceId === null && selected.length >= 5)} onClick={() => { setSelected(v => replaceId !== null ? v.map(id => id === replaceId ? person.consultantId : id) : v.length >= 5 ? v : [...v, person.consultantId]); setReplaceId(null); setSearch(""); setOpen(false); }} className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-app-raised disabled:opacity-50 disabled:cursor-not-allowed">
                           <span className="min-w-0"><span className="block text-sm text-app-primary">{person.consultantName}</span><span className="text-xs text-app-muted">Match Score {person.score}%</span></span>
                           <span className={`shrink-0 text-xs ${hasCv ? "text-app-success" : "text-app-warning"}`}>{hasCv ? "CV finns" : "CV saknas"}</span>
                         </button>
@@ -111,7 +111,7 @@ export default function AiRankingSelection() {
             {eligible.length < 2 && <p className="rounded-lg border border-app-border p-3 text-xs text-app-warning">Minst två konsulter med tillgängliga original-CV:n krävs för AI Ranking.</p>}
             {error && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-app-danger">{error}</p>}
             <div className="flex justify-end">
-              <button type="button" disabled={selected.length !== 2 || running} onClick={() => void run()} className="rounded-md bg-app-brand px-5 py-2.5 text-sm font-medium text-app-on-brand disabled:opacity-50">{running ? "Analyserar original-CV:n..." : "Jämför med AI →"}</button>
+              <button type="button" disabled={selected.length < 2 || selected.length > 5 || running} onClick={() => void run()} className="rounded-md bg-app-brand px-5 py-2.5 text-sm font-medium text-app-on-brand disabled:opacity-50">{running ? "Analyserar original-CV:n..." : "Jämför med AI →"}</button>
             </div>
           </>
         )}
