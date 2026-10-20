@@ -142,30 +142,33 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
             await using var incoming = file.OpenReadStream();
             var incomingHash = Convert.ToHexString(await SHA256.HashDataAsync(incoming, ct));
 
-            var storedKeys = await db.CvUploads.AsNoTracking()
-                .Where(x => x.StorageKey != null && x.Id != id)
-                .Select(x => new { x.Id, x.StorageKey })
+            // Backfill legacy uploads once; subsequent checks use the indexed hash.
+            var legacy = await db.CvUploads
+                .Where(x => x.StorageKey != null && x.ContentHash == null)
                 .ToListAsync(ct);
-
-            foreach (var existing in storedKeys)
+            foreach (var existing in legacy)
             {
                 var existingPath = Path.Combine(CvDirectory, Path.GetFileName(existing.StorageKey!));
                 if (!System.IO.File.Exists(existingPath)) continue;
-
                 await using var stored = System.IO.File.OpenRead(existingPath);
-                var storedHash = Convert.ToHexString(await SHA256.HashDataAsync(stored, ct));
-                if (incomingHash == storedHash)
+                existing.ContentHash = Convert.ToHexString(await SHA256.HashDataAsync(stored, ct));
+            }
+            if (legacy.Count > 0) await db.SaveChangesAsync(ct);
+
+            var duplicateId = await db.CvUploads.AsNoTracking()
+                .Where(x => x.StorageKey != null && x.Id != id && x.ContentHash == incomingHash)
+                .Select(x => (int?)x.Id)
+                .FirstOrDefaultAsync(ct);
+            if (duplicateId is not null)
+            {
+                db.CvUploads.Remove(upload);
+                await db.SaveChangesAsync(ct);
+                return Conflict(new
                 {
-                    // The rejected upload must not leave a placeholder in the database.
-                    db.CvUploads.Remove(upload);
-                    await db.SaveChangesAsync(ct);
-                    return Conflict(new
-                    {
-                        code = "DUPLICATE_CV",
-                        message = "This CV already exists in the library. No extraction was started.",
-                        existingUploadId = existing.Id
-                    });
-                }
+                    code = "DUPLICATE_CV",
+                    message = "This CV already exists in the library. No extraction was started.",
+                    existingUploadId = duplicateId.Value
+                });
             }
 
             var key = Guid.NewGuid().ToString("N") + extension;
@@ -176,6 +179,7 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
                     await file.CopyToAsync(stream, ct);
 
                 upload.StorageKey = key;
+                upload.ContentHash = incomingHash;
                 upload.ContentType = extension == ".pdf" ? "application/pdf" : "text/plain";
                 upload.FileName = Path.GetFileName(file.FileName);
                 upload.FileSize = file.Length;
