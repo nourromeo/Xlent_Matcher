@@ -191,6 +191,93 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         }
     }
 
+
+    public sealed class SaveAiRankingRequest
+    {
+        public List<SavedAiRankingItem>? Rankings { get; set; }
+        public List<SavedAiRankingMatch>? Matches { get; set; }
+    }
+
+    public sealed class SavedAiRankingItem
+    {
+        public int ConsultantId { get; set; }
+        public int Rank { get; set; }
+        public string Reason { get; set; } = "";
+        public List<string> Strengths { get; set; } = new();
+        public List<string> Gaps { get; set; } = new();
+        public List<string> Evidence { get; set; } = new();
+    }
+
+    public sealed class SavedAiRankingMatch
+    {
+        public int ConsultantId { get; set; }
+        public string ConsultantName { get; set; } = "";
+        public int Score { get; set; }
+    }
+
+    [HttpPost("assignment/{assignmentId:int}/saved-ai-rankings")]
+    public async Task<ActionResult<object>> SaveAiRanking(int assignmentId, [FromBody] SaveAiRankingRequest? request, CancellationToken ct)
+    {
+        if (!await db.Assignments.AnyAsync(a => a.Id == assignmentId, ct)) return NotFound();
+        var rankings = request?.Rankings;
+        if (rankings is null || rankings.Count is < 2 or > 5 ||
+            rankings.Any(x => x.ConsultantId <= 0 || x.Rank <= 0) ||
+            rankings.Select(x => x.ConsultantId).Distinct().Count() != rankings.Count ||
+            rankings.Select(x => x.Rank).OrderBy(x => x).Where((rank, i) => rank != i + 1).Any())
+            return BadRequest("A ranking must contain 2 to 5 distinct consultants with consecutive ranks.");
+        var ids = rankings.Select(x => x.ConsultantId).ToList();
+        var matches = await db.MatchResults.AsNoTracking()
+            .Where(x => x.AssignmentId == assignmentId && ids.Contains(x.ConsultantId))
+            .Select(x => new { x.ConsultantId, x.ConsultantName, x.Score })
+            .ToListAsync(ct);
+        if (matches.Count != ids.Count) return BadRequest("Consultants must belong to this assignment.");
+        // Use server-side names and scores. Do not persist arbitrary client-supplied profile data.
+        var snapshot = new
+        {
+            rankings = rankings.OrderBy(x => x.Rank).ToList(),
+            matches = matches.Select(x => new { x.ConsultantId, x.ConsultantName, x.Score }).ToList(),
+            skippedWithoutCv = 0
+        };
+        var record = new SavedAiRanking
+        {
+            AssignmentId = assignmentId,
+            SnapshotJson = System.Text.Json.JsonSerializer.Serialize(snapshot)
+        };
+        db.SavedAiRankings.Add(record);
+        await db.SaveChangesAsync(ct);
+        return CreatedAtAction(nameof(GetSavedAiRanking), new { assignmentId, savedId = record.Id },
+            new { id = record.Id, record.CreatedAt });
+    }
+
+    [HttpGet("assignment/{assignmentId:int}/saved-ai-rankings")]
+    public async Task<ActionResult<object>> ListSavedAiRankings(int assignmentId, CancellationToken ct)
+    {
+        if (!await db.Assignments.AnyAsync(x => x.Id == assignmentId, ct)) return NotFound();
+        var saved = await db.SavedAiRankings.AsNoTracking()
+            .Where(x => x.AssignmentId == assignmentId)
+            .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
+            .ToListAsync(ct);
+        return Ok(saved.Select(x =>
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(x.SnapshotJson);
+            var ranks = doc.RootElement.GetProperty("rankings");
+            var matches = doc.RootElement.GetProperty("matches");
+            var firstId = ranks.EnumerateArray().First().GetProperty("ConsultantId").GetInt32();
+            var winner = matches.EnumerateArray().FirstOrDefault(m => m.GetProperty("ConsultantId").GetInt32() == firstId);
+            return new { x.Id, x.CreatedAt, consultantCount = ranks.GetArrayLength(),
+                bestMatch = winner.ValueKind == System.Text.Json.JsonValueKind.Undefined ? "Consultant" : winner.GetProperty("ConsultantName").GetString() };
+        }).ToList());
+    }
+
+    [HttpGet("assignment/{assignmentId:int}/saved-ai-rankings/{savedId:int}")]
+    public async Task<ActionResult<object>> GetSavedAiRanking(int assignmentId, int savedId, CancellationToken ct)
+    {
+        var saved = await db.SavedAiRankings.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == savedId && x.AssignmentId == assignmentId, ct);
+        if (saved is null) return NotFound();
+        return Ok(new { saved.Id, saved.CreatedAt, snapshot = System.Text.Json.JsonDocument.Parse(saved.SnapshotJson).RootElement });
+    }
+
     [HttpGet("assignment/{assignmentId:int}/freshness")]
     public async Task<ActionResult<object>> GetFreshness(int assignmentId, CancellationToken ct)
     {
