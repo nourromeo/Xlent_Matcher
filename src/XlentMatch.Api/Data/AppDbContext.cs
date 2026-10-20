@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Certification> Certifications => Set<Certification>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<AssignmentRequirement> AssignmentRequirements => Set<AssignmentRequirement>();
+    public DbSet<SavedAiRanking> SavedAiRankings => Set<SavedAiRanking>();
     public DbSet<MatchResult> MatchResults => Set<MatchResult>();
     public DbSet<MatchRequirementResult> MatchRequirementResults => Set<MatchRequirementResult>();
     public DbSet<CvUploadRecord> CvUploads => Set<CvUploadRecord>();
@@ -61,6 +62,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .OnDelete(DeleteBehavior.Restrict);
         mb.Entity<AssignmentRequirement>().HasIndex(x => new { x.AssignmentId, x.SkillId });
 
+        mb.Entity<SavedAiRanking>().HasOne<Assignment>().WithMany().HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+        mb.Entity<SavedAiRanking>().HasIndex(x => x.AssignmentId);
         mb.Entity<MatchResult>().HasMany(m => m.Details).WithOne().HasForeignKey(d => d.MatchResultId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<MatchResult>().HasIndex(m => new { m.AssignmentId, m.ConsultantId });
 
