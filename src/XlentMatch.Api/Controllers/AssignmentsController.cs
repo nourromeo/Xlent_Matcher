@@ -76,15 +76,24 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
             var connection = db.Database.GetDbConnection();
             await using var command = connection.CreateCommand();
             command.Transaction = db.Database.CurrentTransaction!.GetDbTransaction();
-            command.CommandText = @"SELECT COALESCE(MAX(TRY_CONVERT(int, SUBSTRING([ReferenceNumber], 10, 32))), 0)
-                                    FROM [Assignments] WITH (TABLOCKX, HOLDLOCK)
-                                    WHERE [ReferenceNumber] LIKE @prefix";
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = "@prefix";
-            parameter.Value = prefix + "%";
-            command.Parameters.Add(parameter);
-            var current = Convert.ToInt32(await command.ExecuteScalarAsync(ct));
-            assignment.ReferenceNumber = $"{prefix}{current + 1:D4}";
+            command.CommandText = @"UPDATE [AssignmentReferenceCounters] WITH (UPDLOCK, HOLDLOCK)
+                                    SET [LastNumber] = [LastNumber] + 1
+                                    OUTPUT INSERTED.[LastNumber]
+                                    WHERE [Year] = @year";
+            var yearParameter = command.CreateParameter();
+            yearParameter.ParameterName = "@year";
+            yearParameter.Value = assignment.CreatedAt.Year;
+            command.Parameters.Add(yearParameter);
+            var next = await command.ExecuteScalarAsync(ct);
+            if (next is null)
+            {
+                // Serialize first creation of a year using the transaction's serializable isolation.
+                command.CommandText = @"INSERT INTO [AssignmentReferenceCounters] ([Year], [LastNumber])
+                                        VALUES (@year, 1)";
+                await command.ExecuteNonQueryAsync(ct);
+                next = 1;
+            }
+            assignment.ReferenceNumber = $"{prefix}{Convert.ToInt32(next):D4}";
             db.Assignments.Add(assignment);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
