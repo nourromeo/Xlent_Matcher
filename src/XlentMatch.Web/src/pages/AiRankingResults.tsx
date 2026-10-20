@@ -21,8 +21,18 @@ export default function AiRankingResults() {
     <div className="h-full overflow-auto bg-app p-6">
       <div className="mx-auto max-w-6xl space-y-4">
         <Link to={`/matching/${assignmentId}/ai-ranking`} className="text-xs text-app-muted hover:text-app-brand">← {t("ai_back_selection")}</Link>
-        <div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-sm font-semibold text-app-primary">{t("ai_results_title")}</h1>
+          {aiRanking && (
+            <div className="flex items-center gap-2" aria-label="Result actions">
+              <button type="button" disabled title="Save functionality is coming later" className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary opacity-60 cursor-not-allowed">
+                <span aria-hidden="true">▣</span> Save Result
+              </button>
+              <button type="button" disabled title="Share functionality is coming later" className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary opacity-60 cursor-not-allowed">
+                <span aria-hidden="true">↗</span> Share
+              </button>
+            </div>
+          )}
         </div>
         {!aiRanking ? (
           <div className="rounded-xl border border-app-border bg-app-surface p-6">
