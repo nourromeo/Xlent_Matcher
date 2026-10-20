@@ -51,6 +51,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<Consultant>().HasMany(c => c.Certifications).WithOne().HasForeignKey(c => c.ConsultantId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<Certification>().Property(c => c.IssuedYear).HasMaxLength(4);
 
+        mb.Entity<Assignment>().Property(a => a.ReferenceNumber).HasMaxLength(32).IsRequired();
+        mb.Entity<Assignment>().HasIndex(a => a.ReferenceNumber).IsUnique();
         mb.Entity<Assignment>().HasMany(a => a.Requirements).WithOne().HasForeignKey(r => r.AssignmentId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<AssignmentRequirement>()
             .HasOne(x => x.Skill)
