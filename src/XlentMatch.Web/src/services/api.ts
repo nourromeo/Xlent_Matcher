@@ -68,15 +68,18 @@ async function executeApiRequest<T>(
   if (!response.ok) {
     const raw = await response.text();
     let hasValidationErrors = false;
+    let validationField: string | null = null;
     try {
       const parsed = JSON.parse(raw) as {
         errors?: Record<string, string[]>;
       };
       hasValidationErrors = Boolean(parsed.errors && Object.keys(parsed.errors).length > 0);
+      if (hasValidationErrors && parsed.errors) validationField = Object.keys(parsed.errors)[0];
     } catch {
       // Internal/plain-text server responses are intentionally not exposed.
     }
 
+    if (validationField) throw new ApiError(`Invalid field: ${validationField}. Please review this value.`, "validation", response.status);
     throw normalizeApiError(response.status, hasValidationErrors);
   }
 
