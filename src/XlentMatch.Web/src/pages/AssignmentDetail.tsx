@@ -304,7 +304,7 @@ export default function AssignmentDetail() {
       <EntitySummary
         leading={<div className="w-9 h-9 rounded-lg bg-app-brand-subtle flex items-center justify-center text-app-brand"><Briefcase size={15} /></div>}
         title={assignment.title}
-        metadata={`${assignment.referenceNumber} · ${assignment.customerName || "—"} · ${displaySeniority(assignment.seniority ?? "—")} · ${assignment.location || t("assignment_location_unspecified")} · ${t("common_updated")} ${formatDate(assignment.updatedAt || assignment.createdAt, locale)}`}
+        metadata={[assignment.customerName, assignment.referenceNumber].filter(Boolean).join(" · ")}
         badges={<><StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>{(assignment.availability || assignment.requiredStartDate || assignment.startDateDescription) && <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>{assignment.requiredStartDate ? formatDate(assignment.requiredStartDate, locale) : assignment.startDateDescription || displayAvailability(assignment.availability ?? "")}</StatusBadge>}</>}
         actions={<><LinkButton to={"/matching/" + assignment.id} state={{ fromAssignment: true }} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view_matches")}</LinkButton><LinkButton to={`/client-assignments/${assignment.id}/edit`} variant="secondary" icon={<Edit3 size={12} />}>{t("assignment_edit")}</LinkButton><Button variant="danger" icon={<Trash2 size={12} />} onClick={() => setDeleteOpen(true)}>{t("common_delete")}</Button></>}
       />
