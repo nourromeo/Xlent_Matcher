@@ -119,6 +119,7 @@ export default function Matching() {
 
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [consultants, setConsultants] = useState<Consultant[]>([]);
+  const [cvEligible, setCvEligible] = useState<Set<number> | null>(null);
   const [results, setResults] = useState<MatchResultApi[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -141,6 +142,7 @@ export default function Matching() {
   useEffect(() => {
     let cancelled = false;
 
+    consultantsApi.getCvEligibility().then(data => { if (!cancelled) setCvEligible(new Set(data.eligibleConsultantIds)); }).catch(() => { if (!cancelled) setCvEligible(null); });
     Promise.all([assignmentsApi.getAll(), consultantsApi.getAll()])
       .then(([assignmentData, consultantData]) => {
         if (cancelled) return;
@@ -498,6 +500,7 @@ export default function Matching() {
                             {consultantById.get(result.consultantId)?.title ||
                               t("consultant_role")}
                           </p>
+                          {cvEligible !== null && <p className={`mt-1 text-[10px] ${cvEligible.has(result.consultantId) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(result.consultantId) ? "CV finns" : "CV saknas"}</p>}
                           <div className="mt-2">
                             {missing.length === 0 ? (
                               <div
