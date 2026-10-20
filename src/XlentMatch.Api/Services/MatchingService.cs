@@ -8,6 +8,10 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     public List<MatchResult> MatchAndRank(Assignment assignment, IEnumerable<Consultant> consultants)
     {
         var results = consultants
+            .Where(c => c.Availability != ConsultantAvailability.Unavailable ||
+                (assignment.RequiredStartDate is not null &&
+                 c.AvailableAgainDate is not null &&
+                 c.AvailableAgainDate <= assignment.RequiredStartDate))
             .Select(c => Match(assignment, c))
             .OrderByDescending(r => r.Score)
             .ThenByDescending(r => r.MatchedMandatory)
