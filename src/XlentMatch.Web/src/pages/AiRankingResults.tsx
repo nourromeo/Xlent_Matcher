@@ -1,18 +1,50 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "../i18n";
 import { Link, useLocation, useParams } from "react-router-dom";
-import type { AiRankingResult } from "../services/matchingApi";
+import { matchingApi, type AiRankingResult } from "../services/matchingApi";
 import type { MatchResultApi } from "../types";
 
 type ResultState = { ranking: AiRankingResult; matches: MatchResultApi[]; selected: number[] };
 
 export default function AiRankingResults() {
   const { t } = useI18n();
-  const { assignmentId } = useParams<{ assignmentId: string }>();
+  const { assignmentId, savedId } = useParams<{ assignmentId: string; savedId?: string }>();
   const location = useLocation();
   const state = location.state as ResultState | null;
-  const aiRanking = state?.ranking;
-  const allResults = state?.matches ?? [];
+  const [loaded, setLoaded] = useState<{ ranking: AiRankingResult; matches: MatchResultApi[] } | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState("");
+  useEffect(() => {
+    if (!savedId) return;
+    let cancelled = false;
+    matchingApi.getSavedAiRanking(Number(assignmentId), Number(savedId))
+      .then(data => {
+        if (cancelled) return;
+        setLoaded({
+          ranking: { rankings: data.snapshot.rankings, skippedWithoutCv: data.snapshot.skippedWithoutCv },
+          matches: data.snapshot.matches.map(m => ({ ...m, id: 0, assignmentId: Number(assignmentId), rank: 0 } as MatchResultApi))
+        });
+      })
+      .catch(e => { if (!cancelled) setLoadError(e instanceof Error ? e.message : "Could not load saved ranking."); });
+    return () => { cancelled = true; };
+  }, [assignmentId, savedId]);
+  const aiRanking = savedId ? loaded?.ranking : state?.ranking;
+  const allResults = savedId ? (loaded?.matches ?? []) : (state?.matches ?? []);
+  const saveResult = async () => {
+    if (!aiRanking || saving || savedRecordId !== null) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      const saved = await matchingApi.saveAiRanking(Number(assignmentId), aiRanking);
+      setSavedRecordId(saved.id);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Could not save ranking.");
+    } finally {
+      setSaving(false);
+    }
+  };
   const [activeIndex, setActiveIndex] = useState(0);
   const ranked = [...(aiRanking?.rankings ?? [])].sort((a, b) => a.rank - b.rank);
   const displayed = ranked.slice(activeIndex, activeIndex + 1);
@@ -25,8 +57,8 @@ export default function AiRankingResults() {
           <h1 className="text-sm font-semibold text-app-primary">{t("ai_results_title")}</h1>
           {aiRanking && (
             <div className="flex items-center gap-2" aria-label="Result actions">
-              <button type="button" disabled title="Save functionality is coming later" className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary opacity-60 cursor-not-allowed">
-                <span aria-hidden="true">▣</span> Save Result
+              <button type="button" disabled={Boolean(savedId) || saving || savedRecordId !== null} onClick={() => void saveResult()} className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary hover:bg-app-raised disabled:opacity-60 disabled:cursor-not-allowed">
+                <span aria-hidden="true">▣</span> {savedId || savedRecordId !== null ? "Saved" : saving ? "Saving..." : "Save Result"}
               </button>
               <button type="button" disabled title="Share functionality is coming later" className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary opacity-60 cursor-not-allowed">
                 <span aria-hidden="true">↗</span> Share
@@ -34,6 +66,9 @@ export default function AiRankingResults() {
             </div>
           )}
         </div>
+        {saveError && <p role="alert" className="text-sm text-app-danger">{saveError}</p>}
+        {savedRecordId !== null && <p role="status" className="text-sm text-app-success">Ranking saved successfully.</p>}
+        {loadError && <p role="alert" className="text-sm text-app-danger">{loadError}</p>}
         {!aiRanking ? (
           <div className="rounded-xl border border-app-border bg-app-surface p-6">
             <p className="text-sm text-app-primary">{t("ai_no_results")}</p>
