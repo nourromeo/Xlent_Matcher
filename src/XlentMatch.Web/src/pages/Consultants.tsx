@@ -224,9 +224,6 @@ export default function Consultants() {
                   </div>
                   <div>
                     <p className="font-medium text-app-primary">{consultantName(consultant)}</p>
-                    <p className="text-[10px] text-app-muted max-w-xs truncate">
-                      {consultant.seniority || consultant.summary || "—"}
-                    </p>
                   </div>
                 </div>
               ),
