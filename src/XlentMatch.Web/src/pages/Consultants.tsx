@@ -143,7 +143,7 @@ export default function Consultants() {
 
     return (
       consultantName(consultant).toLowerCase().includes(search) ||
-      (consultant.title ?? "").toLowerCase().includes(search) ||
+      
       (consultant.summary ?? "").toLowerCase().includes(search) ||
       consultant.skills.some((skill) => skill.name.toLowerCase().includes(search))
     );
@@ -225,7 +225,7 @@ export default function Consultants() {
                   <div>
                     <p className="font-medium text-app-primary">{consultantName(consultant)}</p>
                     <p className="text-[10px] text-app-muted max-w-xs truncate">
-                      {consultant.title || consultant.summary || "—"}
+                      {consultant.seniority || consultant.summary || "—"}
                     </p>
                   </div>
                 </div>
