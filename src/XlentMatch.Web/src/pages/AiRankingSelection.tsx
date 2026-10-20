@@ -13,7 +13,6 @@ export default function AiRankingSelection() {
   const [eligible, setEligible] = useState<number[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [search, setSearch] = useState("");
-  const [replaceId, setReplaceId] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
@@ -38,9 +37,9 @@ export default function AiRankingSelection() {
   }, [id]);
 
   const options = useMemo(() => results.filter(r =>
-    !selected.includes(r.consultantId) &&
+    eligible.includes(r.consultantId) && !selected.includes(r.consultantId) &&
     (r.consultantName + " " + r.consultantId).toLocaleLowerCase().includes(search.toLocaleLowerCase())
-  ), [results, selected, search]);
+  ), [results, selected, search, eligible]);
 
   const run = async () => {
     if (selected.length < 2 || selected.length > 5 || running) return;
@@ -71,8 +70,8 @@ export default function AiRankingSelection() {
                 <h2 className="text-sm font-semibold text-app-primary">Valda för AI-jämförelse</h2>
                 <span className="text-xs text-app-muted">{selected.length} av 5</span>
               </div>
-              <p className="text-xs text-app-muted">De två högst rankade konsulterna med tillgängligt CV är förvalda. Du kan byta ut dem.</p>
-              {selected.length === 5 && <p className="text-xs text-app-muted">Fem platser är fyllda. Klicka på Byt vid en konsult för att välja en ersättare.</p>}
+              <p className="text-xs text-app-muted">De två högst rankade konsulterna med tillgängligt CV är förvalda. Välj upp till fem konsulter.</p>
+              {selected.length === 5 && <p className="text-xs text-app-muted">Fem platser är fyllda. Ta bort en konsult för att lägga till en annan.</p>}
               {selected.map(consultantId => {
                 const person = results.find(r => r.consultantId === consultantId);
                 return (
@@ -81,24 +80,22 @@ export default function AiRankingSelection() {
                       <p className="text-sm font-medium text-app-primary">{person?.consultantName ?? consultantId}</p>
                       <p className="text-xs text-app-muted">Match Score {person?.score ?? "—"}% · CV finns</p>
                     </div>
-                    <button type="button" onClick={() => { setReplaceId(consultantId); setOpen(true); }} className="text-xs text-app-brand hover:underline">Byt</button>
-                    <button type="button" onClick={() => { setSelected(v => v.filter(x => x !== consultantId)); setReplaceId(null); }} className="text-xs text-app-muted hover:text-app-primary" aria-label={`Ta bort ${person?.consultantName}`}>Ta bort ×</button>
+                    <button type="button" onClick={() => { setSelected(v => v.filter(x => x !== consultantId)); }} className="text-xs text-app-muted hover:text-app-primary" aria-label={`Ta bort ${person?.consultantName}`}>Ta bort ×</button>
                   </div>
                 );
               })}
               <button type="button" onClick={() => setOpen(v => !v)} className="w-full rounded-md border border-app-border bg-app px-4 py-2.5 text-left text-sm text-app-secondary hover:bg-app-raised">
-                {replaceId !== null ? "Välj ersättare" : "Sök och välj konsult"} {open ? "⌃" : "⌄"}
+                Sök och välj konsult {open ? "⌃" : "⌄"}
               </button>
               {open && (
                 <div className="rounded-lg border border-app-border p-2 space-y-2">
                   <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Sök namn..." aria-label="Sök konsult" className="w-full rounded-md border border-app-border bg-app px-3 py-2 text-sm text-app-primary outline-none focus:border-app-brand" />
                   <div className="max-h-64 overflow-y-auto space-y-1">
                     {options.map(person => {
-                      const hasCv = eligible.includes(person.consultantId);
                       return (
-                        <button key={person.consultantId} type="button" disabled={!hasCv || (replaceId === null && selected.length >= 5)} onClick={() => { setSelected(v => replaceId !== null ? v.map(id => id === replaceId ? person.consultantId : id) : v.length >= 5 ? v : [...v, person.consultantId]); setReplaceId(null); setSearch(""); setOpen(false); }} className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-app-raised disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button key={person.consultantId} type="button" disabled={selected.length >= 5} onClick={() => { setSelected(v => v.length >= 5 ? v : [...v, person.consultantId]); setSearch(""); setOpen(false); }} className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left hover:bg-app-raised disabled:opacity-50 disabled:cursor-not-allowed">
                           <span className="min-w-0"><span className="block text-sm text-app-primary">{person.consultantName}</span><span className="text-xs text-app-muted">Match Score {person.score}%</span></span>
-                          <span className={`shrink-0 text-xs ${hasCv ? "text-app-success" : "text-app-warning"}`}>{hasCv ? "CV finns" : "CV saknas"}</span>
+                          <span className="shrink-0 text-xs text-app-success">CV finns</span>
                         </button>
                       );
                     })}
@@ -106,7 +103,8 @@ export default function AiRankingSelection() {
                   </div>
                 </div>
               )}
-              <button type="button" onClick={() => { setSelected(results.filter(r => eligible.includes(r.consultantId)).slice(0, 2).map(r => r.consultantId)); setReplaceId(null); }} className="text-xs text-app-brand hover:underline">Återställ automatiskt val</button>
+              <p className="text-xs text-app-muted">Endast konsulter med tillgängligt CV visas.</p>
+              <button type="button" onClick={() => { setSelected(results.filter(r => eligible.includes(r.consultantId)).slice(0, 2).map(r => r.consultantId)); }} className="text-xs text-app-brand hover:underline">Återställ automatiskt val</button>
             </section>
             {eligible.length < 2 && <p className="rounded-lg border border-app-border p-3 text-xs text-app-warning">Minst två konsulter med tillgängliga original-CV:n krävs för AI Ranking.</p>}
             {error && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-app-danger">{error}</p>}
