@@ -2,6 +2,7 @@ import type { Consultant } from "../types";
 import { apiRequest } from "./api";
 
 export const consultantsApi = {
+  getCvEligibility: () => apiRequest<{ eligibleConsultantIds: number[] }>("/consultants/cv-eligibility"),
   getAll: () => apiRequest<Consultant[]>("/consultants"),
 
   getById: (id: number, signal?: AbortSignal) => apiRequest<Consultant>(`/consultants/${id}`, { signal }),
