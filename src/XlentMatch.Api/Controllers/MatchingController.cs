@@ -115,8 +115,8 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
 
         if (request?.ConsultantIds is { } chosen)
         {
-            if (chosen.Count != 2 || chosen.Distinct().Count() != 2)
-                return BadRequest("Select exactly two different consultants.");
+            if (chosen.Count < 2 || chosen.Count > 5 || chosen.Distinct().Count() != chosen.Count)
+                return BadRequest("Select between two and five different consultants.");
             if (chosen.Any(id => !ranked.Contains(id)))
                 return BadRequest("Selected consultants must belong to this assignment's matching results.");
             ranked = chosen;
@@ -132,7 +132,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         var skipped = 0;
         foreach (var id in ranked)
         {
-            if (eligible.Count == 2) break;
+            if (eligible.Count == (request?.ConsultantIds?.Count ?? 5)) break;
             if (!byConsultant.TryGetValue(id, out var cv)) { skipped++; continue; }
             var path = Path.Combine(environment.ContentRootPath, "private-cvs", Path.GetFileName(cv.StorageKey!));
             if (!System.IO.File.Exists(path)) { skipped++; continue; }
@@ -157,8 +157,10 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
             if (string.IsNullOrWhiteSpace(text)) { skipped++; continue; }
             eligible.Add((id, text.Length > 30000 ? text[..30000] : text));
         }
+        if (request?.ConsultantIds is { } requested && eligible.Count != requested.Count)
+            return BadRequest($"All selected consultants need readable original CVs. Requested {requested.Count}, found {eligible.Count}.");
         if (eligible.Count < 2)
-            return BadRequest($"AI Ranking needs two original CVs. Found {eligible.Count} eligible consultant(s).");
+            return BadRequest($"AI Ranking needs at least two original CVs. Found {eligible.Count} eligible consultant(s).");
 
         var requirements = string.Join("\n", assignment.Requirements.Select(r =>
             $"{r.Type}: {r.Name}; minimum years: {r.MinYears?.ToString() ?? "not specified"}; proficiency: {r.Proficiency ?? "not specified"}"));
