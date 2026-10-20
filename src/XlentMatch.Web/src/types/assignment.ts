@@ -36,6 +36,7 @@ export type AssignmentRequirementApi = {
 
 export type AssignmentApi = {
   id: number;
+  referenceNumber: string;
   customerName: string;
   title: string;
   description: string | null;
