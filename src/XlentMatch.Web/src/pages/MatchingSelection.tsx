@@ -9,6 +9,8 @@ export default function MatchingSelection() {
   const { t } = useI18n();
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
+  const [visibleCount, setVisibleCount] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -25,8 +27,14 @@ export default function MatchingSelection() {
     const term = search.trim().toLocaleLowerCase();
     return assignments
       .filter((item) => !term || (item.title + " " + item.customerName).toLocaleLowerCase().includes(term))
-      .sort((a, b) => (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || ""));
-  }, [assignments, search]);
+      .sort((a, b) => sortBy === "name"
+        ? a.title.localeCompare(b.title)
+        : sortBy === "oldest"
+          ? a.createdAt.localeCompare(b.createdAt)
+          : b.createdAt.localeCompare(a.createdAt));
+  }, [assignments, search, sortBy]);
+
+  const shown = filtered.slice(0, visibleCount);
 
   return (
     <div className="flex h-full flex-col bg-app">
@@ -43,10 +51,18 @@ export default function MatchingSelection() {
               id="matching-assignment-search"
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => { setSearch(event.target.value); setVisibleCount(10); }}
               placeholder={t("matching_search_placeholder")}
               className="w-full rounded-md border border-app-border bg-app px-3 py-2.5 text-sm text-app-primary outline-none focus:border-app-brand"
             />
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs text-app-muted">{t("matching_showing_count").replace("{shown}", String(Math.min(visibleCount, filtered.length))).replace("{total}", String(filtered.length))}</span>
+            <select aria-label={t("matching_sort_label")} value={sortBy} onChange={(event) => { setSortBy(event.target.value as typeof sortBy); setVisibleCount(10); }} className="rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-primary">
+              <option value="newest">{t("matching_sort_newest")}</option>
+              <option value="oldest">{t("matching_sort_oldest")}</option>
+              <option value="name">{t("matching_sort_name")}</option>
+            </select>
           </div>
           {loading ? (
             <p className="text-sm text-app-muted">{t("matching_loading")}</p>
@@ -57,8 +73,9 @@ export default function MatchingSelection() {
               {t("matching_no_assignments")}
             </p>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-app-border bg-app-surface">
-              {filtered.map((item) => (
+            <div className="space-y-3">
+              <div className="overflow-hidden rounded-xl border border-app-border bg-app-surface">
+              {shown.map((item) => (
                 <Link
                   key={item.id}
                   to={`/matching/${item.id}`}
@@ -67,11 +84,15 @@ export default function MatchingSelection() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-app-primary">{item.title}</p>
-                    <p className="mt-1 truncate text-xs text-app-muted">{item.customerName}</p>
+                    <p className="mt-1 truncate text-xs text-app-muted">{item.customerName} · #{item.id}</p>
                   </div>
                   <span aria-hidden="true" className="shrink-0 text-app-muted">→</span>
                 </Link>
               ))}
+              </div>
+              {visibleCount < filtered.length && (
+                <button type="button" onClick={() => setVisibleCount((count) => count + 10)} className="w-full rounded-lg border border-app-border bg-app-surface px-4 py-2.5 text-sm font-medium text-app-primary hover:bg-app-raised">{t("matching_show_more")}</button>
+              )}
             </div>
           )}
         </div>
