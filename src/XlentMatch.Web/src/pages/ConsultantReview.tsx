@@ -219,7 +219,7 @@ export default function ConsultantReview() {
     try {
       let saved: Consultant;
       if (linkedConsultantId) {
-        if (!existing) throw new Error("Current consultant profile has not loaded.");
+        if (!existing) throw new Error(t("review_current_missing"));
         const extracted = toConsultant(draft);
         // The reviewed active CV is the source of truth for CV-derived profile data.
         // Keep internal availability and scheduling information from the existing profile.
@@ -230,7 +230,7 @@ export default function ConsultantReview() {
           availableAgainDate: existing.availableAgainDate,
           originalCvText: extracted.originalCvText,
         };
-        if (!uploadId) throw new Error("The CV upload is missing.");
+        if (!uploadId) throw new Error(t("review_upload_missing"));
         saved = await consultantsApi.approveCv(linkedConsultantId, Number(uploadId), merged);
       } else {
         saved = await consultantsApi.create(toConsultant(draft), uploadId ? Number(uploadId) : undefined);
@@ -327,7 +327,7 @@ export default function ConsultantReview() {
             <>
               {input(t("upload_certification"), "name")}
               {input(t("upload_issuer"), "issuer")}
-              {input("Issue year", "issuedYear")}
+              {input(t("review_issue_year"), "issuedYear")}
               {input(t("upload_issued_date"), "issuedDate", "month")}
             </>
           )}
@@ -457,14 +457,14 @@ export default function ConsultantReview() {
   if (empty)
     return (
       <div className="p-6 text-sm text-app-secondary">
-        {loadingDraft ? "Loading extracted CV data..." : error || t("upload_load_error")}
+        {loadingDraft ? t("review_draft_loading") : error || t("upload_load_error")}
       </div>
     );
   return (
     <div className="h-full overflow-auto">
       <div className="mx-auto max-w-6xl space-y-5 p-6">
         <PageHeader
-          title={linkedConsultantId ? "Review existing consultant CV" : t("upload_review_title")}
+          title={linkedConsultantId ? t("review_existing_cv_title") : t("upload_review_title")}
           description={t("upload_review_description")}
           backTo="/cv-upload"
           actions={
@@ -521,8 +521,8 @@ export default function ConsultantReview() {
         {identityResolved && (
           <div className="flex items-center justify-between rounded-lg border border-app-border bg-app-surface p-3 text-xs">
             <span className="text-app-secondary">{linkedConsultantId
-              ? `Befintlig konsult: ${existing ? `${existing.firstName} ${existing.lastName}` : `#${linkedConsultantId}`}`
-              : "Ny konsult"}</span>
+              ? `${t("review_existing_consultant")}: ${existing ? `${existing.firstName} ${existing.lastName}` : `#${linkedConsultantId}`}`
+              : t("review_new_consultant")}</span>
             {!replaceConsultantId && <button type="button" className="text-app-brand" onClick={() => {
               setIdentityResolved(false);
               setDetectedConsultantId(null);
