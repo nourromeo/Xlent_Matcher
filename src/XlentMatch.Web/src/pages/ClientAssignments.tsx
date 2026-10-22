@@ -1072,7 +1072,7 @@ export function NewAssignmentPage() {
                         t("client_required_start_date"),
                         requiredStartDate || t("common_not_specified"),
                       ],
-                      ["Start timing (relative)", startDateDescription || t("common_not_specified")],
+                      [t("assignment_relative_start"), startDateDescription || t("common_not_specified")],
                       [
                         t("client_minimum_experience"),
                         minYears === null
