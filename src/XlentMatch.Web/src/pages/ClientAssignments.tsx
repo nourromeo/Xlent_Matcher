@@ -681,7 +681,7 @@ export function NewAssignmentPage() {
                       }
                     />
                   </label>
-                  <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">Start timing (relative)</span><Input value={startDateDescription} onChange={(event) => setStartDateDescription(event.target.value)} placeholder="e.g. Inom 1–2 månader" /></label>
+                  <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_relative_start")}</span><Input value={startDateDescription} onChange={(event) => setStartDateDescription(event.target.value)} placeholder="e.g. Inom 1–2 månader" /></label>
                   <label className="block">
                     <span className="text-[11px] text-app-muted mb-1.5 block">
                       {t("client_minimum_experience")}
