@@ -243,7 +243,7 @@ export default function CvAdaptation() {
       if (token !== requestId.current) return;
       if ((!consultant.firstName && !consultant.lastName && !consultant.skills?.length && !consultant.experiences?.length) ||
           (!assignment.description?.trim() && !assignment.requirements?.length)) {
-        throw new Error("The extracted CV or assignment has insufficient information. Check the input and try again.");
+        throw new Error(t("adapt_insufficient"));
       }
       setPreparing(false);
       setAnalysing(true);
@@ -254,7 +254,7 @@ export default function CvAdaptation() {
       setResult(response);
     } catch (requestError) {
       if (token === requestId.current) setError(
-        requestError instanceof Error ? requestError.message : "Could not prepare or analyze the CV. Please try again."
+        requestError instanceof Error ? requestError.message : t("adapt_failed")
       );
     } finally {
       busy.current = false;
@@ -533,7 +533,7 @@ export default function CvAdaptation() {
             )}
 
             {consultantMode === "upload" && (
-              <p className="text-[11px] text-app-muted">Upload a CV directly for this adaptation only. The document is sent for AI extraction; it is not added to CV Library or linked to a consultant profile. PDF or TXT, max 10 MB.</p>
+              <p className="text-[11px] text-app-muted">{t("adapt_upload_cv_note")}</p>
             )}
             {consultantMode === "upload" && (
               <label className="block space-y-2 rounded-lg border border-dashed border-app-border p-5 text-center cursor-pointer">
@@ -628,7 +628,7 @@ export default function CvAdaptation() {
             )}
 
             {assignmentMode === "upload" && (
-              <p className="text-[11px] text-app-muted">Upload the customer's requirements for this adaptation. No client assignment is created in the database.</p>
+              <p className="text-[11px] text-app-muted">{t("adapt_upload_assignment_note")}</p>
             )}
             {assignmentMode === "upload" && (
               <label className="block space-y-2 rounded-lg border border-dashed border-app-border p-5 text-center cursor-pointer">
@@ -703,7 +703,7 @@ export default function CvAdaptation() {
                 )
               }
             >
-              {preparing ? "Preparing input..." : analysing ? t("adaptation_analysing") : t("adaptation_generate")}
+              {preparing ? t("adapt_preparing") : analysing ? t("adaptation_analysing") : t("adaptation_generate")}
             </Button>
           </div>
         </section>
@@ -808,7 +808,7 @@ export default function CvAdaptation() {
                 <span className="cv-print-brand-mark">X</span>
                 XLENT Match
               </div>
-              <div className="cv-print-document-label">CV analysis report</div>
+              <div className="cv-print-document-label">{t("adapt_report_title")}</div>
             </div>
 
             <header className="cv-print-header">
