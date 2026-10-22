@@ -86,7 +86,6 @@ export default function CvAdaptation() {
   const [result, setResult] = useState<CvAdaptationSuggestion | null>(savedSession?.result ?? null);
   const [usedConsultant, setUsedConsultant] = useState<ConsultantDraft | null>(savedSession?.consultant as ConsultantDraft ?? null);
   const [usedAssignment, setUsedAssignment] = useState<TemporaryAssignmentDraft | null>(savedSession?.assignment as TemporaryAssignmentDraft ?? null);
-  const [review, setReview] = useState<{ consultant: ConsultantDraft; assignment: TemporaryAssignmentDraft } | null>(null);
   const [preparing, setPreparing] = useState(false);
   const requestId = useRef(0);
   const busy = useRef(false);
@@ -143,7 +142,6 @@ export default function CvAdaptation() {
 
   const clearResult = () => {
     requestId.current += 1;
-    setReview(null);
     setResult(null);
     setUsedConsultant(null);
     setUsedAssignment(null);
@@ -239,34 +237,21 @@ export default function CvAdaptation() {
     busy.current = true;
     const token = ++requestId.current;
     setError("");
+    setPreparing(true);
     try {
-      if (!review) {
-        setPreparing(true);
-        const [consultant, assignment] = await Promise.all([resolveConsultant(), resolveAssignment()]);
-        if (token !== requestId.current) return;
-        if ((!consultant.firstName && !consultant.lastName && !consultant.skills?.length && !consultant.experiences?.length) ||
-            (!assignment.description?.trim() && !assignment.requirements?.length)) {
-          throw new Error("The extracted CV or assignment has insufficient information. Check the input and try again.");
-        }
-        if (consultantMode !== "existing" || assignmentMode !== "existing") {
-          setReview({ consultant, assignment });
-          return; // Explicit confirmation before analysis of extracted input.
-        }
-        setAnalysing(true);
-        const response = await aiApi.suggestTemporaryCvAdaptation(consultant, assignment, locale);
-        if (token !== requestId.current) return;
-        setUsedConsultant(consultant);
-        setUsedAssignment(assignment);
-        setResult(response);
-      } else {
-        setAnalysing(true);
-        const response = await aiApi.suggestTemporaryCvAdaptation(review.consultant, review.assignment, locale);
-        if (token !== requestId.current) return;
-        setUsedConsultant(review.consultant);
-        setUsedAssignment(review.assignment);
-        setResult(response);
-        setReview(null);
+      const [consultant, assignment] = await Promise.all([resolveConsultant(), resolveAssignment()]);
+      if (token !== requestId.current) return;
+      if ((!consultant.firstName && !consultant.lastName && !consultant.skills?.length && !consultant.experiences?.length) ||
+          (!assignment.description?.trim() && !assignment.requirements?.length)) {
+        throw new Error("The extracted CV or assignment has insufficient information. Check the input and try again.");
       }
+      setPreparing(false);
+      setAnalysing(true);
+      const response = await aiApi.suggestTemporaryCvAdaptation(consultant, assignment, locale);
+      if (token !== requestId.current) return;
+      setUsedConsultant(consultant);
+      setUsedAssignment(assignment);
+      setResult(response);
     } catch (requestError) {
       if (token === requestId.current) setError(
         requestError instanceof Error ? requestError.message : "Could not prepare or analyze the CV. Please try again."
@@ -718,28 +703,10 @@ export default function CvAdaptation() {
                 )
               }
             >
-              {preparing ? "Preparing input..." : analysing ? t("adaptation_analysing") : review ? "Confirm and analyze" : t("adaptation_generate")}
+              {preparing ? "Preparing input..." : analysing ? t("adaptation_analysing") : t("adaptation_generate")}
             </Button>
           </div>
         </section>
-
-        {review && (
-          <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-3" aria-label="Review extracted information">
-            <h2 className="text-sm font-semibold text-app-primary">Review extracted information before analysis</h2>
-            <p className="text-xs text-app-muted">Check the extracted details. To correct them, update the original input and prepare again. Nothing has been saved to the database.</p>
-            <div className="grid gap-4 md:grid-cols-2 text-xs text-app-secondary">
-              <div><strong>Consultant:</strong> {[review.consultant.firstName, review.consultant.lastName].filter(Boolean).join(" ") || "Not specified"}
-                <p>Experience: {review.consultant.yearsOfExperience ?? "Not specified"} years</p>
-                <p>Skills: {review.consultant.skills?.map(x => x.name).filter(Boolean).join(", ") || "None extracted"}</p>
-              </div>
-              <div><strong>Assignment:</strong> {review.assignment.title || "Not specified"}
-                <p>Requirements: {review.assignment.requirements?.map(x => x.name).filter(Boolean).join(", ") || "None extracted"}</p>
-                <p>{review.assignment.description?.slice(0, 350)}</p>
-              </div>
-            </div>
-            <Button variant="secondary" onClick={() => setReview(null)}>Edit input</Button>
-          </section>
-        )}
 
         {error && (
           <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
