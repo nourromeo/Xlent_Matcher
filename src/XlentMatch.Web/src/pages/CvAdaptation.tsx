@@ -60,11 +60,11 @@ export default function CvAdaptation() {
   const [consultantMode, setConsultantMode] = useState<SourceMode>("existing");
   const [assignmentMode, setAssignmentMode] = useState<SourceMode>("existing");
 
-  const [consultantId, setConsultantId] = useState("");
+  const [consultantId, setConsultantId] = useState(() => sessionStorage.getItem("xlent-adaptation-consultant-id") ?? "");
   const [consultantFile, setConsultantFile] = useState<File | null>(null);
   const [consultantText, setConsultantText] = useState("");
 
-  const [assignmentId, setAssignmentId] = useState("");
+  const [assignmentId, setAssignmentId] = useState(() => sessionStorage.getItem("xlent-adaptation-assignment-id") ?? "");
   const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
   const [assignmentText, setAssignmentText] = useState("");
 
@@ -111,6 +111,15 @@ export default function CvAdaptation() {
       // Storage may be disabled or full; the report still works in React state.
     }
   }, [result, usedConsultant, usedAssignment]);
+
+  useEffect(() => {
+    try {
+      if (consultantMode === "existing" && consultantId) sessionStorage.setItem("xlent-adaptation-consultant-id", consultantId);
+      else sessionStorage.removeItem("xlent-adaptation-consultant-id");
+      if (assignmentMode === "existing" && assignmentId) sessionStorage.setItem("xlent-adaptation-assignment-id", assignmentId);
+      else sessionStorage.removeItem("xlent-adaptation-assignment-id");
+    } catch { /* Storage unavailable: keep normal in-memory behavior. */ }
+  }, [consultantMode, consultantId, assignmentMode, assignmentId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -721,6 +730,12 @@ export default function CvAdaptation() {
                 <h2 className="mt-1 text-base font-semibold text-app-primary">
                   CV Analysis Report
                 </h2>
+                <p className="mt-2 text-xs text-app-secondary">
+                  <span className="font-semibold">{t("adaptation_consultant_cv")}:</span> {[usedConsultant?.firstName, usedConsultant?.lastName].filter(Boolean).join(" ") || "—"}
+                  <span className="mx-2 text-app-faint">·</span>
+                  <span className="font-semibold">{t("adaptation_client_assignment")}:</span> {usedAssignment?.title || "—"}
+                  {usedAssignment?.customerName ? ` · ${usedAssignment.customerName}` : ""}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={printResult}>
