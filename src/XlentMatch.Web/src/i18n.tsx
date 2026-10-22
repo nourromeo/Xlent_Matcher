@@ -4,6 +4,16 @@ export type Locale = "en" | "es" | "sv";
 
 const translations = {
   en: {
+    file_unsupported: "Unsupported file type. Use PDF or TXT.",
+    file_empty: "The selected file is empty.",
+    file_too_large: "File is larger than 10 MB.",
+    api_validation: "The request could not be completed. Please check the entered values.",
+    api_not_found: "The requested item could not be found.",
+    api_server: "The server could not complete the request. Please try again.",
+    api_unknown: "The request could not be completed. Please try again.",
+    api_network: "The backend could not be reached. Please try again.",
+    api_invalid_field: "Invalid field",
+    api_review_field: "Please review this value.",
     admin_delete_prompt_failed: "Could not delete prompt version.",
     ranking_load_saved_error: "Could not load saved ranking.",
     ranking_save_error: "Could not save ranking.",
@@ -617,6 +627,16 @@ const translations = {
     prompt_title: "Prompt Management", prompt_loading: "Loading prompts...", prompt_empty: "No prompts available.", prompt_history: "Version History", prompt_active: "Active", prompt_previous: "Previous", prompt_editing_based: "Editing based on", prompt_change_note: "Change note (optional)", prompt_save_version: "Save as new version", prompt_back: "Back to Prompt Management", prompt_set_active: "Set as Active", prompt_prompt: "Prompt", prompt_active_version: "Active Version", prompt_versions: "Versions", prompt_updated: "Updated", prompt_action: "Action", prompt_view: "View", common_updated: "Updated", assignment_location_unspecified: "Location not specified", consultant_no_industries: "No industries added.", consultant_no_education: "No education added.", consultant_no_certifications: "No certifications added.", consultant_save_changes: "Save changes", consultant_search_skills: "Search skills", consultant_search_skills_placeholder: "Search among competencies...", consultant_edit_skill: "Edit skill", consultant_skill_level: "Level", consultant_evidence_label: "Evidence / relevant experience", consultant_evidence_hint: "Briefly describe where or how the skill was used.", consultant_edit_language: "Edit language", consultant_edit_industry: "Edit industry", consultant_industry_label: "Industry", consultant_add_industry: "Add industry",
   },
   es: {
+    file_unsupported: "Tipo de archivo no compatible. Usa PDF o TXT.",
+    file_empty: "El archivo seleccionado está vacío.",
+    file_too_large: "El archivo supera los 10 MB.",
+    api_validation: "No se pudo completar la solicitud. Revisa los valores introducidos.",
+    api_not_found: "No se encontró el elemento solicitado.",
+    api_server: "El servidor no pudo completar la solicitud. Inténtalo de nuevo.",
+    api_unknown: "No se pudo completar la solicitud. Inténtalo de nuevo.",
+    api_network: "No se pudo conectar con el backend. Inténtalo de nuevo.",
+    api_invalid_field: "Campo no válido",
+    api_review_field: "Revisa este valor.",
     admin_delete_prompt_failed: "No se pudo eliminar la versión del prompt.",
     ranking_load_saved_error: "No se pudo cargar la clasificación guardada.",
     ranking_save_error: "No se pudo guardar la clasificación.",
@@ -1255,6 +1275,16 @@ const translations = {
     prompt_title: "Gestión de prompts", prompt_loading: "Cargando prompts...", prompt_empty: "No hay prompts disponibles.", prompt_history: "Historial de versiones", prompt_active: "Activo", prompt_previous: "Anterior", prompt_editing_based: "Editando a partir de", prompt_change_note: "Nota del cambio (opcional)", prompt_save_version: "Guardar como nueva versión", prompt_back: "Volver a Gestión de prompts", prompt_set_active: "Establecer como activo", prompt_prompt: "Prompt", prompt_active_version: "Versión activa", prompt_versions: "Versiones", prompt_updated: "Actualizado", prompt_action: "Acción", prompt_view: "Ver", common_updated: "Actualizado", assignment_location_unspecified: "Ubicación no especificada",
   },
   sv: {
+    file_unsupported: "Filtypen stöds inte. Använd PDF eller TXT.",
+    file_empty: "Den valda filen är tom.",
+    file_too_large: "Filen är större än 10 MB.",
+    api_validation: "Begäran kunde inte slutföras. Kontrollera de angivna värdena.",
+    api_not_found: "Det efterfrågade objektet hittades inte.",
+    api_server: "Servern kunde inte slutföra begäran. Försök igen.",
+    api_unknown: "Begäran kunde inte slutföras. Försök igen.",
+    api_network: "Det gick inte att ansluta till backend. Försök igen.",
+    api_invalid_field: "Ogiltigt fält",
+    api_review_field: "Kontrollera detta värde.",
     admin_delete_prompt_failed: "Kunde inte ta bort promptversionen.",
     ranking_load_saved_error: "Kunde inte läsa in den sparade rankningen.",
     ranking_save_error: "Kunde inte spara rankningen.",
@@ -1924,6 +1954,15 @@ const cvReviewTranslations: Record<Locale, Record<string, string>> = {
   es: { upload_review_title: "Revisar los datos del consultor", upload_review_description: "La IA extrajo estos datos del consultor a partir del CV. Corrige lo necesario antes de guardar." },
   sv: { upload_review_title: "Granska konsultuppgifter", upload_review_description: "AI har extraherat dessa konsultuppgifter från CV:t. Rätta fel innan du sparar." },
 };
+
+/** Translate messages outside React components (e.g. API and file validation). */
+export function translateStatic(key: TranslationKey): string {
+  const stored = typeof localStorage === "undefined" ? null : localStorage.getItem("xlent-match-locale");
+  const locale: Locale = stored === "sv" || stored === "es" ? stored : "en";
+  return (translations[locale] as Record<string, string>)[key]
+    ?? (translations.en as Record<string, string>)[key]
+    ?? key;
+}
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(() => {
