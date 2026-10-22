@@ -182,9 +182,9 @@ export default function Dashboard() {
           icon={Briefcase}
         />
         <StatCard
-          label={locale === "sv" ? "Aktiva CV:n" : "Active CVs"}
+          label={t("dashboard_active_cvs")}
           value={loading ? "—" : String(activeCvs.length)}
-          sub={locale === "sv" ? "Godkända CV:n i biblioteket" : "Approved CVs in the library"}
+          sub={t("dashboard_approved_cvs")}
           icon={FileText}
         />
 
@@ -194,9 +194,9 @@ export default function Dashboard() {
         <section className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
           <div className="flex items-center justify-between px-4 py-3 border-b border-app-border">
             <div>
-              <p className="text-xs font-medium text-app-primary">Senaste matchningar</p>
+              <p className="text-xs font-medium text-app-primary">{t("dashboard_recent_matches")}</p>
               <p className="text-[10px] text-app-muted mt-0.5">
-                De 5 senast beräknade kunduppdragen
+                {t("dashboard_latest_five")}
               </p>
             </div>
             {assignments.length > 5 && (
@@ -213,7 +213,7 @@ export default function Dashboard() {
             <span>{t("dashboard_assignment")}</span>
             <span>{t("dashboard_best_consultant")}</span>
             <span>{t("dashboard_score")}</span>
-            <span>Senast</span>
+            <span>{t("dashboard_latest")}</span>
             <span />
           </div>
 
@@ -245,14 +245,14 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <FileText size={16} className="text-app-muted" />
             <div>
-              <p className="text-xs font-medium text-app-primary">CV Library</p>
+              <p className="text-xs font-medium text-app-primary">{t("dashboard_cv_library")}</p>
               <p className="text-[10px] text-app-muted">
-                {loading ? "—" : activeCvs.length} {locale === "sv" ? "aktiva CV:n" : "active CVs"} · {loading ? "—" : uploads.filter((item) => item.status === "Review").length} {locale === "sv" ? "väntar på granskning" : "pending review"}
+                {loading ? "—" : activeCvs.length} {t("dashboard_active_cvs").toLowerCase()} · {loading ? "—" : uploads.filter((item) => item.status === "Review").length} {t("dashboard_pending_review").toLowerCase()}
               </p>
             </div>
           </div>
           <Link to="/cv-upload" className="inline-flex items-center gap-1 text-xs text-app-brand hover:text-app-primary">
-            {locale === "sv" ? "Visa bibliotek" : "View library"} <ArrowUpRight size={12} />
+            {t("dashboard_view_library")} <ArrowUpRight size={12} />
           </Link>
         </div>
       </div>
