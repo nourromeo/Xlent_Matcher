@@ -68,12 +68,49 @@ export default function CvAdaptation() {
   const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
   const [assignmentText, setAssignmentText] = useState("");
 
-  const [result, setResult] = useState<CvAdaptationSuggestion | null>(null);
-  const [usedConsultant, setUsedConsultant] = useState<ConsultantDraft | null>(
-    null,
-  );
-  const [usedAssignment, setUsedAssignment] =
-    useState<TemporaryAssignmentDraft | null>(null);
+  // Keep only the temporary report and the minimal labels needed for printing.
+  // sessionStorage is scoped to this browser tab and is cleared when the tab session ends.
+  const storageKey = "xlent-cv-adaptation-report";
+  const [savedReport] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(storageKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as {
+        result: CvAdaptationSuggestion;
+        consultant: ConsultantDraft;
+        assignment: TemporaryAssignmentDraft;
+      };
+      return parsed?.result && parsed?.consultant && parsed?.assignment ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
+  const [result, setResult] = useState<CvAdaptationSuggestion | null>(savedReport?.result ?? null);
+  const [usedConsultant, setUsedConsultant] = useState<ConsultantDraft | null>(savedReport?.consultant ?? null);
+  const [usedAssignment, setUsedAssignment] = useState<TemporaryAssignmentDraft | null>(savedReport?.assignment ?? null);
+
+  useEffect(() => {
+    try {
+      if (result && usedConsultant && usedAssignment) {
+        sessionStorage.setItem(storageKey, JSON.stringify({
+          result,
+          consultant: {
+            firstName: usedConsultant.firstName,
+            lastName: usedConsultant.lastName,
+            seniority: usedConsultant.seniority,
+          },
+          assignment: {
+            title: usedAssignment.title,
+            customerName: usedAssignment.customerName,
+          },
+        }));
+      } else {
+        sessionStorage.removeItem(storageKey);
+      }
+    } catch {
+      // Storage may be disabled or full; the report still works in React state.
+    }
+  }, [result, usedConsultant, usedAssignment]);
 
   useEffect(() => {
     let cancelled = false;
