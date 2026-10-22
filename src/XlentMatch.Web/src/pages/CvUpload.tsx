@@ -5,11 +5,13 @@ import { aiApi } from "../services/aiApi";
 import { consultantsApi } from "../services/consultantsApi";
 import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { validateDocumentFile } from "../services/fileValidation";
+import { useI18n } from "../i18n";
 
 type Tab = "library" | "review";
 const formatSize = (bytes: number) => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
 
 export default function CvUpload() {
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
@@ -38,7 +40,7 @@ export default function CvUpload() {
   useEffect(() => {
     let cancelled = false;
     cvUploadsApi.getAll().then((data) => { if (!cancelled) { setRecords(data); setExistingCvForConsultant(Boolean(replaceConsultantId && data.some((item) => item.consultantId === replaceConsultantId && item.isActive && item.status === "Indexed"))); } })
-      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : "Could not load CVs"); })
+      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : t("cv_load_failed")); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
@@ -61,13 +63,13 @@ export default function CvUpload() {
       });
       navigate(`/cv-upload/review?uploadId=${created.id}${replaceConsultantId ? `&replaceConsultantId=${replaceConsultantId}` : ""}`);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "CV processing failed";
+      const message = e instanceof Error ? e.message : t("cv_process_failed");
       setError(message);
       if (uploadId !== null) {
         try {
           if (message.includes("DUPLICATE_CV")) {
             await cvUploadsApi.remove(uploadId).catch(() => {});
-            setError("This CV already exists in the library. Upload cancelled; AI extraction was not started.");
+            setError(t("cv_duplicate"));
           } else {
             await cvUploadsApi.update(uploadId, { status: "Error", errorMessage: message });
           }
@@ -78,11 +80,11 @@ export default function CvUpload() {
   };
 
   const remove = async (record: CvUploadRecord) => {
-    if (!window.confirm(`Delete ${record.fileName}? The consultant profile will be kept.`)) return;
+    if (!window.confirm(`${t("cv_delete_confirm")} (${record.fileName})`)) return;
     try {
       await cvUploadsApi.remove(record.id);
       await refresh();
-    } catch (e) { setError(e instanceof Error ? e.message : "Could not delete CV"); }
+    } catch (e) { setError(e instanceof Error ? e.message : t("cv_delete_failed")); }
   };
 
   const list = records.filter((r) => {
@@ -99,12 +101,12 @@ export default function CvUpload() {
   const tabClass = (value: Tab) => `rounded-md px-4 py-2 text-xs font-medium ${tab === value ? "bg-app-brand-subtle text-app-brand" : "text-app-secondary hover:bg-app-raised"}`;
   return (
     <div className="p-6 space-y-5 max-w-7xl mx-auto">
-      <PageHeader title="CV Management" description="Manage consultant CVs, review AI extraction and keep profiles up to date." />
+      <PageHeader title={t("cv_manager_title")} description={t("cv_manager_desc")} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[
-          ["Total CVs", records.filter((r) => r.status === "Indexed" && r.storageKey != null).length],
-          ["Active CVs", records.filter((r) => r.isActive).length],
-          ["Pending Review", records.filter((r) => r.status === "Review").length],
+          [t("cv_total"), records.filter((r) => r.status === "Indexed" && r.storageKey != null).length],
+          [t("cv_active"), records.filter((r) => r.isActive).length],
+          [t("cv_pending"), records.filter((r) => r.status === "Review").length],
         ].map(([label, value]) => (
           <div key={label} className="bg-app-surface border border-app-border rounded-xl p-4">
             <div className="text-2xl font-semibold text-app-primary">{value}</div>
@@ -116,27 +118,27 @@ export default function CvUpload() {
         (r.status === "Error" || r.status === "Extracting") &&
         Date.now() - new Date(r.uploadedAt).getTime() > 24 * 60 * 60 * 1000) && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-app-border p-3">
-          <p className="text-xs text-app-muted">Old unfinished upload attempts were found. Approved CVs will not be affected.</p>
+          <p className="text-xs text-app-muted">{t("cv_old_attempts")}</p>
           <button type="button" className="text-xs text-app-brand" onClick={async () => {
             try {
               const result = await cvUploadsApi.cleanupAbandoned();
               await refresh();
-              setError(result.removed + " abandoned upload attempt(s) removed.");
-            } catch { setError("Could not clean up abandoned uploads."); }
-          }}>Clean up</button>
+              setError(result.removed + " " + t("cv_cleanup_done"));
+            } catch { setError(t("cv_cleanup_failed")); }
+          }}>{t("cv_cleanup")}</button>
         </div>
       )}
       <section className="rounded-xl border border-app-border bg-app-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId && existingCvForConsultant ? "Replace CV for " + (consultantNames[replaceConsultantId] || "Consultant #" + replaceConsultantId) : replaceConsultantId ? "Upload CV for " + (consultantNames[replaceConsultantId] || "Consultant #" + replaceConsultantId) : "Upload CV"}</h2>
-            <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? "The current CV and consultant profile remain unchanged until you review and approve the replacement." : "Choose an original PDF or TXT (max 10 MB). AI extracts a draft; review and approve it before linking the CV to a consultant."}</p>
+            <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId && existingCvForConsultant ? t("cv_replace_for") + " " + (consultantNames[replaceConsultantId] || t("cv_consultant_number") + " " + replaceConsultantId) : replaceConsultantId ? t("cv_upload_for") + " " + (consultantNames[replaceConsultantId] || t("cv_consultant_number") + " " + replaceConsultantId) : t("cv_upload_title")}</h2>
+            <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? t("cv_replace_explain") : t("cv_upload_explain")}</p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
-            {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>Back to consultant</Link>}
+            {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>{t("cv_back_consultant")}</Link>}
             <input ref={input} type="file" accept=".pdf,.txt,application/pdf,text/plain" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
-            <button type="button" title="Upload an original CV for AI extraction and manual review. This does not immediately overwrite a consultant profile." disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex w-fit items-center justify-center rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
-              {busy ? "Uploading and extracting..." : replaceConsultantId && existingCvForConsultant ? "Choose replacement CV" : replaceConsultantId ? "Upload New CV" : "+ Upload CV"}
+            <button type="button" title={t("cv_upload_tooltip")} disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex w-fit items-center justify-center rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+              {busy ? t("cv_uploading") : replaceConsultantId && existingCvForConsultant ? t("cv_choose_replacement") : replaceConsultantId ? t("cv_upload_new") : "+ " + t("cv_upload_title")}
             </button>
           </div>
         </div>
@@ -144,33 +146,33 @@ export default function CvUpload() {
       <section className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
         <div className="flex flex-wrap gap-2 items-center justify-between px-4 py-3 border-b border-app-border">
           <div className="flex flex-wrap gap-1">
-            <button className={tabClass("library")} onClick={() => { setTab("library"); setPage(1); }}>CV Library</button>
-            <button className={tabClass("review")} onClick={() => { setTab("review"); setPage(1); }}>Review Queue ({records.filter((r) => r.status === "Review").length})</button>
+            <button className={tabClass("library")} onClick={() => { setTab("library"); setPage(1); }}>{t("cv_library")}</button>
+            <button className={tabClass("review")} onClick={() => { setTab("review"); setPage(1); }}>{t("cv_review_queue")} ({records.filter((r) => r.status === "Review").length})</button>
           </div>
           <div className="flex gap-2">
-            <input aria-label="Search CV library" className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" placeholder="Search by file name..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
-            <select aria-label="Filter by status" className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-              {["All", "Extracting", "Review", "Indexed", "Error"].map((x) => <option key={x} value={x}>{x === "All" ? "All statuses" : x}</option>)}
+            <input aria-label={t("cv_search_label")} className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" placeholder={t("cv_search")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+            <select aria-label={t("cv_status_filter")} className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+              {["All", "Extracting", "Review", "Indexed", "Error"].map((x) => <option key={x} value={x}>{x === "All" ? t("cv_all_statuses") : x}</option>)}
             </select>
           </div>
         </div>
         {error && <p role="alert" className="mx-4 mt-3 text-xs text-red-500">{error}</p>}
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="bg-app-raised text-app-muted"><tr><th title="Original uploaded document name" className="px-4 py-3">CV file ⓘ</th><th title="Consultant linked to this CV; click the name to open their profile" className="px-4 py-3">Consultant ⓘ</th><th title="Date the CV was uploaded" className="px-4 py-3">Uploaded ⓘ</th><th title="Size of the original uploaded document" className="px-4 py-3">Size ⓘ</th><th title="Active means approved and currently linked; Review means awaiting confirmation" className="px-4 py-3">Status ⓘ</th><th title="View or download the original, replace it, or delete only the CV" className="px-4 py-3 text-right">Actions ⓘ</th></tr></thead>
+            <thead className="bg-app-raised text-app-muted"><tr><th title={t("cv_file_hint")} className="px-4 py-3">{t("cv_file")} ⓘ</th><th title={t("cv_consultant_hint")} className="px-4 py-3">{t("cv_consultant")} ⓘ</th><th title={t("cv_date_hint")} className="px-4 py-3">{t("cv_uploaded")} ⓘ</th><th title={t("cv_size_hint")} className="px-4 py-3">{t("cv_size")} ⓘ</th><th title={t("cv_status_hint")} className="px-4 py-3">{t("cv_status")} ⓘ</th><th title={t("cv_actions_hint")} className="px-4 py-3 text-right">{t("cv_actions")} ⓘ</th></tr></thead>
             <tbody>
               {visibleList.map((r) => (
                 <tr key={r.id} className="border-t border-app-border text-app-secondary">
                   <td className="px-4 py-3 font-medium text-app-primary">{r.fileName}</td>
-                  <td className="px-4 py-3">{r.consultantId ? <Link className="text-app-brand" to={`/consultants/${r.consultantId}`}>{consultantNames[r.consultantId] || "Consultant #" + r.consultantId}</Link> : <span className="text-app-muted">Not assigned</span>}</td>
-                  <td className="px-4 py-3">{new Date(r.uploadedAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">{r.consultantId ? <Link className="text-app-brand" to={`/consultants/${r.consultantId}`}>{consultantNames[r.consultantId] || t("cv_consultant_number") + " " + r.consultantId}</Link> : <span className="text-app-muted">{t("cv_unassigned")}</span>}</td>
+                  <td className="px-4 py-3">{new Date(r.uploadedAt).toLocaleDateString(locale === "sv" ? "sv-SE" : locale === "es" ? "es-ES" : "en-US")}</td>
                   <td className="px-4 py-3">{formatSize(r.fileSize)}</td>
-                  <td className="px-4 py-3">{r.isActive ? "Active" : r.status}</td>
+                  <td className="px-4 py-3">{r.isActive ? t("cv_active_status") : r.status === "Review" ? t("cv_review") : r.status === "Indexed" ? t("dashboard_indexed") : r.status === "Error" ? t("status_error") : r.status === "Extracting" ? t("status_extracting") : r.status}</td>
                   <td className="px-4 py-3"><div className="flex justify-end flex-wrap gap-3">
-                    {tab === "library" && r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">View</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">Download</a></>}
-                    {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`}>Review</Link>}
-                    {tab === "library" && r.consultantId && <Link className="text-app-brand" to={`/cv-upload?replaceConsultantId=${r.consultantId}`}>Replace</Link>}
-                    <button type="button" className="text-app-muted hover:text-red-500" onClick={() => void remove(r)}>Delete</button>
+                    {tab === "library" && r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">{t("cv_view")}</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">{t("cv_download")}</a></>}
+                    {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`}>{t("cv_review")}</Link>}
+                    {tab === "library" && r.consultantId && <Link className="text-app-brand" to={`/cv-upload?replaceConsultantId=${r.consultantId}`}>{t("cv_replace")}</Link>}
+                    <button type="button" className="text-app-muted hover:text-red-500" onClick={() => void remove(r)}>{t("cv_delete")}</button>
                   </div></td>
                 </tr>
               ))}
@@ -178,20 +180,20 @@ export default function CvUpload() {
           </table>
           {!loading && list.length > 0 && (
             <div className="flex items-center justify-between gap-3 border-t border-app-border bg-app-surface px-4 py-2.5 text-[10px] text-app-muted">
-              <span>{firstRow}–{lastRow} of {list.length} CVs</span>
+              <span>{firstRow}–{lastRow} {t("cv_of")} {list.length} CVs</span>
               <div className="flex items-center gap-3">
-                <span>Rows per page: 10</span>
-                <button type="button" aria-label="Previous page" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded px-2 py-1 hover:bg-app-raised disabled:opacity-35">‹</button>
-                <span>Page {currentPage} of {pageCount}</span>
-                <button type="button" aria-label="Next page" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="rounded px-2 py-1 hover:bg-app-raised disabled:opacity-35">›</button>
+                <span>{t("cv_rows")}</span>
+                <button type="button" aria-label={t("cv_previous")} disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded px-2 py-1 hover:bg-app-raised disabled:opacity-35">‹</button>
+                <span>{t("cv_page")} {currentPage} {t("cv_of")} {pageCount}</span>
+                <button type="button" aria-label={t("cv_next")} disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="rounded px-2 py-1 hover:bg-app-raised disabled:opacity-35">›</button>
               </div>
             </div>
           )}
-          {!loading && list.length === 0 && <p className="p-8 text-center text-xs text-app-muted">No CVs found for this view.</p>}
-          {loading && <p className="p-8 text-center text-xs text-app-muted">Loading CVs...</p>}
+          {!loading && list.length === 0 && <p className="p-8 text-center text-xs text-app-muted">{t("cv_no_results")}</p>}
+          {loading && <p className="p-8 text-center text-xs text-app-muted">{t("cv_loading")}</p>}
         </div>
       </section>
-      <p className="text-xs text-app-muted">Original files are stored by the API for new uploads. Older records may not have a downloadable file.</p>
+      <p className="text-xs text-app-muted">{t("cv_storage_note")}</p>
     </div>
   );
 }
