@@ -486,7 +486,7 @@ export default function ConsultantReview() {
                       <label key={match.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
                         <input type="radio" name="cv-owner" checked={identityChoice === match.id} onChange={() => setIdentityChoice(match.id)} />
                         <span className="flex-1"><strong className="block text-app-primary">{match.firstName} {match.lastName}</strong>
-                          <span className="text-app-muted">{match.email || "Ingen e-post"} · {match.matchReason === "Email" ? "Matchning via e-post" : "Liknande namn"}</span></span>
+                          <span className="text-app-muted">{match.email || t("review_no_email")} · {match.matchReason === "Email" ? t("review_email_match") : t("review_name_match")}</span></span>
                       </label>
                     ))}
                   </div>
@@ -499,7 +499,7 @@ export default function ConsultantReview() {
                   ).slice(0, 10).map((c) => (
                     <label key={c.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
                       <input type="radio" name="cv-owner" checked={identityChoice === c.id} onChange={() => setIdentityChoice(c.id)} />
-                      <span>{c.firstName} {c.lastName} · {c.email || "Ingen e-post"}</span>
+                      <span>{c.firstName} {c.lastName} · {c.email || t("review_no_email")}</span>
                     </label>
                   ))}
                   {identityError && <p className="text-xs text-red-500">{t("review_identity_error")}</p>}
