@@ -58,7 +58,7 @@ export default function AiRankingResults() {
           {aiRanking && (
             <div className="flex items-center gap-2" aria-label={t("ranking_result_actions")}>
               <button type="button" disabled={Boolean(savedId) || saving || savedRecordId !== null} onClick={() => void saveResult()} className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary hover:bg-app-raised disabled:opacity-60 disabled:cursor-not-allowed">
-                <span aria-hidden="true">▣</span> {savedId || savedRecordId !== null ? "Saved" : saving ? "Saving..." : "Save Result"}
+                <span aria-hidden="true">▣</span> {savedId || savedRecordId !== null ? t("ranking_saved_state") : saving ? t("ranking_saving_state") : t("ranking_save_result")}
               </button>
               <button type="button" disabled title={t("ranking_share_later")} className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary opacity-60 cursor-not-allowed">
                 <span aria-hidden="true">↗</span> Share
