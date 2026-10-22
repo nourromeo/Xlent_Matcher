@@ -179,7 +179,7 @@ export default function Admin() {
         setPromptVersions(versions);
         setSelectedPromptVersion(versions.find((item) => item.isActive) ?? versions[0] ?? null);
         setPrompts(await adminApi.getPrompts());
-      } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Could not delete prompt version."); }
+      } catch (requestError) { setError(requestError instanceof Error ? requestError.message : t("admin_delete_prompt_failed")); }
     } });
   };
 
