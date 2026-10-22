@@ -215,7 +215,7 @@ export default function ConsultantDetail() {
         leading={<div className="w-9 h-9 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand">{initials(consultant)}</div>}
         title={fullName(consultant)}
         metadata={[consultant.seniority, consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`].filter(Boolean).join(" · ")}
-        badges={<div className="flex flex-wrap items-center gap-2">{consultant.availability && <StatusBadge tone={consultant.availability === "Available" ? "success" : "danger"}>{availabilityLabel(consultant, t, locale)}</StatusBadge>}{cvEligible !== null && <StatusBadge tone={cvEligible ? "success" : "danger"}>{cvEligible ? "CV finns" : "CV saknas"}</StatusBadge>}</div>}
+        badges={<div className="flex flex-wrap items-center gap-2">{consultant.availability && <StatusBadge tone={consultant.availability === "Available" ? "success" : "danger"}>{availabilityLabel(consultant, t, locale)}</StatusBadge>}{cvEligible !== null && <StatusBadge tone={cvEligible ? "success" : "danger"}>{cvEligible ? t("consultant_cv_available") : t("consultant_cv_missing_label")}</StatusBadge>}</div>}
         actions={<div className="flex items-center gap-2"><Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-app-border text-app-secondary transition-colors hover:text-app-primary"><Edit3 size={12} /> {t("consultant_edit")}</Link><Button variant="danger" icon={<Trash2 size={12} />} onClick={() => setDeleteConfirmOpen(true)} disabled={deleting}>{deleting ? t("client_deleting") : t("common_delete")}</Button></div>}
       />
 
@@ -262,7 +262,7 @@ export default function ConsultantDetail() {
                   </div>
                   <div className="rounded-lg border border-dashed border-app-border px-6 py-12 text-center">
                     <p className="text-sm font-medium text-app-primary">{t("consultant_no_cv")}</p>
-                    <p className="mt-2 text-xs text-app-muted">Upload a CV to attach the original document to this consultant. The existing consultant profile will be kept.</p>
+                    <p className="mt-2 text-xs text-app-muted">{t("consultant_attach_cv")}</p>
                   </div>
                 </div>
               )}
