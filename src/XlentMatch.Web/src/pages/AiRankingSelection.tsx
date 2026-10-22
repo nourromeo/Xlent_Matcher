@@ -37,7 +37,7 @@ export default function AiRankingSelection() {
         setEligible(cv.eligibleConsultantIds);
         setSelected(ordered.filter(r => cv.eligibleConsultantIds.includes(r.consultantId)).slice(0, 2).map(r => r.consultantId));
       })
-      .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : "Could not load AI Ranking."); })
+      .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : t("ranking_load_error")); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [id]);
@@ -49,7 +49,7 @@ export default function AiRankingSelection() {
     setSavedError("");
     matchingApi.listSavedAiRankings(id)
       .then(data => { if (!cancelled) setSaved(data); })
-      .catch(e => { if (!cancelled) setSavedError(e instanceof Error ? e.message : "Could not load saved rankings."); })
+      .catch(e => { if (!cancelled) setSavedError(e instanceof Error ? e.message : t("ranking_load_list_error")); })
       .finally(() => { if (!cancelled) setSavedLoading(false); });
     return () => { cancelled = true; };
   }, [id, activeTab]);
@@ -67,7 +67,7 @@ export default function AiRankingSelection() {
       const ranking = await matchingApi.rankWithAi(id, selected);
       navigate(`/matching/${id}/ai-ranking/results`, { state: { ranking, matches: results, selected } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "AI comparison failed.");
+      setError(e instanceof Error ? e.message : t("ranking_compare_error"));
     } finally {
       setRunning(false);
     }
