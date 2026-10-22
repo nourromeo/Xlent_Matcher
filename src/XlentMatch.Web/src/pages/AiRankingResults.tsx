@@ -56,18 +56,18 @@ export default function AiRankingResults() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-sm font-semibold text-app-primary">{t("ai_results_title")}</h1>
           {aiRanking && (
-            <div className="flex items-center gap-2" aria-label="Result actions">
+            <div className="flex items-center gap-2" aria-label={t("ranking_result_actions")}>
               <button type="button" disabled={Boolean(savedId) || saving || savedRecordId !== null} onClick={() => void saveResult()} className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary hover:bg-app-raised disabled:opacity-60 disabled:cursor-not-allowed">
                 <span aria-hidden="true">▣</span> {savedId || savedRecordId !== null ? "Saved" : saving ? "Saving..." : "Save Result"}
               </button>
-              <button type="button" disabled title="Share functionality is coming later" className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary opacity-60 cursor-not-allowed">
+              <button type="button" disabled title={t("ranking_share_later")} className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary opacity-60 cursor-not-allowed">
                 <span aria-hidden="true">↗</span> Share
               </button>
             </div>
           )}
         </div>
         {saveError && <p role="alert" className="text-sm text-app-danger">{saveError}</p>}
-        {savedRecordId !== null && <p role="status" className="text-sm text-app-success">Ranking saved successfully.</p>}
+        {savedRecordId !== null && <p role="status" className="text-sm text-app-success">{t("ranking_saved_success")}</p>}
         {loadError && <p role="alert" className="text-sm text-app-danger">{loadError}</p>}
         {!aiRanking ? (
           <div className="rounded-xl border border-app-border bg-app-surface p-6">
@@ -77,7 +77,7 @@ export default function AiRankingResults() {
           </div>
         ) : (
           <>
-                    <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-2" aria-label="AI comparison summary">
+                    <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-2" aria-label={t("ranking_summary")}>
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">{t("ai_summary")}</p>
                       {(() => {
                         const winner = aiRanking.rankings.find((item) => item.rank === 1);
