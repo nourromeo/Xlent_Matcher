@@ -81,18 +81,18 @@ export default function AiRankingSelection() {
           <h1 className="text-xl font-semibold text-app-primary">{t("ai_select_title")}</h1>
           <p className="mt-1 text-xs text-app-muted">{assignment ? `${assignment.title} · ${assignment.referenceNumber}` : t("ai_select_hint")}</p>
         </div>
-        <div className="flex gap-1 border-b border-app-border" role="tablist" aria-label="AI Ranking views">
-          <button type="button" role="tab" aria-selected={activeTab === "new"} onClick={() => setActiveTab("new")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "new" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>New AI Ranking</button>
-          <button type="button" role="tab" aria-selected={activeTab === "saved"} onClick={() => setActiveTab("saved")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "saved" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>Saved Rankings</button>
+        <div className="flex gap-1 border-b border-app-border" role="tablist" aria-label={t("ranking_views")}>
+          <button type="button" role="tab" aria-selected={activeTab === "new"} onClick={() => setActiveTab("new")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "new" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>{t("ranking_new")}</button>
+          <button type="button" role="tab" aria-selected={activeTab === "saved"} onClick={() => setActiveTab("saved")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "saved" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>{t("ranking_saved")}</button>
         </div>
         {activeTab === "saved" ? (
           <section role="tabpanel" className="rounded-xl border border-app-border bg-app-surface p-6 space-y-2">
-            <h2 className="text-sm font-semibold text-app-primary">Saved AI Rankings</h2>
-            {savedLoading ? <p className="text-sm text-app-muted">Loading saved rankings...</p> : savedError ? <p role="alert" className="text-sm text-app-danger">{savedError}</p> : saved.length === 0 ? <p className="text-sm text-app-muted">No saved rankings yet.</p> : (
+            <h2 className="text-sm font-semibold text-app-primary">{t("ranking_saved_title")}</h2>
+            {savedLoading ? <p className="text-sm text-app-muted">{t("ranking_saved_loading")}</p> : savedError ? <p role="alert" className="text-sm text-app-danger">{savedError}</p> : saved.length === 0 ? <p className="text-sm text-app-muted">{t("ranking_saved_empty")}</p> : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead><tr className="border-b border-app-border text-xs text-app-muted"><th className="py-3 pr-4">Saved date</th><th className="py-3 pr-4">Best match</th><th className="py-3 pr-4">Consultants</th><th className="py-3">Action</th></tr></thead>
-                  <tbody>{saved.map(item => <tr key={item.id} className="border-b border-app-border-subtle last:border-0"><td className="py-3 pr-4">{new Date(item.createdAt).toLocaleString()}</td><td className="py-3 pr-4">{item.bestMatch}</td><td className="py-3 pr-4">{item.consultantCount}</td><td className="py-3"><Link className="text-app-brand hover:underline" to={`/matching/${id}/ai-ranking/saved/${item.id}`}>View →</Link></td></tr>)}</tbody>
+                  <thead><tr className="border-b border-app-border text-xs text-app-muted"><th className="py-3 pr-4">{t("ranking_saved_date")}</th><th className="py-3 pr-4">{t("ranking_best_match")}</th><th className="py-3 pr-4">{t("ranking_consultants")}</th><th className="py-3">{t("ranking_action")}</th></tr></thead>
+                  <tbody>{saved.map(item => <tr key={item.id} className="border-b border-app-border-subtle last:border-0"><td className="py-3 pr-4">{new Date(item.createdAt).toLocaleString()}</td><td className="py-3 pr-4">{item.bestMatch}</td><td className="py-3 pr-4">{item.consultantCount}</td><td className="py-3"><Link className="text-app-brand hover:underline" to={`/matching/${id}/ai-ranking/saved/${item.id}`}>{t("ranking_view")} →</Link></td></tr>)}</tbody>
                 </table>
               </div>
             )}
@@ -132,12 +132,12 @@ export default function AiRankingSelection() {
                         </button>
                       );
                     })}
-                    {options.length === 0 && <p className="p-3 text-xs text-app-muted">Inga konsulter hittades.</p>}
+                    {options.length === 0 && <p className="p-3 text-xs text-app-muted">{t("ranking_no_consultants")}</p>}
                   </div>
                 </div>
               )}
-              <p className="text-xs text-app-muted">Endast konsulter med tillgängligt CV visas.</p>
-              <button type="button" onClick={() => { setSelected(results.filter(r => eligible.includes(r.consultantId)).slice(0, 2).map(r => r.consultantId)); }} className="text-xs text-app-brand hover:underline">Återställ automatiskt val</button>
+              <p className="text-xs text-app-muted">{t("ranking_eligible_only")}</p>
+              <button type="button" onClick={() => { setSelected(results.filter(r => eligible.includes(r.consultantId)).slice(0, 2).map(r => r.consultantId)); }} className="text-xs text-app-brand hover:underline">{t("ranking_auto_reset")}</button>
             </section>
             {eligible.length < 2 && <p className="rounded-lg border border-app-border p-3 text-xs text-app-warning">{t("ai_min_two")}</p>}
             {error && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-app-danger">{error}</p>}
