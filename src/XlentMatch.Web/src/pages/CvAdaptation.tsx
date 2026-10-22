@@ -722,7 +722,7 @@ export default function CvAdaptation() {
                   {t("adaptation_result")}
                 </p>
                 <h2 className="mt-1 text-base font-semibold text-app-primary">
-                  CV Analysis Report
+                  {t("adapt_report_title")}
                 </h2>
                 <p className="mt-2 text-xs text-app-secondary">
                   <span className="font-semibold">{t("adaptation_consultant_cv")}:</span> {[usedConsultant?.firstName, usedConsultant?.lastName].filter(Boolean).join(" ") || "—"}
@@ -736,7 +736,7 @@ export default function CvAdaptation() {
                   {t("adapt_print")}
                 </Button>
                 <Button variant="ghost" onClick={resetAll}>
-                  Ny analys
+                  {t("adapt_new_analysis")}
                 </Button>
               </div>
             </div>
