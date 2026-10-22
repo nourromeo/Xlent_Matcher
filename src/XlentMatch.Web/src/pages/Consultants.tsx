@@ -259,7 +259,7 @@ export default function Consultants() {
               key: "cv",
               width: "9%",
               header: "CV",
-              render: (consultant) => cvEligible === null ? <span className="text-app-muted">—</span> : <span className={`whitespace-nowrap text-[11px] ${cvEligible.has(consultant.id) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(consultant.id) ? "✓ Finns" : "– Saknas"}</span>,
+              render: (consultant) => cvEligible === null ? <span className="text-app-muted">—</span> : <span className={`whitespace-nowrap text-[11px] ${cvEligible.has(consultant.id) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(consultant.id) ? "✓ " + t("consultant_cv_present") : "– " + t("consultant_cv_missing")}</span>,
             },
             {
               key: "availability",
