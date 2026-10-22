@@ -79,7 +79,7 @@ export default function Admin() {
       setCopiedItem(item);
       setCopyFeedbackSequence((sequence) => sequence + 1);
     } catch {
-      setError("Could not copy text. Check browser clipboard permissions.");
+      setError(t("admin_clipboard_error"));
     }
   };
   const [runtimeContractError, setRuntimeContractError] = useState(false);
@@ -405,11 +405,11 @@ export default function Admin() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3">
-                    <p className="text-[11px] text-app-muted">Active version</p>
+                    <p className="text-[11px] text-app-muted">{t("admin_active_version")}</p>
                     <p className="mt-1 text-xl font-semibold text-app-primary">v{promptVersions.find((version) => version.isActive)?.version ?? "—"}</p>
                   </div>
                   <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3">
-                    <p className="text-[11px] text-app-muted">Version history</p>
+                    <p className="text-[11px] text-app-muted">{t("admin_version_history")}</p>
                     <p className="mt-1 text-xl font-semibold text-app-primary">{promptVersions.length}</p>
                   </div>
                 </div>
@@ -433,7 +433,7 @@ export default function Admin() {
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <h3 className="text-sm font-semibold text-app-primary">Prompt Content · v{selectedPromptVersion.version}</h3>
-                          <p className="mt-1 text-xs text-app-muted">Editing creates a new active version; saved versions are not overwritten.</p>
+                          <p className="mt-1 text-xs text-app-muted">{t("admin_version_note")}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {selectedPromptVersion.isActive && <StatusBadge tone="success">{t("prompt_active")}</StatusBadge>}
@@ -466,8 +466,8 @@ export default function Admin() {
                         aria-expanded={runtimeExpanded}
                         className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-app">
                         <span>
-                          <span className="block text-sm font-semibold text-app-primary">Runtime Contract</span>
-                          <span className="mt-1 block text-xs text-app-muted">Backend-enforced output rules and validation · Read-only</span>
+                          <span className="block text-sm font-semibold text-app-primary">{t("admin_runtime_contract")}</span>
+                          <span className="mt-1 block text-xs text-app-muted">{t("admin_runtime_explainer")}</span>
                         </span>
                         <span className="flex items-center gap-2 text-xs text-app-muted"><span className="rounded border border-app-border px-2 py-1">Backend</span>{runtimeExpanded ? "−" : "+"}</span>
                       </button>
@@ -477,7 +477,7 @@ export default function Admin() {
                           {runtimeContract && (
                             <>
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="text-xs font-medium text-app-secondary">Output instructions · Full original text</span>
+                                <span className="text-xs font-medium text-app-secondary">{t("admin_output_instructions")}</span>
                                 <div className="flex gap-2">
                                   <Button variant="ghost" onClick={() => void copyText(runtimeContract.content, "contract")}>{copiedItem === "contract" ? "✓ Copied" : "Copy contract"}</Button>
                                   <Button variant="ghost" onClick={() => setRuntimeShowFull((value) => !value)}>{runtimeShowFull ? "Collapse text" : "Show full text"}</Button>
@@ -485,13 +485,13 @@ export default function Admin() {
                               </div>
                               <pre className={`overflow-auto whitespace-pre-wrap break-words rounded-lg border border-app-border bg-app p-4 font-mono text-[13px] leading-7 text-app-secondary ${runtimeShowFull ? "" : "max-h-80"}`}>{runtimeContract.content.replace(/\\n/g, "\n")}</pre>
                               <div className="rounded-md border border-app-border px-3 py-3">
-                                <p className="text-xs font-semibold text-app-primary">JSON Schema &amp; Validation</p>
+                                <p className="text-xs font-semibold text-app-primary">{t("admin_json_validation")}</p>
                                 <p className="mt-1 text-xs leading-5 text-app-muted">{runtimeContract.note}</p>
                               </div>
                             </>
                           )}
-                          {!runtimeContract && !runtimeContractError && <p className="text-xs text-app-muted">Loading runtime contract…</p>}
-                          {runtimeContractError && <p className="text-xs text-app-muted">Runtime contract could not be loaded.</p>}
+                          {!runtimeContract && !runtimeContractError && <p className="text-xs text-app-muted">{t("admin_runtime_loading")}</p>}
+                          {runtimeContractError && <p className="text-xs text-app-muted">{t("admin_runtime_error")}</p>}
                         </div>
                       )}
                     </section>
