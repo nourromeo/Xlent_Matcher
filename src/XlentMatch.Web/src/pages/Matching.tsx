@@ -326,7 +326,7 @@ export default function Matching() {
               variant="compact"
               title={assignment.title}
               metadata={[assignment.customerName, assignment.referenceNumber].filter(Boolean).join(" · ")}
-              actions={<><Link to={`/client-assignments/${assignment.id}`} className="text-xs text-app-brand hover:underline">Visa uppdrag</Link><Link to={`/matching/${assignmentId}/ai-ranking`} className="inline-flex items-center rounded-md bg-app-brand px-3 py-1.5 text-xs font-medium text-app-on-brand hover:opacity-90">AI Ranking →</Link></>}
+              actions={<><Link to={`/client-assignments/${assignment.id}`} className="text-xs text-app-brand hover:underline">{t("matching_view_assignment")}</Link><Link to={`/matching/${assignmentId}/ai-ranking`} className="inline-flex items-center rounded-md bg-app-brand px-3 py-1.5 text-xs font-medium text-app-on-brand hover:opacity-90">AI Ranking →</Link></>}
             />
           </div>
         )}
@@ -334,7 +334,7 @@ export default function Matching() {
         {error && (
           <div className="mt-3 rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
             <span>{error}</span>
-            {assignment && !matching && <button type="button" onClick={() => setMatchingAttempt((n) => n + 1)} className="ml-3 underline text-app-brand">Retry</button>}
+            {assignment && !matching && <button type="button" onClick={() => setMatchingAttempt((n) => n + 1)} className="ml-3 underline text-app-brand">{t("matching_retry")}</button>}
           </div>
         )}
       </div>
