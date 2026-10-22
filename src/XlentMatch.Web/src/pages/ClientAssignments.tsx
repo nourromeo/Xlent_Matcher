@@ -682,7 +682,7 @@ export function NewAssignmentPage() {
                       }
                     />
                   </label>
-                  <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_relative_start")}</span><Input value={startDateDescription} onChange={(event) => setStartDateDescription(event.target.value)} placeholder="e.g. Inom 1–2 månader" /></label>
+                  <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_relative_start")}</span><Input value={startDateDescription} onChange={(event) => setStartDateDescription(event.target.value)} placeholder={t("assignment_start_example")} /></label>
                   <label className="block">
                     <span className="text-[11px] text-app-muted mb-1.5 block">
                       {t("client_minimum_experience")}
@@ -1387,7 +1387,7 @@ export default function ClientAssignments() {
             {
               key: "status",
               width: "8%",
-              header: "Status",
+              header: t("cv_status_column"),
               sortable: true,
               sortValue: (assignment) => assignment.status,
               render: (assignment) => {
