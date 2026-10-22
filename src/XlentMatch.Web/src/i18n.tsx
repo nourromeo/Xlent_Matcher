@@ -582,6 +582,8 @@ const translations = {
     prompt_title: "Prompt Management", prompt_loading: "Loading prompts...", prompt_empty: "No prompts available.", prompt_history: "Version History", prompt_active: "Active", prompt_previous: "Previous", prompt_editing_based: "Editing based on", prompt_change_note: "Change note (optional)", prompt_save_version: "Save as new version", prompt_back: "Back to Prompt Management", prompt_set_active: "Set as Active", prompt_prompt: "Prompt", prompt_active_version: "Active Version", prompt_versions: "Versions", prompt_updated: "Updated", prompt_action: "Action", prompt_view: "View", common_updated: "Updated", assignment_location_unspecified: "Location not specified", consultant_no_industries: "No industries added.", consultant_no_education: "No education added.", consultant_no_certifications: "No certifications added.", consultant_save_changes: "Save changes", consultant_search_skills: "Search skills", consultant_search_skills_placeholder: "Search among competencies...", consultant_edit_skill: "Edit skill", consultant_skill_level: "Level", consultant_evidence_label: "Evidence / relevant experience", consultant_evidence_hint: "Briefly describe where or how the skill was used.", consultant_edit_language: "Edit language", consultant_edit_industry: "Edit industry", consultant_industry_label: "Industry", consultant_add_industry: "Add industry",
   },
   es: {
+    assignment_required_languages: "Idiomas obligatorios",
+    assignment_preferred_languages: "Idiomas deseados",
     review_no_data: "No se encontraron datos extraídos para este CV.",
     review_load_error: "No se pudo cargar la revisión del CV.",
     review_current_error: "No se pudo cargar el perfil actual del consultor.",
@@ -1148,6 +1150,8 @@ const translations = {
     prompt_title: "Gestión de prompts", prompt_loading: "Cargando prompts...", prompt_empty: "No hay prompts disponibles.", prompt_history: "Historial de versiones", prompt_active: "Activo", prompt_previous: "Anterior", prompt_editing_based: "Editando a partir de", prompt_change_note: "Nota del cambio (opcional)", prompt_save_version: "Guardar como nueva versión", prompt_back: "Volver a Gestión de prompts", prompt_set_active: "Establecer como activo", prompt_prompt: "Prompt", prompt_active_version: "Versión activa", prompt_versions: "Versiones", prompt_updated: "Actualizado", prompt_action: "Acción", prompt_view: "Ver", common_updated: "Actualizado", assignment_location_unspecified: "Ubicación no especificada",
   },
   sv: {
+    assignment_required_languages: "Obligatoriska språk",
+    assignment_preferred_languages: "Önskade språk",
     review_no_data: "Inga extraherade uppgifter hittades för detta CV.",
     review_load_error: "Kunde inte läsa in CV-granskningen.",
     review_current_error: "Kunde inte läsa in den nuvarande konsultprofilen.",
