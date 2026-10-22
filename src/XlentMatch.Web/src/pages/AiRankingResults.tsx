@@ -27,7 +27,7 @@ export default function AiRankingResults() {
           matches: data.snapshot.matches.map(m => ({ ...m, id: 0, assignmentId: Number(assignmentId), rank: 0 } as MatchResultApi))
         });
       })
-      .catch(e => { if (!cancelled) setLoadError(e instanceof Error ? e.message : "Could not load saved ranking."); });
+      .catch(e => { if (!cancelled) setLoadError(e instanceof Error ? e.message : t("ranking_load_saved_error")); });
     return () => { cancelled = true; };
   }, [assignmentId, savedId]);
   const aiRanking = savedId ? loaded?.ranking : state?.ranking;
@@ -40,7 +40,7 @@ export default function AiRankingResults() {
       const saved = await matchingApi.saveAiRanking(Number(assignmentId), aiRanking);
       setSavedRecordId(saved.id);
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Could not save ranking.");
+      setSaveError(e instanceof Error ? e.message : t("ranking_save_error"));
     } finally {
       setSaving(false);
     }
