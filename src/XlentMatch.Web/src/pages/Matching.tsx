@@ -645,7 +645,7 @@ export default function Matching() {
                       >
                         <span>{skill.skill?.canonicalName ?? skill.name}</span>
                         <span className="text-app-muted">
-                          {skill.years == null ? "Not specified" : `${skill.years} ${t("consultant_year_count")}`}
+                          {skill.years == null ? t("common_not_specified") : `${skill.years} ${t("consultant_year_count")}`}
                         </span>
                       </div>
                     ))}
