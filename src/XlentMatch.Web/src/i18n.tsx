@@ -4,6 +4,13 @@ export type Locale = "en" | "es" | "sv";
 
 const translations = {
   en: {
+    dashboard_active_cvs: "Active CVs",
+    dashboard_approved_cvs: "Approved CVs in the library",
+    dashboard_latest_five: "The five most recently matched assignments",
+    dashboard_latest: "Latest",
+    dashboard_cv_library: "CV Library",
+    dashboard_pending_review: "Pending review",
+    dashboard_view_library: "View library",
     ai_back: "Back to matching results",
     ai_select_title: "AI Ranking · Select consultants",
     ai_select_hint: "Select 2–5 consultants with original CVs for comparison.",
@@ -453,6 +460,13 @@ const translations = {
     prompt_title: "Prompt Management", prompt_loading: "Loading prompts...", prompt_empty: "No prompts available.", prompt_history: "Version History", prompt_active: "Active", prompt_previous: "Previous", prompt_editing_based: "Editing based on", prompt_change_note: "Change note (optional)", prompt_save_version: "Save as new version", prompt_back: "Back to Prompt Management", prompt_set_active: "Set as Active", prompt_prompt: "Prompt", prompt_active_version: "Active Version", prompt_versions: "Versions", prompt_updated: "Updated", prompt_action: "Action", prompt_view: "View", common_updated: "Updated", assignment_location_unspecified: "Location not specified", consultant_no_industries: "No industries added.", consultant_no_education: "No education added.", consultant_no_certifications: "No certifications added.", consultant_save_changes: "Save changes", consultant_search_skills: "Search skills", consultant_search_skills_placeholder: "Search among competencies...", consultant_edit_skill: "Edit skill", consultant_skill_level: "Level", consultant_evidence_label: "Evidence / relevant experience", consultant_evidence_hint: "Briefly describe where or how the skill was used.", consultant_edit_language: "Edit language", consultant_edit_industry: "Edit industry", consultant_industry_label: "Industry", consultant_add_industry: "Add industry",
   },
   es: {
+    dashboard_active_cvs: "CV activos",
+    dashboard_approved_cvs: "CV aprobados en la biblioteca",
+    dashboard_latest_five: "Los cinco encargos con coincidencias más recientes",
+    dashboard_latest: "Última fecha",
+    dashboard_cv_library: "Biblioteca de CV",
+    dashboard_pending_review: "Pendientes de revisión",
+    dashboard_view_library: "Ver biblioteca",
     ai_back: "Volver a resultados",
     ai_select_title: "Clasificación IA · Seleccionar consultores",
     ai_select_hint: "Selecciona de 2 a 5 consultores con CV originales.",
@@ -890,6 +904,13 @@ const translations = {
     prompt_title: "Gestión de prompts", prompt_loading: "Cargando prompts...", prompt_empty: "No hay prompts disponibles.", prompt_history: "Historial de versiones", prompt_active: "Activo", prompt_previous: "Anterior", prompt_editing_based: "Editando a partir de", prompt_change_note: "Nota del cambio (opcional)", prompt_save_version: "Guardar como nueva versión", prompt_back: "Volver a Gestión de prompts", prompt_set_active: "Establecer como activo", prompt_prompt: "Prompt", prompt_active_version: "Versión activa", prompt_versions: "Versiones", prompt_updated: "Actualizado", prompt_action: "Acción", prompt_view: "Ver", common_updated: "Actualizado", assignment_location_unspecified: "Ubicación no especificada",
   },
   sv: {
+    dashboard_active_cvs: "Aktiva CV:n",
+    dashboard_approved_cvs: "Godkända CV:n i biblioteket",
+    dashboard_latest_five: "De 5 senast beräknade kunduppdragen",
+    dashboard_latest: "Senast",
+    dashboard_cv_library: "CV-bibliotek",
+    dashboard_pending_review: "Väntar på granskning",
+    dashboard_view_library: "Visa bibliotek",
     ai_back: "Tillbaka till matchningsresultat",
     ai_select_title: "AI Ranking · Välj konsulter",
     ai_select_hint: "Välj 2–5 konsulter med original-CV för jämförelse.",
