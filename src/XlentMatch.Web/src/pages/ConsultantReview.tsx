@@ -760,7 +760,7 @@ export default function ConsultantReview() {
                         {item.name || t("common_not_specified")}
                       </span>
                       <span className="text-xs text-app-muted">
-                        {item.years == null ? "Not specified" : `${item.years} ${t("consultant_year_count")}`}
+                        {item.years == null ? t("common_not_specified") : `${item.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-xs text-app-muted">
                         {item.level > 0 ? `${level(item.level)} (${item.level}/5)` : t("common_not_specified")}
@@ -1069,7 +1069,7 @@ export default function ConsultantReview() {
                       >
                         <span>{x.name}</span>
                         <span>
-                          {x.years == null ? "Not specified" : `${x.years} ${t("consultant_year_count")}`}
+                          {x.years == null ? t("common_not_specified") : `${x.years} ${t("consultant_year_count")}`}
                         </span>
                         <span>
                           {level(x.level)} ({x.level}/5)
