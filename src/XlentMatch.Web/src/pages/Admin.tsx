@@ -437,7 +437,7 @@ export default function Admin() {
                         </div>
                         <div className="flex items-center gap-2">
                           {selectedPromptVersion.isActive && <StatusBadge tone="success">{t("prompt_active")}</StatusBadge>}
-                          <Button variant="ghost" onClick={() => void copyText(selectedPromptVersion.content, "prompt")}>{copiedItem === "prompt" ? "✓ Copied" : "Copy prompt"}</Button>
+                          <Button variant="ghost" onClick={() => void copyText(selectedPromptVersion.content, "prompt")}>{copiedItem === "prompt" ? t("admin_copied") : t("admin_copy_prompt")}</Button>
                         </div>
                       </div>
                       <p className="text-xs text-app-muted">Created {formatDateTime(selectedPromptVersion.createdAt, locale)}{selectedPromptVersion.changeNote ? ` · ${selectedPromptVersion.changeNote}` : ""}</p>
@@ -473,14 +473,14 @@ export default function Admin() {
                       </button>
                       {runtimeExpanded && (
                         <div className="space-y-3 border-t border-app-border px-5 py-4">
-                          <p className="text-xs leading-5 text-app-muted">These instructions are separate from the editable prompt. JSON Schema and validation are controlled by the API.</p>
+                          <p className="text-xs leading-5 text-app-muted">{t("admin_runtime_note")}</p>
                           {runtimeContract && (
                             <>
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="text-xs font-medium text-app-secondary">{t("admin_output_instructions")}</span>
                                 <div className="flex gap-2">
-                                  <Button variant="ghost" onClick={() => void copyText(runtimeContract.content, "contract")}>{copiedItem === "contract" ? "✓ Copied" : "Copy contract"}</Button>
-                                  <Button variant="ghost" onClick={() => setRuntimeShowFull((value) => !value)}>{runtimeShowFull ? "Collapse text" : "Show full text"}</Button>
+                                  <Button variant="ghost" onClick={() => void copyText(runtimeContract.content, "contract")}>{copiedItem === "contract" ? t("admin_copied") : t("admin_copy_contract")}</Button>
+                                  <Button variant="ghost" onClick={() => setRuntimeShowFull((value) => !value)}>{runtimeShowFull ? t("admin_collapse") : t("admin_show_full")}</Button>
                                 </div>
                               </div>
                               <pre className={`overflow-auto whitespace-pre-wrap break-words rounded-lg border border-app-border bg-app p-4 font-mono text-[13px] leading-7 text-app-secondary ${runtimeShowFull ? "" : "max-h-80"}`}>{runtimeContract.content.replace(/\\n/g, "\n")}</pre>
