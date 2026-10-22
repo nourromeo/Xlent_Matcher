@@ -142,7 +142,7 @@ export default function AiRankingSelection() {
             {eligible.length < 2 && <p className="rounded-lg border border-app-border p-3 text-xs text-app-warning">{t("ai_min_two")}</p>}
             {error && <p role="alert" className="rounded-lg border border-app-border p-3 text-xs text-app-danger">{error}</p>}
             <div className="flex justify-end">
-              <button type="button" disabled={selected.length < 2 || selected.length > 5 || running} onClick={() => void run()} className="rounded-md bg-app-brand px-5 py-2.5 text-sm font-medium text-app-on-brand disabled:opacity-50">{running ? "Analyserar original-CV:n..." : "Jämför med AI →"}</button>
+              <button type="button" disabled={selected.length < 2 || selected.length > 5 || running} onClick={() => void run()} className="rounded-md bg-app-brand px-5 py-2.5 text-sm font-medium text-app-on-brand disabled:opacity-50">{running ? t("ranking_running") : t("ranking_compare")}</button>
             </div>
           </>
         )}
