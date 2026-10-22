@@ -550,7 +550,7 @@ export default function EditConsultant() {
                         {item.name || t("common_not_specified")}
                       </span>
                       <span className="text-xs text-app-muted">
-                        {item.years == null ? "Not specified" : `${item.years} ${t("consultant_year_count")}`}
+                        {item.years == null ? t("common_not_specified") : `${item.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-xs text-app-muted">
                         {levelLabel(item.level)} ({item.level}/5)
@@ -1114,7 +1114,7 @@ export default function EditConsultant() {
                     >
                       <span className="text-app-primary">{x.name}</span>
                       <span className="text-app-muted">
-                        {x.years == null ? "Not specified" : `${x.years} ${t("consultant_year_count")}`}
+                        {x.years == null ? t("common_not_specified") : `${x.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-app-muted">
                         {levelLabel(x.level)} ({x.level}/5)
