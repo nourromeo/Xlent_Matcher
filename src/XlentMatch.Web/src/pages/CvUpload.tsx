@@ -12,6 +12,12 @@ const formatSize = (bytes: number) => bytes >= 1048576 ? `${(bytes / 1048576).to
 
 export default function CvUpload() {
   const { t, locale } = useI18n();
+  const localizeStatus = (value: string) => value === "All" ? t("cv_all_statuses")
+    : value === "Extracting" ? t("status_extracting")
+    : value === "Review" ? t("cv_review")
+    : value === "Indexed" ? t("dashboard_indexed")
+    : value === "Error" ? t("status_error")
+    : value === "Queued" ? t("status_queued") : value;
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
@@ -152,7 +158,7 @@ export default function CvUpload() {
           <div className="flex gap-2">
             <input aria-label={t("cv_search_label")} className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" placeholder={t("cv_search")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
             <select aria-label={t("cv_status_filter")} className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-              {["All", "Extracting", "Review", "Indexed", "Error"].map((x) => <option key={x} value={x}>{x === "All" ? t("cv_all_statuses") : x}</option>)}
+              {["All", "Extracting", "Review", "Indexed", "Error"].map((x) => <option key={x} value={x}>{localizeStatus(x)}</option>)}
             </select>
           </div>
         </div>
@@ -167,7 +173,7 @@ export default function CvUpload() {
                   <td className="px-4 py-3">{r.consultantId ? <Link className="text-app-brand" to={`/consultants/${r.consultantId}`}>{consultantNames[r.consultantId] || t("cv_consultant_number") + " " + r.consultantId}</Link> : <span className="text-app-muted">{t("cv_unassigned")}</span>}</td>
                   <td className="px-4 py-3">{new Date(r.uploadedAt).toLocaleDateString(locale === "sv" ? "sv-SE" : locale === "es" ? "es-ES" : "en-US")}</td>
                   <td className="px-4 py-3">{formatSize(r.fileSize)}</td>
-                  <td className="px-4 py-3">{r.isActive ? t("cv_active_status") : r.status === "Review" ? t("cv_review") : r.status === "Indexed" ? t("dashboard_indexed") : r.status === "Error" ? t("status_error") : r.status === "Extracting" ? t("status_extracting") : r.status}</td>
+                  <td className="px-4 py-3">{r.isActive ? t("cv_active_status") : localizeStatus(r.status)}</td>
                   <td className="px-4 py-3"><div className="flex justify-end flex-wrap gap-3">
                     {tab === "library" && r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">{t("cv_view")}</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">{t("cv_download")}</a></>}
                     {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`}>{t("cv_review")}</Link>}
