@@ -191,8 +191,7 @@ export default function Consultants() {
         <select
           value={avail}
           onChange={(event) => setAvail(event.target.value)}
-          className="text-[11px] rounded px-2 py-1 focus:outline-none"
-          className="bg-app-surface border border-app-border text-app-secondary"
+          className="text-[11px] rounded px-2 py-1 focus:outline-none bg-app-surface border border-app-border text-app-secondary"
         >
           {AVAIL_OPTIONS.map((option) => (
             <option key={option} value={option}>
