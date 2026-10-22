@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 export type Locale = "en" | "es" | "sv";
 
-const translations = {
+export const translations = {
   en: {
     file_unsupported: "Unsupported file type. Use PDF or TXT.",
     file_empty: "The selected file is empty.",
