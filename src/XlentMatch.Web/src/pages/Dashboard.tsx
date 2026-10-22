@@ -1,15 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  FileText,
-  Briefcase,
-  GitMerge,
-  Clock,
-  Users,
-  CheckCircle,
-  AlertCircle,
-  ArrowUpRight,
-  ChevronRight,
-} from "../design-system/icons";
+import { FileText, Briefcase, Users, ArrowUpRight, ChevronRight } from "../design-system/icons";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/ui/PageHeader";
 import { consultantsApi } from "../services/consultantsApi";
@@ -63,15 +52,6 @@ function StatCard({
     </div>
   );
 }
-
-const uploadIcon = (status: CvUploadRecord["status"]) =>
-  status === "Indexed" ? (
-    <CheckCircle size={10} className="text-app-success" />
-  ) : status === "Error" ? (
-    <AlertCircle size={10} className="text-app-danger" />
-  ) : (
-    <Clock size={10} className="text-app-brand" />
-  );
 
 export default function Dashboard() {
   const { t, locale } = useI18n();
@@ -159,7 +139,6 @@ export default function Dashboard() {
     }
     return best;
   }, [matches]);
-  const matchedAssignments = bestMatchByAssignment.size;
   const latestMatchedAssignments = useMemo(() => {
     return [...bestMatchByAssignment.entries()]
       .map(([assignmentId, match]) => ({
@@ -173,7 +152,7 @@ export default function Dashboard() {
       .sort((a, b) => b.lastMatchedAt - a.lastMatchedAt)
       .slice(0, 5);
   }, [assignmentById, bestMatchByAssignment, matches]);
-  const recentUploads = uploads.slice(0, 5);
+  const activeCvs = uploads.filter((item) => item.status === "Indexed" && item.isActive && item.consultantId != null);
   return (
     <div className="p-6 space-y-6">
       <PageHeader
@@ -202,72 +181,16 @@ export default function Dashboard() {
           icon={Briefcase}
         />
         <StatCard
-          label={t("dashboard_matched_label")}
-          value={loading ? "—" : String(matchedAssignments)}
-          sub={t("dashboard_matched_sub")}
-          icon={GitMerge}
+          label={locale === "sv" ? "Aktiva CV:n" : "Active CVs"}
+          value={loading ? "—" : String(activeCvs.length)}
+          sub={locale === "sv" ? "Godkända CV:n i biblioteket" : "Approved CVs in the library"}
+          icon={FileText}
         />
 
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <section className="order-last xl:col-span-1 bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-app-border">
-            <div>
-              <p className="text-xs font-medium text-app-primary">
-                {t("dashboard_recent_uploads")}
-              </p>
-              <p className="text-[10px] text-app-muted mt-0.5">
-                {t("dashboard_upload_activity")}
-              </p>
-            </div>
-            <Link
-              to="/cv-upload"
-              className="text-[10px] text-app-brand flex items-center gap-1"
-            >
-              {t("dashboard_view_all")} <ArrowUpRight size={10} />
-            </Link>
-          </div>
-
-          {recentUploads.length === 0 && !loading ? (
-            <p className="px-4 py-6 text-xs text-app-faint text-center">
-              {t("dashboard_no_uploads")}
-            </p>
-          ) : (
-            recentUploads.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 px-4 py-3 border-b border-app-border-subtle last:border-b-0"
-              >
-                <FileText size={12} className="text-app-faint flex-none" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-app-primary truncate font-mono">
-                    {item.fileName}
-                  </p>
-                  <p className="text-[10px] text-app-faint">
-                    {formatDateTime(item.uploadedAt, locale)}
-                  </p>
-                </div>
-                <span className="inline-flex items-center gap-1 text-[10px] text-app-muted">
-                  {uploadIcon(item.status)}
-                  {item.status === "Review"
-                    ? t("dashboard_review")
-                    : item.status === "Indexed"
-                      ? t("dashboard_indexed")
-                      : item.status === "Extracting"
-                        ? t("status_extracting")
-                        : item.status === "Error"
-                          ? t("status_error")
-                          : item.status === "Queued"
-                            ? t("status_queued")
-                            : item.status}
-                </span>
-              </div>
-            ))
-          )}
-        </section>
-
-        <section className="order-first xl:col-span-2 bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+      <div className="space-y-4">
+        <section className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
           <div className="flex items-center justify-between px-4 py-3 border-b border-app-border">
             <div>
               <p className="text-xs font-medium text-app-primary">Senaste matchningar</p>
@@ -317,6 +240,20 @@ export default function Dashboard() {
             </div>
           )}
         </section>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-app-border bg-app-surface px-4 py-3 shadow-app-surface">
+          <div className="flex items-center gap-3">
+            <FileText size={16} className="text-app-muted" />
+            <div>
+              <p className="text-xs font-medium text-app-primary">CV Library</p>
+              <p className="text-[10px] text-app-muted">
+                {loading ? "—" : activeCvs.length} {locale === "sv" ? "aktiva CV:n" : "active CVs"} · {loading ? "—" : uploads.filter((item) => item.status === "Review").length} {locale === "sv" ? "väntar på granskning" : "pending review"}
+              </p>
+            </div>
+          </div>
+          <Link to="/cv-upload" className="inline-flex items-center gap-1 text-xs text-app-brand hover:text-app-primary">
+            {locale === "sv" ? "Visa bibliotek" : "View library"} <ArrowUpRight size={12} />
+          </Link>
+        </div>
       </div>
     </div>
   );
