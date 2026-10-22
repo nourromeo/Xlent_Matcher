@@ -376,6 +376,7 @@ export function NewAssignmentPage() {
 
     const payload: AssignmentApi = {
       id: 0,
+      referenceNumber: "",
       customerName: client.trim(),
       title: title.trim(),
       description:
