@@ -14,14 +14,14 @@ const translations = {
     review_invalid_date_hint: "Review start/end dates (YYYY-MM or YYYY-MM-DD). For ongoing employment, leave end date empty.",
     consultant_info: "Consultant information",
     consultant_profile_tab: "Consultant Profile",
-    consultant_original_cv: "Original CV",
+    
     consultant_preview_unavailable: "Preview is available for PDF files. Download the original file to view it.",
     consultant_no_cv: "No CV uploaded",
     consultant_replace_cv: "Replace CV",
     consultant_cv_present: "Available",
     consultant_cv_missing: "Missing",
     assignment_relative_start: "Start timing (relative)",
-    matching_view_assignment: "View assignment",
+    
     matching_retry: "Retry",
     ranking_views: "AI Ranking views",
     ranking_new: "New AI Ranking",
@@ -343,7 +343,7 @@ const translations = {
     common_mark_reviewed: "Mark as Reviewed",
     common_enabled: "Enabled",
     common_disabled: "Disabled",
-    common_all: "All", matching_search_placeholder: "Search consultants...", matching_search_label: "Search consultants", matching_clear_search: "Clear search", matching_strong: "Strong", matching_partial: "Partial", matching_low: "Low", matching_matched_label: "matched", matching_missing_label: "missing",
+    common_all: "All",  matching_search_label: "Search consultants", matching_clear_search: "Clear search", matching_strong: "Strong", matching_partial: "Partial", matching_low: "Low", matching_matched_label: "matched", matching_missing_label: "missing",
     common_required: "required", assignment_done: "Matched", assignment_preferred: "Preferred", adaptation_title: "CV Adaptation", adaptation_description: "Choose, upload or paste a CV and assignment. AI suggests improvements temporarily; nothing from this page is saved to the database.", adaptation_existing: "Existing", adaptation_upload: "Upload", adaptation_paste: "Paste", adaptation_select_consultant: "Select consultant", adaptation_choose_cv_file: "Choose consultant CV (PDF or TXT)", adaptation_paste_cv: "Paste the consultant CV text here...", adaptation_select_assignment: "Select assignment", adaptation_choose_requirements_file: "Choose requirements file (PDF or TXT)", adaptation_paste_assignment: "Paste the customer assignment or requirement specification here...", adaptation_analysis_note: "This page does not update consultants, assignments or CV records. AI may only rephrase, reorder and emphasize information already present in the CV.", adaptation_generate: "Generate suggestions", adaptation_analysing: "Analysing...", adaptation_copied: "Copied", adaptation_copy: "Copy text", adaptation_print: "Print", adaptation_start_over: "Start over", adaptation_adapted_for: "Adapted for:", adaptation_client_assignment: "Client assignment", adaptation_print_footer: "CV adaptation draft generated from the consultant information provided for this assignment. Review before use.",
     common_missing: "missing",
     common_weight: "weight",
@@ -582,8 +582,8 @@ const translations = {
     prompt_title: "Prompt Management", prompt_loading: "Loading prompts...", prompt_empty: "No prompts available.", prompt_history: "Version History", prompt_active: "Active", prompt_previous: "Previous", prompt_editing_based: "Editing based on", prompt_change_note: "Change note (optional)", prompt_save_version: "Save as new version", prompt_back: "Back to Prompt Management", prompt_set_active: "Set as Active", prompt_prompt: "Prompt", prompt_active_version: "Active Version", prompt_versions: "Versions", prompt_updated: "Updated", prompt_action: "Action", prompt_view: "View", common_updated: "Updated", assignment_location_unspecified: "Location not specified", consultant_no_industries: "No industries added.", consultant_no_education: "No education added.", consultant_no_certifications: "No certifications added.", consultant_save_changes: "Save changes", consultant_search_skills: "Search skills", consultant_search_skills_placeholder: "Search among competencies...", consultant_edit_skill: "Edit skill", consultant_skill_level: "Level", consultant_evidence_label: "Evidence / relevant experience", consultant_evidence_hint: "Briefly describe where or how the skill was used.", consultant_edit_language: "Edit language", consultant_edit_industry: "Edit industry", consultant_industry_label: "Industry", consultant_add_industry: "Add industry",
   },
   es: {
-    assignment_required_languages: "Idiomas obligatorios",
-    assignment_preferred_languages: "Idiomas deseados",
+    
+    
     review_no_data: "No se encontraron datos extraídos para este CV.",
     review_load_error: "No se pudo cargar la revisión del CV.",
     review_current_error: "No se pudo cargar el perfil actual del consultor.",
@@ -594,14 +594,14 @@ const translations = {
     review_invalid_date_hint: "Revisa las fechas de inicio y fin (YYYY-MM o YYYY-MM-DD). Deja la fecha de fin vacía si el empleo continúa.",
     consultant_info: "Información del consultor",
     consultant_profile_tab: "Perfil del consultor",
-    consultant_original_cv: "CV original",
+    
     consultant_preview_unavailable: "La vista previa está disponible para archivos PDF. Descarga el archivo original para verlo.",
     consultant_no_cv: "No hay CV cargado",
     consultant_replace_cv: "Sustituir CV",
     consultant_cv_present: "Disponible",
     consultant_cv_missing: "No disponible",
     assignment_relative_start: "Inicio previsto (relativo)",
-    matching_view_assignment: "Ver encargo",
+    
     matching_retry: "Reintentar",
     ranking_views: "Vistas de clasificación con IA",
     ranking_new: "Nueva clasificación con IA",
@@ -913,7 +913,7 @@ const translations = {
     common_mark_reviewed: "Marcar como revisado",
     common_enabled: "Activado",
     common_disabled: "Desactivado",
-    common_all: "Todos", matching_search_placeholder: "Buscar consultores...", matching_search_label: "Buscar consultores", matching_clear_search: "Borrar búsqueda", matching_strong: "Fuertes", matching_partial: "Parciales", matching_low: "Bajos", matching_matched_label: "cubiertos", matching_missing_label: "faltantes",
+    common_all: "Todos",  matching_search_label: "Buscar consultores", matching_clear_search: "Borrar búsqueda", matching_strong: "Fuertes", matching_partial: "Parciales", matching_low: "Bajos", matching_matched_label: "cubiertos", matching_missing_label: "faltantes",
     common_required: "requeridos", assignment_done: "Emparejado", assignment_preferred: "Preferido", adaptation_title: "Adaptación de CV", adaptation_description: "Elige, carga o pega un CV y una asignación. La IA sugiere mejoras temporalmente; nada de esta página se guarda en la base de datos.", adaptation_existing: "Existente", adaptation_upload: "Cargar", adaptation_paste: "Pegar", adaptation_select_consultant: "Seleccionar consultor", adaptation_choose_cv_file: "Elegir CV del consultor (PDF o TXT)", adaptation_paste_cv: "Pega aquí el texto del CV del consultor...", adaptation_select_assignment: "Seleccionar asignación", adaptation_choose_requirements_file: "Elegir archivo de requisitos (PDF o TXT)", adaptation_paste_assignment: "Pega aquí la asignación del cliente o la especificación de requisitos...", adaptation_analysis_note: "Esta página no actualiza consultores, asignaciones ni registros de CV. La IA solo puede reformular, reordenar y destacar información ya presente en el CV.", adaptation_generate: "Generar sugerencias", adaptation_analysing: "Analizando...", adaptation_copied: "Copiado", adaptation_copy: "Copiar texto", adaptation_print: "Imprimir", adaptation_start_over: "Empezar de nuevo", adaptation_adapted_for: "Adaptado para:", adaptation_client_assignment: "Asignación del cliente", adaptation_print_footer: "Borrador de adaptación de CV generado a partir de la información del consultor para esta asignación. Revísalo antes de usarlo.",
     common_missing: "faltantes",
     common_weight: "peso",
@@ -1150,8 +1150,8 @@ const translations = {
     prompt_title: "Gestión de prompts", prompt_loading: "Cargando prompts...", prompt_empty: "No hay prompts disponibles.", prompt_history: "Historial de versiones", prompt_active: "Activo", prompt_previous: "Anterior", prompt_editing_based: "Editando a partir de", prompt_change_note: "Nota del cambio (opcional)", prompt_save_version: "Guardar como nueva versión", prompt_back: "Volver a Gestión de prompts", prompt_set_active: "Establecer como activo", prompt_prompt: "Prompt", prompt_active_version: "Versión activa", prompt_versions: "Versiones", prompt_updated: "Actualizado", prompt_action: "Acción", prompt_view: "Ver", common_updated: "Actualizado", assignment_location_unspecified: "Ubicación no especificada",
   },
   sv: {
-    assignment_required_languages: "Obligatoriska språk",
-    assignment_preferred_languages: "Önskade språk",
+    
+    
     review_no_data: "Inga extraherade uppgifter hittades för detta CV.",
     review_load_error: "Kunde inte läsa in CV-granskningen.",
     review_current_error: "Kunde inte läsa in den nuvarande konsultprofilen.",
@@ -1162,14 +1162,14 @@ const translations = {
     review_invalid_date_hint: "Kontrollera start- och slutdatum (YYYY-MM eller YYYY-MM-DD). Lämna slutdatum tomt för pågående anställning.",
     consultant_info: "Konsultinformation",
     consultant_profile_tab: "Konsultprofil",
-    consultant_original_cv: "Original-CV",
+    
     consultant_preview_unavailable: "Förhandsvisning är tillgänglig för PDF-filer. Ladda ner originalfilen för att visa den.",
     consultant_no_cv: "Inget CV uppladdat",
     consultant_replace_cv: "Ersätt CV",
     consultant_cv_present: "Finns",
     consultant_cv_missing: "Saknas",
     assignment_relative_start: "Starttid (relativ)",
-    matching_view_assignment: "Visa uppdrag",
+    
     matching_retry: "Försök igen",
     ranking_views: "AI-rankningsvyer",
     ranking_new: "Ny AI-rankning",
@@ -1481,7 +1481,7 @@ const translations = {
     common_mark_reviewed: "Markera som granskad",
     common_enabled: "Aktiverad",
     common_disabled: "Inaktiverad",
-    common_all: "Alla", matching_search_placeholder: "Sök konsulter...", matching_search_label: "Sök konsulter", matching_clear_search: "Rensa sökning", matching_strong: "Starka", matching_partial: "Delvisa", matching_low: "Låga", matching_matched_label: "matchade", matching_missing_label: "saknade",
+    common_all: "Alla",  matching_search_label: "Sök konsulter", matching_clear_search: "Rensa sökning", matching_strong: "Starka", matching_partial: "Delvisa", matching_low: "Låga", matching_matched_label: "matchade", matching_missing_label: "saknade",
     common_required: "obligatoriska", assignment_done: "Matchad", assignment_preferred: "Önskvärt", adaptation_title: "CV-anpassning", adaptation_description: "Välj, ladda upp eller klistra in ett CV och ett uppdrag. AI föreslår tillfälliga förbättringar; inget från denna sida sparas i databasen.", adaptation_existing: "Befintlig", adaptation_upload: "Ladda upp", adaptation_paste: "Klistra in", adaptation_select_consultant: "Välj konsult", adaptation_choose_cv_file: "Välj konsultens CV (PDF eller TXT)", adaptation_paste_cv: "Klistra in konsultens CV-text här...", adaptation_select_assignment: "Välj uppdrag", adaptation_choose_requirements_file: "Välj kravfil (PDF eller TXT)", adaptation_paste_assignment: "Klistra in kunduppdraget eller kravspecifikationen här...", adaptation_analysis_note: "Den här sidan uppdaterar inte konsulter, uppdrag eller CV-poster. AI får endast omformulera, ordna om och lyfta fram information som redan finns i CV:t.", adaptation_generate: "Generera förslag", adaptation_analysing: "Analyserar...", adaptation_copied: "Kopierad", adaptation_copy: "Kopiera text", adaptation_print: "Skriv ut", adaptation_start_over: "Börja om", adaptation_adapted_for: "Anpassat för:", adaptation_client_assignment: "Kunduppdrag", adaptation_print_footer: "CV-anpassningsutkast genererat från konsultinformationen för detta uppdrag. Granska före användning.",
     common_missing: "saknas",
     common_weight: "vikt",
