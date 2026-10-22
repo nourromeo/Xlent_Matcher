@@ -137,15 +137,15 @@ export default function ConsultantReview() {
     cvUploadsApi.getAll().then((items) => {
       const item = items.find((x) => x.id === Number(uploadId));
       if (!cancelled && item?.draftJson) setDraft(JSON.parse(item.draftJson) as ConsultantDraft);
-      if (!cancelled && !item?.draftJson) setError("No extracted data found for this CV.");
-    }).catch(() => { if (!cancelled) setError("Could not load CV review."); })
+      if (!cancelled && !item?.draftJson) setError(t("review_no_data"));
+    }).catch(() => { if (!cancelled) setError(t("review_load_error")); })
       .finally(() => { if (!cancelled) setLoadingDraft(false); });
     return () => { cancelled = true; };
   }, [uploadId]);
   useEffect(() => {
     if (!replaceConsultantId) return;
     consultantsApi.getById(replaceConsultantId).then(setExisting)
-      .catch(() => setError("Could not load the current consultant profile."));
+      .catch(() => setError(t("review_current_error")));
   }, [replaceConsultantId]);
   useEffect(() => {
     if (replaceConsultantId || !draft || identityResolved) return;
@@ -160,7 +160,7 @@ export default function ConsultantReview() {
         }
       }
     }).catch(() => {
-      if (!cancelled) setError("Could not check existing consultants. Try again before saving.");
+      if (!cancelled) setError(t("review_check_error"));
     }).finally(() => {
       if (!cancelled) setDetectionPending(false);
     });
@@ -175,7 +175,7 @@ export default function ConsultantReview() {
   useEffect(() => {
     if (!detectedConsultantId) return;
     consultantsApi.getById(detectedConsultantId).then(setExisting)
-      .catch(() => setError("Could not load the selected consultant profile."));
+      .catch(() => setError(t("review_selected_error")));
   }, [detectedConsultantId]);
 
   const update = (patch: Partial<ConsultantDraft>) =>
@@ -197,7 +197,7 @@ export default function ConsultantReview() {
   const empty = !draft;
   const save = async () => {
     if (!identityResolved || detectionPending) {
-      setError("Confirm the consultant identity before saving.");
+      setError(t("review_confirm_error"));
       return;
     }
     if (!draft || !draft.firstName.trim() || !draft.lastName.trim()) {
@@ -210,7 +210,7 @@ export default function ConsultantReview() {
       (dateOnly(x.startDate) && dateOnly(x.endDate) && dateOnly(x.endDate)! < dateOnly(x.startDate)!)
     );
     if (invalidExperience !== -1) {
-      setError(`Invalid employment date in experience ${invalidExperience + 1}. Review start/end dates (YYYY-MM or YYYY-MM-DD). For ongoing employment, leave end date empty.`);
+      setError(`${t("review_invalid_date")} ${invalidExperience + 1}. ${t("review_invalid_date_hint")}`);
       setStep(2);
       return;
     }
@@ -475,13 +475,13 @@ export default function ConsultantReview() {
         />
         {!replaceConsultantId && !identityResolved && (
           <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-app-primary">Steg 1 · Identifiera konsult</h2>
-            <p className="text-xs text-app-muted">Vi hittade möjliga konsulter. Kontrollera vem CV:t tillhör innan du fortsätter.</p>
-            {detectionPending ? <p className="text-xs text-app-muted">Söker efter befintliga konsulter...</p> : (
+            <h2 className="text-sm font-semibold text-app-primary">{t("review_identity_title")}</h2>
+            <p className="text-xs text-app-muted">{t("review_identity_desc")}</p>
+            {detectionPending ? <p className="text-xs text-app-muted">{t("review_identity_loading")}</p> : (
               <>
                 {detectionMatches.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-app-primary">Föreslagna konsulter</p>
+                    <p className="text-xs font-semibold text-app-primary">{t("review_identity_suggested")}</p>
                     {detectionMatches.map((match) => (
                       <label key={match.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
                         <input type="radio" name="cv-owner" checked={identityChoice === match.id} onChange={() => setIdentityChoice(match.id)} />
@@ -492,8 +492,8 @@ export default function ConsultantReview() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <label className="block text-xs font-medium text-app-primary">Sök bland alla konsulter</label>
-                  <Input value={identitySearch} onChange={(e) => setIdentitySearch(e.target.value)} placeholder="Sök namn eller e-post..." />
+                  <label className="block text-xs font-medium text-app-primary">{t("review_identity_search")}</label>
+                  <Input value={identitySearch} onChange={(e) => setIdentitySearch(e.target.value)} placeholder={t("review_identity_placeholder")} />
                   {identitySearch.trim() && consultantOptions.filter((c) =>
                     [c.firstName, c.lastName, c.email].join(" ").toLowerCase().includes(identitySearch.toLowerCase())
                   ).slice(0, 10).map((c) => (
@@ -502,18 +502,18 @@ export default function ConsultantReview() {
                       <span>{c.firstName} {c.lastName} · {c.email || "Ingen e-post"}</span>
                     </label>
                   ))}
-                  {identityError && <p className="text-xs text-red-500">Kunde inte ladda konsultlistan.</p>}
+                  {identityError && <p className="text-xs text-red-500">{t("review_identity_error")}</p>}
                 </div>
                 <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
                   <input type="radio" name="cv-owner" checked={identityChoice === "new"} onChange={() => setIdentityChoice("new")} />
-                  <span>Ingen av dessa – skapa ny konsult</span>
+                  <span>{t("review_identity_none")}</span>
                 </label>
                 <Button variant="primary" disabled={identityChoice === null || detectionPending} onClick={() => {
                   setDetectedConsultantId(identityChoice === "new" ? null : identityChoice as number);
                   setExisting(null);
                   setIdentityResolved(true);
                   setError("");
-                }}>Bekräfta och fortsätt</Button>
+                }}>{t("review_identity_confirm")}</Button>
               </>
             )}
           </section>
@@ -528,7 +528,7 @@ export default function ConsultantReview() {
               setDetectedConsultantId(null);
               setExisting(null);
               setIdentityChoice(null);
-            }}>Ändra konsult</button>}
+            }}>{t("review_identity_change")}</button>}
           </div>
         )}
         {identityResolved && <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
