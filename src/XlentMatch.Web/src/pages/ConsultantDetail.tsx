@@ -229,39 +229,39 @@ export default function ConsultantDetail() {
 
       <div className="flex-1 overflow-auto bg-app">
         <div className="p-6 space-y-5">
-          <div role="tablist" aria-label="Consultant information" className="flex gap-2 border-b border-app-border">
-            <button type="button" role="tab" aria-selected={activeTab === "profile"} onClick={() => setActiveTab("profile")} className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === "profile" ? "border-app-brand text-app-brand" : "border-transparent text-app-secondary hover:text-app-primary"}`}>Consultant Profile</button>
-            <button type="button" role="tab" aria-selected={activeTab === "cv"} onClick={() => setActiveTab("cv")} className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === "cv" ? "border-app-brand text-app-brand" : "border-transparent text-app-secondary hover:text-app-primary"}`}>Original CV</button>
+          <div role="tablist" aria-label={t("consultant_info")} className="flex gap-2 border-b border-app-border">
+            <button type="button" role="tab" aria-selected={activeTab === "profile"} onClick={() => setActiveTab("profile")} className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === "profile" ? "border-app-brand text-app-brand" : "border-transparent text-app-secondary hover:text-app-primary"}`}>{t("consultant_profile_tab")}</button>
+            <button type="button" role="tab" aria-selected={activeTab === "cv"} onClick={() => setActiveTab("cv")} className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === "cv" ? "border-app-brand text-app-brand" : "border-transparent text-app-secondary hover:text-app-primary"}`}>{t("consultant_original_cv")}</button>
           </div>
           {activeTab === "cv" ? (
-            <section role="tabpanel" aria-label="Original CV" className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface space-y-4">
+            <section role="tabpanel" aria-label={t("consultant_original_cv")} className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface space-y-4">
               {cvFiles.find((file) => file.isActive && file.storageKey) ? (() => {
                 const file = cvFiles.find((item) => item.isActive && item.storageKey)!;
                 const isPdf = file.contentType?.toLowerCase().includes("pdf") || file.fileName.toLowerCase().endsWith(".pdf");
                 return (
                   <>
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="min-w-0"><h2 className="text-sm font-semibold text-app-primary">Original CV</h2><p className="text-xs text-app-muted mt-1 break-all">{file.fileName}</p></div>
+                      <div className="min-w-0"><h2 className="text-sm font-semibold text-app-primary">{t("consultant_original_cv")}</h2><p className="text-xs text-app-muted mt-1 break-all">{file.fileName}</p></div>
                       <div className="flex items-center gap-3 text-xs">
-                        <a className="text-app-brand" href={cvUploadsApi.fileUrl(file.id)}>Download</a>
-                        <Link className="rounded-md bg-app-brand px-3 py-2 font-medium text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>Replace CV</Link>
+                        <a className="text-app-brand" href={cvUploadsApi.fileUrl(file.id)}>{t("cv_download")}</a>
+                        <Link className="rounded-md bg-app-brand px-3 py-2 font-medium text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>{t("consultant_replace_cv")}</Link>
                       </div>
                     </div>
                     {isPdf ? (
                       <iframe title={`Original CV: ${file.fileName}`} src={`${cvUploadsApi.fileUrl(file.id)}?inline=true`} className="w-full h-[75vh] min-h-[500px] rounded-lg border border-app-border bg-white" />
                     ) : (
-                      <div className="rounded-lg border border-app-border p-6 text-sm text-app-secondary">Preview is available for PDF files. Download the original file to view it.</div>
+                      <div className="rounded-lg border border-app-border p-6 text-sm text-app-secondary">{t("consultant_preview_unavailable")}</div>
                     )}
                   </>
                 );
               })() : (
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-sm font-semibold text-app-primary">Original CV</h2>
-                    <Link className="inline-flex rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>Upload New CV</Link>
+                    <h2 className="text-sm font-semibold text-app-primary">{t("consultant_original_cv")}</h2>
+                    <Link className="inline-flex rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>{t("cv_upload_new")}</Link>
                   </div>
                   <div className="rounded-lg border border-dashed border-app-border px-6 py-12 text-center">
-                    <p className="text-sm font-medium text-app-primary">No CV uploaded</p>
+                    <p className="text-sm font-medium text-app-primary">{t("consultant_no_cv")}</p>
                     <p className="mt-2 text-xs text-app-muted">Upload a CV to attach the original document to this consultant. The existing consultant profile will be kept.</p>
                   </div>
                 </div>
