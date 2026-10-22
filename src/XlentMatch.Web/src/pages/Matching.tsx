@@ -864,14 +864,12 @@ export default function Matching() {
                             {item.isMatched === true ? (
                               <CheckCircle
                                 size={11}
-                                className="text-app-success"
-                                className="mt-0.5 flex-none"
+                                className="text-app-success mt-0.5 flex-none"
                               />
                             ) : item.isMatched === false ? (
                               <AlertTriangle
                                 size={11}
-                                className="text-app-warning"
-                                className="mt-0.5 flex-none"
+                                className="text-app-warning mt-0.5 flex-none"
                               />
                             ) : (
                               <Info
