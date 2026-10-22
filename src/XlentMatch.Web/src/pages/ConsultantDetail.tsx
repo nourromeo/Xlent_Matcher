@@ -305,7 +305,7 @@ export default function ConsultantDetail() {
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={levelStyle(skill.level)}>
                           {levelLabel(skill.level, t)}
                         </span>
-                        <span className="text-[10px] font-mono text-app-muted">{skill.years == null ? "Not specified" : `${skill.years}y`}</span>
+                        <span className="text-[10px] font-mono text-app-muted">{skill.years == null ? t("common_not_specified") : `${skill.years}y`}</span>
                       </div>
                       <p className="flex-1 text-[11px] text-app-muted italic leading-relaxed">
                         {skill.evidence || t("consultant_no_evidence")}
