@@ -503,7 +503,7 @@ export default function Matching() {
                           <p className="text-[10px] text-app-muted truncate mt-0.5">
                             {consultantById.get(result.consultantId)?.seniority || "—"}
                           </p>
-                          {cvEligible !== null && <p className={`mt-1 text-[10px] ${cvEligible.has(result.consultantId) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(result.consultantId) ? "CV finns" : "CV saknas"}</p>}
+                          {cvEligible !== null && <p className={`mt-1 text-[10px] ${cvEligible.has(result.consultantId) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(result.consultantId) ? t("matching_cv_available") : t("matching_cv_missing")}</p>}
 
                         </div>
                       </div>
