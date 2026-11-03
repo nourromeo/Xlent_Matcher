@@ -33,9 +33,9 @@ export default function AiRankingHeader({ assignmentId, section }: { assignmentI
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <Link to={`/matching/${assignmentId}`} className="text-xs text-app-muted hover:text-app-brand">← {t("ai_back")}</Link>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <h1 className="text-lg font-semibold text-app-primary">{t("ai_ranking_label")}</h1>
-            <span className="rounded-full bg-app-brand-subtle px-2 py-1 text-[10px] font-medium text-app-brand">{sectionLabel}</span>
+            <span className="text-sm text-app-muted">· {sectionLabel}</span>
           </div>
         </div>
         <div className="min-w-[min(100%,22rem)] rounded-lg border border-app-border-subtle bg-app-raised px-4 py-3">
