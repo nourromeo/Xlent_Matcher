@@ -138,9 +138,11 @@ export function NewAssignmentPage() {
   };
 
   const canExtract =
-    title.trim().length > 0 &&
-    client.trim().length > 0 &&
-    (brief.trim().length > 0 || briefFile !== null);
+    sourceMode === "upload"
+      ? briefFile !== null
+      : title.trim().length > 0 &&
+        client.trim().length > 0 &&
+        brief.trim().length > 0;
 
   useEffect(() => {
     setHighestReachedStep((current) =>
@@ -169,6 +171,8 @@ export function NewAssignmentPage() {
   }, [step, aiExtracted, title, client, brief, sourceMode, seniority, seniorityMatchMode, maximumSeniority, availability, requiredStartDate, startDateDescription, location, minYears, requirements]);
 
   const applyExtraction = (extracted: Awaited<ReturnType<typeof aiApi.extractRequirementsFromText>>) => {
+    if (extracted.title?.trim()) setTitle(extracted.title.trim());
+    if (extracted.customerName?.trim()) setClient(extracted.customerName.trim());
     setRequirements(
       extracted.requirements.map((item) =>
         emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.proficiency, item.matchMode ?? "Exact", item.maximumSeniority ?? null),
@@ -536,7 +540,7 @@ export function NewAssignmentPage() {
         </div>
         {step === "input" ? (
           <div className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
-            <label className="block">
+            {sourceMode === "paste" && <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_name")}{" "}
                 <span className="text-app-brand">*</span>
@@ -546,8 +550,8 @@ export function NewAssignmentPage() {
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder={t("client_assignment_title_placeholder")}
               />
-            </label>
-            <label className="block">
+            </label>}
+            {sourceMode === "paste" && <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_client")}{" "}
                 <span className="text-app-brand">*</span>
@@ -557,7 +561,7 @@ export function NewAssignmentPage() {
                 onChange={(event) => setClient(event.target.value)}
                 placeholder={t("client_assignment_client_placeholder")}
               />
-            </label>
+            </label>}
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_brief")}{" "}
@@ -628,7 +632,7 @@ export function NewAssignmentPage() {
 
             {!canExtract && !error && (
               <p className="text-[10px] text-app-faint">
-                {t("client_fill_before_extract")}
+                {sourceMode === "upload" ? t("client_upload_brief") : t("client_fill_before_extract")}
               </p>
             )}
 

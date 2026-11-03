@@ -72,7 +72,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     }
 
     public const string AssignmentExtractionSchemaInstruction =
-        "First extract assignment-level facts independently of requirement filtering: preserve explicit seniority, overall minimum experience, location and work mode, availability when stated, and required start date when stated. These fields describe the assignment and must not be discarded because nearby text describes responsibilities. Then extract consultant requirements separately. Return exactly the DTO-compatible JSON types for every property. " +
+        "First extract the assignment title and customer/client name when they are explicitly present in the source. Return them as title and customerName; if either is not present, return null and do not invent it. Then extract assignment-level facts independently of requirement filtering: preserve explicit seniority, overall minimum experience, location and work mode, availability when stated, and required start date when stated. These fields describe the assignment and must not be discarded because nearby text describes responsibilities. Then extract consultant requirements separately. Return exactly the DTO-compatible JSON types for every property. " +
         "For minYearsExperience, extract an explicit overall minimum experience requirement when the source states one, such as 'at least 5 years of experience', and return the JSON integer 5. If no explicit overall minimum is stated, return JSON null. Never return numeric strings, units or descriptive text. " +
         "Preserve explicit seniority labels using the canonical values Junior, Mid, Senior or Staff; do not default to Mid and do not infer seniority from years. " +
         "Extract availability only when the source explicitly states it; otherwise return null. Extract location exactly when stated. If both a place and an explicit work mode such as hybrid are stated and the existing single location field is used, preserve both in that field (for example, Stockholm / Hybrid). " +
@@ -251,6 +251,8 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         ["properties"] = new JsonObject
         {
             ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
+            ["title"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
+            ["customerName"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
             ["seniorityMatchMode"] = NullableString(["Exact", "Minimum", "Range"]),
             ["minimumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
             ["maximumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
@@ -266,7 +268,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             },
             ["sourceText"] = new JsonObject { ["type"] = new JsonArray("string", "null") }
         },
-        ["required"] = Required("seniority", "seniorityMatchMode", "minimumSeniority", "maximumSeniority", "minYearsExperience", "availability", "requiredStartDate", "startDateDescription", "location", "requirements", "sourceText")
+        ["required"] = Required("title", "customerName", "seniority", "seniorityMatchMode", "minimumSeniority", "maximumSeniority", "minYearsExperience", "availability", "requiredStartDate", "startDateDescription", "location", "requirements", "sourceText")
     };
 
     private static JsonObject RequirementSchema() => new()

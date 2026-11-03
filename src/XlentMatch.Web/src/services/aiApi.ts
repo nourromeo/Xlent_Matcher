@@ -14,6 +14,8 @@ export type RequirementDraft = {
 };
 
 export type RequirementExtractionResult = {
+  title: string | null;
+  customerName: string | null;
   seniority: string | null;
   seniorityMatchMode?: "Exact" | "Minimum" | "Range" | null;
   minimumSeniority?: string | null;

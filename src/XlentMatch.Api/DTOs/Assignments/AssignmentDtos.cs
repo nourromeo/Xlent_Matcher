@@ -16,6 +16,8 @@ public class RequirementDraftDto
 
 public class RequirementExtractionResultDto
 {
+    public string? Title { get; set; }
+    public string? CustomerName { get; set; }
     public string? Seniority { get; set; }
     public string? SeniorityMatchMode { get; set; }
     public string? MinimumSeniority { get; set; }
