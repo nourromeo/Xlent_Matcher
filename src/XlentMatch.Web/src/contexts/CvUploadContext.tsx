@@ -58,10 +58,15 @@ export function CvUploadProvider({ children }: { children: ReactNode }) {
   return <Context.Provider value={{ state, start, dismiss }}>
     {children}
     {state.phase === "ready" && state.reviewUrl && !location.pathname.startsWith("/cv-upload") && (
-      <div role="status" aria-live="polite" className="fixed bottom-5 right-5 z-50 max-w-sm rounded-lg border border-app-border bg-app-surface p-4 text-xs text-app-primary shadow-lg">
-        <span>{state.fileName} · {t("cv_review")}</span>
-        <Link className="ml-3 text-app-brand" to={state.reviewUrl}>{t("cv_review")}</Link>
-        <button type="button" className="ml-3 text-app-muted" aria-label={t("common_close")} onClick={dismiss}>×</button>
+      <div role="status" aria-live="polite" className="fixed bottom-5 right-5 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-app-border bg-app-surface p-4 text-xs text-app-primary shadow-lg">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-app-primary">{t("cv_ready_for_review")}</p>
+            <p className="mt-1 truncate text-app-secondary">{state.fileName}</p>
+          </div>
+          <button type="button" className="text-lg leading-none text-app-muted hover:text-app-primary" aria-label={t("common_close")} onClick={dismiss}>×</button>
+        </div>
+        <Link className="mt-3 inline-flex rounded-md bg-app-brand px-3 py-2 font-semibold text-white" to={state.reviewUrl}>{t("cv_review_now")}</Link>
       </div>
     )}
   </Context.Provider>;

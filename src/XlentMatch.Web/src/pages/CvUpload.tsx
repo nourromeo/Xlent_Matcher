@@ -30,6 +30,8 @@ export default function CvUpload() {
   const pageSize = 10;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
+  const [newReviewIds, setNewReviewIds] = useState<number[]>([]);
+  const reviewVisitCutoff = useRef(0);
   const { state: uploadState, start, dismiss } = useCvUpload();
   const busy = uploadState.phase === "uploading" || uploadState.phase === "extracting";
   const mounted = useRef(false);
@@ -41,12 +43,28 @@ export default function CvUpload() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const key = "xlent-cv-review-last-visit";
+    const now = Date.now();
+    try {
+      const stored = localStorage.getItem(key);
+      reviewVisitCutoff.current = stored ? Number(stored) : now;
+      localStorage.setItem(key, String(now));
+    } catch {
+      reviewVisitCutoff.current = 0;
+    }
+  }, []);
+
+  useEffect(() => {
     consultantsApi.getAll().then((items) => setConsultantNames(Object.fromEntries(items.map((item) => [item.id, item.firstName + " " + item.lastName])))).catch(() => {});
   }, []);
 
   const refresh = async () => {
     const data = await cvUploadsApi.getAll();
     setRecords(data);
+    const newIds = data
+      .filter((item) => item.status === "Review" && new Date(item.uploadedAt).getTime() > reviewVisitCutoff.current)
+      .map((item) => item.id);
+    setNewReviewIds((current) => Array.from(new Set([...current, ...newIds])));
     setExistingCvForConsultant(Boolean(replaceConsultantId && data.some((item) => item.consultantId === replaceConsultantId && item.isActive && item.status === "Indexed")));
   };
   useEffect(() => {
@@ -167,10 +185,10 @@ export default function CvUpload() {
                   <td className="px-4 py-3">{r.consultantId ? <Link className="text-app-brand" to={`/consultants/${r.consultantId}`}>{consultantNames[r.consultantId] || t("cv_consultant_number") + " " + r.consultantId}</Link> : <span className="text-app-muted">{t("cv_unassigned")}</span>}</td>
                   <td className="px-4 py-3">{new Date(r.uploadedAt).toLocaleDateString(locale === "sv" ? "sv-SE" : locale === "es" ? "es-ES" : "en-US")}</td>
                   <td className="px-4 py-3">{formatSize(r.fileSize)}</td>
-                  <td className="px-4 py-3">{r.isActive ? t("cv_active_status") : localizeStatus(r.status)}</td>
+                  <td className="px-4 py-3"><div className="flex flex-wrap items-center gap-2">{r.isActive ? t("cv_active_status") : localizeStatus(r.status)}{tab === "review" && newReviewIds.includes(r.id) && <span className="rounded-full bg-app-brand-subtle px-2 py-0.5 text-[10px] font-semibold text-app-brand">{t("cv_new")}</span>}</div></td>
                   <td className="px-4 py-3"><div className="flex justify-end flex-wrap gap-3">
                     {tab === "library" && r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">{t("cv_view")}</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">{t("cv_download")}</a></>}
-                    {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`}>{t("cv_review")}</Link>}
+                    {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`} onClick={() => setNewReviewIds((current) => current.filter((id) => id !== r.id))}>{t("cv_review_now")}</Link>}
                     {tab === "library" && r.consultantId && <Link className="text-app-brand" to={`/cv-upload?replaceConsultantId=${r.consultantId}`}>{t("cv_replace")}</Link>}
                     <button type="button" className="text-app-muted hover:text-red-500" onClick={() => void remove(r)}>{t("cv_delete")}</button>
                   </div></td>
