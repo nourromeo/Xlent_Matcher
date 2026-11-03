@@ -5,6 +5,7 @@ import { assignmentsApi } from "../services/assignmentsApi";
 import { matchingApi, type SavedAiRankingSummary } from "../services/matchingApi";
 import type { AssignmentApi, MatchResultApi } from "../types";
 import { useAiRanking } from "../contexts/AiRankingContext";
+import AiRankingHeader from "../components/AiRankingHeader";
 
 export default function AiRankingSelection() {
   const { t, locale } = useI18n();
@@ -83,11 +84,7 @@ export default function AiRankingSelection() {
   return (
     <div className="h-full overflow-auto bg-app p-6">
       <div className="mx-auto max-w-4xl space-y-5">
-        <Link to={`/matching/${id}`} className="text-xs text-app-muted hover:text-app-brand">← {t("ai_back")}</Link>
-        <div>
-          <h1 className="text-xl font-semibold text-app-primary">{t("ai_select_title")}</h1>
-          <p className="mt-1 text-xs text-app-muted">{assignment ? `${assignment.title} · ${assignment.referenceNumber}` : t("ai_select_hint")}</p>
-        </div>
+        <AiRankingHeader assignmentId={id} section={activeTab === "pending" ? "pending" : activeTab === "saved" ? "saved" : "select"} />
         <div className="flex gap-1 border-b border-app-border" role="tablist" aria-label={t("ranking_views")}>
           <button type="button" role="tab" aria-selected={activeTab === "new"} onClick={() => setActiveTab("new")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "new" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>{t("ranking_new")}</button>
           <button type="button" role="tab" aria-selected={activeTab === "pending"} onClick={() => setActiveTab("pending")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "pending" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>{t("ranking_pending")} ({assignmentPending.length})</button>

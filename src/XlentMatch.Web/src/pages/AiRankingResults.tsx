@@ -4,6 +4,7 @@ import { Link, useLocation, useParams, useSearchParams } from "react-router-dom"
 import { matchingApi, type AiRankingResult } from "../services/matchingApi";
 import type { MatchResultApi } from "../types";
 import { useAiRanking } from "../contexts/AiRankingContext";
+import AiRankingHeader from "../components/AiRankingHeader";
 
 type ResultState = { ranking: AiRankingResult; matches: MatchResultApi[]; selected: number[]; pendingId?: string };
 
@@ -63,9 +64,8 @@ export default function AiRankingResults() {
   return (
     <div className="h-full overflow-auto bg-app p-6">
       <div className="mx-auto max-w-6xl space-y-4">
-        <Link to={`/matching/${assignmentId}/ai-ranking`} className="text-xs text-app-muted hover:text-app-brand">← {t("ai_back_selection")}</Link>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-sm font-semibold text-app-primary">{t("ai_results_title")}</h1>
+        <AiRankingHeader assignmentId={Number(assignmentId)} section={savedId ? "saved" : pendingId ? "pending" : "results"} />
+        <div className="flex flex-wrap items-center justify-end gap-3">
           {aiRanking && (
             <div className="flex items-center gap-2" aria-label={t("ranking_result_actions")}>
               <button type="button" disabled={Boolean(savedId) || saving || savedRecordId !== null} onClick={() => void saveResult()} className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary hover:bg-app-raised disabled:opacity-60 disabled:cursor-not-allowed">
