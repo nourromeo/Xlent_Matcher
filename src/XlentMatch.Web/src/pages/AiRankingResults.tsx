@@ -1,21 +1,31 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "../i18n";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { matchingApi, type AiRankingResult } from "../services/matchingApi";
 import type { MatchResultApi } from "../types";
+import { useAiRanking } from "../contexts/AiRankingContext";
 
-type ResultState = { ranking: AiRankingResult; matches: MatchResultApi[]; selected: number[] };
+type ResultState = { ranking: AiRankingResult; matches: MatchResultApi[]; selected: number[]; pendingId?: string };
 
 export default function AiRankingResults() {
   const { t } = useI18n();
   const { assignmentId, savedId } = useParams<{ assignmentId: string; savedId?: string }>();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { getPending, removePending } = useAiRanking();
   const state = location.state as ResultState | null;
+  const pendingId = searchParams.get("pendingId");
   const [loaded, setLoaded] = useState<{ ranking: AiRankingResult; matches: MatchResultApi[] } | null>(null);
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [savedRecordId, setSavedRecordId] = useState<number | null>(null);
   const [saveError, setSaveError] = useState("");
+  useEffect(() => {
+    if (!pendingId) return;
+    const item = getPending(pendingId);
+    if (item && String(item.assignmentId) === assignmentId) setLoaded({ ranking: item.ranking, matches: item.matches });
+    else if (!item) setLoadError(t("ranking_pending_missing"));
+  }, [assignmentId, pendingId]);
   useEffect(() => {
     if (!savedId) return;
     let cancelled = false;
@@ -30,8 +40,8 @@ export default function AiRankingResults() {
       .catch(e => { if (!cancelled) setLoadError(e instanceof Error ? e.message : t("ranking_load_saved_error")); });
     return () => { cancelled = true; };
   }, [assignmentId, savedId]);
-  const aiRanking = savedId ? loaded?.ranking : state?.ranking;
-  const allResults = savedId ? (loaded?.matches ?? []) : (state?.matches ?? []);
+  const aiRanking = savedId || pendingId ? loaded?.ranking : state?.ranking;
+  const allResults = savedId || pendingId ? (loaded?.matches ?? []) : (state?.matches ?? []);
   const saveResult = async () => {
     if (!aiRanking || saving || savedRecordId !== null) return;
     setSaving(true);
@@ -39,6 +49,7 @@ export default function AiRankingResults() {
     try {
       const saved = await matchingApi.saveAiRanking(Number(assignmentId), aiRanking);
       setSavedRecordId(saved.id);
+      if (pendingId) removePending(pendingId);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : t("ranking_save_error"));
     } finally {

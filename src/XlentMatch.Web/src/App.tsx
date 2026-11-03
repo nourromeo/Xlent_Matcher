@@ -1,5 +1,6 @@
 import { CvUploadProvider } from "./contexts/CvUploadContext";
 import { AssignmentExtractionProvider } from "./contexts/AssignmentExtractionContext";
+import { AiRankingProvider } from "./contexts/AiRankingContext";
 import { CvAdaptationProvider } from "./contexts/CvAdaptationContext";
 import { BrowserRouter, Navigate, Routes, Route, useSearchParams } from "react-router-dom";
 import Layout from "./components/Layout";
@@ -32,6 +33,7 @@ export default function App() {
       <CvUploadProvider>
       <AssignmentExtractionProvider>
       <CvAdaptationProvider>
+      <AiRankingProvider>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
@@ -55,6 +57,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      </AiRankingProvider>
       </CvAdaptationProvider>
       </AssignmentExtractionProvider>
       </CvUploadProvider>

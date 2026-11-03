@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "../i18n";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { matchingApi, type SavedAiRankingSummary } from "../services/matchingApi";
 import type { AssignmentApi, MatchResultApi } from "../types";
+import { useAiRanking } from "../contexts/AiRankingContext";
 
 export default function AiRankingSelection() {
   const { t, locale } = useI18n();
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const id = Number(assignmentId);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { pending, start, removePending } = useAiRanking();
   const [assignment, setAssignment] = useState<AssignmentApi | null>(null);
   const [results, setResults] = useState<MatchResultApi[]>([]);
   const [eligible, setEligible] = useState<number[]>([]);
@@ -22,7 +25,7 @@ export default function AiRankingSelection() {
   const [saved, setSaved] = useState<SavedAiRankingSummary[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedError, setSavedError] = useState("");
-  const [activeTab, setActiveTab] = useState<"new" | "saved">("new");
+  const [activeTab, setActiveTab] = useState<"new" | "pending" | "saved">("new");
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +46,7 @@ export default function AiRankingSelection() {
   }, [id]);
 
   useEffect(() => {
-    if (activeTab !== "saved" || !Number.isInteger(id) || id <= 0) return;
+    if (!Number.isInteger(id) || id <= 0) return;
     let cancelled = false;
     setSavedLoading(true);
     setSavedError("");
@@ -52,7 +55,7 @@ export default function AiRankingSelection() {
       .catch(e => { if (!cancelled) setSavedError(e instanceof Error ? e.message : t("ranking_load_list_error")); })
       .finally(() => { if (!cancelled) setSavedLoading(false); });
     return () => { cancelled = true; };
-  }, [id, activeTab]);
+  }, [id]);
 
   const options = useMemo(() => results.filter(r =>
     eligible.includes(r.consultantId) && !selected.includes(r.consultantId) &&
@@ -64,14 +67,18 @@ export default function AiRankingSelection() {
     setRunning(true);
     setError("");
     try {
-      const ranking = await matchingApi.rankWithAi(id, selected, locale);
-      navigate(`/matching/${id}/ai-ranking/results`, { state: { ranking, matches: results, selected } });
+      const ranking = await start(id, selected, locale, results);
+      if (ranking && location.pathname === `/matching/${id}/ai-ranking`) {
+        navigate(`/matching/${id}/ai-ranking/results`, { state: { ranking, matches: results, selected } });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : t("ranking_compare_error"));
     } finally {
       setRunning(false);
     }
   };
+
+  const assignmentPending = pending.filter(item => item.assignmentId === id);
 
   return (
     <div className="h-full overflow-auto bg-app p-6">
@@ -83,9 +90,21 @@ export default function AiRankingSelection() {
         </div>
         <div className="flex gap-1 border-b border-app-border" role="tablist" aria-label={t("ranking_views")}>
           <button type="button" role="tab" aria-selected={activeTab === "new"} onClick={() => setActiveTab("new")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "new" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>{t("ranking_new")}</button>
-          <button type="button" role="tab" aria-selected={activeTab === "saved"} onClick={() => setActiveTab("saved")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "saved" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>{t("ranking_saved")}</button>
+          <button type="button" role="tab" aria-selected={activeTab === "pending"} onClick={() => setActiveTab("pending")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "pending" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>{t("ranking_pending")} ({assignmentPending.length})</button>
+          <button type="button" role="tab" aria-selected={activeTab === "saved"} onClick={() => setActiveTab("saved")} className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === "saved" ? "border-app-brand text-app-primary" : "border-transparent text-app-muted hover:text-app-primary"}`}>{t("ranking_saved")} ({saved.length})</button>
         </div>
-        {activeTab === "saved" ? (
+        {activeTab === "pending" ? (
+          <section role="tabpanel" className="rounded-xl border border-app-border bg-app-surface p-6 space-y-3">
+            <h2 className="text-sm font-semibold text-app-primary">{t("ranking_pending_title")}</h2>
+            <p className="text-xs text-app-muted">{t("ranking_pending_description")}</p>
+            {assignmentPending.length === 0 ? <p className="text-sm text-app-muted">{t("ranking_pending_empty")}</p> : assignmentPending.map(item => (
+              <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-app-border p-3">
+                <div><p className="text-sm font-medium text-app-primary">{t("ai_results_title")}</p><p className="text-xs text-app-muted">{new Date(item.createdAt).toLocaleString()} · {item.selected.length} {t("ranking_consultants").toLowerCase()}</p></div>
+                <div className="flex items-center gap-3 text-xs"><Link className="text-app-brand hover:underline" to={`/matching/${id}/ai-ranking/results?pendingId=${item.id}`}>{t("ranking_view")}</Link><button type="button" className="text-app-muted hover:text-app-danger" onClick={() => removePending(item.id)}>{t("common_delete")}</button></div>
+              </div>
+            ))}
+          </section>
+        ) : activeTab === "saved" ? (
           <section role="tabpanel" className="rounded-xl border border-app-border bg-app-surface p-6 space-y-2">
             <h2 className="text-sm font-semibold text-app-primary">{t("ranking_saved_title")}</h2>
             {savedLoading ? <p className="text-sm text-app-muted">{t("ranking_saved_loading")}</p> : savedError ? <p role="alert" className="text-sm text-app-danger">{savedError}</p> : saved.length === 0 ? <p className="text-sm text-app-muted">{t("ranking_saved_empty")}</p> : (
