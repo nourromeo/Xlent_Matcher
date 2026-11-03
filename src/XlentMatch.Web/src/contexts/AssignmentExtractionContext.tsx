@@ -28,6 +28,7 @@ export type AssignmentReviewDraft = {
 const Context = createContext<ExtractionContextValue | null>(null);
 const storageKey = "xlent-assignment-extraction-v1";
 const draftsKey = "xlent-assignment-review-queue-v1";
+const isAssignmentCreationPath = (path: string) => path === "/client-assignments/new";
 
 function loadSaved(): ExtractionState {
   try {
@@ -49,7 +50,7 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
   const runToken = useRef(0);
   const leftDuringRun = useRef(false);
   useEffect(() => {
-    if (running.current && !location.pathname.startsWith("/client-assignments")) leftDuringRun.current = true;
+    if (running.current && !isAssignmentCreationPath(location.pathname)) leftDuringRun.current = true;
     locationRef.current = location.pathname;
   }, [location.pathname]);
   const persistDrafts = (next: AssignmentReviewDraft[]) => {
@@ -72,7 +73,7 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
         : await aiApi.extractRequirementsFromText(text);
       if (token !== runToken.current) return null;
       persist({ phase: "ready", fileName: file?.name ?? "", result, error: null });
-      if (leftDuringRun.current || !locationRef.current.startsWith("/client-assignments")) {
+      if (leftDuringRun.current || !isAssignmentCreationPath(locationRef.current)) {
         const draft: AssignmentReviewDraft = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title: metadata.title, client: metadata.client, fileName: file?.name ?? "", result, createdAt: new Date().toISOString(), isNew: true };
         persistDrafts([...drafts, draft]);
       }
@@ -103,7 +104,7 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
   }, [drafts, toastDraftId, toastDraft?.id]);
   return <Context.Provider value={{ ...state, start, clear, drafts, acknowledgeDraft, removeDraft }}>
     {children}
-    {toastDraft && toastDraftId === toastDraft.id && !location.pathname.startsWith("/client-assignments") && (
+    {toastDraft && toastDraftId === toastDraft.id && !isAssignmentCreationPath(location.pathname) && (
       <div role="status" aria-live="polite" className="fixed bottom-5 right-5 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-app-border bg-app-surface p-4 text-xs text-app-primary shadow-lg">
         <p className="font-semibold">{t("assignment_toast_title")}</p>
         <p className="mt-1 truncate text-app-secondary">{t("assignment_toast_ready")}</p>
