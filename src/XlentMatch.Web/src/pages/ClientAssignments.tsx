@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -81,8 +81,12 @@ function loadAssignmentDraft(): AssignmentDraftSnapshot | null {
 
 export function NewAssignmentPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t, locale } = useI18n();
-  const [savedDraft] = useState(loadAssignmentDraft);
+  const extraction = useAssignmentExtraction();
+  const queuedDraftId = searchParams.get("draftId");
+  const queuedDraft = extraction.drafts.find((draft) => draft.id === queuedDraftId) ?? null;
+  const [savedDraft] = useState(() => queuedDraftId ? null : loadAssignmentDraft());
   const [step, setStep] = useState<
     "input" | "basic" | "requirements" | "review"
   >(savedDraft?.step ?? "input");
@@ -119,7 +123,6 @@ export function NewAssignmentPage() {
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const extraction = useAssignmentExtraction();
   const extractionBusy = extracting || extraction.phase === "extracting";
   const [appliedExtraction, setAppliedExtraction] = useState(false);
 
@@ -173,6 +176,15 @@ export function NewAssignmentPage() {
     }
   }, [extraction.result, appliedExtraction]);
 
+  useEffect(() => {
+    if (!queuedDraft || appliedExtraction) return;
+    setTitle(queuedDraft.title);
+    setClient(queuedDraft.client);
+    applyExtraction(queuedDraft.result);
+    setAppliedExtraction(true);
+    extraction.acknowledgeDraft(queuedDraft.id);
+  }, [queuedDraft, appliedExtraction]);
+
   const extractRequirements = async () => {
     if (!canExtract) {
       setError(t("client_fill_before_extract"));
@@ -183,7 +195,7 @@ export function NewAssignmentPage() {
     setError("");
 
     try {
-      const extracted = await extraction.start(briefFile, brief);
+      const extracted = await extraction.start(briefFile, brief, { title, client });
       if (!extracted) throw new Error(extraction.error ?? t("client_extract_error"));
       applyExtraction(extracted);
       setAppliedExtraction(true);
@@ -438,6 +450,7 @@ export function NewAssignmentPage() {
     try {
       const created = await assignmentsApi.create(payload);
       sessionStorage.removeItem(assignmentDraftKey);
+      if (queuedDraftId) extraction.removeDraft(queuedDraftId);
       extraction.clear();
       navigate(`/client-assignments/${created.id}`);
     } catch (requestError) {
@@ -1277,8 +1290,10 @@ export function NewAssignmentPage() {
 
 export default function ClientAssignments() {
   const { t, locale } = useI18n();
+  const extraction = useAssignmentExtraction();
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const navigate = useNavigate();
+  const [tab, setTab] = useState<"assignments" | "review">("assignments");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1389,7 +1404,16 @@ export default function ClientAssignments() {
         </div>
       )}
 
-      <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+      <div className="flex flex-wrap gap-1 border-b border-app-border">
+        <button type="button" className={`rounded-md px-4 py-2 text-xs font-medium ${tab === "assignments" ? "bg-app-brand-subtle text-app-brand" : "text-app-secondary hover:bg-app-raised"}`} onClick={() => setTab("assignments")}>
+          {t("assignments_title")}
+        </button>
+        <button type="button" className={`rounded-md px-4 py-2 text-xs font-medium ${tab === "review" ? "bg-app-brand-subtle text-app-brand" : "text-app-secondary hover:bg-app-raised"}`} onClick={() => setTab("review")}>
+          {t("cv_review_queue")} ({extraction.drafts.length}) {extraction.drafts.some((draft) => draft.isNew) && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{t("cv_new")}</span>}
+        </button>
+      </div>
+
+      {tab === "assignments" ? <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
         <DataTable
           columns={[
             {
@@ -1478,7 +1502,21 @@ export default function ClientAssignments() {
         />
 
         
-      </div>
+      </div> : <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+        <table className="w-full text-xs text-left">
+          <thead className="bg-app-raised text-app-muted"><tr><th className="px-4 py-3">{t("assignment_title")}</th><th className="px-4 py-3">{t("assignment_client")}</th><th className="px-4 py-3">{t("common_updated")}</th><th className="px-4 py-3">{t("cv_status_column")}</th><th className="px-4 py-3 text-right">{t("cv_actions")}</th></tr></thead>
+          <tbody>
+            {extraction.drafts.map((draft) => <tr key={draft.id} className="border-t border-app-border text-app-secondary">
+              <td className="px-4 py-3 font-medium text-app-primary">{draft.title || draft.fileName || "—"}</td>
+              <td className="px-4 py-3">{draft.client || "—"}</td>
+              <td className="px-4 py-3">{formatDate(draft.createdAt, locale)}</td>
+              <td className="px-4 py-3">{draft.isNew && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{t("cv_new")}</span>}</td>
+              <td className="px-4 py-3 text-right"><div className="flex justify-end gap-3"><Link className="text-app-brand" to={`/client-assignments/new?draftId=${draft.id}`} onClick={() => extraction.acknowledgeDraft(draft.id)}>{t("cv_review_now")}</Link><button type="button" className="text-app-muted hover:text-red-500" onClick={() => extraction.removeDraft(draft.id)}>{t("cv_delete")}</button></div></td>
+            </tr>)}
+          </tbody>
+        </table>
+        {extraction.drafts.length === 0 && <p className="p-8 text-center text-xs text-app-muted">{t("cv_no_results")}</p>}
+      </div>}
     </div>
   );
 }
