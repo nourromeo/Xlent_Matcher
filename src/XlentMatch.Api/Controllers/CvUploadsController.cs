@@ -130,8 +130,8 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
         if (file.Length == 0 || file.Length > 10 * 1024 * 1024)
             return BadRequest("File must be between 1 byte and 10 MB.");
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (extension is not (".pdf" or ".txt"))
-            return BadRequest("Only PDF and TXT files are supported.");
+        if (extension is not (".pdf" or ".txt" or ".docx"))
+            return BadRequest("Only PDF, DOCX and TXT files are supported.");
 
         // Reject identical content before saving a file or starting AI extraction.
         // The lock prevents two concurrent uploads on this API instance from bypassing the check.
@@ -180,7 +180,12 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
 
                 upload.StorageKey = key;
                 upload.ContentHash = incomingHash;
-                upload.ContentType = extension == ".pdf" ? "application/pdf" : "text/plain";
+                upload.ContentType = extension switch
+                {
+                    ".pdf" => "application/pdf",
+                    ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    _ => "text/plain"
+                };
                 upload.FileName = Path.GetFileName(file.FileName);
                 upload.FileSize = file.Length;
                 await db.SaveChangesAsync(ct);

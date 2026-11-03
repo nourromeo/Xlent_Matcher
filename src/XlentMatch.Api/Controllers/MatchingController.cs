@@ -2,6 +2,8 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.DTOs.Matching;
 using XlentMatch.Api.Models;
@@ -89,7 +91,8 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
             var path = Path.Combine(environment.ContentRootPath, "private-cvs", Path.GetFileName(cv.StorageKey!));
             if (System.IO.File.Exists(path) &&
                 (Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase) ||
-                 Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase)))
+                 Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase) ||
+                 Path.GetExtension(path).Equals(".docx", StringComparison.OrdinalIgnoreCase)))
                 eligible.Add(id);
         }
         return Ok(new { eligibleConsultantIds = eligible });
@@ -147,6 +150,11 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
                 }
                 else if (extension == ".txt")
                     text = await System.IO.File.ReadAllTextAsync(path, ct);
+                else if (extension == ".docx")
+                {
+                    using var document = WordprocessingDocument.Open(path, false);
+                    text = string.Join(Environment.NewLine, document.MainDocumentPart?.Document.Body?.Descendants<Text>().Select(item => item.Text) ?? []);
+                }
                 else { skipped++; continue; }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)

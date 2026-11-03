@@ -20,6 +20,7 @@ import { aiApi } from "../services/aiApi";
 import { formatDate } from "../services/localeFormat";
 import { DataTable } from "../components/ui/DataTable";
 import { RemoveButton } from "../components/ui/RemoveButton";
+import { useAssignmentExtraction } from "../contexts/AssignmentExtractionContext";
 import type {
   AssignmentApi,
   AssignmentRequirementApi,
@@ -49,32 +50,62 @@ const emptyRequirement = (
   maximumSeniority,
 });
 
+type AssignmentDraftSnapshot = {
+  step: "input" | "basic" | "requirements" | "review";
+  aiExtracted: boolean;
+  title: string;
+  client: string;
+  brief: string;
+  sourceMode: "paste" | "upload";
+  seniority: string;
+  seniorityMatchMode: "Exact" | "Minimum" | "Range";
+  maximumSeniority: string;
+  availability: string;
+  requiredStartDate: string;
+  startDateDescription: string;
+  location: string;
+  minYears: number | null;
+  requirements: AssignmentRequirementApi[];
+};
+
+const assignmentDraftKey = "xlent-assignment-draft-v1";
+
+function loadAssignmentDraft(): AssignmentDraftSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(assignmentDraftKey);
+    return raw ? (JSON.parse(raw) as AssignmentDraftSnapshot) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function NewAssignmentPage() {
   const navigate = useNavigate();
   const { t, locale } = useI18n();
+  const [savedDraft] = useState(loadAssignmentDraft);
   const [step, setStep] = useState<
     "input" | "basic" | "requirements" | "review"
-  >("input");
+  >(savedDraft?.step ?? "input");
   const stepOrder = ["input", "basic", "requirements", "review"] as const;
   const [highestReachedStep, setHighestReachedStep] = useState(0);
-  const [aiExtracted, setAiExtracted] = useState(false);
-  const [title, setTitle] = useState("");
-  const [client, setClient] = useState("");
-  const [brief, setBrief] = useState("");
+  const [aiExtracted, setAiExtracted] = useState(savedDraft?.aiExtracted ?? false);
+  const [title, setTitle] = useState(savedDraft?.title ?? "");
+  const [client, setClient] = useState(savedDraft?.client ?? "");
+  const [brief, setBrief] = useState(savedDraft?.brief ?? "");
   const [briefFile, setBriefFile] = useState<File | null>(null);
-  const [sourceMode, setSourceMode] = useState<"paste" | "upload">("paste");
-  const [seniority, setSeniority] = useState("");
+  const [sourceMode, setSourceMode] = useState<"paste" | "upload">(savedDraft?.sourceMode ?? "paste");
+  const [seniority, setSeniority] = useState(savedDraft?.seniority ?? "");
   const [seniorityMatchMode, setSeniorityMatchMode] = useState<
     "Exact" | "Minimum" | "Range"
-  >("Exact");
-  const [maximumSeniority, setMaximumSeniority] = useState("");
-  const [availability, setAvailability] = useState("");
-  const [requiredStartDate, setRequiredStartDate] = useState("");
-  const [startDateDescription, setStartDateDescription] = useState("");
-  const [location, setLocation] = useState("");
-  const [minYears, setMinYears] = useState<number | null>(null);
+  >(savedDraft?.seniorityMatchMode ?? "Exact");
+  const [maximumSeniority, setMaximumSeniority] = useState(savedDraft?.maximumSeniority ?? "");
+  const [availability, setAvailability] = useState(savedDraft?.availability ?? "");
+  const [requiredStartDate, setRequiredStartDate] = useState(savedDraft?.requiredStartDate ?? "");
+  const [startDateDescription, setStartDateDescription] = useState(savedDraft?.startDateDescription ?? "");
+  const [location, setLocation] = useState(savedDraft?.location ?? "");
+  const [minYears, setMinYears] = useState<number | null>(savedDraft?.minYears ?? null);
   const [requirements, setRequirements] = useState<AssignmentRequirementApi[]>(
-    [],
+    savedDraft?.requirements ?? [],
   );
   const [editingRequirement, setEditingRequirement] = useState<number | null>(
     null,
@@ -88,6 +119,9 @@ export function NewAssignmentPage() {
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const extraction = useAssignmentExtraction();
+  const extractionBusy = extracting || extraction.phase === "extracting";
+  const [appliedExtraction, setAppliedExtraction] = useState(false);
 
   const canExtract =
     title.trim().length > 0 &&
@@ -100,6 +134,45 @@ export function NewAssignmentPage() {
     );
   }, [step]);
 
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(assignmentDraftKey, JSON.stringify({
+        step, aiExtracted, title, client, brief, sourceMode, seniority,
+        seniorityMatchMode, maximumSeniority, availability, requiredStartDate,
+        startDateDescription, location, minYears, requirements,
+      } satisfies AssignmentDraftSnapshot));
+    } catch {
+      // Session storage is an enhancement; the form remains usable if unavailable.
+    }
+  }, [step, aiExtracted, title, client, brief, sourceMode, seniority, seniorityMatchMode, maximumSeniority, availability, requiredStartDate, startDateDescription, location, minYears, requirements]);
+
+  const applyExtraction = (extracted: Awaited<ReturnType<typeof aiApi.extractRequirementsFromText>>) => {
+    setRequirements(
+      extracted.requirements.map((item) =>
+        emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.proficiency, item.matchMode ?? "Exact", item.maximumSeniority ?? null),
+      ),
+    );
+    setBrief(extracted.sourceText ?? brief);
+    if (extracted.minimumSeniority || extracted.seniority) setSeniority(extracted.minimumSeniority ?? extracted.seniority ?? "");
+    if (extracted.seniorityMatchMode) setSeniorityMatchMode(extracted.seniorityMatchMode);
+    if (extracted.maximumSeniority) setMaximumSeniority(extracted.maximumSeniority);
+    if (extracted.availability) setAvailability(extracted.availability);
+    if (extracted.requiredStartDate) setRequiredStartDate(extracted.requiredStartDate);
+    setStartDateDescription(extracted.startDateDescription ?? "");
+    if (extracted.location) setLocation(extracted.location);
+    setMinYears(extracted.minYearsExperience);
+    setAiExtracted(true);
+    setStep("basic");
+  };
+
+  useEffect(() => {
+    if (extraction.result && !appliedExtraction) {
+      applyExtraction(extraction.result);
+      setAppliedExtraction(true);
+      if (extraction.error) setError(extraction.error);
+    }
+  }, [extraction.result, appliedExtraction]);
+
   const extractRequirements = async () => {
     if (!canExtract) {
       setError(t("client_fill_before_extract"));
@@ -110,41 +183,10 @@ export function NewAssignmentPage() {
     setError("");
 
     try {
-      const extracted = briefFile
-        ? await aiApi.extractRequirementsFromFile(briefFile)
-        : await aiApi.extractRequirementsFromText(brief);
-
-      setRequirements(
-        extracted.requirements.map((item) =>
-          emptyRequirement(
-            item.name,
-            item.type,
-            item.minYears,
-            item.minLevel,
-            item.category,
-            item.proficiency,
-            item.matchMode ?? "Exact",
-            item.maximumSeniority ?? null,
-          ),
-        ),
-      );
-
-      setBrief(extracted.sourceText ?? brief);
-      if (extracted.minimumSeniority || extracted.seniority)
-        setSeniority(extracted.minimumSeniority ?? extracted.seniority ?? "");
-      if (extracted.seniorityMatchMode)
-        setSeniorityMatchMode(extracted.seniorityMatchMode);
-      if (extracted.maximumSeniority)
-        setMaximumSeniority(extracted.maximumSeniority);
-      if (extracted.availability) setAvailability(extracted.availability);
-      if (extracted.requiredStartDate)
-        setRequiredStartDate(extracted.requiredStartDate);
-      setStartDateDescription(extracted.startDateDescription ?? "");
-      if (extracted.location) setLocation(extracted.location);
-      setMinYears(extracted.minYearsExperience);
-
-      setAiExtracted(true);
-      setStep("basic");
+      const extracted = await extraction.start(briefFile, brief);
+      if (!extracted) throw new Error(extraction.error ?? t("client_extract_error"));
+      applyExtraction(extracted);
+      setAppliedExtraction(true);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -395,6 +437,8 @@ export function NewAssignmentPage() {
 
     try {
       const created = await assignmentsApi.create(payload);
+      sessionStorage.removeItem(assignmentDraftKey);
+      extraction.clear();
       navigate(`/client-assignments/${created.id}`);
     } catch (requestError) {
       setError(
@@ -514,7 +558,7 @@ export function NewAssignmentPage() {
                   </span>
                   <input
                     type="file"
-                    accept=".pdf,.txt,application/pdf,text/plain"
+                    accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     className="block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app-border file:bg-app-surface file:px-3 file:py-2"
                     onChange={(event) => {
                       const file = event.target.files?.[0] ?? null;
@@ -547,6 +591,17 @@ export function NewAssignmentPage() {
               </p>
             )}
 
+            {extraction.phase === "extracting" && (
+              <p role="status" className="text-xs text-app-brand">
+                {t("client_extracting")}{extraction.fileName ? ` · ${extraction.fileName}` : ""}
+              </p>
+            )}
+            {extraction.phase === "ready" && extraction.fileName && !appliedExtraction && (
+              <p role="status" className="text-xs text-app-secondary">
+                {t("client_extraction_ready")} · {extraction.fileName}
+              </p>
+            )}
+
             {error && <p className="text-xs text-app-secondary">{error}</p>}
 
             <div className="flex justify-end gap-2">
@@ -571,10 +626,10 @@ export function NewAssignmentPage() {
               <Button
                 onClick={extractRequirements}
                 variant="primary"
-                disabled={extracting || !canExtract}
+                disabled={extractionBusy || !canExtract}
                 icon={<Sparkles size={12} />}
               >
-                {extracting
+                {extractionBusy
                   ? t("client_extracting")
                   : t("client_extract_requirements")}
               </Button>

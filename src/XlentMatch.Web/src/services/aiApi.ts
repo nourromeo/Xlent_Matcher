@@ -118,7 +118,7 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
       issuedDate: item.issuedDate,
       issuedYear: item.issuedYear,
     })),
-    sourceText: null,
+    sourceText: consultant.originalCvText,
   };
 }
 

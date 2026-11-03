@@ -25,7 +25,8 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
             var path = Path.Combine(environment.ContentRootPath, "private-cvs", Path.GetFileName(cv.StorageKey!));
             return System.IO.File.Exists(path)
                 && (Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase)
-                    || Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase));
+                    || Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase)
+                    || Path.GetExtension(path).Equals(".docx", StringComparison.OrdinalIgnoreCase));
         }).Select(cv => cv.ConsultantId!.Value).ToArray();
         return Ok(new { eligibleConsultantIds = eligible });
     }

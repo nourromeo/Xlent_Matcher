@@ -1,6 +1,8 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
 using XlentMatch.Api.DTOs.Extraction;
@@ -185,9 +187,10 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
 
         var extension = Path.GetExtension(request.File.FileName);
         if (!extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase) &&
-            !extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+            !extension.Equals(".txt", StringComparison.OrdinalIgnoreCase) &&
+            !extension.Equals(".docx", StringComparison.OrdinalIgnoreCase))
         {
-            return (null, "Unsupported file type. Use PDF or TXT.");
+            return (null, "Unsupported file type. Use PDF, DOCX or TXT.");
         }
 
         await using var stream = request.File.OpenReadStream();
@@ -206,6 +209,21 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
             catch
             {
                 return (null, "The PDF could not be read. Make sure the file is a valid PDF and try again.");
+            }
+        }
+        else if (extension.Equals(".docx", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                using var document = WordprocessingDocument.Open(stream, false);
+                var body = document.MainDocumentPart?.Document.Body;
+                text = body is null
+                    ? ""
+                    : string.Join(Environment.NewLine, body.Descendants<Text>().Select(item => item.Text));
+            }
+            catch
+            {
+                return (null, "The DOCX file could not be read. Make sure it is a valid Word document and try again.");
             }
         }
         else

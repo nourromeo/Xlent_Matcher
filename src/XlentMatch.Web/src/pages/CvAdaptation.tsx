@@ -16,6 +16,7 @@ import {
 } from "../services/aiApi";
 import type { AssignmentApi, Consultant } from "../types";
 import { useI18n } from "../i18n";
+import { useCvAdaptation } from "../contexts/CvAdaptationContext";
 
 type SourceMode = "existing" | "upload" | "paste";
 
@@ -51,6 +52,7 @@ function SourceTabs({
 
 export default function CvAdaptation() {
   const { t, locale } = useI18n();
+  const adaptation = useCvAdaptation();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,17 @@ export default function CvAdaptation() {
       sessionStorage.removeItem("xlent-adaptation-assignment-id");
     } catch { /* Storage can be unavailable; in-memory reporting still works. */ }
   }, [result, usedConsultant, usedAssignment, consultantId, assignmentId, consultantMode, assignmentMode]);
+
+  useEffect(() => {
+    setPreparing(adaptation.phase === "preparing");
+    setAnalysing(adaptation.phase === "analysing");
+    if (adaptation.phase === "ready" && adaptation.result && adaptation.consultant && adaptation.assignment && !result) {
+      setResult(adaptation.result);
+      setUsedConsultant(adaptation.consultant);
+      setUsedAssignment(adaptation.assignment);
+    }
+    if (adaptation.phase === "error" && adaptation.error && !result) setError(adaptation.error);
+  }, [adaptation.phase, adaptation.result, adaptation.consultant, adaptation.assignment, adaptation.error, result]);
 
   useEffect(() => {
     let cancelled = false;
@@ -237,29 +250,20 @@ export default function CvAdaptation() {
     busy.current = true;
     const token = ++requestId.current;
     setError("");
-    setPreparing(true);
     try {
-      const [consultant, assignment] = await Promise.all([resolveConsultant(), resolveAssignment()]);
-      if (token !== requestId.current) return;
-      if ((!consultant.firstName && !consultant.lastName && !consultant.skills?.length && !consultant.experiences?.length) ||
-          (!assignment.description?.trim() && !assignment.requirements?.length)) {
-        throw new Error(t("adapt_insufficient"));
-      }
-      setPreparing(false);
-      setAnalysing(true);
-      const response = await aiApi.suggestTemporaryCvAdaptation(consultant, assignment, locale);
-      if (token !== requestId.current) return;
-      setUsedConsultant(consultant);
-      setUsedAssignment(assignment);
-      setResult(response);
+      const completed = await adaptation.start(resolveConsultant, resolveAssignment, locale);
+      if (token !== requestId.current || !completed) return;
+      if (completed.phase === "ready" && completed.result && completed.consultant && completed.assignment) {
+        setUsedConsultant(completed.consultant);
+        setUsedAssignment(completed.assignment);
+        setResult(completed.result);
+      } else if (completed.error) setError(completed.error);
     } catch (requestError) {
       if (token === requestId.current) setError(
         requestError instanceof Error ? requestError.message : t("adapt_failed")
       );
     } finally {
       busy.current = false;
-      setPreparing(false);
-      setAnalysing(false);
     }
   };
 
@@ -547,7 +551,7 @@ export default function CvAdaptation() {
                 </span>
                 <input
                   type="file"
-                  accept=".pdf,.txt,application/pdf,text/plain"
+                  accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;
@@ -642,7 +646,7 @@ export default function CvAdaptation() {
                 </span>
                 <input
                   type="file"
-                  accept=".pdf,.txt,application/pdf,text/plain"
+                  accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;

@@ -69,12 +69,13 @@ describe("CV upload navigation", () => {
     expect(screen.getByRole("status").textContent).toContain("cv_review");
   });
 
-  it("still opens review automatically if the user stays on the upload page", async () => {
+  it("stays on the upload page and exposes the review link when ready", async () => {
     vi.mocked(aiApi.extractConsultantFromFile).mockResolvedValue({ firstName: "Test" } as never);
     const view = setup();
     fireEvent.change(view.container.querySelector('input[type="file"]')!, {
       target: { files: [new File(["CV"], "profile.txt", { type: "text/plain" })] },
     });
-    await waitFor(() => expect(screen.getByTestId("location").textContent).toBe("/cv-upload/review"));
+    await waitFor(() => expect(screen.getByTestId("location").textContent).toBe("/cv-upload"));
+    expect(screen.getByRole("status").textContent).toContain("cv_review_now");
   });
 });

@@ -1,4 +1,6 @@
 import { CvUploadProvider } from "./contexts/CvUploadContext";
+import { AssignmentExtractionProvider } from "./contexts/AssignmentExtractionContext";
+import { CvAdaptationProvider } from "./contexts/CvAdaptationContext";
 import { BrowserRouter, Navigate, Routes, Route, useSearchParams } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -28,6 +30,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <CvUploadProvider>
+      <AssignmentExtractionProvider>
+      <CvAdaptationProvider>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
@@ -51,6 +55,8 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      </CvAdaptationProvider>
+      </AssignmentExtractionProvider>
       </CvUploadProvider>
     </BrowserRouter>
   );

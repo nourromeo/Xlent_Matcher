@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useCvUpload } from "../contexts/CvUploadContext";
 import { consultantsApi } from "../services/consultantsApi";
@@ -18,7 +18,6 @@ export default function CvUpload() {
     : value === "Indexed" ? t("dashboard_indexed")
     : value === "Error" ? t("status_error")
     : value === "Queued" ? t("status_queued") : value;
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
   const input = useRef<HTMLInputElement>(null);
@@ -34,11 +33,6 @@ export default function CvUpload() {
   const reviewVisitCutoff = useRef(0);
   const { state: uploadState, start, dismiss } = useCvUpload();
   const busy = uploadState.phase === "uploading" || uploadState.phase === "extracting";
-  const mounted = useRef(false);
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -80,9 +74,7 @@ export default function CvUpload() {
     const problem = validateDocumentFile(file);
     if (problem) { setError(problem); return; }
     setError("");
-    const reviewUrl = await start(file, replaceConsultantId);
-    // This instance must still be mounted: returning later must not revive navigation.
-    if (mounted.current && reviewUrl) navigate(reviewUrl);
+    await start(file, replaceConsultantId);
   };
 
   useEffect(() => {
@@ -142,14 +134,12 @@ export default function CvUpload() {
       <section className="rounded-xl border border-app-border bg-app-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId && existingCvForConsultant ? t("cv_replace_for") + " " + (consultantNames[replaceConsultantId] || t("cv_consultant_number") + " " + replaceConsultantId) : replaceConsultantId ? t("cv_upload_for") + " " + (consultantNames[replaceConsultantId] || t("cv_consultant_number") + " " + replaceConsultantId) : t("cv_upload_title")}</h2>
-            <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? t("cv_replace_explain") : t("cv_upload_explain")}</p>
             {uploadState.phase !== "idle" && (
               uploadState.phase === "ready" && uploadState.reviewUrl ? (
-                <Link role="status" aria-live="polite" className="mt-3 inline-flex max-w-full items-center rounded-md bg-app-brand px-3 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90" to={uploadState.reviewUrl}>
-                  <span className="truncate">{uploadState.fileName} · {t("cv_review")}</span>
-                  <span className="ml-3 shrink-0">{t("cv_review_now")}</span>
-                </Link>
+                <div role="status" aria-live="polite" className="mt-3 flex max-w-full items-center gap-2 text-xs text-app-secondary">
+                  <span className="truncate">{uploadState.fileName}</span>
+                  <Link className="shrink-0 text-app-brand hover:underline" to={uploadState.reviewUrl}>{t("cv_review_now")}</Link>
+                </div>
               ) : (
                 <div role={uploadState.phase === "error" ? "alert" : "status"} aria-live="polite" className="mt-3 text-xs text-app-secondary">
                   <span className="font-medium">{uploadState.fileName}</span>{" · "}
@@ -160,7 +150,7 @@ export default function CvUpload() {
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
             {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>{t("cv_back_consultant")}</Link>}
-            <input ref={input} type="file" accept=".pdf,.txt,application/pdf,text/plain" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
+            <input ref={input} type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
             <button type="button" title={t("cv_upload_tooltip")} disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex w-fit items-center justify-center rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
               {busy ? t("cv_uploading") : replaceConsultantId && existingCvForConsultant ? t("cv_choose_replacement") : replaceConsultantId ? t("cv_upload_new") : "+ " + t("cv_upload_title")}
             </button>
