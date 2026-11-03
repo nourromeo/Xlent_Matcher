@@ -86,14 +86,17 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
   };
   const acknowledgeDraft = (id: string) => persistDrafts(drafts.map((draft) => draft.id === id ? { ...draft, isNew: false } : draft));
   const removeDraft = (id: string) => persistDrafts(drafts.filter((draft) => draft.id !== id));
-  const toastDraft = drafts.find((draft) => draft.isNew) ?? null;
   const [toastDraftId, setToastDraftId] = useState<string | null>(null);
+  const toastDraft = drafts.find((draft) => draft.id === toastDraftId && draft.isNew) ?? drafts.find((draft) => draft.isNew) ?? null;
   useEffect(() => {
     if (!toastDraft) { setToastDraftId(null); return; }
-    setToastDraftId(toastDraft.id);
-    const timer = window.setTimeout(() => setToastDraftId(null), 5000);
+    if (toastDraftId !== toastDraft.id) setToastDraftId(toastDraft.id);
+    const timer = window.setTimeout(() => {
+      const next = drafts.find((draft) => draft.isNew && draft.id !== toastDraft.id);
+      setToastDraftId(next?.id ?? null);
+    }, 5000);
     return () => window.clearTimeout(timer);
-  }, [toastDraft?.id]);
+  }, [drafts, toastDraftId, toastDraft?.id]);
   return <Context.Provider value={{ ...state, start, clear, drafts, acknowledgeDraft, removeDraft }}>
     {children}
     {toastDraft && toastDraftId === toastDraft.id && !location.pathname.startsWith("/client-assignments") && (
