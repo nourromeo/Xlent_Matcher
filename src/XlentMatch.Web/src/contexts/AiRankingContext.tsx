@@ -37,12 +37,12 @@ export function AiRankingProvider({ children }: { children: ReactNode }) {
   const locationRef = useRef(location.pathname);
   const running = useRef(false);
   const leftDuringRun = useRef(false);
+  const activeSelectionPath = useRef<string | null>(null);
   const [pending, setPending] = useState<PendingAiRanking[]>(loadPending);
   const [toastId, setToastId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (running.current && !location.pathname.startsWith("/matching/")) leftDuringRun.current = true;
-    if (running.current && locationRef.current.startsWith("/matching/") && !location.pathname.includes("/ai-ranking")) leftDuringRun.current = true;
+    if (running.current && activeSelectionPath.current && location.pathname !== activeSelectionPath.current) leftDuringRun.current = true;
     locationRef.current = location.pathname;
   }, [location.pathname]);
 
@@ -55,9 +55,10 @@ export function AiRankingProvider({ children }: { children: ReactNode }) {
     if (running.current) return null;
     running.current = true;
     leftDuringRun.current = false;
+    activeSelectionPath.current = `/matching/${assignmentId}/ai-ranking`;
     try {
       const ranking = await matchingApi.rankWithAi(assignmentId, consultantIds, locale);
-      const completedAway = leftDuringRun.current || !locationRef.current.includes(`/matching/${assignmentId}/ai-ranking`);
+      const completedAway = leftDuringRun.current || locationRef.current !== activeSelectionPath.current;
       if (completedAway) {
         const item: PendingAiRanking = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -75,6 +76,7 @@ export function AiRankingProvider({ children }: { children: ReactNode }) {
       throw error instanceof Error ? error : new Error(t("ranking_compare_error"));
     } finally {
       running.current = false;
+      activeSelectionPath.current = null;
     }
   };
 
