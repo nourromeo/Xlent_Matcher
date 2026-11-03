@@ -469,7 +469,7 @@ export default function Admin() {
                           <span className="block text-sm font-semibold text-app-primary">{t("admin_runtime_contract")}</span>
                           <span className="mt-1 block text-xs text-app-muted">{t("admin_runtime_explainer")}</span>
                         </span>
-                        <span className="flex items-center gap-2 text-xs text-app-muted"><span className="rounded border border-app-border px-2 py-1">Backend</span>{runtimeExpanded ? "−" : "+"}</span>
+                        <span className="flex items-center gap-2 text-xs text-app-muted"><span className="rounded border border-app-border px-2 py-1">{t("common_backend")}</span>{runtimeExpanded ? "−" : "+"}</span>
                       </button>
                       {runtimeExpanded && (
                         <div className="space-y-3 border-t border-app-border px-5 py-4">

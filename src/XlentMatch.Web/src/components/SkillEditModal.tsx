@@ -60,10 +60,10 @@ export function SkillEditModal({
             value={aliases}
             onChange={(event) => onAliasesChange(event.target.value)}
             disabled={saving}
-            placeholder="dotnet, .NET Core"
+            placeholder={t("admin_aliases_example")}
           />
           <span className="text-[10px] text-app-faint mt-1 block">
-            Separate aliases with commas. Renaming keeps the previous canonical name as an alias.
+            {t("admin_aliases_hint")}
           </span>
         </label>
 

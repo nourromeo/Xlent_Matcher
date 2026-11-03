@@ -983,7 +983,7 @@ export default function ConsultantReview() {
                           </p>
                         )}
                         {"issuedDate" in item && (item.issuedYear || item.issuedDate) && (
-                          <p className="mt-1 text-xs text-app-muted">Year: {item.issuedYear || item.issuedDate?.slice(0, 4)}</p>
+                          <p className="mt-1 text-xs text-app-muted">{t("common_year")}: {item.issuedYear || item.issuedDate?.slice(0, 4)}</p>
                         )}
                         {"description" in item && item.description && (
                           <p className="mt-1 text-xs text-app-secondary">
@@ -1147,11 +1147,10 @@ export default function ConsultantReview() {
           )}
           {linkedConsultantId && step === 3 && (
             <div className="rounded-lg border border-app-border bg-app-raised p-4 text-xs text-app-secondary">
-              Det granskade CV:t blir aktivt och ersätter tidigare CV-baserade uppgifter i konsultprofilen.
-              Tidigare CV-versioner sparas som inaktiva. Tillgänglighet och tillgänglighetsdatum behålls.
+              {t("consultant_review_replacement_note")}
             </div>
           )}
-          {error && <div role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-xs text-red-400">Save failed: {error}</div>}
+          {error && <div role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-xs text-red-400">{t("consultant_review_save_failed")}: {error}</div>}
           <div className="flex justify-between">
             <Button
               variant="ghost"

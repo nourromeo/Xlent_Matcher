@@ -79,7 +79,7 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
       }
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not extract assignment requirements.";
+      const message = error instanceof Error ? error.message : t("assignment_extraction_error");
       persist({ phase: "error", fileName: file?.name ?? "", result: null, error: message });
       return null;
     } finally { running.current = false; }

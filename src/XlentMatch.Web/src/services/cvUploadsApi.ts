@@ -1,4 +1,5 @@
 import { apiRequest } from "./api";
+import { translateStatic } from "../i18n";
 import type { ConsultantDraft } from "./aiApi";
 
 export type CvUploadStatus = "Extracting" | "Review" | "Indexed" | "Error";
@@ -74,8 +75,8 @@ export const cvUploadsApi = {
         throw new Error("DUPLICATE_CV");
       }
       throw new Error(response.status === 413
-        ? "The CV file is too large (maximum 10 MB)."
-        : "Could not upload the CV. Please try again.");
+        ? translateStatic("cv_upload_too_large")
+        : translateStatic("cv_upload_failed"));
     }
     return response.json() as Promise<CvUploadRecord>;
   },

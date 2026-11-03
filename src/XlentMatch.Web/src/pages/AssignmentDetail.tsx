@@ -76,7 +76,7 @@ function SkillEditor({
               addSkill();
             }
           }}
-          placeholder={category === "HumanLanguage" ? "e.g. Swedish" : t("assignment_add_skill")}
+          placeholder={category === "HumanLanguage" ? t("assignment_language_example") : t("assignment_add_skill")}
           className="flex-1"
         />
         <Button variant="secondary" icon={<Plus size={12} />} className="px-2.5" onClick={addSkill}>
@@ -340,7 +340,7 @@ export default function AssignmentDetail() {
               <div className="flex flex-wrap gap-2">
                 {required.map((skill) => {
                   const requirement = assignment.requirements.find((item) => item.type === "Mandatory" && item.category === "Skill" && item.name === skill);
-                  return <div key={skill} className="space-y-1"><SkillTag variant="required">{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ years` : requirement.minLevel != null ? `Level ${requirement.minLevel}/5` : ""}</p>}</div>;
+                  return <div key={skill} className="space-y-1"><SkillTag variant="required">{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ ${t("assignment_years_unit")}` : requirement.minLevel != null ? `${t("assignment_level")} ${requirement.minLevel}/5` : ""}</p>}</div>;
                 })}
               </div>
             </div>
@@ -354,7 +354,7 @@ export default function AssignmentDetail() {
               <div className="flex flex-wrap gap-2">
                 {preferred.map((skill) => {
                   const requirement = assignment.requirements.find((item) => item.type === "Desired" && item.category === "Skill" && item.name === skill);
-                  return <div key={skill} className="space-y-1"><SkillTag>{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ years` : `Level ${requirement.minLevel}/5`}</p>}</div>;
+                  return <div key={skill} className="space-y-1"><SkillTag>{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ ${t("assignment_years_unit")}` : `${t("assignment_level")} ${requirement.minLevel}/5`}</p>}</div>;
                 })}
               </div>
             </div>

@@ -36,7 +36,7 @@ export function CvAdaptationProvider({ children }: { children: ReactNode }) {
     try {
       const [consultant, assignment] = await Promise.all([resolveConsultant(), resolveAssignment()]);
       if ((!consultant.firstName && !consultant.lastName && !consultant.skills?.length && !consultant.experiences?.length) || (!assignment.description?.trim() && !assignment.requirements?.length))
-        throw new Error("The extracted CV or assignment has insufficient information.");
+        throw new Error(t("adaptation_insufficient_information"));
       setState({ phase: "analysing", result: null, consultant, assignment, error: null });
       const result = await aiApi.suggestTemporaryCvAdaptation(consultant, assignment, locale);
       const completed = { phase: "ready" as const, result, consultant, assignment, error: null };
@@ -44,7 +44,7 @@ export function CvAdaptationProvider({ children }: { children: ReactNode }) {
       if (leftDuringRun.current || !locationRef.current.startsWith("/cv-adaptation")) setToastVisible(true);
       return completed;
     } catch (error) {
-      const failed = { phase: "error" as const, result: null, consultant: null, assignment: null, error: error instanceof Error ? error.message : "Could not prepare or analyze the CV." };
+      const failed = { phase: "error" as const, result: null, consultant: null, assignment: null, error: error instanceof Error ? error.message : t("adaptation_analysis_error") };
       setState(failed);
       return failed;
     } finally { running.current = false; }

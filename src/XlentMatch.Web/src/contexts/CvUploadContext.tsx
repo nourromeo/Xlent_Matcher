@@ -66,7 +66,7 @@ export function CvUploadProvider({ children }: { children: ReactNode }) {
       }
       return reviewUrl;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not process the CV.";
+      const message = error instanceof Error ? error.message : t("cv_processing_error");
       if (uploadId !== null) {
         try {
           if (message.includes("DUPLICATE_CV")) await cvUploadsApi.remove(uploadId);

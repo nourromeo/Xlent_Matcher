@@ -61,7 +61,7 @@ export default function AiRankingResults() {
                 <span aria-hidden="true">▣</span> {savedId || savedRecordId !== null ? t("ranking_saved_state") : saving ? t("ranking_saving_state") : t("ranking_save_result")}
               </button>
               <button type="button" disabled title={t("ranking_share_later")} className="inline-flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-xs font-medium text-app-primary opacity-60 cursor-not-allowed">
-                <span aria-hidden="true">↗</span> Share
+                <span aria-hidden="true">↗</span> {t("common_share")}
               </button>
             </div>
           )}
@@ -81,7 +81,7 @@ export default function AiRankingResults() {
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">{t("ai_summary")}</p>
                       {(() => {
                         const winner = aiRanking.rankings.find((item) => item.rank === 1);
-                        const winnerName = allResults.find((item) => item.consultantId === winner?.consultantId)?.consultantName ?? "Consultant";
+                        const winnerName = allResults.find((item) => item.consultantId === winner?.consultantId)?.consultantName ?? t("common_consultant");
                         return <>
                           <h3 className="text-base font-semibold text-app-primary">{t("ai_recommended")}: {winnerName}</h3>
                           <p className="text-sm leading-relaxed text-app-secondary">{winner?.reason}</p>
