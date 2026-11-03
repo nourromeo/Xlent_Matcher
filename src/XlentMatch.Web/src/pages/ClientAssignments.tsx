@@ -540,6 +540,14 @@ export function NewAssignmentPage() {
         </div>
         {step === "input" ? (
           <div className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
+            <div className="flex gap-1 rounded-lg border border-app-border bg-app p-1 w-fit">
+              <button type="button" onClick={() => setSourceMode("paste")} className={`rounded px-3 py-1.5 text-xs ${sourceMode === "paste" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}>
+                {t("assignment_paste_mode")}
+              </button>
+              <button type="button" onClick={() => setSourceMode("upload")} className={`rounded px-3 py-1.5 text-xs ${sourceMode === "upload" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}>
+                {t("assignment_upload_mode")}
+              </button>
+            </div>
             {sourceMode === "paste" && <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_name")}{" "}
@@ -565,27 +573,11 @@ export function NewAssignmentPage() {
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_brief")}{" "}
-                <span className="text-app-brand">*</span>{" "}
+                {sourceMode === "paste" && <span className="text-app-brand">*</span>}{" "}
                 <span className="text-app-brand ml-1">
                   {t("client_ai_extraction")}
                 </span>
               </span>
-              <div className="flex gap-1 rounded-lg border border-app-border bg-app p-1 w-fit">
-                <button
-                  type="button"
-                  onClick={() => setSourceMode("paste")}
-                  className={`rounded px-3 py-1.5 text-xs ${sourceMode === "paste" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}
-                >
-                  {t("assignment_paste_mode")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSourceMode("upload")}
-                  className={`rounded px-3 py-1.5 text-xs ${sourceMode === "upload" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}
-                >
-                  {t("assignment_upload_mode")}
-                </button>
-              </div>
               {sourceMode === "paste" ? (
                 <Textarea
                   value={brief}
