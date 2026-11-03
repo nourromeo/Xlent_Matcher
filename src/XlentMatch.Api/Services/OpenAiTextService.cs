@@ -26,12 +26,13 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "If something is unknown, use null, 0 or an empty list. Respond with valid JSON only.";
 
 
-    public async Task<AiRankingResultDto> RankOriginalCvsAsync(string assignmentText, IReadOnlyList<(int ConsultantId, string CvText)> cvs, CancellationToken ct)
+    public async Task<AiRankingResultDto> RankOriginalCvsAsync(string assignmentText, IReadOnlyList<(int ConsultantId, string CvText)> cvs, string? locale, CancellationToken ct)
     {
         const string operation = "ai_original_cv_ranking";
         var prompt = await GetPromptAsync(PromptKeys.AiRanking, ct);
         LogPromptExecution(prompt);
-        var system = prompt.Content + "\n\nRUNTIME OUTPUT CONTRACT: Compare ALL supplied consultants (between 2 and 5). Return exactly one rankings entry for every supplied consultantId, with unique consecutive ranks starting at 1. Do not omit any consultant. Ground strengths, gaps, evidence, and reasons in the original CVs and assignment. Never invent qualifications. Keep original Match Score unchanged; do not generate numeric AI scores.";
+        var normalizedLocale = NormalizeLocale(locale);
+        var system = prompt.Content + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION: " + LanguageInstruction(normalizedLocale) + "\n\nRUNTIME OUTPUT CONTRACT: Compare ALL supplied consultants (between 2 and 5). Return exactly one rankings entry for every supplied consultantId, with unique consecutive ranks starting at 1. Do not omit any consultant. Ground strengths, gaps, evidence, and reasons in the original CVs and assignment. Never invent qualifications. Keep original Match Score unchanged; do not generate numeric AI scores.";
         var input = JsonSerializer.Serialize(new
         {
             assignmentText,
@@ -44,8 +45,16 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             result.Rankings.Any(x => !ids.Contains(x.ConsultantId)) ||
             !result.Rankings.Select(x => x.Rank).Order().SequenceEqual(Enumerable.Range(1, cvs.Count)))
             throw new InvalidOperationException("AI returned an invalid consultant ranking.");
+        result.Locale = normalizedLocale;
         return result;
     }
+
+    public static string NormalizeLocale(string? locale) => locale?.Trim().ToLowerInvariant() switch
+    {
+        "sv" => "sv",
+        "es" => "es",
+        _ => "en"
+    };
 
     public async Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {

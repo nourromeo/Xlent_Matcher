@@ -6,7 +6,7 @@ import { matchingApi, type SavedAiRankingSummary } from "../services/matchingApi
 import type { AssignmentApi, MatchResultApi } from "../types";
 
 export default function AiRankingSelection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const id = Number(assignmentId);
   const navigate = useNavigate();
@@ -64,7 +64,7 @@ export default function AiRankingSelection() {
     setRunning(true);
     setError("");
     try {
-      const ranking = await matchingApi.rankWithAi(id, selected);
+      const ranking = await matchingApi.rankWithAi(id, selected, locale);
       navigate(`/matching/${id}/ai-ranking/results`, { state: { ranking, matches: results, selected } });
     } catch (e) {
       setError(e instanceof Error ? e.message : t("ranking_compare_error"));

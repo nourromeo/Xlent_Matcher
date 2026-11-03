@@ -10,6 +10,7 @@ public sealed class AiRankingResultDto
 {
     public List<AiRankedConsultantDto> Rankings { get; set; } = new();
     public int SkippedWithoutCv { get; set; }
+    public string Locale { get; set; } = "en";
 }
 
 public sealed class AiRankedConsultantDto

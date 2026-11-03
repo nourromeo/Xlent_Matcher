@@ -23,7 +23,7 @@ export default function AiRankingResults() {
       .then(data => {
         if (cancelled) return;
         setLoaded({
-          ranking: { rankings: data.snapshot.rankings, skippedWithoutCv: data.snapshot.skippedWithoutCv },
+          ranking: { rankings: data.snapshot.rankings, skippedWithoutCv: data.snapshot.skippedWithoutCv, locale: data.snapshot.locale },
           matches: data.snapshot.matches.map(m => ({ ...m, id: 0, assignmentId: Number(assignmentId), rank: 0 } as MatchResultApi))
         });
       })

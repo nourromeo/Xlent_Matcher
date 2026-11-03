@@ -101,6 +101,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
     public sealed class AiRankingRequest
     {
         public List<int>? ConsultantIds { get; set; }
+        public string? Locale { get; set; }
     }
 
     [HttpPost("assignment/{assignmentId:int}/ai-ranking")]
@@ -175,7 +176,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         var assignmentText = $"Start date: {assignment.RequiredStartDate?.ToString("yyyy-MM-dd") ?? "not specified"}\nStart timing: {assignment.StartDateDescription ?? "not specified"}\nAvailability requirement: {assignment.Availability ?? "not specified"}\nTitle: {assignment.Title}\nCustomer: {assignment.CustomerName}\nDescription: {assignment.Description}\nSeniority: {assignment.Seniority}\nMinimum experience: {assignment.MinYearsExperience}\nLocation: {assignment.Location}\nRequirements:\n{requirements}";
         try
         {
-            var result = await ai.RankOriginalCvsAsync(assignmentText, eligible, ct);
+            var result = await ai.RankOriginalCvsAsync(assignmentText, eligible, request?.Locale, ct);
             result.SkippedWithoutCv = skipped;
             return Ok(result);
         }
@@ -204,6 +205,7 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
     {
         public List<SavedAiRankingItem>? Rankings { get; set; }
         public List<SavedAiRankingMatch>? Matches { get; set; }
+        public string? Locale { get; set; }
     }
 
     public sealed class SavedAiRankingItem
@@ -244,7 +246,8 @@ public class MatchingController(AppDbContext db, MatchingService matching, Consu
         {
             rankings = rankings.OrderBy(x => x.Rank).ToList(),
             matches = matches.Select(x => new { x.ConsultantId, x.ConsultantName, x.Score }).ToList(),
-            skippedWithoutCv = 0
+            skippedWithoutCv = 0,
+            locale = OpenAiTextService.NormalizeLocale(request?.Locale)
         };
         var record = new SavedAiRanking
         {

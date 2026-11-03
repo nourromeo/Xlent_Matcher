@@ -12,7 +12,7 @@ public interface IPdfTextExtractor
 
 public interface IAiTextService
 {
-    Task<AiRankingResultDto> RankOriginalCvsAsync(string assignmentText, IReadOnlyList<(int ConsultantId, string CvText)> cvs, CancellationToken ct);
+    Task<AiRankingResultDto> RankOriginalCvsAsync(string assignmentText, IReadOnlyList<(int ConsultantId, string CvText)> cvs, string? locale, CancellationToken ct);
     Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct);
     Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct);
     Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(
