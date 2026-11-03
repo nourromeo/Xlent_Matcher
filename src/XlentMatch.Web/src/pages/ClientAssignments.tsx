@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -85,8 +85,9 @@ export function NewAssignmentPage() {
   const { t, locale } = useI18n();
   const extraction = useAssignmentExtraction();
   const queuedDraftId = searchParams.get("draftId");
+  const isFreshAssignment = searchParams.get("fresh") === "1";
   const queuedDraft = extraction.drafts.find((draft) => draft.id === queuedDraftId) ?? null;
-  const [savedDraft] = useState(() => queuedDraftId ? null : loadAssignmentDraft());
+  const [savedDraft] = useState(() => queuedDraftId || isFreshAssignment ? null : loadAssignmentDraft());
   const [step, setStep] = useState<
     "input" | "basic" | "requirements" | "review"
   >(savedDraft?.step ?? "input");
@@ -125,6 +126,16 @@ export function NewAssignmentPage() {
   const [error, setError] = useState("");
   const extractionBusy = extracting || extraction.phase === "extracting";
   const [appliedExtraction, setAppliedExtraction] = useState(false);
+  const cancelling = useRef(false);
+
+  const cancelAssignment = () => {
+    cancelling.current = true;
+    if (!queuedDraftId) {
+      try { sessionStorage.removeItem(assignmentDraftKey); } catch { /* optional */ }
+      extraction.clear();
+    }
+    navigate("/client-assignments");
+  };
 
   const canExtract =
     title.trim().length > 0 &&
@@ -138,6 +149,14 @@ export function NewAssignmentPage() {
   }, [step]);
 
   useEffect(() => {
+    if (isFreshAssignment) {
+      try { sessionStorage.removeItem(assignmentDraftKey); } catch { /* optional */ }
+      extraction.clear();
+    }
+  }, [isFreshAssignment]);
+
+  useEffect(() => {
+    if (cancelling.current) return;
     try {
       sessionStorage.setItem(assignmentDraftKey, JSON.stringify({
         step, aiExtracted, title, client, brief, sourceMode, seniority,
@@ -169,12 +188,12 @@ export function NewAssignmentPage() {
   };
 
   useEffect(() => {
-    if (extraction.result && !appliedExtraction) {
+    if (!isFreshAssignment && extraction.result && !appliedExtraction) {
       applyExtraction(extraction.result);
       setAppliedExtraction(true);
       if (extraction.error) setError(extraction.error);
     }
-  }, [extraction.result, appliedExtraction]);
+  }, [extraction.result, appliedExtraction, isFreshAssignment]);
 
   useEffect(() => {
     if (!queuedDraft || appliedExtraction) return;
@@ -471,12 +490,21 @@ export function NewAssignmentPage() {
           title={t("assignment_create_title")}
           description={t("assignment_create_description")}
           actions={
-            <Button
-              onClick={() => navigate("/client-assignments")}
-              variant="ghost"
-            >
-              {t("assignment_modal_cancel")}
-            </Button>
+            <>
+              <Link
+                to="/client-assignments"
+                className="text-xs text-app-muted hover:text-app-primary"
+              >
+                {t("assignment_back")}
+              </Link>
+              <Button
+                onClick={cancelAssignment}
+                variant="ghost"
+                className="text-app-danger hover:text-app-danger"
+              >
+                Avsluta
+              </Button>
+            </>
           }
         />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -619,7 +647,7 @@ export function NewAssignmentPage() {
 
             <div className="flex justify-end gap-2">
               <Button
-                onClick={() => navigate("/client-assignments")}
+                onClick={cancelAssignment}
                 variant="ghost"
               >
                 {t("assignment_modal_cancel")}
@@ -1373,7 +1401,11 @@ export default function ClientAssignments() {
         meta={String(assignments.length) + " " + t("assignments_sub")}
         actions={
           <Button
-            onClick={() => navigate("/client-assignments/new")}
+            onClick={() => {
+              try { sessionStorage.removeItem(assignmentDraftKey); } catch { /* optional */ }
+              extraction.clear();
+              navigate("/client-assignments/new?fresh=1");
+            }}
             variant="primary"
             icon={<Plus size={12} />}
           >

@@ -46,6 +46,7 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
     try { return JSON.parse(sessionStorage.getItem(draftsKey) || "[]") as AssignmentReviewDraft[]; } catch { return []; }
   });
   const running = useRef(false);
+  const runToken = useRef(0);
   const leftDuringRun = useRef(false);
   useEffect(() => {
     if (running.current && !location.pathname.startsWith("/client-assignments")) leftDuringRun.current = true;
@@ -62,12 +63,14 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
   const start = async (file: File | null, text: string, metadata = { title: "", client: "" }) => {
     if (running.current) return null;
     running.current = true;
+    const token = ++runToken.current;
     leftDuringRun.current = false;
     persist({ phase: "extracting", fileName: file?.name ?? "", result: null, error: null });
     try {
       const result = file
         ? await aiApi.extractRequirementsFromFile(file)
         : await aiApi.extractRequirementsFromText(text);
+      if (token !== runToken.current) return null;
       persist({ phase: "ready", fileName: file?.name ?? "", result, error: null });
       if (leftDuringRun.current || !locationRef.current.startsWith("/client-assignments")) {
         const draft: AssignmentReviewDraft = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title: metadata.title, client: metadata.client, fileName: file?.name ?? "", result, createdAt: new Date().toISOString(), isNew: true };
@@ -81,6 +84,7 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
     } finally { running.current = false; }
   };
   const clear = () => {
+    runToken.current += 1;
     const next = { phase: "idle" as const, fileName: "", result: null, error: null };
     persist(next);
   };
