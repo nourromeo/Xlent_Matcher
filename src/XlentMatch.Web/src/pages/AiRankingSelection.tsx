@@ -67,9 +67,9 @@ export default function AiRankingSelection() {
     setRunning(true);
     setError("");
     try {
-      const ranking = await start(id, selected, locale, results);
-      if (ranking && location.pathname === `/matching/${id}/ai-ranking`) {
-        navigate(`/matching/${id}/ai-ranking/results`, { state: { ranking, matches: results, selected } });
+      const completed = await start(id, selected, locale, results);
+      if (completed && !completed.completedAway && location.pathname === `/matching/${id}/ai-ranking`) {
+        navigate(`/matching/${id}/ai-ranking/results`, { state: { ranking: completed.ranking, matches: results, selected } });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : t("ranking_compare_error"));

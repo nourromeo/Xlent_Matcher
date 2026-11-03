@@ -15,7 +15,7 @@ export type PendingAiRanking = {
 
 type AiRankingContextValue = {
   pending: PendingAiRanking[];
-  start: (assignmentId: number, consultantIds: number[], locale: Locale, matches: MatchResultApi[]) => Promise<AiRankingResult | null>;
+  start: (assignmentId: number, consultantIds: number[], locale: Locale, matches: MatchResultApi[]) => Promise<{ ranking: AiRankingResult; completedAway: boolean } | null>;
   removePending: (id: string) => void;
   getPending: (id: string) => PendingAiRanking | null;
 };
@@ -57,7 +57,8 @@ export function AiRankingProvider({ children }: { children: ReactNode }) {
     leftDuringRun.current = false;
     try {
       const ranking = await matchingApi.rankWithAi(assignmentId, consultantIds, locale);
-      if (leftDuringRun.current || !locationRef.current.includes(`/matching/${assignmentId}/ai-ranking`)) {
+      const completedAway = leftDuringRun.current || !locationRef.current.includes(`/matching/${assignmentId}/ai-ranking`);
+      if (completedAway) {
         const item: PendingAiRanking = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           assignmentId,
@@ -69,7 +70,7 @@ export function AiRankingProvider({ children }: { children: ReactNode }) {
         persist([...pending, item]);
         setToastId(item.id);
       }
-      return ranking;
+      return { ranking, completedAway };
     } catch (error) {
       throw error instanceof Error ? error : new Error(t("ranking_compare_error"));
     } finally {
