@@ -244,10 +244,13 @@ public class CvUploadsController(AppDbContext db, IWebHostEnvironment environmen
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    public async Task<IActionResult> Delete(int id, CancellationToken ct, [FromQuery] bool draftOnly = false)
     {
         var upload = await db.CvUploads.FindAsync([id], ct);
         if (upload is null) return NotFound();
+
+        if (draftOnly && (upload.IsActive || upload.Status != "Review"))
+            return Conflict("Only a pending CV review draft can be discarded.");
 
         // Keep the consultant and its structured profile untouched.
         // Remove the database record first so a failed save never loses the original file.

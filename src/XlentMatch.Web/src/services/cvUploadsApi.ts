@@ -84,6 +84,9 @@ export const cvUploadsApi = {
 
   activate: (id: number) => apiRequest<CvUploadRecord>(`/cv-uploads/${id}/activate`, { method: "POST" }),
 
+  discardDraft: (id: number) =>
+    apiRequest<void>(`/cv-uploads/${id}?draftOnly=true`, { method: "DELETE" }),
+
   remove: (id: number) =>
     apiRequest<void>(`/cv-uploads/${id}`, {
       method: "DELETE",

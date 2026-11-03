@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../components/ui/PageHeader";
-import { aiApi } from "../services/aiApi";
+import { useCvUpload } from "../contexts/CvUploadContext";
 import { consultantsApi } from "../services/consultantsApi";
 import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { validateDocumentFile } from "../services/fileValidation";
@@ -30,7 +30,13 @@ export default function CvUpload() {
   const pageSize = 10;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
-  const [busy, setBusy] = useState(false);
+  const { state: uploadState, start, dismiss } = useCvUpload();
+  const busy = uploadState.phase === "uploading" || uploadState.phase === "extracting";
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -56,39 +62,20 @@ export default function CvUpload() {
     const problem = validateDocumentFile(file);
     if (problem) { setError(problem); return; }
     setError("");
-    setBusy(true);
-    let uploadId: number | null = null;
-    try {
-      const created = await cvUploadsApi.create(file.name, file.size);
-      uploadId = created.id;
-      await cvUploadsApi.uploadFile(created.id, file);
-      const extracted = await aiApi.extractConsultantFromFile(file);
-      await cvUploadsApi.update(created.id, {
-        status: "Review", consultantId: replaceConsultantId,
-        draftJson: JSON.stringify(extracted), errorMessage: null,
-      });
-      navigate(`/cv-upload/review?uploadId=${created.id}${replaceConsultantId ? `&replaceConsultantId=${replaceConsultantId}` : ""}`);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : t("cv_process_failed");
-      setError(message);
-      if (uploadId !== null) {
-        try {
-          if (message.includes("DUPLICATE_CV")) {
-            await cvUploadsApi.remove(uploadId).catch(() => {});
-            setError(t("cv_duplicate"));
-          } else {
-            await cvUploadsApi.update(uploadId, { status: "Error", errorMessage: message });
-          }
-        } catch { /* preserve initial error */ }
-      }
-      await refresh().catch(() => {});
-    } finally { setBusy(false); }
+    const reviewUrl = await start(file, replaceConsultantId);
+    // This instance must still be mounted: returning later must not revive navigation.
+    if (mounted.current && reviewUrl) navigate(reviewUrl);
   };
+
+  useEffect(() => {
+    void refresh().catch(() => {});
+  }, [uploadState.phase]);
 
   const remove = async (record: CvUploadRecord) => {
     if (!window.confirm(`${t("cv_delete_confirm")} (${record.fileName})`)) return;
     try {
       await cvUploadsApi.remove(record.id);
+      if (uploadState.reviewUrl?.startsWith(`/cv-upload/review?uploadId=${record.id}&`) || uploadState.reviewUrl === `/cv-upload/review?uploadId=${record.id}`) dismiss();
       await refresh();
     } catch (e) { setError(e instanceof Error ? e.message : t("cv_delete_failed")); }
   };
@@ -108,6 +95,13 @@ export default function CvUpload() {
   return (
     <div className="p-6 space-y-5 max-w-7xl mx-auto">
       <PageHeader title={t("cv_manager_title")} description={t("cv_manager_desc")} />
+      {uploadState.phase !== "idle" && (
+        <div role={uploadState.phase === "error" ? "alert" : "status"} aria-live="polite" className="rounded-lg border border-app-border bg-app-surface p-3 text-xs text-app-secondary">
+          <span className="font-medium">{uploadState.fileName}</span>{" · "}
+          {uploadState.phase === "uploading" ? t("cv_uploading") : uploadState.phase === "extracting" ? t("status_extracting") : uploadState.phase === "ready" ? t("cv_review") : uploadState.error?.includes("DUPLICATE_CV") ? t("cv_duplicate") : uploadState.error}
+          {uploadState.phase === "ready" && uploadState.reviewUrl && <Link className="ml-3 text-app-brand" to={uploadState.reviewUrl}>{t("cv_review")}</Link>}
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[
           [t("cv_total"), records.filter((r) => r.status === "Indexed" && r.storageKey != null).length],

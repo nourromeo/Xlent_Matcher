@@ -1,3 +1,4 @@
+import { useCvUpload } from "../contexts/CvUploadContext";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus } from "../design-system/icons";
@@ -111,6 +112,8 @@ function toConsultant(draft: ConsultantDraft): Consultant {
 export default function ConsultantReview() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { dismiss } = useCvUpload();
+  const [discarding, setDiscarding] = useState(false);
   const [params] = useSearchParams();
   const uploadId = params.get("uploadId");
   const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
@@ -196,6 +199,7 @@ export default function ConsultantReview() {
   );
   const empty = !draft;
   const save = async () => {
+    if (discarding) return;
     if (!identityResolved || detectionPending) {
       setError(t("review_confirm_error"));
       return;
@@ -235,6 +239,7 @@ export default function ConsultantReview() {
       } else {
         saved = await consultantsApi.create(toConsultant(draft), uploadId ? Number(uploadId) : undefined);
       }
+      dismiss();
       navigate(`/consultants/${saved.id}`);
     } catch (requestError) {
       setError(
@@ -448,6 +453,24 @@ export default function ConsultantReview() {
       </div>
     );
   };
+  const discardDraft = async () => {
+    if (!uploadId || saving || discarding || !window.confirm(t("cv_delete_confirm"))) return;
+    setDiscarding(true);
+    setError("");
+    try {
+      // Only discard this pending upload, never the consultant's approved CV.
+      const records = await cvUploadsApi.getAll();
+      const record = records.find((item) => item.id === Number(uploadId));
+      if (record && (record.isActive || record.status !== "Review")) {
+        throw new Error(t("review_current_error"));
+      }
+      if (record) await cvUploadsApi.discardDraft(record.id);
+      dismiss();
+      navigate("/cv-upload");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : t("cv_delete_failed"));
+    } finally { setDiscarding(false); }
+  };
   const steps = [
     t("consultant_basic_info"),
     t("consultant_skills"),
@@ -468,9 +491,14 @@ export default function ConsultantReview() {
           description={t("upload_review_description")}
           backTo="/cv-upload"
           actions={
-            <Button variant="ghost" onClick={() => navigate("/cv-upload")}>
-              {t("common_cancel")}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" disabled={saving || discarding} onClick={() => navigate("/cv-upload")}>
+                {t("common_back")}
+              </Button>
+              <Button variant="secondary" disabled={saving || discarding || !uploadId} onClick={() => void discardDraft()}>
+                {t("review_discard_draft")}
+              </Button>
+            </div>
           }
         />
         {!replaceConsultantId && !identityResolved && (
@@ -1118,7 +1146,7 @@ export default function ConsultantReview() {
                 step > 0 ? setStep(step - 1) : navigate("/cv-upload")
               }
             >
-              {step > 0 ? t("common_back") : t("common_cancel")}
+              {t("common_back")}
             </Button>
             {step < 3 ? (
               <Button variant="primary" onClick={() => setStep(step + 1)}>
@@ -1127,7 +1155,7 @@ export default function ConsultantReview() {
             ) : (
               <Button
                 variant="primary"
-                disabled={saving || !identityResolved || detectionPending || (Boolean(linkedConsultantId) && !existing)}
+                disabled={saving || discarding || !identityResolved || detectionPending || (Boolean(linkedConsultantId) && !existing)}
                 onClick={() => void save()}
               >
                 {saving ? t("common_saving") : t("upload_approve_save")}

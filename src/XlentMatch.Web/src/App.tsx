@@ -1,3 +1,4 @@
+import { CvUploadProvider } from "./contexts/CvUploadContext";
 import { BrowserRouter, Navigate, Routes, Route, useSearchParams } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -26,6 +27,7 @@ function LegacyMatchingRedirect() {
 export default function App() {
   return (
     <BrowserRouter>
+      <CvUploadProvider>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
@@ -49,6 +51,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      </CvUploadProvider>
     </BrowserRouter>
   );
 }
