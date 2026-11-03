@@ -113,13 +113,6 @@ export default function CvUpload() {
   return (
     <div className="p-6 space-y-5 max-w-7xl mx-auto">
       <PageHeader title={t("cv_manager_title")} description={t("cv_manager_desc")} />
-      {uploadState.phase !== "idle" && (
-        <div role={uploadState.phase === "error" ? "alert" : "status"} aria-live="polite" className="rounded-lg border border-app-border bg-app-surface p-3 text-xs text-app-secondary">
-          <span className="font-medium">{uploadState.fileName}</span>{" · "}
-          {uploadState.phase === "uploading" ? t("cv_uploading") : uploadState.phase === "extracting" ? t("status_extracting") : uploadState.phase === "ready" ? t("cv_review") : uploadState.error?.includes("DUPLICATE_CV") ? t("cv_duplicate") : uploadState.error}
-          {uploadState.phase === "ready" && uploadState.reviewUrl && <Link className="ml-3 text-app-brand" to={uploadState.reviewUrl}>{t("cv_review")}</Link>}
-        </div>
-      )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[
           [t("cv_total"), records.filter((r) => r.status === "Indexed" && r.storageKey != null).length],
@@ -151,6 +144,19 @@ export default function CvUpload() {
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-app-primary">{replaceConsultantId && existingCvForConsultant ? t("cv_replace_for") + " " + (consultantNames[replaceConsultantId] || t("cv_consultant_number") + " " + replaceConsultantId) : replaceConsultantId ? t("cv_upload_for") + " " + (consultantNames[replaceConsultantId] || t("cv_consultant_number") + " " + replaceConsultantId) : t("cv_upload_title")}</h2>
             <p className="text-xs text-app-muted mt-1">{replaceConsultantId ? t("cv_replace_explain") : t("cv_upload_explain")}</p>
+            {uploadState.phase !== "idle" && (
+              uploadState.phase === "ready" && uploadState.reviewUrl ? (
+                <Link role="status" aria-live="polite" className="mt-3 inline-flex max-w-full items-center rounded-md bg-app-brand px-3 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90" to={uploadState.reviewUrl}>
+                  <span className="truncate">{uploadState.fileName} · {t("cv_review")}</span>
+                  <span className="ml-3 shrink-0">{t("cv_review_now")}</span>
+                </Link>
+              ) : (
+                <div role={uploadState.phase === "error" ? "alert" : "status"} aria-live="polite" className="mt-3 text-xs text-app-secondary">
+                  <span className="font-medium">{uploadState.fileName}</span>{" · "}
+                  {uploadState.phase === "uploading" ? t("cv_uploading") : uploadState.phase === "extracting" ? t("status_extracting") : uploadState.error?.includes("DUPLICATE_CV") ? t("cv_duplicate") : uploadState.error}
+                </div>
+              )
+            )}
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
             {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>{t("cv_back_consultant")}</Link>}
