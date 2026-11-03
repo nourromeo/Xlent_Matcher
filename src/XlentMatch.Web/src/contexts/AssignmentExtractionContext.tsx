@@ -92,12 +92,16 @@ export function AssignmentExtractionProvider({ children }: { children: ReactNode
   const acknowledgeDraft = (id: string) => persistDrafts(drafts.map((draft) => draft.id === id ? { ...draft, isNew: false } : draft));
   const removeDraft = (id: string) => persistDrafts(drafts.filter((draft) => draft.id !== id));
   const [toastDraftId, setToastDraftId] = useState<string | null>(null);
-  const toastDraft = drafts.find((draft) => draft.id === toastDraftId && draft.isNew) ?? drafts.find((draft) => draft.isNew) ?? null;
+  const dismissedToastDraftIds = useRef(new Set<string>());
+  const toastDraft = drafts.find((draft) => draft.id === toastDraftId && draft.isNew && !dismissedToastDraftIds.current.has(draft.id))
+    ?? drafts.find((draft) => draft.isNew && !dismissedToastDraftIds.current.has(draft.id))
+    ?? null;
   useEffect(() => {
     if (!toastDraft) { setToastDraftId(null); return; }
     if (toastDraftId !== toastDraft.id) setToastDraftId(toastDraft.id);
     const timer = window.setTimeout(() => {
-      const next = drafts.find((draft) => draft.isNew && draft.id !== toastDraft.id);
+      dismissedToastDraftIds.current.add(toastDraft.id);
+      const next = drafts.find((draft) => draft.isNew && draft.id !== toastDraft.id && !dismissedToastDraftIds.current.has(draft.id));
       setToastDraftId(next?.id ?? null);
     }, 5000);
     return () => window.clearTimeout(timer);
