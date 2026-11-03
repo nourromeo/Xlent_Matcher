@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useCvUpload } from "../contexts/CvUploadContext";
 import { consultantsApi } from "../services/consultantsApi";
@@ -12,6 +12,7 @@ const formatSize = (bytes: number) => bytes >= 1048576 ? `${(bytes / 1048576).to
 
 export default function CvUpload() {
   const { t, locale } = useI18n();
+  const navigate = useNavigate();
   const localizeStatus = (value: string) => value === "All" ? t("cv_all_statuses")
     : value === "Extracting" ? t("status_extracting")
     : value === "Review" ? t("cv_review")
@@ -29,24 +30,19 @@ export default function CvUpload() {
   const pageSize = 10;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
-  const [newReviewIds, setNewReviewIds] = useState<number[]>([]);
-  const reviewVisitCutoff = useRef(0);
-  const { state: uploadState, start, dismiss } = useCvUpload();
+  const { state: uploadState, start, dismiss, acknowledgeReview, awayReviewIds } = useCvUpload();
+  const [newReviewIds, setNewReviewIds] = useState<number[]>(awayReviewIds);
   const busy = uploadState.phase === "uploading" || uploadState.phase === "extracting";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  useEffect(() => { setNewReviewIds(awayReviewIds); }, [awayReviewIds]);
+
   useEffect(() => {
-    const key = "xlent-cv-review-last-visit";
-    const now = Date.now();
-    try {
-      const stored = localStorage.getItem(key);
-      reviewVisitCutoff.current = stored ? Number(stored) : now;
-      localStorage.setItem(key, String(now));
-    } catch {
-      reviewVisitCutoff.current = 0;
+    if (uploadState.phase === "ready" && uploadState.reviewUrl && !uploadState.completedWhileAway) {
+      navigate(uploadState.reviewUrl);
     }
-  }, []);
+  }, [uploadState.phase, uploadState.reviewUrl, uploadState.completedWhileAway, navigate]);
 
   useEffect(() => {
     consultantsApi.getAll().then((items) => setConsultantNames(Object.fromEntries(items.map((item) => [item.id, item.firstName + " " + item.lastName])))).catch(() => {});
@@ -55,10 +51,7 @@ export default function CvUpload() {
   const refresh = async () => {
     const data = await cvUploadsApi.getAll();
     setRecords(data);
-    const newIds = data
-      .filter((item) => item.status === "Review" && new Date(item.uploadedAt).getTime() > reviewVisitCutoff.current)
-      .map((item) => item.id);
-    setNewReviewIds((current) => Array.from(new Set([...current, ...newIds])));
+    setNewReviewIds((current) => current.filter((id) => data.some((item) => item.id === id && item.status === "Review")));
     setExistingCvForConsultant(Boolean(replaceConsultantId && data.some((item) => item.consultantId === replaceConsultantId && item.isActive && item.status === "Indexed")));
   };
   useEffect(() => {
@@ -134,18 +127,11 @@ export default function CvUpload() {
       <section className="rounded-xl border border-app-border bg-app-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
-            {uploadState.phase !== "idle" && (
-              uploadState.phase === "ready" && uploadState.reviewUrl ? (
-                <div role="status" aria-live="polite" className="mt-3 flex max-w-full items-center gap-2 text-xs text-app-secondary">
-                  <span className="truncate">{uploadState.fileName}</span>
-                  <Link className="shrink-0 text-app-brand hover:underline" to={uploadState.reviewUrl}>{t("cv_review_now")}</Link>
-                </div>
-              ) : (
+            {uploadState.phase !== "idle" && uploadState.phase !== "ready" && (
                 <div role={uploadState.phase === "error" ? "alert" : "status"} aria-live="polite" className="mt-3 text-xs text-app-secondary">
                   <span className="font-medium">{uploadState.fileName}</span>{" · "}
                   {uploadState.phase === "uploading" ? t("cv_uploading") : uploadState.phase === "extracting" ? t("status_extracting") : uploadState.error?.includes("DUPLICATE_CV") ? t("cv_duplicate") : uploadState.error}
                 </div>
-              )
             )}
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
@@ -161,7 +147,7 @@ export default function CvUpload() {
         <div className="flex flex-wrap gap-2 items-center justify-between px-4 py-3 border-b border-app-border">
           <div className="flex flex-wrap gap-1">
             <button className={tabClass("library")} onClick={() => { setTab("library"); setPage(1); }}>{t("cv_library")}</button>
-            <button className={tabClass("review")} onClick={() => { setTab("review"); setPage(1); }}>{t("cv_review_queue")} ({records.filter((r) => r.status === "Review").length})</button>
+            <button className={tabClass("review")} onClick={() => { setTab("review"); setPage(1); }}>{t("cv_review_queue")} ({records.filter((r) => r.status === "Review").length}) {newReviewIds.some((id) => records.some((r) => r.id === id && r.status === "Review")) && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{t("cv_new")}</span>}</button>
           </div>
           <div className="flex gap-2">
             <input aria-label={t("cv_search_label")} className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" placeholder={t("cv_search")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
@@ -184,7 +170,7 @@ export default function CvUpload() {
                   <td className="px-4 py-3"><div className="flex flex-wrap items-center gap-2">{r.isActive ? t("cv_active_status") : localizeStatus(r.status)}{tab === "review" && newReviewIds.includes(r.id) && <span className="rounded-full bg-app-brand-subtle px-2 py-0.5 text-[10px] font-semibold text-app-brand">{t("cv_new")}</span>}</div></td>
                   <td className="px-4 py-3"><div className="flex justify-end flex-wrap gap-3">
                     {tab === "library" && r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">{t("cv_view")}</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">{t("cv_download")}</a></>}
-                    {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`} onClick={() => setNewReviewIds((current) => current.filter((id) => id !== r.id))}>{t("cv_review_now")}</Link>}
+                    {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`} onClick={() => { setNewReviewIds((current) => current.filter((id) => id !== r.id)); acknowledgeReview(r.id); }}>{t("cv_review_now")}</Link>}
                     {tab === "library" && r.consultantId && <Link className="text-app-brand" to={`/cv-upload?replaceConsultantId=${r.consultantId}`}>{t("cv_replace")}</Link>}
                     <button type="button" className="text-app-muted hover:text-red-500" onClick={() => void remove(r)}>{t("cv_delete")}</button>
                   </div></td>

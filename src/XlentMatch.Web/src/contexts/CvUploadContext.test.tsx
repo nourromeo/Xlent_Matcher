@@ -49,7 +49,6 @@ describe("CV upload navigation", () => {
     expect(screen.getByRole("status").textContent).toContain("status_extracting");
     expect(screen.getByRole("status").textContent).toContain("profile.txt");
     await act(async () => finish({ firstName: "Test" } as never));
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("cv_review"));
     expect(screen.getByTestId("location").textContent).toBe("/cv-upload");
     expect(cvUploadsApi.create).toHaveBeenCalledOnce();
   });
@@ -65,17 +64,17 @@ describe("CV upload navigation", () => {
     fireEvent.click(screen.getByText("Leave"));
     await act(async () => finish({ firstName: "Test" } as never));
     expect(screen.getByTestId("location").textContent).toBe("/other");
+    expect(screen.getByRole("status").textContent).toContain("cv_review_now");
     fireEvent.click(screen.getByText("Return"));
-    expect(screen.getByRole("status").textContent).toContain("cv_review");
+    expect(screen.getByTestId("location").textContent).toBe("/cv-upload");
   });
 
-  it("stays on the upload page and exposes the review link when ready", async () => {
+  it("opens review automatically when the user stays on the upload page", async () => {
     vi.mocked(aiApi.extractConsultantFromFile).mockResolvedValue({ firstName: "Test" } as never);
     const view = setup();
     fireEvent.change(view.container.querySelector('input[type="file"]')!, {
       target: { files: [new File(["CV"], "profile.txt", { type: "text/plain" })] },
     });
-    await waitFor(() => expect(screen.getByTestId("location").textContent).toBe("/cv-upload"));
-    expect(screen.getByRole("status").textContent).toContain("cv_review_now");
+    await waitFor(() => expect(screen.getByTestId("location").textContent).toBe("/cv-upload/review"));
   });
 });
