@@ -23,7 +23,9 @@ type DataTableProps<T> = {
   rowAriaLabel?: (row: T) => string;
   pagination?: boolean;
   pageSizeOptions?: number[];
-  paginationLabel?: string;\n  fixedPageSize?: number;\n  numberedPagination?: boolean;
+  paginationLabel?: string;
+  fixedPageSize?: number;
+  numberedPagination?: boolean;
 };
 
 function normalizeSortValue(value: SortValue) {
