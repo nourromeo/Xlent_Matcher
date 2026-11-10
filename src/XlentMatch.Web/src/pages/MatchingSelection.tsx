@@ -152,7 +152,6 @@ export default function MatchingSelection() {
                   sortValue: (item) => new Date(item.updatedAt || item.createdAt),
                   render: (item) => formatDate(item.updatedAt || item.createdAt, locale),
                 },
-                },
                 { key: "navigation", width: "4%", header: "", render: () => <ChevronRight size={15} className="text-app-faint" aria-hidden="true" /> },
               ]}
               rows={filtered}
