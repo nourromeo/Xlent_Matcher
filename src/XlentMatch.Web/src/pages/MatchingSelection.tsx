@@ -90,7 +90,7 @@ export default function MatchingSelection() {
         <div className="mx-auto max-w-7xl space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <label className="min-w-[240px] flex-1 space-y-1">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-app-muted">{t("matching_search_label")}</span>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-app-muted">{t("matching_search_assignments_label")}</span>
               <input
                 type="search"
                 value={query}
