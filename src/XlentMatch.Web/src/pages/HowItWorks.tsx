@@ -88,7 +88,7 @@ export default function HowItWorks() {
             </div>
           </div>
         </section>
-        <DetailSection number="05" icon={CheckCircle} title={t("how_simple_review")} body={t("how_detail_review_body")} technical={t("how_detail_review_technical")} list={[t("how_detail_score_label"), t("how_detail_matched"), t("how_detail_missing"), t("how_detail_relevant"), t("how_detail_strengths")]} flow={[t("how_flow_match_score"), t("how_flow_ranking"), t("how_flow_explanation"), t("how_flow_user_review")]} />
+        <DetailSection number="05" icon={CheckCircle} title={t("how_simple_review")} body={t("how_detail_review_body")} technical={t("how_detail_review_technical")} list={[t("how_detail_score_label"), t("how_detail_matched"), t("how_detail_missing"), t("how_detail_relevant"), t("how_flow_explanation")]} flow={[t("how_flow_match_score"), t("how_flow_ranking"), t("how_flow_explanation"), t("how_flow_user_review")]} />
       </div>
       <section className="grid gap-4 border-t border-app-border pt-6 lg:grid-cols-[180px_minmax(0,1fr)]">
         <div className="flex items-start gap-3"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-app-brand-subtle text-app-brand"><FileText size={15} /></div><h3 className="text-sm font-semibold text-app-primary">{t("how_extra_title")}</h3></div>
