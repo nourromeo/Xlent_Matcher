@@ -23,7 +23,7 @@ type DataTableProps<T> = {
   rowAriaLabel?: (row: T) => string;
   pagination?: boolean;
   pageSizeOptions?: number[];
-  paginationLabel?: string;
+  paginationLabel?: string;\n  fixedPageSize?: number;\n  numberedPagination?: boolean;
 };
 
 function normalizeSortValue(value: SortValue) {
@@ -33,11 +33,11 @@ function normalizeSortValue(value: SortValue) {
   return value ?? "";
 }
 
-export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort, onRowClick, rowAriaLabel, pagination = false, pageSizeOptions = [25, 50, 100], paginationLabel }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort, onRowClick, rowAriaLabel, pagination = false, pageSizeOptions = [25, 50, 100], paginationLabel, fixedPageSize, numberedPagination = false }: DataTableProps<T>) {
   const { t } = useI18n();
   const resolvedEmptyMessage = emptyMessage ?? t("common_no_data");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(pageSizeOptions[0] ?? 25);
+  const [pageSize, setPageSize] = useState(fixedPageSize ?? pageSizeOptions[0] ?? 25);
   const [sort, setSort] = useState<{ key: string; direction: "asc" | "desc" } | null>(
     defaultSort ? { key: defaultSort.key, direction: defaultSort.direction ?? "asc" } : null,
   );
@@ -185,7 +185,7 @@ export function DataTable<T>({ columns, rows, rowKey, emptyMessage, defaultSort,
             <button type="button" aria-label={t("common_previous")} disabled={currentPage === 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary disabled:cursor-not-allowed disabled:opacity-35">
               <ChevronLeft size={13} />
             </button>
-            <span className="min-w-[68px] text-center">{t("common_page")} {currentPage} {t("common_of")} {pageCount}</span>
+            {numberedPagination ? <div className="flex items-center gap-1" aria-label={t("common_page")}>{Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => <button key={pageNumber} type="button" aria-current={currentPage === pageNumber ? "page" : undefined} onClick={() => setPage(pageNumber)} className={`min-w-6 rounded px-1.5 py-1 ${currentPage === pageNumber ? "bg-app-brand text-app-on-brand" : "text-app-muted hover:bg-app-raised hover:text-app-primary"}`}>{pageNumber}</button>)}</div> : <span className="min-w-[68px] text-center">{t("common_page")} {currentPage} {t("common_of")} {pageCount}</span>}
             <button type="button" aria-label={t("common_next")} disabled={currentPage === pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))} className="rounded p-1 text-app-muted hover:bg-app-raised hover:text-app-primary disabled:cursor-not-allowed disabled:opacity-35">
               <ChevronRight size={13} />
             </button>
