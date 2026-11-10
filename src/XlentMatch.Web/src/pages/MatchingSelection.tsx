@@ -130,7 +130,7 @@ export default function MatchingSelection() {
               columns={[
                 {
                   key: "assignment",
-                  width: "42%",
+                  width: "48%",
                   header: t("assignment_title"),
                   sortable: true,
                   sortValue: (item) => item.title,
@@ -138,7 +138,7 @@ export default function MatchingSelection() {
                 },
                 {
                   key: "client",
-                  width: "25%",
+                  width: "30%",
                   header: t("assignment_client"),
                   sortable: true,
                   sortValue: (item) => item.customerName,
@@ -146,22 +146,12 @@ export default function MatchingSelection() {
                 },
                 {
                   key: "updated",
-                  width: "19%",
+                  width: "18%",
                   header: t("common_updated"),
                   sortable: true,
                   sortValue: (item) => new Date(item.updatedAt || item.createdAt),
                   render: (item) => formatDate(item.updatedAt || item.createdAt, locale),
                 },
-                {
-                  key: "status",
-                  width: "10%",
-                  header: t("cv_status_column"),
-                  sortable: true,
-                  sortValue: (item) => item.status,
-                  render: (item) => {
-                    const status = statusConfig(item.status);
-                    return <StatusBadge tone={status.tone}>{status.label}</StatusBadge>;
-                  },
                 },
                 { key: "navigation", width: "4%", header: "", render: () => <ChevronRight size={15} className="text-app-faint" aria-hidden="true" /> },
               ]}
