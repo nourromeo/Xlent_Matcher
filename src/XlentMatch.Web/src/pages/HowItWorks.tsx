@@ -71,17 +71,10 @@ export default function HowItWorks() {
         <DetailSection number="02" icon={Briefcase} title={t("how_simple_assignment")} body={t("how_detail_assignment_body")} technical={t("how_detail_assignment_technical")} flow={[t("how_flow_assignment"), t("how_flow_requirements"), t("how_flow_normalization"), t("how_flow_catalog"), t("how_flow_structured_requirements")]} />
         <DetailSection number="03" icon={GitMerge} title={t("how_simple_matching")} body={t("how_detail_matching_body")} technical={t("how_detail_matching_technical")} list={[t("how_detail_matched"), t("how_detail_missing"), t("how_detail_relevant")]} flow={[t("how_flow_assignment_requirements"), t("how_flow_consultant_profile"), t("how_flow_matching_service"), t("how_flow_matching_result")]} />
         <DetailSection number="04" icon={ListChecks} title={t("how_simple_score")} body={t("how_detail_score_body")} technical={t("how_detail_score_technical")} callout={t("how_detail_score_callout")} flow={[t("how_flow_matching_result"), t("how_flow_rules"), t("how_flow_match_score")]} formula={<div className="rounded-lg border border-app-border bg-app-raised px-3 py-2.5"><p className="text-[10px] font-medium uppercase tracking-wider text-app-faint">{t("how_score_formula_title")}</p><p className="mt-2 border-b border-app-border pb-2.5 font-mono text-[13px] font-semibold leading-5 text-app-primary">{t("how_score_formula")}</p><div className="pt-2"><p className="text-[10px] leading-4 text-app-muted">{t("how_score_formula_weights")}</p><p className="mt-1 text-[10px] leading-4 text-app-muted">{t("how_score_formula_rules")}</p></div></div>} />
-        <DetailSection number="04A · OPTIONAL" icon={GitMerge} title={t("how_ai_title")} body={t("how_ai_body")} technical={t("how_ai_technical")} callout={t("how_ai_note")} flow={[t("how_flow_match_score"), t("how_ai_flow_cv"), t("how_ai_flow_compare"), t("how_ai_flow_result")]} />
+        <DetailSection number={`04A · ${t("how_optional").toUpperCase()}`} icon={GitMerge} title={t("how_ai_title")} body={t("how_ai_body")} technical={t("how_ai_technical")} callout={t("how_ai_note")} flow={[t("how_flow_match_score"), t("how_ai_flow_cv"), t("how_ai_flow_compare"), t("how_ai_flow_result")]} />
         <DetailSection number="05" icon={CheckCircle} title={t("how_simple_review")} body={t("how_detail_review_body")} technical={t("how_detail_review_technical")} list={[t("how_detail_score_label"), t("how_detail_matched"), t("how_detail_missing"), t("how_detail_relevant"), t("how_flow_explanation")]} flow={[t("how_flow_match_score"), t("how_flow_ranking"), t("how_flow_explanation"), t("how_flow_user_review")]} />
       </div>
-      <section className="grid gap-4 border-t border-app-border pt-6 lg:grid-cols-[180px_minmax(0,1fr)]">
-        <div className="flex items-start gap-3"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-app-brand-subtle text-app-brand"><FileText size={15} /></div><h3 className="text-sm font-semibold text-app-primary">{t("how_extra_title")}</h3></div>
-        <div className="space-y-3">
-          <p className="text-xs leading-5 text-app-secondary">{t("how_extra_cv")}</p>
-          <p className="text-xs leading-5 text-app-secondary">{t("how_extra_limits")}</p>
-          <p className="text-xs leading-5 text-app-secondary">{t("how_extra_freshness")}</p>
-        </div>
-      </section>
+      <DetailSection number={`06 · ${t("how_optional").toUpperCase()}`} icon={FileText} title={t("how_extra_title")} body={t("how_extra_cv")} technical={t("how_extra_limits")} callout={t("how_extra_freshness")} flow={[t("how_flow_cv"), t("how_flow_assignment"), t("adaptation_generate")]} />
       <section className="flex items-start gap-3 rounded-lg border border-app-border bg-app-raised px-4 py-3"><FileText size={15} className="mt-0.5 shrink-0 text-app-brand" /><p className="text-xs leading-5 text-app-secondary">{t("how_detail_decision")}</p></section>
     </div>
   </div>;
