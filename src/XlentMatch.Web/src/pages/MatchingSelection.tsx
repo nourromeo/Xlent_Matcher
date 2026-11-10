@@ -130,7 +130,7 @@ export default function MatchingSelection() {
               columns={[
                 {
                   key: "assignment",
-                  width: "30%",
+                  width: "42%",
                   header: t("assignment_title"),
                   sortable: true,
                   sortValue: (item) => item.title,
@@ -138,31 +138,15 @@ export default function MatchingSelection() {
                 },
                 {
                   key: "client",
-                  width: "20%",
+                  width: "25%",
                   header: t("assignment_client"),
                   sortable: true,
                   sortValue: (item) => item.customerName,
                   render: (item) => <span className="truncate">{item.customerName || "—"}</span>,
                 },
                 {
-                  key: "seniority",
-                  width: "13%",
-                  header: t("assignment_seniority"),
-                  sortable: true,
-                  sortValue: (item) => item.seniority ?? "",
-                  render: (item) => item.seniority ? displaySeniority(item.seniority) : "—",
-                },
-                {
-                  key: "requirements",
-                  width: "13%",
-                  header: t("client_requirements"),
-                  sortable: true,
-                  sortValue: (item) => item.requirements.length,
-                  render: (item) => <span className="font-mono">{item.requirements.length}</span>,
-                },
-                {
                   key: "updated",
-                  width: "16%",
+                  width: "19%",
                   header: t("common_updated"),
                   sortable: true,
                   sortValue: (item) => new Date(item.updatedAt || item.createdAt),
@@ -170,7 +154,7 @@ export default function MatchingSelection() {
                 },
                 {
                   key: "status",
-                  width: "8%",
+                  width: "10%",
                   header: t("cv_status_column"),
                   sortable: true,
                   sortValue: (item) => item.status,
