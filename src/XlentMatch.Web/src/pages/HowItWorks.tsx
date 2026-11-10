@@ -14,7 +14,7 @@ function DetailSection({ number, icon: Icon, title, body, technical, flow, examp
     <div className="flex items-start gap-3"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-app-brand-subtle text-app-brand"><Icon size={15} /></div><div><span className="font-mono text-[10px] text-app-faint">{number}</span><h3 className="mt-1 text-sm font-semibold text-app-primary">{title}</h3></div></div>
     <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(240px,0.85fr)]">
       <div className="space-y-3"><p className="text-xs leading-5 text-app-secondary">{body}</p><div><p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-app-faint">{t("how_detail_technical")}</p><p className="text-xs leading-5 text-app-muted">{technical}</p></div>{list && <ul className="space-y-1 text-xs text-app-secondary">{list.map(item => <li key={item} className="flex gap-2"><span className="text-app-brand">•</span>{item}</li>)}</ul>}{example && <div className="rounded-lg border border-app-border bg-app-raised px-3 py-2.5"><p className="text-[10px] font-medium uppercase tracking-wider text-app-faint">{t("how_detail_example")}</p><p className="mt-1 font-mono text-[11px] text-app-brand">{example}</p></div>}{callout && <div className="rounded-lg border border-app-brand/30 bg-app-brand-subtle/30 px-3 py-2.5 text-xs leading-5 text-app-secondary">{callout}</div>}{formula}</div>
-      <div className="self-start rounded-lg border border-app-border bg-app-surface p-3"><p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-app-faint">{t("how_detail_flow")}</p><DetailFlow items={flow} /></div>
+      <div className="h-full rounded-lg border border-app-border bg-app-surface p-3"><p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-app-faint">{t("how_detail_flow")}</p><DetailFlow items={flow} /></div>
     </div>
   </section>;
 }
@@ -71,23 +71,7 @@ export default function HowItWorks() {
         <DetailSection number="02" icon={Briefcase} title={t("how_simple_assignment")} body={t("how_detail_assignment_body")} technical={t("how_detail_assignment_technical")} flow={[t("how_flow_assignment"), t("how_flow_requirements"), t("how_flow_normalization"), t("how_flow_catalog"), t("how_flow_structured_requirements")]} />
         <DetailSection number="03" icon={GitMerge} title={t("how_simple_matching")} body={t("how_detail_matching_body")} technical={t("how_detail_matching_technical")} list={[t("how_detail_matched"), t("how_detail_missing"), t("how_detail_relevant")]} flow={[t("how_flow_assignment_requirements"), t("how_flow_consultant_profile"), t("how_flow_matching_service"), t("how_flow_matching_result")]} />
         <DetailSection number="04" icon={ListChecks} title={t("how_simple_score")} body={t("how_detail_score_body")} technical={t("how_detail_score_technical")} callout={t("how_detail_score_callout")} flow={[t("how_flow_matching_result"), t("how_flow_rules"), t("how_flow_match_score")]} formula={<div className="rounded-lg border border-app-border bg-app-raised px-3 py-2.5"><p className="text-[10px] font-medium uppercase tracking-wider text-app-faint">{t("how_score_formula_title")}</p><p className="mt-2 border-b border-app-border pb-2.5 font-mono text-[13px] font-semibold leading-5 text-app-primary">{t("how_score_formula")}</p><div className="pt-2"><p className="text-[10px] leading-4 text-app-muted">{t("how_score_formula_weights")}</p><p className="mt-1 text-[10px] leading-4 text-app-muted">{t("how_score_formula_rules")}</p></div></div>} />
-        <section className="grid gap-4 border-t border-app-border pt-6 lg:grid-cols-[180px_minmax(0,1fr)]">
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-app-brand-subtle text-app-brand"><GitMerge size={15} /></div>
-            <div><span className="font-mono text-[10px] text-app-faint">04A · OPTIONAL</span><h3 className="mt-1 text-sm font-semibold text-app-primary">{t("how_ai_title")}</h3></div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(240px,0.85fr)]">
-            <div className="space-y-3">
-              <p className="text-xs leading-5 text-app-secondary">{t("how_ai_body")}</p>
-              <div><p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-app-faint">{t("how_detail_technical")}</p><p className="text-xs leading-5 text-app-muted">{t("how_ai_technical")}</p></div>
-              <div className="rounded-lg border border-app-brand/30 bg-app-brand-subtle/30 px-3 py-2.5 text-xs leading-5 text-app-secondary">{t("how_ai_note")}</div>
-            </div>
-            <div className="self-start rounded-lg border border-app-border bg-app-surface p-3">
-              <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-app-faint">{t("how_detail_flow")}</p>
-              <DetailFlow items={[t("how_flow_match_score"), t("how_ai_flow_cv"), t("how_ai_flow_compare"), t("how_ai_flow_result")]} />
-            </div>
-          </div>
-        </section>
+        <DetailSection number="04A · OPTIONAL" icon={GitMerge} title={t("how_ai_title")} body={t("how_ai_body")} technical={t("how_ai_technical")} callout={t("how_ai_note")} flow={[t("how_flow_match_score"), t("how_ai_flow_cv"), t("how_ai_flow_compare"), t("how_ai_flow_result")]} />
         <DetailSection number="05" icon={CheckCircle} title={t("how_simple_review")} body={t("how_detail_review_body")} technical={t("how_detail_review_technical")} list={[t("how_detail_score_label"), t("how_detail_matched"), t("how_detail_missing"), t("how_detail_relevant"), t("how_flow_explanation")]} flow={[t("how_flow_match_score"), t("how_flow_ranking"), t("how_flow_explanation"), t("how_flow_user_review")]} />
       </div>
       <section className="grid gap-4 border-t border-app-border pt-6 lg:grid-cols-[180px_minmax(0,1fr)]">
