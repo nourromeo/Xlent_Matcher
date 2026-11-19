@@ -71,27 +71,28 @@ Förväntat: duplicate canonical names och aliases ska stoppas av backend.
 
 ## 6. Matching Weights
 
-Standard:
+Standardvikt per krav:
 
-- Mandatory = 60
-- Desired = 25
-- Experience = 15
-- Missing mandatory penalty = 10
+- Mandatory = 2
+- Desired = 1
+
+Match Score = avrundat (matchad vikt / total vikt × 100). Saknade krav bidrar med 0 i täljaren; inget separat avdrag används. Ett minimikrav på total erfarenhet räknas som ett extra Mandatory-krav. Vikterna måste vara positiva heltal, men behöver inte summera till 100.
 
 Test:
 
 - [ ] Öppna Admin -> Matching Weights.
-- [ ] Ändra vikterna men behåll totalen 100.
+- [ ] Kontrollera standardvikterna Mandatory = 2 och Desired = 1 (om inga sparade egna vikter finns).
+- [ ] Ändra vikterna till andra positiva heltal, till exempel Mandatory = 3 och Desired = 1.
 - [ ] Klicka Save.
-- [ ] Kör om Matching för ett uppdrag.
+- [ ] Kör om Matching för ett uppdrag med både Mandatory och Desired requirements och en konsult som bara matchar vissa krav.
 - [ ] Kontrollera att Matching-sidan visar de nya vikterna.
-- [ ] Kontrollera att Match Score kan förändras när vikterna förändras.
+- [ ] Kontrollera att Match Score beräknas från matchad vikt / total vikt × 100, avrundat till heltal.
 - [ ] Starta om API:t.
 - [ ] Öppna Admin igen och kontrollera att vikterna finns kvar.
 - [ ] Klicka Reset och kontrollera att standardvärdena återställs.
-- [ ] Försök skapa en kombination som inte blir 100.
+- [ ] Försök spara 0 eller ett negativt värde för någon av vikterna.
 
-Förväntat: Save ska vara blockerad när de tre positiva vikterna inte summerar till 100.
+Förväntat: Ogiltiga vikter (0 eller negativa värden) ska avvisas. Positiva heltal behöver inte summera till 100.
 
 ## 7. CV Adaptation
 
