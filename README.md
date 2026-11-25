@@ -95,6 +95,16 @@ dotnet ef database update --project src/XlentMatch.Api
 
 Icke-Development kräver `ConnectionStrings:DefaultConnection` från miljökonfiguration eller secret storage. LocalDB finns endast i `appsettings.Development.json`.
 
+### Initiera Skill Catalog och AI Prompts
+
+Efter att databasens migrations har applicerats, kör följande kommando **en gång per ny databas** (eller när grunddata behöver återställas) från projektets rot:
+
+```powershell
+dotnet run --project src/XlentMatch.Api -- --initialize-data
+```
+
+Kommandot använder samma `ConnectionStrings:DefaultConnection` och miljöinställningar som API:t. I Azure/Production måste rätt Azure SQL-anslutning finnas i körmiljön där kommandot körs. Det lägger till grunddata som saknas, men startar inte webbservern. I normal Production-start kör API:t **inte** `EnsureCatalogAsync()` eller `PromptSeedData.InitializeAsync()` automatiskt. Lokal Development behåller automatiska EF Core migrations vid start, men lägger inte till dessa grunddata utan kommandot.
+
 ## Starta frontend
 
 Öppna en ny terminal:
