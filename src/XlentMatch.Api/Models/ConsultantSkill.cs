@@ -25,7 +25,7 @@ public class ConsultantSkill
         set => _inputCategory = value;
     }
 
-    public int Years { get; set; }
+    public int? Years { get; set; }
     public int Level { get; set; }
     public string? Evidence { get; set; }
 }

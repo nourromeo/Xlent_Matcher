@@ -64,6 +64,7 @@ export default function Consultants() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
+  const [cvEligible, setCvEligible] = useState<Set<number> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
@@ -78,6 +79,8 @@ export default function Consultants() {
 
   useEffect(() => {
     let cancelled = false;
+
+    consultantsApi.getCvEligibility().then(data => { if (!cancelled) setCvEligible(new Set(data.eligibleConsultantIds)); }).catch(() => { if (!cancelled) setCvEligible(null); });
 
     consultantsApi
       .getAll()
@@ -140,7 +143,7 @@ export default function Consultants() {
 
     return (
       consultantName(consultant).toLowerCase().includes(search) ||
-      (consultant.title ?? "").toLowerCase().includes(search) ||
+      
       (consultant.summary ?? "").toLowerCase().includes(search) ||
       consultant.skills.some((skill) => skill.name.toLowerCase().includes(search))
     );
@@ -188,8 +191,7 @@ export default function Consultants() {
         <select
           value={avail}
           onChange={(event) => setAvail(event.target.value)}
-          className="text-[11px] rounded px-2 py-1 focus:outline-none"
-          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+          className="text-[11px] rounded px-2 py-1 focus:outline-none bg-app-surface border border-app-border text-app-secondary"
         >
           {AVAIL_OPTIONS.map((option) => (
             <option key={option} value={option}>
@@ -210,7 +212,7 @@ export default function Consultants() {
           columns={[
             {
               key: "consultant",
-              width: "25%",
+              width: "24%",
               header: t("col_consultant"),
               sortable: true,
               sortValue: (consultant) => consultantName(consultant),
@@ -221,9 +223,6 @@ export default function Consultants() {
                   </div>
                   <div>
                     <p className="font-medium text-app-primary">{consultantName(consultant)}</p>
-                    <p className="text-[10px] text-app-muted max-w-xs truncate">
-                      {consultant.title || consultant.summary || "—"}
-                    </p>
                   </div>
                 </div>
               ),
@@ -246,7 +245,7 @@ export default function Consultants() {
             },
             {
               key: "skills",
-              width: "28%",
+              width: "21%",
               header: t("col_skills"),
               render: (consultant) => (
                 <div className="flex max-h-7 flex-wrap gap-1 overflow-hidden">
@@ -256,8 +255,14 @@ export default function Consultants() {
               ),
             },
             {
+              key: "cv",
+              width: "9%",
+              header: "CV",
+              render: (consultant) => cvEligible === null ? <span className="text-app-muted">—</span> : <span className={`whitespace-nowrap text-[11px] ${cvEligible.has(consultant.id) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(consultant.id) ? "✓ " + t("consultant_cv_present") : "– " + t("consultant_cv_missing")}</span>,
+            },
+            {
               key: "availability",
-              width: "21%",
+              width: "22%",
               header: t("col_avail"),
               sortable: true,
               sortValue: (consultant) => availabilityRank[consultant.availability] ?? 99,

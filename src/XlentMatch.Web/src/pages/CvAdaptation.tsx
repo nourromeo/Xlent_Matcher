@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader, Sparkles } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
@@ -16,6 +16,7 @@ import {
 } from "../services/aiApi";
 import type { AssignmentApi, Consultant } from "../types";
 import { useI18n } from "../i18n";
+import { useCvAdaptation } from "../contexts/CvAdaptationContext";
 
 type SourceMode = "existing" | "upload" | "paste";
 
@@ -51,29 +52,80 @@ function SourceTabs({
 
 export default function CvAdaptation() {
   const { t, locale } = useI18n();
+  const adaptation = useCvAdaptation();
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [analysing, setAnalysing] = useState(false);
   const [error, setError] = useState("");
 
-  const [consultantMode, setConsultantMode] = useState<SourceMode>("existing");
-  const [assignmentMode, setAssignmentMode] = useState<SourceMode>("existing");
-
-  const [consultantId, setConsultantId] = useState("");
+  type SavedSession = {
+    result: CvAdaptationSuggestion;
+    consultant: Pick<ConsultantDraft, "firstName" | "lastName" | "seniority">;
+    assignment: Pick<TemporaryAssignmentDraft, "title" | "customerName">;
+    consultantId: string;
+    assignmentId: string;
+    consultantMode: SourceMode;
+    assignmentMode: SourceMode;
+  };
+  const storageKey = "xlent-cv-adaptation-session-v2";
+  const [savedSession] = useState<SavedSession | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(storageKey);
+      if (!raw) return null;
+      const value = JSON.parse(raw) as SavedSession;
+      return value?.result && value?.consultant && value?.assignment ? value : null;
+    } catch { return null; }
+  });
+  const [consultantMode, setConsultantMode] = useState<SourceMode>(savedSession?.consultantMode ?? "existing");
+  const [assignmentMode, setAssignmentMode] = useState<SourceMode>(savedSession?.assignmentMode ?? "existing");
+  const [consultantId, setConsultantId] = useState(savedSession?.consultantId ?? "");
   const [consultantFile, setConsultantFile] = useState<File | null>(null);
   const [consultantText, setConsultantText] = useState("");
-
-  const [assignmentId, setAssignmentId] = useState("");
+  const [assignmentId, setAssignmentId] = useState(savedSession?.assignmentId ?? "");
   const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
   const [assignmentText, setAssignmentText] = useState("");
+  const [result, setResult] = useState<CvAdaptationSuggestion | null>(savedSession?.result ?? null);
+  const [usedConsultant, setUsedConsultant] = useState<ConsultantDraft | null>(savedSession?.consultant as ConsultantDraft ?? null);
+  const [usedAssignment, setUsedAssignment] = useState<TemporaryAssignmentDraft | null>(savedSession?.assignment as TemporaryAssignmentDraft ?? null);
+  const [preparing, setPreparing] = useState(false);
+  const requestId = useRef(0);
+  const busy = useRef(false);
 
-  const [result, setResult] = useState<CvAdaptationSuggestion | null>(null);
-  const [usedConsultant, setUsedConsultant] = useState<ConsultantDraft | null>(
-    null,
-  );
-  const [usedAssignment, setUsedAssignment] =
-    useState<TemporaryAssignmentDraft | null>(null);
+  useEffect(() => {
+    try {
+      // One atomic snapshot: only the report and display identifiers, never original CV text/files.
+      if (result && usedConsultant && usedAssignment) {
+        const snapshot: SavedSession = {
+          result,
+          consultant: { firstName: usedConsultant.firstName, lastName: usedConsultant.lastName, seniority: usedConsultant.seniority },
+          assignment: { title: usedAssignment.title, customerName: usedAssignment.customerName },
+          consultantId: consultantMode === "existing" ? consultantId : "",
+          assignmentId: assignmentMode === "existing" ? assignmentId : "",
+          consultantMode,
+          assignmentMode,
+        };
+        sessionStorage.setItem(storageKey, JSON.stringify(snapshot));
+      } else {
+        sessionStorage.removeItem(storageKey);
+      }
+      // Remove legacy keys so old selections cannot resurrect after a reset.
+      sessionStorage.removeItem("xlent-cv-adaptation-report");
+      sessionStorage.removeItem("xlent-adaptation-consultant-id");
+      sessionStorage.removeItem("xlent-adaptation-assignment-id");
+    } catch { /* Storage can be unavailable; in-memory reporting still works. */ }
+  }, [result, usedConsultant, usedAssignment, consultantId, assignmentId, consultantMode, assignmentMode]);
+
+  useEffect(() => {
+    setPreparing(adaptation.phase === "preparing");
+    setAnalysing(adaptation.phase === "analysing");
+    if (adaptation.phase === "ready" && adaptation.result && adaptation.consultant && adaptation.assignment && !result) {
+      setResult(adaptation.result);
+      setUsedConsultant(adaptation.consultant);
+      setUsedAssignment(adaptation.assignment);
+    }
+    if (adaptation.phase === "error" && adaptation.error && !result) setError(adaptation.error);
+  }, [adaptation.phase, adaptation.result, adaptation.consultant, adaptation.assignment, adaptation.error, result]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +154,7 @@ export default function CvAdaptation() {
   }, []);
 
   const clearResult = () => {
+    requestId.current += 1;
     setResult(null);
     setUsedConsultant(null);
     setUsedAssignment(null);
@@ -110,6 +163,7 @@ export default function CvAdaptation() {
 
   const resetAll = () => {
     clearResult();
+    try { sessionStorage.removeItem(storageKey); } catch { /* Storage unavailable. */ }
     setConsultantMode("existing");
     setAssignmentMode("existing");
     setConsultantId("");
@@ -188,38 +242,28 @@ export default function CvAdaptation() {
         : Boolean(assignmentText.trim());
 
   const generate = async () => {
+    if (busy.current) return;
     if (!consultantReady || !assignmentReady) {
-      setError(
-        `${t("adaptation_choose_cv")} ${t("adaptation_choose_assignment")}`,
-      );
+      setError(`${t("adaptation_choose_cv")} ${t("adaptation_choose_assignment")}`);
       return;
     }
-
-    setAnalysing(true);
+    busy.current = true;
+    const token = ++requestId.current;
     setError("");
-
     try {
-      const [consultant, assignment] = await Promise.all([
-        resolveConsultant(),
-        resolveAssignment(),
-      ]);
-
-      const response = await aiApi.suggestTemporaryCvAdaptation(
-        consultant,
-        assignment,
-        locale,
-      );
-      setUsedConsultant(consultant);
-      setUsedAssignment(assignment);
-      setResult(response);
+      const completed = await adaptation.start(resolveConsultant, resolveAssignment, locale);
+      if (token !== requestId.current || !completed) return;
+      if (completed.phase === "ready" && completed.result && completed.consultant && completed.assignment) {
+        setUsedConsultant(completed.consultant);
+        setUsedAssignment(completed.assignment);
+        setResult(completed.result);
+      } else if (completed.error) setError(completed.error);
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t("adaptation_generate"),
+      if (token === requestId.current) setError(
+        requestError instanceof Error ? requestError.message : t("adapt_failed")
       );
     } finally {
-      setAnalysing(false);
+      busy.current = false;
     }
   };
 
@@ -485,14 +529,16 @@ export default function CvAdaptation() {
                   {consultants.map((consultant) => (
                     <option key={consultant.id} value={consultant.id}>
                       {consultant.fullName ||
-                        `${consultant.firstName} ${consultant.lastName}`}{" "}
-                      · {consultant.title || "Consultant"}
+                        `${consultant.firstName} ${consultant.lastName}`}
                     </option>
                   ))}
                 </select>
               </label>
             )}
 
+            {consultantMode === "upload" && (
+              <p className="text-[11px] text-app-muted">{t("adapt_upload_cv_note")}</p>
+            )}
             {consultantMode === "upload" && (
               <label className="block space-y-2 rounded-lg border border-dashed border-app-border p-5 text-center cursor-pointer">
                 <span className="block text-left text-[11px] text-app-muted">
@@ -505,7 +551,7 @@ export default function CvAdaptation() {
                 </span>
                 <input
                   type="file"
-                  accept=".pdf,.txt,application/pdf,text/plain"
+                  accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;
@@ -586,6 +632,9 @@ export default function CvAdaptation() {
             )}
 
             {assignmentMode === "upload" && (
+              <p className="text-[11px] text-app-muted">{t("adapt_upload_assignment_note")}</p>
+            )}
+            {assignmentMode === "upload" && (
               <label className="block space-y-2 rounded-lg border border-dashed border-app-border p-5 text-center cursor-pointer">
                 <span className="block text-left text-[11px] text-app-muted">
                   {t("adaptation_assignment")}
@@ -597,7 +646,7 @@ export default function CvAdaptation() {
                 </span>
                 <input
                   type="file"
-                  accept=".pdf,.txt,application/pdf,text/plain"
+                  accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;
@@ -649,7 +698,7 @@ export default function CvAdaptation() {
             <Button
               variant="primary"
               onClick={generate}
-              disabled={analysing || !consultantReady || !assignmentReady}
+              disabled={analysing || preparing || !consultantReady || !assignmentReady}
               icon={
                 analysing ? (
                   <Loader size={12} className="animate-spin" />
@@ -658,7 +707,7 @@ export default function CvAdaptation() {
                 )
               }
             >
-              {analysing ? t("adaptation_analysing") : t("adaptation_generate")}
+              {preparing ? t("adapt_preparing") : analysing ? t("adaptation_analysing") : t("adaptation_generate")}
             </Button>
           </div>
         </section>
@@ -677,22 +726,28 @@ export default function CvAdaptation() {
                   {t("adaptation_result")}
                 </p>
                 <h2 className="mt-1 text-base font-semibold text-app-primary">
-                  CV Analysis Report
+                  {t("adapt_report_title")}
                 </h2>
+                <p className="mt-2 text-xs text-app-secondary">
+                  <span className="font-semibold">{t("adaptation_consultant_cv")}:</span> {[usedConsultant?.firstName, usedConsultant?.lastName].filter(Boolean).join(" ") || "—"}
+                  <span className="mx-2 text-app-faint">·</span>
+                  <span className="font-semibold">{t("adaptation_client_assignment")}:</span> {usedAssignment?.title || "—"}
+                  {usedAssignment?.customerName ? ` · ${usedAssignment.customerName}` : ""}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={printResult}>
-                  Print report
+                  {t("adapt_print")}
                 </Button>
-                <Button variant="ghost" onClick={clearResult}>
-                  {t("adaptation_close")}
+                <Button variant="ghost" onClick={resetAll}>
+                  {t("adapt_new_analysis")}
                 </Button>
               </div>
             </div>
 
             <section className="rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
               <p className="mb-3 text-sm font-medium text-app-primary">
-                Overall assessment
+                {t("adapt_overall")}
               </p>
               <p className="max-w-5xl text-sm leading-7 text-app-secondary">
                 {result.overallAssessment}
@@ -701,10 +756,10 @@ export default function CvAdaptation() {
 
             <section className="grid lg:grid-cols-2 gap-4">
               {[
-                ["Your strengths", result.strengths],
-                ["Relevant experience to highlight", result.relevantExperience],
-                ["Missing / weak areas", result.missingOrWeakAreas],
-                ["Suggested improvements", result.suggestedImprovements],
+                [t("adapt_strengths"), result.strengths],
+                [t("adapt_experience"), result.relevantExperience],
+                [t("adapt_weak"), result.missingOrWeakAreas],
+                [t("adapt_improve"), result.suggestedImprovements],
               ].map(([title, items]) => (
                 <div
                   key={title as string}
@@ -715,7 +770,7 @@ export default function CvAdaptation() {
                   </p>
                   <div className="space-y-2">
                     {(items as string[]).length === 0 ? (
-                      <p className="text-xs text-app-faint">No items identified.</p>
+                      <p className="text-xs text-app-faint">{t("adapt_empty")}</p>
                     ) : (
                       (items as string[]).map((item, index) => (
                         <p key={index} className="text-sm leading-6 text-app-secondary">
@@ -730,11 +785,11 @@ export default function CvAdaptation() {
 
             <section className="rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
               <p className="mb-3 text-sm font-medium text-app-primary">
-                Evidence from your CV
+                {t("adapt_evidence")}
               </p>
               <div className="space-y-2">
                 {result.evidence.length === 0 ? (
-                  <p className="text-xs text-app-faint">No supporting evidence identified.</p>
+                  <p className="text-xs text-app-faint">{t("adapt_no_evidence")}</p>
                 ) : (
                   result.evidence.map((item, index) => (
                     <p key={index} className="text-sm leading-6 text-app-secondary">
@@ -757,7 +812,7 @@ export default function CvAdaptation() {
                 <span className="cv-print-brand-mark">X</span>
                 XLENT Match
               </div>
-              <div className="cv-print-document-label">CV analysis report</div>
+              <div className="cv-print-document-label">{t("adapt_report_title")}</div>
             </div>
 
             <header className="cv-print-header">
@@ -766,11 +821,7 @@ export default function CvAdaptation() {
                   .filter(Boolean)
                   .join(" ") || t("adaptation_consultant_cv")}
               </h1>
-              <div className="cv-print-title">
-                {[usedConsultant.title, usedConsultant.seniority]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </div>
+              {usedConsultant.seniority && <div className="cv-print-title">{usedConsultant.seniority}</div>}
               <div className="cv-print-target">
                 <strong>{t("adaptation_adapted_for")}</strong>{" "}
                 {usedAssignment.title || t("adaptation_client_assignment")}
@@ -781,16 +832,16 @@ export default function CvAdaptation() {
             </header>
 
             <section>
-              <h2 className="cv-print-section-title">Overall assessment</h2>
+              <h2 className="cv-print-section-title">{t("adapt_overall")}</h2>
               <p className="cv-print-paragraph">{result.overallAssessment}</p>
             </section>
 
             {[
-              ["Your strengths", result.strengths],
-              ["Relevant experience to highlight", result.relevantExperience],
-              ["Missing / weak areas", result.missingOrWeakAreas],
-              ["Suggested improvements", result.suggestedImprovements],
-              ["Evidence from your CV", result.evidence],
+              [t("adapt_strengths"), result.strengths],
+              [t("adapt_experience"), result.relevantExperience],
+              [t("adapt_weak"), result.missingOrWeakAreas],
+              [t("adapt_improve"), result.suggestedImprovements],
+              [t("adapt_evidence"), result.evidence],
             ].map(([title, items]) => (
               <section key={title as string}>
                 <h2 className="cv-print-section-title">{title as string}</h2>

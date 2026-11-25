@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Certification> Certifications => Set<Certification>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<AssignmentRequirement> AssignmentRequirements => Set<AssignmentRequirement>();
+    public DbSet<SavedAiRanking> SavedAiRankings => Set<SavedAiRanking>();
     public DbSet<MatchResult> MatchResults => Set<MatchResult>();
     public DbSet<MatchRequirementResult> MatchRequirementResults => Set<MatchRequirementResult>();
     public DbSet<CvUploadRecord> CvUploads => Set<CvUploadRecord>();
@@ -49,7 +50,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<Consultant>().HasMany(c => c.Languages).WithOne().HasForeignKey(l => l.ConsultantId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<Consultant>().HasMany(c => c.Industries).WithOne().HasForeignKey(i => i.ConsultantId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<Consultant>().HasMany(c => c.Certifications).WithOne().HasForeignKey(c => c.ConsultantId).OnDelete(DeleteBehavior.Cascade);
+        mb.Entity<Certification>().Property(c => c.IssuedYear).HasMaxLength(4);
 
+        mb.Entity<Assignment>().Property(a => a.ReferenceNumber).HasMaxLength(32).IsRequired();
+        mb.Entity<Assignment>().HasIndex(a => a.ReferenceNumber).IsUnique();
         mb.Entity<Assignment>().HasMany(a => a.Requirements).WithOne().HasForeignKey(r => r.AssignmentId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<AssignmentRequirement>()
             .HasOne(x => x.Skill)
@@ -58,6 +62,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .OnDelete(DeleteBehavior.Restrict);
         mb.Entity<AssignmentRequirement>().HasIndex(x => new { x.AssignmentId, x.SkillId });
 
+        mb.Entity<SavedAiRanking>().HasOne<Assignment>().WithMany().HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+        mb.Entity<SavedAiRanking>().HasIndex(x => x.AssignmentId);
         mb.Entity<MatchResult>().HasMany(m => m.Details).WithOne().HasForeignKey(d => d.MatchResultId).OnDelete(DeleteBehavior.Cascade);
         mb.Entity<MatchResult>().HasIndex(m => new { m.AssignmentId, m.ConsultantId });
 
@@ -67,6 +73,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(x => x.ConsultantId)
             .OnDelete(DeleteBehavior.SetNull);
         mb.Entity<CvUploadRecord>().HasIndex(x => x.ConsultantId);
+        mb.Entity<CvUploadRecord>().Property(x => x.ContentHash).HasMaxLength(64);
+        mb.Entity<CvUploadRecord>().HasIndex(x => x.ContentHash);
+        mb.Entity<CvUploadRecord>().HasIndex(x => new { x.ConsultantId, x.IsActive }, "IX_CvUploads_OneActivePerConsultant")
+            .IsUnique()
+            .HasFilter("[IsActive] = 1 AND [ConsultantId] IS NOT NULL");
         mb.Entity<AiPromptVersion>().HasIndex(x => new { x.PromptKey, x.Version }).IsUnique();
         mb.Entity<AiPromptVersion>().HasIndex(x => new { x.PromptKey, x.IsActive })
             .HasFilter("[IsActive] = 1")

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
 using XlentMatch.Api.DTOs.Cv;
+using XlentMatch.Api.DTOs.Matching;
 
 namespace XlentMatch.Api.Services;
 
@@ -24,20 +25,54 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "Never invent, assume or embellish skills, experiences, certifications, dates or numbers. " +
         "If something is unknown, use null, 0 or an empty list. Respond with valid JSON only.";
 
+
+    public async Task<AiRankingResultDto> RankOriginalCvsAsync(string assignmentText, IReadOnlyList<(int ConsultantId, string CvText)> cvs, string? locale, CancellationToken ct)
+    {
+        const string operation = "ai_original_cv_ranking";
+        var prompt = await GetPromptAsync(PromptKeys.AiRanking, ct);
+        LogPromptExecution(prompt);
+        var normalizedLocale = NormalizeLocale(locale);
+        var system = prompt.Content + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION: " + LanguageInstruction(normalizedLocale) + "\n\nRUNTIME OUTPUT CONTRACT: Compare ALL supplied consultants (between 2 and 5). Return exactly one rankings entry for every supplied consultantId, with unique consecutive ranks starting at 1. Do not omit any consultant. Ground strengths, gaps, evidence, and reasons in the original CVs and assignment. Never invent qualifications. Keep original Match Score unchanged; do not generate numeric AI scores.";
+        var input = JsonSerializer.Serialize(new
+        {
+            assignmentText,
+            consultants = cvs.Select(x => new { consultantId = x.ConsultantId, originalCvText = x.CvText })
+        }, Json);
+        var result = await AskForJsonAsync<AiRankingResultDto>(operation, system, input, ct);
+        var ids = cvs.Select(x => x.ConsultantId).ToHashSet();
+        if (result.Rankings.Count != cvs.Count ||
+            result.Rankings.Select(x => x.ConsultantId).Distinct().Count() != cvs.Count ||
+            result.Rankings.Any(x => !ids.Contains(x.ConsultantId)) ||
+            !result.Rankings.Select(x => x.Rank).Order().SequenceEqual(Enumerable.Range(1, cvs.Count)))
+            throw new InvalidOperationException("AI returned an invalid consultant ranking.");
+        result.Locale = normalizedLocale;
+        return result;
+    }
+
+    public static string NormalizeLocale(string? locale) => locale?.Trim().ToLowerInvariant() switch
+    {
+        "sv" => "sv",
+        "es" => "es",
+        _ => "en"
+    };
+
     public async Task<ConsultantDraftDto> ExtractConsultantProfileAsync(string text, CancellationToken ct)
     {
-        var system = (await GetPromptAsync(PromptKeys.CvExtraction, ct)).Content + "\n\nRUNTIME OUTPUT CONTRACT:\n" + CvExtractionSchemaInstruction;
+        var prompt = await GetPromptAsync(PromptKeys.CvExtraction, ct);
+        LogPromptExecution(prompt);
+        var system = prompt.Content + "\n\nRUNTIME OUTPUT CONTRACT:\n" + CvExtractionSchemaInstruction;
         return await AskForJsonAsync<ConsultantDraftDto>(PromptKeys.CvExtraction, system, text, ct);
     }
 
     public const string CvExtractionSchemaInstruction =
-        "Optional scalar profile fields may be JSON null when the CV does not state them. Collection items must not be fabricated: only include a skill with a non-empty name, an experience with a non-empty company or role, a project with a non-empty name, education with a non-empty degree, a language with a non-empty name, or a certification with a non-empty name. Prefer competencies explicitly listed in a skills/competence section. Extract matchable professional competencies, technologies, tools, frameworks, platforms and explicitly stated methodologies, but do not turn generic responsibilities or activities in prose into skills. Do not deliberately combine unrelated competencies into a new skill label. Do not return collection items with null or empty identifying fields. Language proficiency must be exactly null or one of: Not specified, Low, Medium, High, Native; when a language is present but proficiency is not explicitly stated, return Not specified and do not infer it from the language name. Numeric skill level and years must be JSON integers; preserve explicit skill-specific years, do not sum overlapping work periods, do not use total experience as skill years, and use 0 only when the existing review model requires an unknown numeric value. Do not invent skill years.";
+        "Optional scalar profile fields may be JSON null when the CV does not state them. Collection items must not be fabricated: only include a skill with a non-empty name, an experience with a non-empty company or role, a project with a non-empty name, education with a non-empty degree, a language with a non-empty name, or a certification with a non-empty name. Prefer competencies explicitly listed in a skills/competence section. Extract matchable professional competencies, technologies, tools, frameworks, platforms and explicitly stated methodologies, but do not turn generic responsibilities or activities in prose into skills. Do not deliberately combine unrelated competencies into a new skill label. Do not return collection items with null or empty identifying fields. Language proficiency must be exactly null or one of: Not specified, Low, Medium, High, Native; when a language is present but proficiency is not explicitly stated, return Not specified and do not infer it from the language name. Numeric skill level must be a JSON integer; skill years must be a JSON integer or null; preserve explicit skill-specific years, do not sum overlapping work periods, do not use total experience as skill years, and use null for unknown skill years; use 0 only when the CV explicitly establishes zero professional years for that skill. Do not invent skill years. When a CV explicitly states a language proficiency, preserve its meaning: flytande/fluent/professionell nivå -> High, god nivå -> Medium, modersmål/native -> Native; use Not specified only when the source provides no proficiency. Negative statements such as 'ingen tidigare yrkesanställning', 'no work experience', or 'har inte haft någon anställning' must never become experience records; return an empty experiences list when no actual job is described. For total years of professional experience, use explicitly stated total years when available; otherwise derive completed whole years from dated professional employment without double-counting overlapping periods. For example, 1 year and 9 months becomes 1 completed year, not 2. Do not count school projects as professional employment. For employment dates, use ISO yyyy-MM-dd only when the source specifies the full date, yyyy-MM only when a month and year are stated, and yyyy when only the year is stated. Do not invent January or another month for year-only dates. Ongoing employment described as nuvarande, pågående, present, current, or ongoing must have endDate JSON null. Do not treat ongoing employment as consultant availability. For certifications: issuedDate must be null unless a month/day is explicitly stated; when only the issue year is stated (e.g. 2023), set issuedYear to that four-digit year and issuedDate to null. Never invent January or any other month. When an exact date is stated, populate issuedDate and issuedYear with its year.";
 
     public async Task<RequirementExtractionResultDto> ExtractRequirementsAsync(string text, CancellationToken ct)
     {
         var stockholm = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"));
         var today = DateOnly.FromDateTime(stockholm.DateTime).ToString("yyyy-MM-dd");
         var prompt = await GetPromptAsync(PromptKeys.AssignmentExtraction, ct);
+        LogPromptExecution(prompt);
         var system = prompt.Content.Replace("{{today}}", today, StringComparison.Ordinal) + "\n\nRUNTIME OUTPUT CONTRACT:\n" + AssignmentExtractionSchemaInstruction;
         var result = await AskForJsonAsync<RequirementExtractionResultDto>(PromptKeys.AssignmentExtraction, system, text, ct);
         var diagnostic = CreateAssignmentExtractionDiagnostic(prompt, options.Value.Model, result);
@@ -46,7 +81,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     }
 
     public const string AssignmentExtractionSchemaInstruction =
-        "First extract assignment-level facts independently of requirement filtering: preserve explicit seniority, overall minimum experience, location and work mode, availability when stated, and required start date when stated. These fields describe the assignment and must not be discarded because nearby text describes responsibilities. Then extract consultant requirements separately. Return exactly the DTO-compatible JSON types for every property. " +
+        "First extract the assignment title and customer/client name when they are explicitly present in the source. Return them as title and customerName; if either is not present, return null and do not invent it. Then extract assignment-level facts independently of requirement filtering: preserve explicit seniority, overall minimum experience, location and work mode, availability when stated, and required start date when stated. These fields describe the assignment and must not be discarded because nearby text describes responsibilities. Then extract consultant requirements separately. Return exactly the DTO-compatible JSON types for every property. " +
         "For minYearsExperience, extract an explicit overall minimum experience requirement when the source states one, such as 'at least 5 years of experience', and return the JSON integer 5. If no explicit overall minimum is stated, return JSON null. Never return numeric strings, units or descriptive text. " +
         "Preserve explicit seniority labels using the canonical values Junior, Mid, Senior or Staff; do not default to Mid and do not infer seniority from years. " +
         "Extract availability only when the source explicitly states it; otherwise return null. Extract location exactly when stated. If both a place and an explicit work mode such as hybrid are stated and the existing single location field is used, preserve both in that field (for example, Stockholm / Hybrid). " +
@@ -55,11 +90,14 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "Skill requirements may populate skill-specific minYears only when skill-specific years are explicitly stated, and may populate MinLevel only when an explicit numeric skill level on the existing 1-5 scale is stated; otherwise return null. Do not use MinLevel for language proficiency or seniority labels. " +
         "HumanLanguage requirements may populate Proficiency only with exactly null or one of: Not specified, Low, Medium, High, Native; MinYears and MinLevel must be null. Never return display translations or CEFR levels. " +
         "Extract assignment seniority only into the root seniority, seniorityMatchMode, minimumSeniority and maximumSeniority fields. Do not create a Seniority item in requirements[]. Requirements[] may contain only Skill and HumanLanguage items. " +
+        "Set startDateDescription to the exact source wording for relative or imprecise assignment start timing (e.g. 'Inom 1-2 månader'); otherwise null. For requiredStartDate, return only an explicitly stated complete calendar date as an ISO 8601 yyyy-MM-dd string, or JSON null. Relative or imprecise start times such as 'inom 1-2 månader', 'ASAP', 'next month', month-only or year-only expressions must result in requiredStartDate: null. Preserve the original relative wording in sourceText; never invent a calendar day. " +
         "Arrays must remain arrays, and fields that do not apply or are not explicitly present in the source must be JSON null. Preserve the no-invention rule.";
 
     public async Task<CvAdaptationSuggestionDto> SuggestCvAdaptationAsync(ConsultantDraftDto consultant, TemporaryAssignmentDraftDto assignment, string? locale, CancellationToken ct)
     {
-        var system = (await GetPromptAsync(PromptKeys.CvAdaptation, ct)).Content + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
+        var prompt = await GetPromptAsync(PromptKeys.CvAdaptation, ct);
+        LogPromptExecution(prompt);
+        var system = prompt.Content + "\n\nRUNTIME OUTPUT LANGUAGE INSTRUCTION:\n" + LanguageInstruction(locale) + "\n\nRUNTIME JSON SCHEMA INSTRUCTION:\n" + AdaptationSchemaInstruction;
         var user = JsonSerializer.Serialize(new { assignment, consultant }, Json);
         return await AskForJsonAsync<CvAdaptationSuggestionDto>(PromptKeys.CvAdaptation, system, user, ct);
     }
@@ -74,8 +112,21 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
     public const string AdaptationSchemaInstruction =
         "This feature is an internal CV analysis report, not a CV generator. Do not write or rewrite a complete CV. " +
         "Return exactly one JSON object with exactly these properties: overallAssessment (string), strengths (array of strings), relevantExperience (array of strings), missingOrWeakAreas (array of strings), suggestedImprovements (array of strings), and evidence (array of strings). " +
-        "Strengths and relevantExperience must describe only facts supported by the consultant CV. MissingOrWeakAreas must identify assignment requirements that are absent, unclear or weakly evidenced in the CV. SuggestedImprovements must tell the consultant what to clarify, emphasize or verify in their own CV without inventing experience. Evidence must cite concise supporting facts from the provided CV data. " +
+        "Strengths and relevantExperience must describe only facts supported by the consultant CV. MissingOrWeakAreas must clearly distinguish requirements not documented in the CV from requirements with weak or unclear supporting evidence. Start each item with 'Not documented:' or 'Weak evidence:' (translated to the requested output language). Never claim the consultant lacks a skill merely because it is absent from the CV. SuggestedImprovements must tell the consultant what to clarify, emphasize or verify in their own CV without inventing experience. Evidence must cite concise supporting facts from the provided CV data. " +
         "Do not rename properties. Every array item must be a string. Change only textual values to the requested language, never the JSON structure or types.";
+
+    private void LogPromptExecution(ActivePromptContext prompt) =>
+        logger.LogInformation("AI prompt execution. TraceId={TraceId} PromptKey={PromptKey} PromptVersion={PromptVersion} Model={Model}",
+            Activity.Current?.TraceId.ToString() ?? "none", prompt.Key, prompt.Version, options.Value.Model);
+
+    public static string RuntimeContractFor(string key) => key switch
+    {
+        PromptKeys.CvExtraction => "RUNTIME OUTPUT CONTRACT:\\n" + CvExtractionSchemaInstruction,
+        PromptKeys.AssignmentExtraction => "RUNTIME OUTPUT CONTRACT:\\n" + AssignmentExtractionSchemaInstruction,
+        PromptKeys.CvAdaptation => "RUNTIME OUTPUT LANGUAGE INSTRUCTION: determined by requested locale (Swedish, English or Spanish).\\n\\nRUNTIME JSON SCHEMA INSTRUCTION:\\n" + AdaptationSchemaInstruction,
+        PromptKeys.AiRanking => "No additional runtime text instructions. Backend enforces a strict JSON Schema, two distinct consultant IDs, and ranks 1 and 2.",
+        _ => throw new ArgumentException("Unknown prompt key.", nameof(key))
+    };
 
     private async Task<ActivePromptContext> GetPromptAsync(string key, CancellationToken ct)
     {
@@ -151,6 +202,21 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         var hasCodeFence = content.Contains("```", StringComparison.Ordinal);
         try
         {
+            if (typeof(T) == typeof(RequirementExtractionResultDto))
+            {
+                var root = JsonNode.Parse(content) as JsonObject;
+                if (root is not null && root["requiredStartDate"] is JsonValue value &&
+                    value.TryGetValue<string>(out var rawDate) &&
+                    !DateOnly.TryParseExact(rawDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.None, out _))
+                {
+                    // Preserve imprecise timing rather than fail the entire extraction or invent a day.
+                    if (root["startDateDescription"] is null && !string.IsNullOrWhiteSpace(rawDate))
+                        root["startDateDescription"] = rawDate;
+                    root["requiredStartDate"] = null;
+                    return root.Deserialize<T>(Json) ?? new T();
+                }
+            }
             return JsonSerializer.Deserialize<T>(content, Json) ?? new T();
         }
         catch (JsonException exception)
@@ -170,6 +236,8 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
                 PromptKeys.AssignmentExtraction => "assignment_extraction",
                 PromptKeys.CvExtraction => "cv_extraction",
                 PromptKeys.CvAdaptation => "cv_adaptation",
+                PromptKeys.AiRanking => "ai_original_cv_ranking",
+                "ai_original_cv_ranking" => "ai_original_cv_ranking",
                 _ => "ai_extraction"
             },
             strict = true,
@@ -178,6 +246,8 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
                 PromptKeys.AssignmentExtraction => AssignmentSchema(),
                 PromptKeys.CvExtraction => CvSchema(),
                 PromptKeys.CvAdaptation => CvAdaptationSchema(),
+                PromptKeys.AiRanking => AiRankingSchema(),
+                "ai_original_cv_ranking" => AiRankingSchema(),
                 _ => throw new InvalidOperationException($"No structured schema is configured for '{operation}'.")
             }
         }
@@ -190,12 +260,15 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         ["properties"] = new JsonObject
         {
             ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
+            ["title"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
+            ["customerName"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
             ["seniorityMatchMode"] = NullableString(["Exact", "Minimum", "Range"]),
             ["minimumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
             ["maximumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
             ["minYearsExperience"] = NullableInteger(),
             ["availability"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
-            ["requiredStartDate"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
+            ["requiredStartDate"] = NullableString(),
+            ["startDateDescription"] = NullableString(),
             ["location"] = new JsonObject { ["type"] = new JsonArray("string", "null") },
             ["requirements"] = new JsonObject
             {
@@ -204,7 +277,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             },
             ["sourceText"] = new JsonObject { ["type"] = new JsonArray("string", "null") }
         },
-        ["required"] = Required("seniority", "seniorityMatchMode", "minimumSeniority", "maximumSeniority", "minYearsExperience", "availability", "requiredStartDate", "location", "requirements", "sourceText")
+        ["required"] = Required("title", "customerName", "seniority", "seniorityMatchMode", "minimumSeniority", "maximumSeniority", "minYearsExperience", "availability", "requiredStartDate", "startDateDescription", "location", "requirements", "sourceText")
     };
 
     private static JsonObject RequirementSchema() => new()
@@ -231,17 +304,44 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         ["properties"] = new JsonObject
         {
             ["firstName"] = new JsonObject { ["type"] = "string" }, ["lastName"] = new JsonObject { ["type"] = "string" },
-            ["email"] = NullableString(), ["title"] = NullableString(), ["summary"] = NullableString(), ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["suggestedSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["yearsOfExperience"] = NullableInteger(), ["yearsOfExperienceSource"] = NullableString(), ["office"] = NullableString(),
-            ["skills"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["level"] = new JsonObject { ["type"] = "integer" }, ["years"] = new JsonObject { ["type"] = "integer" }, ["evidence"] = NullableString() }, ["required"] = Required("name", "level", "years", "evidence") }),
+            ["email"] = NullableString(), ["summary"] = NullableString(), ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["suggestedSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["yearsOfExperience"] = NullableInteger(), ["yearsOfExperienceSource"] = NullableString(), ["office"] = NullableString(),
+            ["skills"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["level"] = new JsonObject { ["type"] = "integer" }, ["years"] = NullableInteger(), ["evidence"] = NullableString() }, ["required"] = Required("name", "level", "years", "evidence") }),
             ["experiences"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["company"] = new JsonObject { ["type"] = "string" }, ["role"] = new JsonObject { ["type"] = "string" }, ["description"] = NullableString(), ["startDate"] = NullableString(), ["endDate"] = NullableString() }, ["required"] = Required("company", "role", "description", "startDate", "endDate") }),
             ["projects"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["description"] = NullableString(), ["technologies"] = NullableString() }, ["required"] = Required("name", "description", "technologies") }),
             ["education"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["degree"] = new JsonObject { ["type"] = "string" }, ["school"] = NullableString(), ["year"] = NullableString() }, ["required"] = Required("degree", "school", "year") }),
             ["languages"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["proficiency"] = NullableString(["Not specified", "Low", "Medium", "High", "Native"]) }, ["required"] = Required("name", "proficiency") }),
             ["industries"] = ArrayOf(new JsonObject { ["type"] = "string" }),
-            ["certifications"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["issuer"] = NullableString(), ["issuedDate"] = NullableString() }, ["required"] = Required("name", "issuer", "issuedDate") }),
+            ["certifications"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["issuer"] = NullableString(), ["issuedDate"] = NullableString(), ["issuedYear"] = NullableString() }, ["required"] = Required("name", "issuer", "issuedDate", "issuedYear") }),
             ["sourceText"] = NullableString()
         },
-        ["required"] = Required("firstName", "lastName", "email", "title", "summary", "seniority", "suggestedSeniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "experiences", "projects", "education", "languages", "industries", "certifications", "sourceText")
+        ["required"] = Required("firstName", "lastName", "email", "summary", "seniority", "suggestedSeniority", "yearsOfExperience", "yearsOfExperienceSource", "office", "skills", "experiences", "projects", "education", "languages", "industries", "certifications", "sourceText")
+    };
+
+
+    private static JsonObject AiRankingSchema() => new()
+    {
+        ["type"] = "object",
+        ["additionalProperties"] = false,
+        ["properties"] = new JsonObject
+        {
+            ["rankings"] = ArrayOf(new JsonObject
+            {
+                ["type"] = "object",
+                ["additionalProperties"] = false,
+                ["properties"] = new JsonObject
+                {
+                    ["consultantId"] = new JsonObject { ["type"] = "integer" },
+                    ["rank"] = new JsonObject { ["type"] = "integer" },
+                    ["reason"] = new JsonObject { ["type"] = "string" },
+                    ["strengths"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+                    ["gaps"] = ArrayOf(new JsonObject { ["type"] = "string" }),
+                    ["evidence"] = ArrayOf(new JsonObject { ["type"] = "string" })
+                },
+                ["required"] = Required("consultantId", "rank", "reason", "strengths", "gaps", "evidence")
+            }),
+            ["skippedWithoutCv"] = new JsonObject { ["type"] = "integer" }
+        },
+        ["required"] = Required("rankings", "skippedWithoutCv")
     };
 
     private static JsonObject CvAdaptationSchema() => new()

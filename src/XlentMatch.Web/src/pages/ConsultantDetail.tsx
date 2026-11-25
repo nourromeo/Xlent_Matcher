@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Code, Briefcase, GraduationCap, Globe, Edit3, Trash2 } from "../design-system/icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { EntitySummary } from "../components/ui/EntitySummary";
@@ -14,12 +14,14 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { FormSection } from "../components/ui/FormSection";
 import { FormField } from "../components/ui/FormField";
 import { consultantsApi } from "../services/consultantsApi";
+import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { formatDate } from "../services/localeFormat";
 import type { Consultant, ConsultantSkill } from "../types";
 
 type Translate = ReturnType<typeof useI18n>["t"];
 
 const levelLabel = (level: number, t: Translate) => {
+  if (level === 0) return t("common_not_specified");
   if (level >= 5) return t("consultant_level_expert");
   if (level >= 3) return t("consultant_level_proficient");
   return t("consultant_level_familiar");
@@ -56,9 +58,14 @@ export default function ConsultantDetail() {
   const { t, locale } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const consultantId = Number(id);
 
   const [consultant, setConsultant] = useState<Consultant | null>(null);
+  const [cvFiles, setCvFiles] = useState<CvUploadRecord[]>([]);
+  const [cvEligible, setCvEligible] = useState<boolean | null>(null);
+  const activeTab = searchParams.get("tab") === "cv" ? "cv" : "profile";
+  const setActiveTab = (tab: "profile" | "cv") => setSearchParams(tab === "cv" ? { tab: "cv" } : {});
   const [draft, setDraft] = useState<Consultant | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -107,6 +114,12 @@ export default function ConsultantDetail() {
       cancelled = true;
       controller.abort();
     };
+  }, [consultantId]);
+
+  useEffect(() => {
+    if (!Number.isInteger(consultantId) || consultantId <= 0) return;
+    cvUploadsApi.getAll().then((items) => setCvFiles(items.filter((item) => item.consultantId === consultantId && item.status === "Indexed"))).catch(() => {});
+    consultantsApi.getCvEligibility().then(data => setCvEligible(data.eligibleConsultantIds.includes(consultantId))).catch(() => setCvEligible(null));
   }, [consultantId]);
 
   useEffect(() => {
@@ -201,9 +214,8 @@ export default function ConsultantDetail() {
       <EntitySummary
         leading={<div className="w-9 h-9 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand">{initials(consultant)}</div>}
         title={fullName(consultant)}
-        subtitle={consultant.title || t("consultant_role")}
-        metadata={`${consultant.office || "—"} · ${consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`}`}
-        badges={consultant.availability ? <StatusBadge tone={consultant.availability === "Available" ? "success" : "danger"}>{availabilityLabel(consultant, t, locale)}</StatusBadge> : undefined}
+        metadata={[consultant.seniority, consultant.yearsOfExperience == null ? t("consultant_needs_confirmation") : `${consultant.yearsOfExperience} ${t("consultant_years_experience")}`].filter(Boolean).join(" · ")}
+        badges={<div className="flex flex-wrap items-center gap-2">{consultant.availability && <StatusBadge tone={consultant.availability === "Available" ? "success" : "danger"}>{availabilityLabel(consultant, t, locale)}</StatusBadge>}{cvEligible !== null && <StatusBadge tone={cvEligible ? "success" : "danger"}>{cvEligible ? t("consultant_cv_available") : t("consultant_cv_missing_label")}</StatusBadge>}</div>}
         actions={<div className="flex items-center gap-2"><Link to={`/consultants/${consultant.id}/edit`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-app-border text-app-secondary transition-colors hover:text-app-primary"><Edit3 size={12} /> {t("consultant_edit")}</Link><Button variant="danger" icon={<Trash2 size={12} />} onClick={() => setDeleteConfirmOpen(true)} disabled={deleting}>{deleting ? t("client_deleting") : t("common_delete")}</Button></div>}
       />
 
@@ -217,6 +229,46 @@ export default function ConsultantDetail() {
 
       <div className="flex-1 overflow-auto bg-app">
         <div className="p-6 space-y-5">
+          <div role="tablist" aria-label={t("consultant_info")} className="flex gap-2 border-b border-app-border">
+            <button type="button" role="tab" aria-selected={activeTab === "profile"} onClick={() => setActiveTab("profile")} className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === "profile" ? "border-app-brand text-app-brand" : "border-transparent text-app-secondary hover:text-app-primary"}`}>{t("consultant_profile_tab")}</button>
+            <button type="button" role="tab" aria-selected={activeTab === "cv"} onClick={() => setActiveTab("cv")} className={`px-4 py-3 text-sm font-medium border-b-2 ${activeTab === "cv" ? "border-app-brand text-app-brand" : "border-transparent text-app-secondary hover:text-app-primary"}`}>{t("consultant_original_cv")}</button>
+          </div>
+          {activeTab === "cv" ? (
+            <section role="tabpanel" aria-label={t("consultant_original_cv")} className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface space-y-4">
+              {cvFiles.find((file) => file.isActive && file.storageKey) ? (() => {
+                const file = cvFiles.find((item) => item.isActive && item.storageKey)!;
+                const isPdf = file.contentType?.toLowerCase().includes("pdf") || file.fileName.toLowerCase().endsWith(".pdf");
+                return (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0"><h2 className="text-sm font-semibold text-app-primary">{t("consultant_original_cv")}</h2><p className="text-xs text-app-muted mt-1 break-all">{file.fileName}</p></div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <a className="text-app-brand" href={cvUploadsApi.fileUrl(file.id)}>{t("cv_download")}</a>
+                        <Link className="rounded-md bg-app-brand px-3 py-2 font-medium text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>{t("consultant_replace_cv")}</Link>
+                      </div>
+                    </div>
+                    {isPdf ? (
+                      <iframe title={`Original CV: ${file.fileName}`} src={`${cvUploadsApi.fileUrl(file.id)}?inline=true`} className="w-full h-[75vh] min-h-[500px] rounded-lg border border-app-border bg-white" />
+                    ) : (
+                      <div className="rounded-lg border border-app-border p-6 text-sm text-app-secondary">{t("consultant_preview_unavailable")}</div>
+                    )}
+                  </>
+                );
+              })() : (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold text-app-primary">{t("consultant_original_cv")}</h2>
+                    <Link className="inline-flex rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white" to={`/cv-upload?replaceConsultantId=${consultant.id}`}>{t("cv_upload_new")}</Link>
+                  </div>
+                  <div className="rounded-lg border border-dashed border-app-border px-6 py-12 text-center">
+                    <p className="text-sm font-medium text-app-primary">{t("consultant_no_cv")}</p>
+                    <p className="mt-2 text-xs text-app-muted">{t("consultant_attach_cv")}</p>
+                  </div>
+                </div>
+              )}
+            </section>
+          ) : (
+          <>
           {consultant.summary && (
             <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface">
               <p className="text-sm font-medium text-app-primary mb-3">{t("consultant_summary")}</p>
@@ -253,7 +305,7 @@ export default function ConsultantDetail() {
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={levelStyle(skill.level)}>
                           {levelLabel(skill.level, t)}
                         </span>
-                        <span className="text-[10px] font-mono text-app-muted">{skill.years}y</span>
+                        <span className="text-[10px] font-mono text-app-muted">{skill.years == null ? t("common_not_specified") : `${skill.years}y`}</span>
                       </div>
                       <p className="flex-1 text-[11px] text-app-muted italic leading-relaxed">
                         {skill.evidence || t("consultant_no_evidence")}
@@ -292,7 +344,7 @@ export default function ConsultantDetail() {
 
             {consultant.certifications.length > 0 && <section className="bg-app-surface border border-app-border rounded-xl p-5 shadow-app-surface md:min-h-[172px]">
               <p className="text-sm font-medium text-app-primary mb-4">{t("consultant_certifications")}</p>
-              <div className="space-y-2">{visibleCertifications.map((certification) => <p key={certification.id || certification.name} className="text-sm text-app-secondary">{certification.name}{certification.issuer ? ` — ${certification.issuer}` : ""}</p>)}</div>
+              <div className="space-y-2">{visibleCertifications.map((certification) => <p key={certification.id || certification.name} className="text-sm text-app-secondary">{certification.name}{certification.issuer ? ` — ${certification.issuer}` : ""}{certification.issuedYear || certification.issuedDate ? ` · ${certification.issuedYear || certification.issuedDate?.slice(0, 4)}` : ""}</p>)}</div>
               {consultant.certifications.length > 3 && <button type="button" onClick={() => setCertificationsExpanded((current) => !current)} className="mt-4 text-xs text-app-brand hover:text-app-primary">{certificationsExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_certifications").replace("{count}", String(consultant.certifications.length))} ↓`}</button>}
             </section>}
 
@@ -314,6 +366,8 @@ export default function ConsultantDetail() {
             {consultant.projects.length === 0 ? <p className="px-5 py-4 text-[11px] text-app-faint">{t("consultant_no_projects")}</p> : visibleProjects.map((project, index) => <div key={project.id || index} className="px-5 py-4 space-y-1.5" style={{ borderBottom: index < visibleProjects.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}><p className="text-sm font-medium text-app-primary">{project.name}</p>{project.technologies && <p className="text-[10px] font-mono text-app-muted">{project.technologies}</p>}{project.description && <p className="text-[11px] text-app-muted leading-relaxed line-clamp-3">{project.description}</p>}</div>)}
             {consultant.projects.length > 3 && <button type="button" onClick={() => setProjectsExpanded((current) => !current)} className="mx-5 mb-4 text-xs text-app-brand hover:text-app-primary">{projectsExpanded ? `${t("consultant_show_fewer")} ↑` : `${t("consultant_show_all_projects").replace("{count}", String(consultant.projects.length))} ↓`}</button>}
           </section>
+          </>
+          )}
         </div>
       </div>
 
@@ -335,9 +389,6 @@ export default function ConsultantDetail() {
               </FormField>
               <FormField label={t("consultant_last_name")}>
                 <Input value={draft.lastName} onChange={(event) => setDraft({ ...draft, lastName: event.target.value })} />
-              </FormField>
-              <FormField label={t("consultant_role")}>
-                <Input value={draft.title ?? ""} onChange={(event) => setDraft({ ...draft, title: event.target.value || null })} />
               </FormField>
               <FormField label={t("consultant_seniority")}>
                 <select value={draft.seniority ?? ""} onChange={(event) => setDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("common_not_specified")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>
@@ -375,13 +426,13 @@ export default function ConsultantDetail() {
               {draft.skills.map((item, index) => (
                 <div key={index} className="grid grid-cols-[minmax(140px,1fr)_90px_90px_minmax(140px,1fr)_auto] gap-2 items-center">
                   <Input aria-label={t("consultant_skill")} placeholder={t("consultant_skill")} value={item.name} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                  <Input type="number" min={0} aria-label={t("upload_field_years")} placeholder={t("upload_field_years")} value={item.years} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, years: Number(event.target.value) || 0 } : row) })} />
+                  <Input type="number" min={0} aria-label={t("upload_field_years")} placeholder={t("upload_field_years")} value={item.years ?? ""} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, years: event.target.value === "" ? null : Number(event.target.value) } : row) })} />
                   <Input type="number" min={0} max={5} aria-label={t("upload_field_level")} placeholder={t("upload_field_level")} value={item.level} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, level: Number(event.target.value) || 0 } : row) })} />
                   <Input placeholder={t("consultant_evidence")} value={item.evidence ?? ""} onChange={(event) => setDraft({ ...draft, skills: draft.skills.map((row, i) => i === index ? { ...row, evidence: event.target.value || null } : row) })} />
                   <RemoveButton onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, i) => i !== index) })} />
                 </div>
               ))}
-              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, skills: [...draft.skills, { id: 0, consultantId: draft.id, name: "", category: null, years: 0, level: 0, evidence: null }] })}>+ {t("consultant_add_skill")}</button>
+              <button type="button" className="text-xs text-app-brand" onClick={() => setDraft({ ...draft, skills: [...draft.skills, { id: 0, consultantId: draft.id, name: "", category: null, years: null, level: 0, evidence: null }] })}>+ {t("consultant_add_skill")}</button>
             </div>
           </FormSection>
 

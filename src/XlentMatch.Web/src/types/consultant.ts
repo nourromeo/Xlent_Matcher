@@ -4,7 +4,7 @@ export type ConsultantSkill = {
   skillId?: number;
   name: string;
   category: string | null;
-  years: number;
+  years: number | null;
   level: number;
   evidence: string | null;
   skill?: { canonicalName: string } | null;
@@ -55,6 +55,7 @@ export type ConsultantCertification = {
   name: string;
   issuer: string | null;
   issuedDate: string | null;
+  issuedYear?: string | null;
 };
 
 export type Consultant = {
@@ -62,7 +63,6 @@ export type Consultant = {
   firstName: string;
   lastName: string;
   email: string | null;
-  title: string | null;
   summary: string | null;
   seniority: string | null;
   yearsOfExperience: number | null;

@@ -1,6 +1,8 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using XlentMatch.Api.DTOs.Assignments;
 using XlentMatch.Api.DTOs.Consultants;
 using XlentMatch.Api.DTOs.Extraction;
@@ -27,6 +29,7 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
         {
             var draft = await ai.ExtractConsultantProfileAsync(input.Text!, ct);
             RemoveIncompleteCollectionItems(draft);
+            NormalizeCertificationIssueYears(draft);
             draft.Seniority ??= draft.SuggestedSeniority;
             SetExperienceYears(draft);
             foreach (var language in draft.Languages)
@@ -81,6 +84,34 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
             requirement.Proficiency = string.IsNullOrWhiteSpace(requirement.Proficiency)
                 ? null
                 : SkillNormalizationService.NormalizeLanguageProficiency(requirement.Proficiency);
+        }
+    }
+
+    public static void NormalizeCertificationIssueYears(ConsultantDraftDto draft)
+    {
+        foreach (var certification in draft.Certifications)
+        {
+            var date = certification.IssuedDate?.Trim();
+            var year = certification.IssuedYear?.Trim();
+            if (date is { Length: 4 } && int.TryParse(date, out var parsedYear) && parsedYear is >= 1900 and <= 2100)
+            {
+                certification.IssuedYear = date;
+                certification.IssuedDate = null;
+            }
+            else if (date is { Length: >= 7 } && DateOnly.TryParse(date, out var parsedDate))
+            {
+                certification.IssuedYear = parsedDate.Year.ToString();
+            }
+            else if (year is { Length: 4 } && int.TryParse(year, out var yearValue) && yearValue is >= 1900 and <= 2100)
+            {
+                certification.IssuedYear = year;
+                certification.IssuedDate = null;
+            }
+            else
+            {
+                certification.IssuedYear = null;
+                certification.IssuedDate = null;
+            }
         }
     }
 
@@ -156,9 +187,10 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
 
         var extension = Path.GetExtension(request.File.FileName);
         if (!extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase) &&
-            !extension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
+            !extension.Equals(".txt", StringComparison.OrdinalIgnoreCase) &&
+            !extension.Equals(".docx", StringComparison.OrdinalIgnoreCase))
         {
-            return (null, "Unsupported file type. Use PDF or TXT.");
+            return (null, "Unsupported file type. Use PDF, DOCX or TXT.");
         }
 
         await using var stream = request.File.OpenReadStream();
@@ -177,6 +209,21 @@ public class ExtractionController(IPdfTextExtractor pdf, IAiTextService ai, ILog
             catch
             {
                 return (null, "The PDF could not be read. Make sure the file is a valid PDF and try again.");
+            }
+        }
+        else if (extension.Equals(".docx", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                using var document = WordprocessingDocument.Open(stream, false);
+                var body = document.MainDocumentPart?.Document.Body;
+                text = body is null
+                    ? ""
+                    : string.Join(Environment.NewLine, body.Descendants<Text>().Select(item => item.Text));
+            }
+            catch
+            {
+                return (null, "The DOCX file could not be read. Make sure it is a valid Word document and try again.");
             }
         }
         else

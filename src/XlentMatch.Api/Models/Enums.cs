@@ -16,7 +16,8 @@ public enum SeniorityMatchMode
 public enum AssignmentStatus
 {
     Draft = 1,
-    Matching = 2,
-    Done = 3,
-    Closed = 4
+    Matching = 2, // Legacy database value
+
+    Matched = 3,
+    Closed = 4 // Legacy database value
 }

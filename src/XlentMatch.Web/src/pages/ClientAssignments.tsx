@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -20,6 +20,7 @@ import { aiApi } from "../services/aiApi";
 import { formatDate } from "../services/localeFormat";
 import { DataTable } from "../components/ui/DataTable";
 import { RemoveButton } from "../components/ui/RemoveButton";
+import { useAssignmentExtraction } from "../contexts/AssignmentExtractionContext";
 import type {
   AssignmentApi,
   AssignmentRequirementApi,
@@ -49,31 +50,67 @@ const emptyRequirement = (
   maximumSeniority,
 });
 
+type AssignmentDraftSnapshot = {
+  step: "input" | "basic" | "requirements" | "review";
+  aiExtracted: boolean;
+  title: string;
+  client: string;
+  brief: string;
+  sourceMode: "paste" | "upload";
+  seniority: string;
+  seniorityMatchMode: "Exact" | "Minimum" | "Range";
+  maximumSeniority: string;
+  availability: string;
+  requiredStartDate: string;
+  startDateDescription: string;
+  location: string;
+  minYears: number | null;
+  requirements: AssignmentRequirementApi[];
+};
+
+const assignmentDraftKey = "xlent-assignment-draft-v1";
+
+function loadAssignmentDraft(): AssignmentDraftSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(assignmentDraftKey);
+    return raw ? (JSON.parse(raw) as AssignmentDraftSnapshot) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function NewAssignmentPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t, locale } = useI18n();
+  const extraction = useAssignmentExtraction();
+  const queuedDraftId = searchParams.get("draftId");
+  const isFreshAssignment = searchParams.get("fresh") === "1";
+  const queuedDraft = extraction.drafts.find((draft) => draft.id === queuedDraftId) ?? null;
+  const [savedDraft] = useState(() => queuedDraftId || isFreshAssignment ? null : loadAssignmentDraft());
   const [step, setStep] = useState<
     "input" | "basic" | "requirements" | "review"
-  >("input");
+  >(savedDraft?.step ?? "input");
   const stepOrder = ["input", "basic", "requirements", "review"] as const;
   const [highestReachedStep, setHighestReachedStep] = useState(0);
-  const [aiExtracted, setAiExtracted] = useState(false);
-  const [title, setTitle] = useState("");
-  const [client, setClient] = useState("");
-  const [brief, setBrief] = useState("");
+  const [aiExtracted, setAiExtracted] = useState(savedDraft?.aiExtracted ?? false);
+  const [title, setTitle] = useState(savedDraft?.title ?? "");
+  const [client, setClient] = useState(savedDraft?.client ?? "");
+  const [brief, setBrief] = useState(savedDraft?.brief ?? "");
   const [briefFile, setBriefFile] = useState<File | null>(null);
-  const [sourceMode, setSourceMode] = useState<"paste" | "upload">("paste");
-  const [seniority, setSeniority] = useState("");
+  const [sourceMode, setSourceMode] = useState<"paste" | "upload">(savedDraft?.sourceMode ?? "paste");
+  const [seniority, setSeniority] = useState(savedDraft?.seniority ?? "");
   const [seniorityMatchMode, setSeniorityMatchMode] = useState<
     "Exact" | "Minimum" | "Range"
-  >("Exact");
-  const [maximumSeniority, setMaximumSeniority] = useState("");
-  const [availability, setAvailability] = useState("");
-  const [requiredStartDate, setRequiredStartDate] = useState("");
-  const [location, setLocation] = useState("");
-  const [minYears, setMinYears] = useState<number | null>(null);
+  >(savedDraft?.seniorityMatchMode ?? "Exact");
+  const [maximumSeniority, setMaximumSeniority] = useState(savedDraft?.maximumSeniority ?? "");
+  const [availability, setAvailability] = useState(savedDraft?.availability ?? "");
+  const [requiredStartDate, setRequiredStartDate] = useState(savedDraft?.requiredStartDate ?? "");
+  const [startDateDescription, setStartDateDescription] = useState(savedDraft?.startDateDescription ?? "");
+  const [location, setLocation] = useState(savedDraft?.location ?? "");
+  const [minYears, setMinYears] = useState<number | null>(savedDraft?.minYears ?? null);
   const [requirements, setRequirements] = useState<AssignmentRequirementApi[]>(
-    [],
+    savedDraft?.requirements ?? [],
   );
   const [editingRequirement, setEditingRequirement] = useState<number | null>(
     null,
@@ -87,17 +124,89 @@ export function NewAssignmentPage() {
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const extractionBusy = extracting || extraction.phase === "extracting";
+  const [appliedExtraction, setAppliedExtraction] = useState(false);
+  const cancelling = useRef(false);
+
+  const cancelAssignment = () => {
+    cancelling.current = true;
+    if (!queuedDraftId) {
+      try { sessionStorage.removeItem(assignmentDraftKey); } catch { /* optional */ }
+      extraction.clear();
+    }
+    navigate("/client-assignments");
+  };
 
   const canExtract =
-    title.trim().length > 0 &&
-    client.trim().length > 0 &&
-    (brief.trim().length > 0 || briefFile !== null);
+    sourceMode === "upload"
+      ? briefFile !== null
+      : title.trim().length > 0 &&
+        client.trim().length > 0 &&
+        brief.trim().length > 0;
 
   useEffect(() => {
     setHighestReachedStep((current) =>
       Math.max(current, stepOrder.indexOf(step)),
     );
   }, [step]);
+
+  useEffect(() => {
+    if (isFreshAssignment) {
+      try { sessionStorage.removeItem(assignmentDraftKey); } catch { /* optional */ }
+      extraction.clear();
+    }
+  }, [isFreshAssignment]);
+
+  useEffect(() => {
+    if (cancelling.current) return;
+    try {
+      sessionStorage.setItem(assignmentDraftKey, JSON.stringify({
+        step, aiExtracted, title, client, brief, sourceMode, seniority,
+        seniorityMatchMode, maximumSeniority, availability, requiredStartDate,
+        startDateDescription, location, minYears, requirements,
+      } satisfies AssignmentDraftSnapshot));
+    } catch {
+      // Session storage is an enhancement; the form remains usable if unavailable.
+    }
+  }, [step, aiExtracted, title, client, brief, sourceMode, seniority, seniorityMatchMode, maximumSeniority, availability, requiredStartDate, startDateDescription, location, minYears, requirements]);
+
+  const applyExtraction = (extracted: Awaited<ReturnType<typeof aiApi.extractRequirementsFromText>>) => {
+    if (extracted.title?.trim()) setTitle(extracted.title.trim());
+    if (extracted.customerName?.trim()) setClient(extracted.customerName.trim());
+    setRequirements(
+      extracted.requirements.map((item) =>
+        emptyRequirement(item.name, item.type, item.minYears, item.minLevel, item.category, item.proficiency, item.matchMode ?? "Exact", item.maximumSeniority ?? null),
+      ),
+    );
+    setBrief(extracted.sourceText ?? brief);
+    if (extracted.minimumSeniority || extracted.seniority) setSeniority(extracted.minimumSeniority ?? extracted.seniority ?? "");
+    if (extracted.seniorityMatchMode) setSeniorityMatchMode(extracted.seniorityMatchMode);
+    if (extracted.maximumSeniority) setMaximumSeniority(extracted.maximumSeniority);
+    if (extracted.availability) setAvailability(extracted.availability);
+    if (extracted.requiredStartDate) setRequiredStartDate(extracted.requiredStartDate);
+    setStartDateDescription(extracted.startDateDescription ?? "");
+    if (extracted.location) setLocation(extracted.location);
+    setMinYears(extracted.minYearsExperience);
+    setAiExtracted(true);
+    setStep("basic");
+  };
+
+  useEffect(() => {
+    if (!isFreshAssignment && extraction.result && !appliedExtraction) {
+      applyExtraction(extraction.result);
+      setAppliedExtraction(true);
+      if (extraction.error) setError(extraction.error);
+    }
+  }, [extraction.result, appliedExtraction, isFreshAssignment]);
+
+  useEffect(() => {
+    if (!queuedDraft || appliedExtraction) return;
+    setTitle(queuedDraft.title);
+    setClient(queuedDraft.client);
+    applyExtraction(queuedDraft.result);
+    setAppliedExtraction(true);
+    extraction.acknowledgeDraft(queuedDraft.id);
+  }, [queuedDraft, appliedExtraction]);
 
   const extractRequirements = async () => {
     if (!canExtract) {
@@ -109,40 +218,10 @@ export function NewAssignmentPage() {
     setError("");
 
     try {
-      const extracted = briefFile
-        ? await aiApi.extractRequirementsFromFile(briefFile)
-        : await aiApi.extractRequirementsFromText(brief);
-
-      setRequirements(
-        extracted.requirements.map((item) =>
-          emptyRequirement(
-            item.name,
-            item.type,
-            item.minYears,
-            item.minLevel,
-            item.category,
-            item.proficiency,
-            item.matchMode ?? "Exact",
-            item.maximumSeniority ?? null,
-          ),
-        ),
-      );
-
-      setBrief(extracted.sourceText ?? brief);
-      if (extracted.minimumSeniority || extracted.seniority)
-        setSeniority(extracted.minimumSeniority ?? extracted.seniority ?? "");
-      if (extracted.seniorityMatchMode)
-        setSeniorityMatchMode(extracted.seniorityMatchMode);
-      if (extracted.maximumSeniority)
-        setMaximumSeniority(extracted.maximumSeniority);
-      if (extracted.availability) setAvailability(extracted.availability);
-      if (extracted.requiredStartDate)
-        setRequiredStartDate(extracted.requiredStartDate);
-      if (extracted.location) setLocation(extracted.location);
-      setMinYears(extracted.minYearsExperience);
-
-      setAiExtracted(true);
-      setStep("basic");
+      const extracted = await extraction.start(briefFile, brief, { title, client });
+      if (!extracted) throw new Error(extraction.error ?? t("client_extract_error"));
+      applyExtraction(extracted);
+      setAppliedExtraction(true);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -374,6 +453,7 @@ export function NewAssignmentPage() {
 
     const payload: AssignmentApi = {
       id: 0,
+      referenceNumber: "",
       customerName: client.trim(),
       title: title.trim(),
       description:
@@ -382,6 +462,7 @@ export function NewAssignmentPage() {
       minYearsExperience: minYears ?? 0,
       availability: availability.trim() || null,
       requiredStartDate: requiredStartDate || null,
+       startDateDescription: startDateDescription.trim() || null,
       location: location.trim() || null,
       status: "Draft",
       createdAt: new Date().toISOString(),
@@ -391,6 +472,9 @@ export function NewAssignmentPage() {
 
     try {
       const created = await assignmentsApi.create(payload);
+      sessionStorage.removeItem(assignmentDraftKey);
+      if (queuedDraftId) extraction.removeDraft(queuedDraftId);
+      extraction.clear();
       navigate(`/client-assignments/${created.id}`);
     } catch (requestError) {
       setError(
@@ -410,12 +494,21 @@ export function NewAssignmentPage() {
           title={t("assignment_create_title")}
           description={t("assignment_create_description")}
           actions={
-            <Button
-              onClick={() => navigate("/client-assignments")}
-              variant="ghost"
-            >
-              {t("assignment_modal_cancel")}
-            </Button>
+            <>
+              <Link
+                to="/client-assignments"
+                className="text-xs text-app-muted hover:text-app-primary"
+              >
+                {t("assignment_back")}
+              </Link>
+              <Button
+                onClick={cancelAssignment}
+                variant="ghost"
+                className="text-app-danger hover:text-app-danger"
+              >
+                Avsluta
+              </Button>
+            </>
           }
         />
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -447,7 +540,15 @@ export function NewAssignmentPage() {
         </div>
         {step === "input" ? (
           <div className="bg-app-surface border border-app-border rounded-xl p-5 space-y-4 shadow-app-surface">
-            <label className="block">
+            <div className="flex gap-1 rounded-lg border border-app-border bg-app p-1 w-fit">
+              <button type="button" onClick={() => setSourceMode("paste")} className={`rounded px-3 py-1.5 text-xs ${sourceMode === "paste" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}>
+                {t("assignment_paste_mode")}
+              </button>
+              <button type="button" onClick={() => setSourceMode("upload")} className={`rounded px-3 py-1.5 text-xs ${sourceMode === "upload" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}>
+                {t("assignment_upload_mode")}
+              </button>
+            </div>
+            {sourceMode === "paste" && <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_name")}{" "}
                 <span className="text-app-brand">*</span>
@@ -457,8 +558,8 @@ export function NewAssignmentPage() {
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder={t("client_assignment_title_placeholder")}
               />
-            </label>
-            <label className="block">
+            </label>}
+            {sourceMode === "paste" && <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_client")}{" "}
                 <span className="text-app-brand">*</span>
@@ -468,31 +569,15 @@ export function NewAssignmentPage() {
                 onChange={(event) => setClient(event.target.value)}
                 placeholder={t("client_assignment_client_placeholder")}
               />
-            </label>
+            </label>}
             <label className="block">
               <span className="text-[11px] text-app-muted mb-1.5 block">
                 {t("assignment_modal_brief")}{" "}
-                <span className="text-app-brand">*</span>{" "}
+                {sourceMode === "paste" && <span className="text-app-brand">*</span>}{" "}
                 <span className="text-app-brand ml-1">
                   {t("client_ai_extraction")}
                 </span>
               </span>
-              <div className="flex gap-1 rounded-lg border border-app-border bg-app p-1 w-fit">
-                <button
-                  type="button"
-                  onClick={() => setSourceMode("paste")}
-                  className={`rounded px-3 py-1.5 text-xs ${sourceMode === "paste" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}
-                >
-                  {t("assignment_paste_mode")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSourceMode("upload")}
-                  className={`rounded px-3 py-1.5 text-xs ${sourceMode === "upload" ? "bg-app-surface text-app-primary" : "text-app-muted"}`}
-                >
-                  {t("assignment_upload_mode")}
-                </button>
-              </div>
               {sourceMode === "paste" ? (
                 <Textarea
                   value={brief}
@@ -510,7 +595,7 @@ export function NewAssignmentPage() {
                   </span>
                   <input
                     type="file"
-                    accept=".pdf,.txt,application/pdf,text/plain"
+                    accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     className="block w-full text-xs text-app-secondary file:mr-3 file:rounded file:border file:border-app-border file:bg-app-surface file:px-3 file:py-2"
                     onChange={(event) => {
                       const file = event.target.files?.[0] ?? null;
@@ -539,7 +624,18 @@ export function NewAssignmentPage() {
 
             {!canExtract && !error && (
               <p className="text-[10px] text-app-faint">
-                {t("client_fill_before_extract")}
+                {sourceMode === "upload" ? t("client_upload_brief") : t("client_fill_before_extract")}
+              </p>
+            )}
+
+            {extraction.phase === "extracting" && (
+              <p role="status" className="text-xs text-app-brand">
+                {t("client_extracting")}{extraction.fileName ? ` · ${extraction.fileName}` : ""}
+              </p>
+            )}
+            {extraction.phase === "ready" && extraction.fileName && !appliedExtraction && (
+              <p role="status" className="text-xs text-app-secondary">
+                {t("client_extraction_ready")} · {extraction.fileName}
               </p>
             )}
 
@@ -547,7 +643,7 @@ export function NewAssignmentPage() {
 
             <div className="flex justify-end gap-2">
               <Button
-                onClick={() => navigate("/client-assignments")}
+                onClick={cancelAssignment}
                 variant="ghost"
               >
                 {t("assignment_modal_cancel")}
@@ -567,10 +663,10 @@ export function NewAssignmentPage() {
               <Button
                 onClick={extractRequirements}
                 variant="primary"
-                disabled={extracting || !canExtract}
+                disabled={extractionBusy || !canExtract}
                 icon={<Sparkles size={12} />}
               >
-                {extracting
+                {extractionBusy
                   ? t("client_extracting")
                   : t("client_extract_requirements")}
               </Button>
@@ -678,6 +774,7 @@ export function NewAssignmentPage() {
                       }
                     />
                   </label>
+                  <label className="block"><span className="text-[11px] text-app-muted mb-1.5 block">{t("assignment_relative_start")}</span><Input value={startDateDescription} onChange={(event) => setStartDateDescription(event.target.value)} placeholder={t("assignment_start_example")} /></label>
                   <label className="block">
                     <span className="text-[11px] text-app-muted mb-1.5 block">
                       {t("client_minimum_experience")}
@@ -1067,6 +1164,7 @@ export function NewAssignmentPage() {
                         t("client_required_start_date"),
                         requiredStartDate || t("common_not_specified"),
                       ],
+                      [t("assignment_relative_start"), startDateDescription || t("common_not_specified")],
                       [
                         t("client_minimum_experience"),
                         minYears === null
@@ -1216,8 +1314,10 @@ export function NewAssignmentPage() {
 
 export default function ClientAssignments() {
   const { t, locale } = useI18n();
+  const extraction = useAssignmentExtraction();
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const navigate = useNavigate();
+  const [tab, setTab] = useState<"assignments" | "review">("assignments");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1279,6 +1379,7 @@ export default function ClientAssignments() {
 
     return (
       assignment.title.toLowerCase().includes(search) ||
+      assignment.referenceNumber.toLowerCase().includes(search) ||
       assignment.customerName.toLowerCase().includes(search) ||
       (assignment.description ?? "").toLowerCase().includes(search) ||
       (assignment.seniority ?? "").toLowerCase().includes(search) ||
@@ -1296,7 +1397,11 @@ export default function ClientAssignments() {
         meta={String(assignments.length) + " " + t("assignments_sub")}
         actions={
           <Button
-            onClick={() => navigate("/client-assignments/new")}
+            onClick={() => {
+              try { sessionStorage.removeItem(assignmentDraftKey); } catch { /* optional */ }
+              extraction.clear();
+              navigate("/client-assignments/new?fresh=1");
+            }}
             variant="primary"
             icon={<Plus size={12} />}
           >
@@ -1327,7 +1432,16 @@ export default function ClientAssignments() {
         </div>
       )}
 
-      <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+      <div className="flex flex-wrap gap-1 border-b border-app-border">
+        <button type="button" className={`rounded-md px-4 py-2 text-xs font-medium ${tab === "assignments" ? "bg-app-brand-subtle text-app-brand" : "text-app-secondary hover:bg-app-raised"}`} onClick={() => setTab("assignments")}>
+          {t("assignments_title")}
+        </button>
+        <button type="button" className={`rounded-md px-4 py-2 text-xs font-medium ${tab === "review" ? "bg-app-brand-subtle text-app-brand" : "text-app-secondary hover:bg-app-raised"}`} onClick={() => setTab("review")}>
+          {t("cv_review_queue")} ({extraction.drafts.length}) {extraction.drafts.some((draft) => draft.isNew) && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{t("cv_new")}</span>}
+        </button>
+      </div>
+
+      {tab === "assignments" ? <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
         <DataTable
           columns={[
             {
@@ -1340,7 +1454,7 @@ export default function ClientAssignments() {
                 <div className="min-w-0">
                   <p className="truncate font-medium text-app-primary">{assignment.title}</p>
                   <p className="truncate text-[10px] text-app-muted">
-                    {assignment.location || t("assignment_location_unspecified")}
+                    {assignment.referenceNumber}
                   </p>
                 </div>
               ),
@@ -1380,7 +1494,7 @@ export default function ClientAssignments() {
             {
               key: "status",
               width: "8%",
-              header: "Status",
+              header: t("cv_status_column"),
               sortable: true,
               sortValue: (assignment) => assignment.status,
               render: (assignment) => {
@@ -1416,7 +1530,21 @@ export default function ClientAssignments() {
         />
 
         
-      </div>
+      </div> : <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
+        <table className="w-full text-xs text-left">
+          <thead className="bg-app-raised text-app-muted"><tr><th className="px-4 py-3">{t("assignment_title")}</th><th className="px-4 py-3">{t("assignment_client")}</th><th className="px-4 py-3">{t("common_updated")}</th><th className="px-4 py-3">{t("cv_status_column")}</th><th className="px-4 py-3 text-right">{t("cv_actions")}</th></tr></thead>
+          <tbody>
+            {extraction.drafts.map((draft) => <tr key={draft.id} className="border-t border-app-border text-app-secondary">
+              <td className="px-4 py-3 font-medium text-app-primary">{draft.title || draft.fileName || "—"}</td>
+              <td className="px-4 py-3">{draft.client || "—"}</td>
+              <td className="px-4 py-3">{formatDate(draft.createdAt, locale)}</td>
+              <td className="px-4 py-3">{draft.isNew && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{t("cv_new")}</span>}</td>
+              <td className="px-4 py-3 text-right"><div className="flex justify-end gap-3"><Link className="text-app-brand" to={`/client-assignments/new?draftId=${draft.id}`} onClick={() => extraction.acknowledgeDraft(draft.id)}>{t("cv_review_now")}</Link><button type="button" className="text-app-muted hover:text-red-500" onClick={() => extraction.removeDraft(draft.id)}>{t("cv_delete")}</button></div></td>
+            </tr>)}
+          </tbody>
+        </table>
+        {extraction.drafts.length === 0 && <p className="p-8 text-center text-xs text-app-muted">{t("cv_no_results")}</p>}
+      </div>}
     </div>
   );
 }

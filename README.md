@@ -153,16 +153,16 @@ Om AI-tjänsten inte är tillgänglig returnerar API:t ett användarvänligt fel
 
 Match Score är deterministiskt, testbart och justerbart.
 
-Standardvärden:
+Standardvärden (vikt per krav):
 
-| Faktor | Standard |
+| Kravtyp | Standardvikt |
 | --- | ---: |
-| Mandatory requirements | 60 |
-| Desired requirements | 25 |
-| Experience | 15 |
-| Missing mandatory penalty | -10 per saknat krav |
+| Mandatory requirement | 2 |
+| Desired requirement | 1 |
 
-De tre positiva vikterna måste tillsammans vara **100**.
+Varje matchat krav bidrar med sin vikt. Match Score beräknas som **avrundat (matchad vikt / total vikt × 100)**. Avrundning sker till närmaste heltal, med halva värden avrundade bort från noll. Om totalvikten är 0 blir poängen 0 och resultatet markeras som att poäng saknas.
+
+Saknade Mandatory-krav ger ingen separat straffpoäng; de räknas som omatchade i den viktade andelen. Ett angivet minimikrav på total erfarenhet räknas som ett extra Mandatory-krav. Det finns ingen separat Experience-vikt och vikterna behöver inte summera till 100. Båda vikterna måste vara positiva heltal.
 
 Admin kan ändra vikterna. De sparas lokalt i:
 

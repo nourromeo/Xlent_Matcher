@@ -7,4 +7,5 @@ public class Certification
     public string Name { get; set; } = "";
     public string? Issuer { get; set; }
     public DateOnly? IssuedDate { get; set; }
+    public string? IssuedYear { get; set; }
 }

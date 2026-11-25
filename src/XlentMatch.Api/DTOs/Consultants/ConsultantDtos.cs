@@ -5,7 +5,6 @@ public class ConsultantDraftDto
     public string FirstName { get; set; } = "";
     public string LastName { get; set; } = "";
     public string? Email { get; set; }
-    public string? Title { get; set; }
     public string? Summary { get; set; }
     public string? Seniority { get; set; }
     public string? SuggestedSeniority { get; set; }
@@ -26,7 +25,7 @@ public class SkillDraftDto
 {
     public string Name { get; set; } = "";
     public int Level { get; set; }
-    public int Years { get; set; }
+    public int? Years { get; set; }
     public string? Evidence { get; set; }
 }
 
@@ -64,4 +63,5 @@ public class CertificationDraftDto
     public string Name { get; set; } = "";
     public string? Issuer { get; set; }
     public string? IssuedDate { get; set; }
+    public string? IssuedYear { get; set; }
 }

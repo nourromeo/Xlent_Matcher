@@ -8,7 +8,10 @@ public class MatchingService(MatchingWeightsStore weightsStore)
     public List<MatchResult> MatchAndRank(Assignment assignment, IEnumerable<Consultant> consultants)
     {
         var results = consultants
-            .Where(c => string.Equals(c.Availability, ConsultantAvailability.Available, StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.Availability != ConsultantAvailability.Unavailable ||
+                (assignment.RequiredStartDate is not null &&
+                 c.AvailableAgainDate is not null &&
+                 c.AvailableAgainDate <= assignment.RequiredStartDate))
             .Select(c => Match(assignment, c))
             .OrderByDescending(r => r.Score)
             .ThenByDescending(r => r.MatchedMandatory)
@@ -119,6 +122,23 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             });
         }
 
+        if (assignment.RequiredStartDate is not null || !string.IsNullOrWhiteSpace(assignment.StartDateDescription))
+        {
+            bool? available = consultant.Availability switch
+            {
+                ConsultantAvailability.Available => true,
+                ConsultantAvailability.Unavailable when consultant.AvailableAgainDate is not null && assignment.RequiredStartDate is not null
+                    => consultant.AvailableAgainDate <= assignment.RequiredStartDate,
+                _ => null
+            };
+            details.Add(new MatchContextResult
+            {
+                Name = "Availability Match",
+                IsMatched = available,
+                AffectsScore = false,
+                Evidence = $"Assignment start: {assignment.RequiredStartDate?.ToString("yyyy-MM-dd") ?? assignment.StartDateDescription}; consultant availability: {consultant.Availability}; available again: {consultant.AvailableAgainDate?.ToString("yyyy-MM-dd") ?? "unknown"}. Relative timing requires manual confirmation."
+            });
+        }
         return details;
     }
 
@@ -206,11 +226,11 @@ public class MatchingService(MatchingWeightsStore weightsStore)
             matched = yearsOk && levelOk;
 
             var skillName = skill.Skill?.CanonicalName ?? skill.Name;
-            evidence.Add($"Skill '{skillName}': level {skill.Level}/5, {skill.Years} years");
+            evidence.Add($"Skill '{skillName}': {(skill.Level <= 0 ? "level not specified" : $"level {skill.Level}/5")}, {(skill.Years is null ? "years not specified" : $"{skill.Years} years")}");
             if (!string.IsNullOrWhiteSpace(skill.Evidence))
                 evidence.Add(skill.Evidence);
-            if (!yearsOk) evidence.Add($"Requires {req.MinYears} years, consultant has {skill.Years}");
-            if (!levelOk) evidence.Add($"Requires level {req.MinLevel}, consultant has {skill.Level}");
+            if (!yearsOk) evidence.Add(skill.Years is null ? $"Requires {req.MinYears} years; consultant skill experience is unknown." : $"Requires {req.MinYears} years, consultant has {skill.Years}");
+            if (!levelOk) evidence.Add(skill.Level <= 0 ? $"Requires level {req.MinLevel}; consultant skill level is unknown." : $"Requires level {req.MinLevel}, consultant has {skill.Level}");
         }
 
         }

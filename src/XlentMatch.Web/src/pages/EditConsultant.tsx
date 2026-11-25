@@ -147,7 +147,7 @@ export default function EditConsultant() {
     }
     if (
       (draft.yearsOfExperience !== null && draft.yearsOfExperience < 0) ||
-      draft.skills.some((x) => x.years < 0 || x.level < 0 || x.level > 5)
+      draft.skills.some((x) => (x.years ?? 0) < 0 || x.level < 0 || x.level > 5)
     ) {
       setError(t("upload_invalid_experience"));
       setStep("competencies");
@@ -333,14 +333,6 @@ export default function EditConsultant() {
                       onChange={(e) => update({ lastName: e.target.value })}
                     />
                   </FormField>
-                  <FormField label={t("consultant_role")}>
-                    <Input
-                      value={draft.title ?? ""}
-                      onChange={(e) =>
-                        update({ title: e.target.value || null })
-                      }
-                    />
-                  </FormField>
                   <FormField label={t("consultant_seniority")}>
                     <select
                       value={draft.seniority ?? ""}
@@ -491,10 +483,10 @@ export default function EditConsultant() {
                             <Input
                               type="number"
                               min={0}
-                              value={item.years}
+                              value={item.years ?? ""}
                               onChange={(e) =>
                                 updateRow("skills", index, {
-                                  years: Number(e.target.value) || 0,
+                                  years: e.target.value === "" ? null : Number(e.target.value),
                                 })
                               }
                             />
@@ -558,7 +550,7 @@ export default function EditConsultant() {
                         {item.name || t("common_not_specified")}
                       </span>
                       <span className="text-xs text-app-muted">
-                        {item.years} {t("consultant_year_count")}
+                        {item.years == null ? t("common_not_specified") : `${item.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-xs text-app-muted">
                         {levelLabel(item.level)} ({item.level}/5)
@@ -583,7 +575,7 @@ export default function EditConsultant() {
                         consultantId: draft.id,
                         name: "",
                         category: null,
-                        years: 0,
+                        years: null,
                         level: 0,
                         evidence: null,
                       },
@@ -1070,10 +1062,6 @@ export default function EditConsultant() {
                     `${draft.firstName} ${draft.lastName}`,
                   ],
                   [
-                    t("consultant_role"),
-                    draft.title || t("common_not_specified"),
-                  ],
-                  [
                     t("consultant_seniority"),
                     draft.seniority || t("common_not_specified"),
                   ],
@@ -1126,7 +1114,7 @@ export default function EditConsultant() {
                     >
                       <span className="text-app-primary">{x.name}</span>
                       <span className="text-app-muted">
-                        {x.years} {t("consultant_year_count")}
+                        {x.years == null ? t("common_not_specified") : `${x.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-app-muted">
                         {levelLabel(x.level)} ({x.level}/5)

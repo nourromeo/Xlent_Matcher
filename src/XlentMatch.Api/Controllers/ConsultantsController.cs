@@ -8,16 +8,63 @@ namespace XlentMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/consultants")]
-public class ConsultantsController(AppDbContext db, SkillNormalizationService skills, ConsultantAvailabilityService availability) : ControllerBase
+public class ConsultantsController(AppDbContext db, SkillNormalizationService skills, ConsultantAvailabilityService availability, IWebHostEnvironment environment) : ControllerBase
 {
+    [HttpGet("cv-eligibility")]
+    public async Task<ActionResult<object>> GetCvEligibility(CancellationToken ct)
+    {
+        var uploads = await db.CvUploads.AsNoTracking()
+            .Where(cv => cv.IsActive && cv.Status == "Indexed"
+                && cv.StorageKey != null && cv.ConsultantId != null)
+            .OrderByDescending(cv => cv.UploadedAt)
+            .ToListAsync(ct);
+        var latest = uploads.GroupBy(cv => cv.ConsultantId!.Value)
+            .Select(g => g.First());
+        var eligible = latest.Where(cv =>
+        {
+            var path = Path.Combine(environment.ContentRootPath, "private-cvs", Path.GetFileName(cv.StorageKey!));
+            return System.IO.File.Exists(path)
+                && (Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase)
+                    || Path.GetExtension(path).Equals(".txt", StringComparison.OrdinalIgnoreCase)
+                    || Path.GetExtension(path).Equals(".docx", StringComparison.OrdinalIgnoreCase));
+        }).Select(cv => cv.ConsultantId!.Value).ToArray();
+        return Ok(new { eligibleConsultantIds = eligible });
+    }
+
     [HttpGet]
     public async Task<ActionResult<List<Consultant>>> GetAll(CancellationToken ct)
     {
         await availability.ResolveExpiredAsync(ct);
         return await db.Consultants
-            .Include(c => c.Skills).ThenInclude(s => s.Skill)
             .AsNoTracking()
+            .Select(c => new Consultant
+            {
+                Id = c.Id,
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+                Email = c.Email,
+                Summary = c.Summary,
+                Seniority = c.Seniority,
+                YearsOfExperience = c.YearsOfExperience,
+                YearsOfExperienceSource = c.YearsOfExperienceSource,
+                Availability = c.Availability,
+                AvailableAgainDate = c.AvailableAgainDate,
+                Office = c.Office,
+                // Full original CV text is only needed by the consultant detail/edit flow.
+                Skills = c.Skills.Select(skill => new ConsultantSkill
+                {
+                    Id = skill.Id,
+                    ConsultantId = skill.ConsultantId,
+                    SkillId = skill.SkillId,
+                    Skill = skill.Skill,
+                    Name = skill.Name,
+                    Years = skill.Years,
+                    Level = skill.Level,
+                    Evidence = skill.Evidence
+                }).ToList()
+            })
             .ToListAsync(ct);
+
     }
 
     [HttpGet("{id:int}")]
@@ -39,6 +86,28 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
 
         var validation = ValidateConsultant(consultant);
         if (validation is not null) return BadRequest(validation);
+
+        // CV imports must not silently create a second consultant with the same identity.
+        if (cvUploadId.HasValue)
+        {
+            var first = consultant.FirstName.Trim();
+            var last = consultant.LastName.Trim();
+            var email = consultant.Email?.Trim();
+            var existingProfiles = await db.Consultants.AsNoTracking()
+                .Select(x => new { x.Id, x.FirstName, x.LastName, x.Email })
+                .ToListAsync(ct);
+            var duplicate = existingProfiles.FirstOrDefault(x =>
+                (!string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(x.Email) &&
+                 string.Equals(x.Email.Trim(), email, StringComparison.OrdinalIgnoreCase)) ||
+                (string.Equals(x.FirstName.Trim(), first, StringComparison.OrdinalIgnoreCase) &&
+                 string.Equals(x.LastName.Trim(), last, StringComparison.OrdinalIgnoreCase)));
+            if (duplicate is not null)
+                return Conflict(new {
+                    code = "CONSULTANT_ALREADY_EXISTS",
+                    consultantId = duplicate.Id,
+                    message = "An existing consultant matches this CV. Link the CV to that consultant instead of creating a duplicate."
+                });
+        }
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
@@ -80,8 +149,11 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
 
         if (upload is not null)
         {
+            if (upload.StorageKey is null || upload.Status != "Review")
+                return BadRequest("A reviewed CV with a stored original file is required.");
             upload.Status = "Indexed";
             upload.ConsultantId = consultant.Id;
+            upload.IsActive = true;
             upload.ErrorMessage = null;
             upload.DraftJson = null;
             await db.SaveChangesAsync(ct);
@@ -106,7 +178,6 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.FirstName = input.FirstName;
         existing.LastName = input.LastName;
         existing.Email = input.Email;
-        existing.Title = input.Title;
         existing.Summary = input.Summary;
         existing.Seniority = input.Seniority;
         existing.YearsOfExperience = input.YearsOfExperience;
@@ -115,7 +186,9 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
         existing.AvailableAgainDate = input.AvailableAgainDate;
         existing.Availability = NormalizeAvailability(input.Availability);
         existing.Office = input.Office;
-        existing.OriginalCvText = input.OriginalCvText;
+        // List responses omit original CV text; an availability update must not erase it.
+        if (input.OriginalCvText is not null)
+            existing.OriginalCvText = input.OriginalCvText;
 
         input.Skills.ForEach(x => { x.Id = 0; x.ConsultantId = 0; x.SkillId = 0; x.Skill = null; });
         input.Experiences.ForEach(x => x.Id = 0);
@@ -142,6 +215,43 @@ public class ConsultantsController(AppDbContext db, SkillNormalizationService sk
 
         await db.SaveChangesAsync(ct);
         return await LoadFull(id, ct) ?? existing;
+    }
+
+    [HttpPut("{id:int}/approve-cv/{uploadId:int}")]
+    public async Task<ActionResult<Consultant>> ApproveCv(
+        int id, int uploadId, Consultant input, CancellationToken ct)
+    {
+        var upload = await db.CvUploads.FirstOrDefaultAsync(x => x.Id == uploadId, ct);
+        if (upload is null) return NotFound("CV upload not found.");
+        if (upload.StorageKey is null || upload.Status is not ("Review" or "Indexed"))
+            return BadRequest("A reviewed CV with a stored original file is required.");
+        if (upload.ConsultantId is not null && upload.ConsultantId != id)
+            return Conflict("This CV belongs to another consultant.");
+        if (!await db.Consultants.AnyAsync(x => x.Id == id, ct))
+            return NotFound("Consultant not found.");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var updated = await Update(id, input, ct);
+        if (updated.Result is BadRequestObjectResult or NotFoundResult or NotFoundObjectResult)
+            return updated;
+
+        // The consultant update and CV activation commit together.
+        var previous = await db.CvUploads
+            .Where(x => x.ConsultantId == id && x.IsActive && x.Id != uploadId)
+            .ToListAsync(ct);
+        foreach (var item in previous) item.IsActive = false;
+        await db.SaveChangesAsync(ct);
+
+        upload.ConsultantId = id;
+        upload.Status = "Indexed";
+        upload.DraftJson = null;
+        upload.ErrorMessage = null;
+        upload.IsActive = true;
+        await db.SaveChangesAsync(ct);
+
+        await transaction.CommitAsync(ct);
+
+        return await LoadFull(id, ct) ?? input;
     }
 
     [HttpDelete("{id:int}")]

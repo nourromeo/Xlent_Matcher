@@ -16,6 +16,8 @@ public class RequirementDraftDto
 
 public class RequirementExtractionResultDto
 {
+    public string? Title { get; set; }
+    public string? CustomerName { get; set; }
     public string? Seniority { get; set; }
     public string? SeniorityMatchMode { get; set; }
     public string? MinimumSeniority { get; set; }
@@ -23,6 +25,7 @@ public class RequirementExtractionResultDto
     public int? MinYearsExperience { get; set; }
     public string? Availability { get; set; }
     public DateOnly? RequiredStartDate { get; set; }
+    public string? StartDateDescription { get; set; }
     public string? Location { get; set; }
     public List<RequirementDraftDto> Requirements { get; set; } = new();
     public string? SourceText { get; set; }

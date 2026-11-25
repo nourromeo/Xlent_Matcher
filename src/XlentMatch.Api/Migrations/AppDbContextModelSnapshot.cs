@@ -96,8 +96,16 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int>("MinYearsExperience")
                         .HasColumnType("int");
 
+                    b.Property<string>("ReferenceNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<DateOnly?>("RequiredStartDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("StartDateDescription")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Seniority")
                         .HasColumnType("nvarchar(max)");
@@ -113,6 +121,9 @@ namespace XlentMatch.Api.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ReferenceNumber")
+                        .IsUnique();
 
                     b.ToTable("Assignments");
                 });
@@ -180,6 +191,10 @@ namespace XlentMatch.Api.Migrations
                     b.Property<DateOnly?>("IssuedDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("IssuedYear")
+                        .HasColumnType("nvarchar(4)")
+                        .HasMaxLength(4);
+
                     b.Property<string>("Issuer")
                         .HasColumnType("nvarchar(max)");
 
@@ -234,10 +249,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<string>("Summary")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Title")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("YearsOfExperience")
+                                        b.Property<int?>("YearsOfExperience")
                         .HasColumnType("int");
 
                     b.Property<string>("YearsOfExperienceSource")
@@ -320,7 +332,7 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int?>("SkillId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Years")
+                    b.Property<int?>("Years")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -343,6 +355,13 @@ namespace XlentMatch.Api.Migrations
                     b.Property<int?>("ConsultantId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ContentHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ContentType")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("DraftJson")
                         .HasColumnType("nvarchar(max)");
 
@@ -356,8 +375,14 @@ namespace XlentMatch.Api.Migrations
                     b.Property<long>("FileSize")
                         .HasColumnType("bigint");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StorageKey")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UploadedAt")
@@ -366,6 +391,13 @@ namespace XlentMatch.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ConsultantId");
+
+                    b.HasIndex("ContentHash");
+
+                    b.HasIndex("ConsultantId", "IsActive")
+                        .IsUnique()
+                        .HasDatabaseName("IX_CvUploads_OneActivePerConsultant")
+                        .HasFilter("[IsActive] = 1 AND [ConsultantId] IS NOT NULL");
 
                     b.ToTable("CvUploads");
                 });
@@ -549,6 +581,31 @@ namespace XlentMatch.Api.Migrations
                     b.ToTable("Projects");
                 });
 
+            modelBuilder.Entity("XlentMatch.Api.Models.SavedAiRanking", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssignmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignmentId");
+
+                    b.ToTable("SavedAiRankings");
+                });
+
             modelBuilder.Entity("XlentMatch.Api.Models.Skill", b =>
                 {
                     b.Property<int>("Id")
@@ -575,6 +632,15 @@ namespace XlentMatch.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Skills");
+                });
+
+            modelBuilder.Entity("XlentMatch.Api.Models.SavedAiRanking", b =>
+                {
+                    b.HasOne("XlentMatch.Api.Models.Assignment", null)
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("XlentMatch.Api.Models.SkillAlias", b =>

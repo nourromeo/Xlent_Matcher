@@ -14,6 +14,8 @@ export type RequirementDraft = {
 };
 
 export type RequirementExtractionResult = {
+  title: string | null;
+  customerName: string | null;
   seniority: string | null;
   seniorityMatchMode?: "Exact" | "Minimum" | "Range" | null;
   minimumSeniority?: string | null;
@@ -21,6 +23,7 @@ export type RequirementExtractionResult = {
   minYearsExperience: number | null;
   availability: string | null;
   requiredStartDate: string | null;
+  startDateDescription?: string | null;
   location: string | null;
   requirements: RequirementDraft[];
   sourceText: string | null;
@@ -30,20 +33,19 @@ export type ConsultantDraft = {
   firstName: string;
   lastName: string;
   email: string | null;
-  title: string | null;
   summary: string | null;
   seniority: string | null;
   suggestedSeniority: string | null;
   yearsOfExperience: number | null;
   yearsOfExperienceSource: string | null;
   office: string | null;
-  skills: Array<{ name: string; level: number; years: number; evidence: string | null }>;
+  skills: Array<{ name: string; level: number; years: number | null; evidence: string | null }>;
   experiences: Array<{ company: string; role: string; description: string | null; startDate: string | null; endDate: string | null }>;
   projects: Array<{ name: string; description: string | null; technologies: string | null }>;
   education: Array<{ degree: string; school: string | null; year: string | null }>;
   languages: Array<{ name: string; proficiency: "Not specified" | "Low" | "Medium" | "High" | "Native" }>;
   industries: string[];
-  certifications: Array<{ name: string; issuer: string | null; issuedDate: string | null }>;
+  certifications: Array<{ name: string; issuer: string | null; issuedDate: string | null; issuedYear?: string | null }>;
   sourceText: string | null;
 };
 
@@ -55,6 +57,7 @@ export type TemporaryAssignmentDraft = {
   minYearsExperience: number;
   availability: string | null;
   requiredStartDate: string | null;
+  startDateDescription?: string | null;
   location: string | null;
   requirements: RequirementDraft[];
 };
@@ -80,7 +83,6 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
     firstName: consultant.firstName,
     lastName: consultant.lastName,
     email: consultant.email,
-    title: consultant.title,
     summary: consultant.summary,
     seniority: consultant.seniority,
     suggestedSeniority: null,
@@ -116,8 +118,9 @@ export function consultantToDraft(consultant: Consultant): ConsultantDraft {
       name: item.name,
       issuer: item.issuer,
       issuedDate: item.issuedDate,
+      issuedYear: item.issuedYear,
     })),
-    sourceText: null,
+    sourceText: consultant.originalCvText,
   };
 }
 
@@ -130,6 +133,7 @@ export function assignmentToTemporary(assignment: AssignmentApi): TemporaryAssig
     minYearsExperience: assignment.minYearsExperience,
     availability: assignment.availability,
     requiredStartDate: assignment.requiredStartDate,
+    startDateDescription: assignment.startDateDescription,
     location: assignment.location,
     requirements: assignment.requirements.map((item) => ({
       name: item.name,

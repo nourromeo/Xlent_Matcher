@@ -80,3 +80,6 @@ desktop.ini
 # --------------------
 *.log
 logs/
+
+# Local CV uploads (do not commit personal documents)
+**/private-cvs/

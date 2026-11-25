@@ -6,7 +6,6 @@ public class Consultant
     public string FirstName { get; set; } = "";
     public string LastName { get; set; } = "";
     public string? Email { get; set; }
-    public string? Title { get; set; }
     public string? Summary { get; set; }
     public string? Seniority { get; set; }
     public int? YearsOfExperience { get; set; }

@@ -1,667 +1,199 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Upload as UploadIcon, FileText, CheckCircle, AlertCircle, Loader, Plus, X, Eye } from "../design-system/icons";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../components/ui/PageHeader";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Textarea } from "../components/ui/Textarea";
-import { Modal } from "../components/ui/Modal";
-import { aiApi, type ConsultantDraft } from "../services/aiApi";
+import { useCvUpload } from "../contexts/CvUploadContext";
 import { consultantsApi } from "../services/consultantsApi";
-import { cvUploadsApi, type CvUploadStatus, type CvUploadView } from "../services/cvUploadsApi";
+import { cvUploadsApi, type CvUploadRecord } from "../services/cvUploadsApi";
 import { validateDocumentFile } from "../services/fileValidation";
 import { useI18n } from "../i18n";
-import { formatDateTime } from "../services/localeFormat";
-import type { Consultant } from "../types";
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function dateOnly(value: string | null) {
-  if (!value) return null;
-  return /^\d{4}-\d{2}$/.test(value) ? `${value}-01` : value;
-}
-
-function toConsultant(draft: ConsultantDraft): Consultant {
-  return {
-    id: 0,
-    firstName: draft.firstName.trim(),
-    lastName: draft.lastName.trim(),
-    email: draft.email?.trim() || null,
-    title: draft.title?.trim() || null,
-    summary: draft.summary?.trim() || null,
-    seniority: draft.seniority?.trim() || null,
-    yearsOfExperience: draft.yearsOfExperience,
-    yearsOfExperienceSource: draft.yearsOfExperienceSource,
-    availableAgainDate: null,
-    availability: "Available",
-    office: draft.office?.trim() || null,
-    originalCvText: null,
-    fullName: undefined,
-    skills: draft.skills.filter((skill) => skill.name.trim()).map((skill) => ({
-      id: 0,
-      consultantId: 0,
-      name: skill.name.trim(),
-      category: null,
-      years: skill.years,
-      level: skill.level,
-      evidence: skill.evidence?.trim() || null,
-    })),
-    experiences: draft.experiences.filter((item) => item.company.trim() || item.role.trim()).map((item) => ({
-      id: 0,
-      consultantId: 0,
-      company: item.company.trim(),
-      role: item.role.trim(),
-      description: item.description?.trim() || null,
-      startDate: dateOnly(item.startDate),
-      endDate: dateOnly(item.endDate),
-    })),
-    projects: draft.projects.filter((item) => item.name.trim()).map((item) => ({
-      id: 0,
-      consultantId: 0,
-      name: item.name.trim(),
-      description: item.description?.trim() || null,
-      technologies: item.technologies?.trim() || null,
-    })),
-    education: draft.education.filter((item) => item.degree.trim()).map((item) => ({
-      id: 0,
-      consultantId: 0,
-      degree: item.degree.trim(),
-      school: item.school?.trim() || null,
-      year: item.year?.trim() || null,
-    })),
-    languages: draft.languages.filter((item) => item.name.trim()).map((item) => ({
-      id: 0,
-      consultantId: 0,
-      name: item.name.trim(),
-      proficiency: item.proficiency,
-    })),
-    industries: draft.industries.filter((name) => name.trim()).map((name) => ({
-      id: 0,
-      consultantId: 0,
-      name: name.trim(),
-    })),
-    certifications: draft.certifications.filter((item) => item.name.trim()).map((item) => ({
-      id: 0,
-      consultantId: 0,
-      name: item.name.trim(),
-      issuer: item.issuer?.trim() || null,
-      issuedDate: dateOnly(item.issuedDate),
-    })),
-  };
-}
-
-function parseUpload(record: Awaited<ReturnType<typeof cvUploadsApi.getAll>>[number]): CvUploadView {
-  if (!record.draftJson) return record;
-
-  try {
-    return { ...record, draft: JSON.parse(record.draftJson) as ConsultantDraft };
-  } catch {
-    return record;
-  }
-}
+type Tab = "library" | "review";
+const formatSize = (bytes: number) => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
 
 export default function CvUpload() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<CvUploadView[]>([]);
-  const [activeId, setActiveId] = useState<number | null>(null);
-  const [reviewStep, setReviewStep] = useState(0);
-  const [dragging, setDragging] = useState(false);
+  const localizeStatus = (value: string) => value === "All" ? t("cv_all_statuses")
+    : value === "Extracting" ? t("status_extracting")
+    : value === "Review" ? t("cv_review")
+    : value === "Indexed" ? t("dashboard_indexed")
+    : value === "Error" ? t("status_error")
+    : value === "Queued" ? t("status_queued") : value;
+  const [params] = useSearchParams();
+  const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
+  const input = useRef<HTMLInputElement>(null);
+  const [existingCvForConsultant, setExistingCvForConsultant] = useState(false);
+  const [records, setRecords] = useState<CvUploadRecord[]>([]);
+  const [consultantNames, setConsultantNames] = useState<Record<number, string>>({});
+  const [tab, setTab] = useState<Tab>("library");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("All");
+  const { state: uploadState, start, dismiss, acknowledgeReview, awayReviewIds } = useCvUpload();
+  const [newReviewIds, setNewReviewIds] = useState<number[]>(awayReviewIds);
+  const busy = uploadState.phase === "uploading" || uploadState.phase === "extracting";
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
+  useEffect(() => { setNewReviewIds(awayReviewIds); }, [awayReviewIds]);
+
   useEffect(() => {
-    let cancelled = false;
+    if (uploadState.phase === "ready" && uploadState.reviewUrl && !uploadState.completedWhileAway) {
+      navigate(uploadState.reviewUrl);
+    }
+  }, [uploadState.phase, uploadState.reviewUrl, uploadState.completedWhileAway, navigate]);
 
-    cvUploadsApi
-      .getAll()
-      .then((records) => {
-        if (!cancelled) setFiles(records.map(parseUpload));
-      })
-      .catch((requestError: unknown) => {
-        if (!cancelled) setError(requestError instanceof Error ? requestError.message : t("upload_load_error"));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+  useEffect(() => {
+    consultantsApi.getAll().then((items) => setConsultantNames(Object.fromEntries(items.map((item) => [item.id, item.firstName + " " + item.lastName])))).catch(() => {});
   }, []);
 
-  const activeFile = files.find((file) => file.id === activeId) ?? null;
-  const draft = activeFile?.draft ?? null;
+  const refresh = async () => {
+    const data = await cvUploadsApi.getAll();
+    setRecords(data);
+    setNewReviewIds((current) => current.filter((id) => data.some((item) => item.id === id && item.status === "Review")));
+    setExistingCvForConsultant(Boolean(replaceConsultantId && data.some((item) => item.consultantId === replaceConsultantId && item.isActive && item.status === "Indexed")));
+  };
+  useEffect(() => {
+    let cancelled = false;
+    cvUploadsApi.getAll().then((data) => { if (!cancelled) { setRecords(data); setExistingCvForConsultant(Boolean(replaceConsultantId && data.some((item) => item.consultantId === replaceConsultantId && item.isActive && item.status === "Indexed"))); } })
+      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : t("cv_load_failed")); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const upload = async (file?: File) => {
+    if (!file || busy) return;
+    const problem = validateDocumentFile(file);
+    if (problem) { setError(problem); return; }
+    setError("");
+    await start(file, replaceConsultantId);
+  };
 
   useEffect(() => {
-    if (!activeFile || activeFile.status !== "Review" || !activeFile.draft) return;
+    void refresh().catch(() => {});
+  }, [uploadState.phase]);
 
-    const timer = window.setTimeout(() => {
-      void cvUploadsApi.update(activeFile.id, {
-        status: "Review",
-        consultantId: null,
-        errorMessage: null,
-        draftJson: JSON.stringify(activeFile.draft),
-      });
-    }, 600);
-
-    return () => window.clearTimeout(timer);
-  }, [activeFile?.id, activeFile?.draft, activeFile?.status]);
-
-  const updateLocal = (id: number, patch: Partial<CvUploadView>) => {
-    setFiles((current) => current.map((file) => file.id === id ? { ...file, ...patch } : file));
-  };
-
-  const updateDraft = (next: ConsultantDraft) => {
-    if (!activeFile) return;
-    updateLocal(activeFile.id, { draft: next, draftJson: JSON.stringify(next) });
-  };
-
-  const handleFile = async (file?: File) => {
-    if (!file) return;
-
-    const validationError = validateDocumentFile(file);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setError("");
-
-    let uploadId: number | null = null;
-
+  const remove = async (record: CvUploadRecord) => {
+    if (!window.confirm(`${t("cv_delete_confirm")} (${record.fileName})`)) return;
     try {
-      const created = await cvUploadsApi.create(file.name, file.size, "Extracting");
-      uploadId = created.id;
-      setFiles((current) => [created, ...current]);
-
-      const result = await aiApi.extractConsultantFromFile(file);
-      const updated = await cvUploadsApi.update(created.id, {
-        status: "Review",
-        draftJson: JSON.stringify(result),
-        consultantId: null,
-        errorMessage: null,
-      });
-
-      updateLocal(created.id, { ...updated, draft: result });
-      localStorage.setItem(`xlent-cv-review-${created.id}`, JSON.stringify(result));
-      navigate(`/cv-upload/review?uploadId=${created.id}`);
-    } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : t("upload_extract_error");
-      setError(message);
-
-      if (uploadId !== null) {
-        try {
-          const updated = await cvUploadsApi.update(uploadId, {
-            status: "Error",
-            errorMessage: message,
-            consultantId: null,
-            draftJson: null,
-          });
-          updateLocal(uploadId, updated);
-        } catch {
-          // Keep the original extraction error visible.
-        }
-      }
-    }
+      await cvUploadsApi.remove(record.id);
+      if (uploadState.reviewUrl?.startsWith(`/cv-upload/review?uploadId=${record.id}&`) || uploadState.reviewUrl === `/cv-upload/review?uploadId=${record.id}`) dismiss();
+      await refresh();
+    } catch (e) { setError(e instanceof Error ? e.message : t("cv_delete_failed")); }
   };
 
-  const clearUploadRecord = async (id: number) => {
-    setDeletingId(id);
-    setError("");
-
-    try {
-      await cvUploadsApi.remove(id);
-      setFiles((current) => current.filter((file) => file.id !== id));
-      if (activeId === id) setActiveId(null);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : t("upload_clear_error"));
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const saveConsultant = async () => {
-    if (!activeFile?.draft) return;
-
-    if (!activeFile.draft.firstName.trim() || !activeFile.draft.lastName.trim()) {
-      setError(t("upload_required_names"));
-      return;
-    }
-
-    const currentDraft = activeFile.draft;
-    if ((currentDraft.yearsOfExperience ?? 0) < 0 ||
-        currentDraft.skills.some((skill) => skill.years < 0 || skill.level < 0 || skill.level > 5)) {
-      setError(t("upload_invalid_experience"));
-      return;
-    }
-
-    const invalidDateRange = currentDraft.experiences.some((item) => {
-      if (!item.startDate || !item.endDate) return false;
-      return dateOnly(item.startDate)! > dateOnly(item.endDate)!;
-    });
-    if (invalidDateRange) {
-      setError(t("upload_invalid_date_range"));
-      return;
-    }
-
-    const normalizedLanguageNames = currentDraft.languages.map((item) => item.name.trim().toLocaleLowerCase()).filter(Boolean);
-    if (new Set(normalizedLanguageNames).size !== normalizedLanguageNames.length) {
-      setError(t("upload_duplicate_languages"));
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-
-    try {
-      const created = await consultantsApi.create(toConsultant(currentDraft), activeFile.id);
-
-      updateLocal(activeFile.id, {
-        status: "Indexed",
-        consultantId: created.id,
-        errorMessage: null,
-        draftJson: null,
-        draft: undefined,
-      });
-      setActiveId(null);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : t("upload_save_error"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const total = files.length;
-  const processing = files.filter((file) => file.status === "Extracting" || file.status === "Review").length;
-  const indexed = files.filter((file) => file.status === "Indexed").length;
-  const errors = files.filter((file) => file.status === "Error").length;
-  const canSave = Boolean(draft?.firstName.trim() && draft?.lastName.trim());
-
-  const statusColor = (status: CvUploadStatus) =>
-    status === "Indexed" ? "var(--color-success)" :
-    status === "Error" ? "var(--color-danger)" :
-    status === "Review" ? "var(--color-warning)" :
-    "var(--color-brand)";
-
-  const progress = (status: CvUploadStatus) =>
-    status === "Extracting" ? 45 :
-    status === "Review" ? 75 :
-    100;
-
+  const list = records.filter((r) => {
+    const belongs = tab === "review" ? r.status === "Review" :
+      tab === "library" ? r.status === "Indexed" : false;
+    return belongs && (status === "All" || r.status === status) &&
+      r.fileName.toLowerCase().includes(search.toLowerCase());
+  });
+  const pageCount = Math.max(1, Math.ceil(list.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleList = list.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const firstRow = list.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const lastRow = Math.min(currentPage * pageSize, list.length);
+  const tabClass = (value: Tab) => `rounded-md px-4 py-2 text-xs font-medium ${tab === value ? "bg-app-brand-subtle text-app-brand" : "text-app-secondary hover:bg-app-raised"}`;
   return (
-    <div className="p-6 space-y-5">
-      <PageHeader
-        title={t("upload_title")}
-        description={t("upload_description")}
-      />
-
-      <div className="grid grid-cols-4 gap-3">
+    <div className="p-6 space-y-5 max-w-7xl mx-auto">
+      <PageHeader title={t("cv_manager_title")} description={t("cv_manager_desc")} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[
-          { label: t("upload_total_cvs"), value: total },
-          { label: t("upload_processing_review"), value: processing },
-          { label: t("upload_saved_indexed"), value: indexed },
-          { label: t("upload_errors"), value: errors },
-        ].map((item) => (
-          <div key={item.label} className="bg-app-surface border border-app-border rounded-lg px-4 py-3 shadow-app-surface">
-            <p className="text-xl font-semibold font-mono text-app-primary">{item.value}</p>
-            <p className="text-[10px] text-app-faint mt-0.5">{item.label}</p>
+          [t("cv_total"), records.filter((r) => r.status === "Indexed" && r.storageKey != null).length],
+          [t("cv_active"), records.filter((r) => r.isActive).length],
+          [t("cv_pending"), records.filter((r) => r.status === "Review").length],
+        ].map(([label, value]) => (
+          <div key={label} className="bg-app-surface border border-app-border rounded-xl p-4">
+            <div className="text-2xl font-semibold text-app-primary">{value}</div>
+            <div className="text-xs text-app-muted mt-1">{label}</div>
           </div>
         ))}
       </div>
-
-      <div
-        className="border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors"
-        style={{
-          borderColor: dragging ? "var(--color-brand)" : "var(--color-border)",
-          background: dragging ? "var(--color-brand-subtle)" : "transparent",
-        }}
-        onDragOver={(event) => {
-          event.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setDragging(false);
-          void handleFile(event.dataTransfer.files?.[0]);
-        }}
-        onClick={() => inputRef.current?.click()}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.txt,application/pdf,text/plain"
-          className="hidden"
-          onChange={(event) => {
-            void handleFile(event.target.files?.[0]);
-            event.currentTarget.value = "";
-          }}
-        />
-        <UploadIcon size={28} className="mx-auto mb-3 text-app-faint" />
-        <p className="text-sm text-app-secondary">{t("upload_drop_cv")}</p>
-        <p className="text-xs text-app-faint mt-1">{t("upload_flow")}</p>
-      </div>
-
-      <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-[11px] text-app-muted">
-        {t("upload_history_note")}
-      </div>
-
-      {error && (
-        <div className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
-          {error}
+      {records.some((r) => !r.storageKey && !r.consultantId && !r.draftJson && !r.isActive &&
+        (r.status === "Error" || r.status === "Extracting") &&
+        Date.now() - new Date(r.uploadedAt).getTime() > 24 * 60 * 60 * 1000) && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-app-border p-3">
+          <p className="text-xs text-app-muted">{t("cv_old_attempts")}</p>
+          <button type="button" className="text-xs text-app-brand" onClick={async () => {
+            try {
+              const result = await cvUploadsApi.cleanupAbandoned();
+              await refresh();
+              setError(result.removed + " " + t("cv_cleanup_done"));
+            } catch { setError(t("cv_cleanup_failed")); }
+          }}>{t("cv_cleanup")}</button>
         </div>
       )}
-
-      <div className="bg-app-surface border border-app-border rounded-lg overflow-hidden shadow-app-surface">
-        <div className="px-4 py-2.5 border-b border-app-border flex items-center justify-between">
-          <span className="text-xs font-medium text-app-primary">{t("upload_processing_history")}</span>
-          <span className="text-[10px] text-app-faint">{loading ? t("common_loading") : `${files.length} ${t("upload_files")}`}</span>
-        </div>
-
-        {!loading && files.length === 0 && (
-          <p className="px-4 py-6 text-xs text-app-faint text-center">{t("upload_no_history")}</p>
-        )}
-
-        {files.map((file, index) => (
-          <div
-            key={file.id}
-            className="flex items-center gap-3 px-4 py-3"
-            style={{ borderBottom: index < files.length - 1 ? "1px solid var(--color-border-subtle)" : "none" }}
-          >
-            <FileText size={13} className="text-app-faint flex-none" />
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs text-app-primary font-mono truncate">{file.fileName}</span>
-                <span className="text-[10px] text-app-faint">{formatBytes(file.fileSize)}</span>
-              </div>
-
-              <div className="flex items-center gap-2 mt-1.5">
-                <div className="flex-1 h-1 rounded-full" style={{ background: "var(--color-border)" }}>
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: progress(file.status) + "%", backgroundColor: statusColor(file.status) }}
-                  />
+      <section className="rounded-xl border border-app-border bg-app-surface p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            {uploadState.phase !== "idle" && uploadState.phase !== "ready" && (
+                <div role={uploadState.phase === "error" ? "alert" : "status"} aria-live="polite" className="mt-3 text-xs text-app-secondary">
+                  <span className="font-medium">{uploadState.fileName}</span>{" · "}
+                  {uploadState.phase === "uploading" ? t("cv_uploading") : uploadState.phase === "extracting" ? t("status_extracting") : uploadState.error?.includes("DUPLICATE_CV") ? t("cv_duplicate") : uploadState.error}
                 </div>
-
-                <span className="text-[10px] min-w-24" style={{ color: statusColor(file.status) }}>
-                  {file.status === "Extracting" && <Loader size={9} className="inline animate-spin mr-1" />}
-                  {file.status === "Indexed" && <CheckCircle size={9} className="inline mr-1" />}
-                  {file.status === "Error" && <AlertCircle size={9} className="inline mr-1" />}
-                  {file.status === "Review" ? "Review needed" : file.status}
-                </span>
-              </div>
-
-              <p className="text-[10px] text-app-faint mt-1">{formatDateTime(file.uploadedAt, locale)}</p>
-              {file.errorMessage && <p className="text-[10px] mt-1" style={{ color: "var(--color-danger)" }}>{file.errorMessage}</p>}
-            </div>
-
-            {file.status === "Review" && file.draft && (
-              <button
-                type="button"
-                onClick={() => { localStorage.setItem(`xlent-cv-review-${file.id}`, JSON.stringify(file.draft)); navigate(`/cv-upload/review?uploadId=${file.id}`); }}
-                className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app-border rounded px-2.5 py-1.5"
-              >
-                  <Eye size={11} /> {t("upload_review")}
-              </button>
             )}
-
-            {file.status === "Indexed" && file.consultantId && (
-              <Link
-                to={"/consultants/" + file.consultantId}
-                className="inline-flex items-center gap-1 text-[11px] text-app-secondary border border-app-border rounded px-2.5 py-1.5"
-              >
-                <Eye size={11} /> {t("consultants_view")}
-              </Link>
-            )}
-
-            <button
-              type="button"
-              onClick={() => void clearUploadRecord(file.id)}
-              disabled={deletingId === file.id}
-              className="p-1.5 rounded text-app-faint hover:text-app-secondary disabled:opacity-40 disabled:cursor-not-allowed"
-              title={t("upload_clear_history")}
-              aria-label={`${t("upload_clear")} ${file.fileName} ${t("upload_from_history")}`}
-            >
-              {deletingId === file.id ? <Loader size={12} className="animate-spin" /> : <X size={12} />}
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            {replaceConsultantId && <Link className="text-xs text-app-brand" to={`/consultants/${replaceConsultantId}`}>{t("cv_back_consultant")}</Link>}
+            <input ref={input} type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }} />
+            <button type="button" title={t("cv_upload_tooltip")} disabled={busy} onClick={() => input.current?.click()} dir="ltr" className="inline-flex w-fit items-center justify-center rounded-md bg-app-brand px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+              {busy ? t("cv_uploading") : replaceConsultantId && existingCvForConsultant ? t("cv_choose_replacement") : replaceConsultantId ? t("cv_upload_new") : "+ " + t("cv_upload_title")}
             </button>
-
           </div>
-        ))}
-      </div>
-
-      {draft && activeFile && (
-        <Modal
-          open
-          title={t("upload_review_title")}
-          description={t("upload_review_description")}
-          onClose={() => setActiveId(null)}
-        >
-          <div className="p-5 space-y-5 max-h-[75vh] overflow-auto">
-            <div className="flex items-center gap-2 text-xs text-app-muted">
-              <FileText size={12} /> {activeFile.fileName}
-            </div>
-
-            <section className={reviewStep === 0 ? "space-y-3" : "hidden"}>
-              <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_basic")}</p>
-              <div className="grid grid-cols-2 gap-3">
-                <label>
-                  <span className="text-[11px] text-app-muted block mb-1">{t("upload_first_name")} <span className="text-app-brand">*</span></span>
-                  <Input value={draft.firstName} onChange={(event) => updateDraft({ ...draft, firstName: event.target.value })} />
-                </label>
-                <label>
-                  <span className="text-[11px] text-app-muted block mb-1">{t("upload_last_name")} <span className="text-app-brand">*</span></span>
-                  <Input value={draft.lastName} onChange={(event) => updateDraft({ ...draft, lastName: event.target.value })} />
-                </label>
-                <label>
-                  <span className="text-[11px] text-app-muted block mb-1">{t("upload_job_title")}</span>
-                  <Input value={draft.title ?? ""} onChange={(event) => updateDraft({ ...draft, title: event.target.value || null })} />
-                </label>
-                <label>
-                  <span className="text-[11px] text-app-muted block mb-1">{t("consultant_seniority_label")}</span>
-                  {draft.suggestedSeniority && <span className="text-[10px] text-app-brand block mb-1">{t("upload_ai_suggestion")} {draft.suggestedSeniority}</span>}
-                  <select value={draft.seniority ?? ""} onChange={(event) => updateDraft({ ...draft, seniority: event.target.value || null })} className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"><option value="">{t("common_not_specified")}</option><option value="Junior">{t("seniority_junior")}</option><option value="Mid">{t("seniority_mid")}</option><option value="Senior">{t("seniority_senior")}</option><option value="Staff">{t("seniority_staff")}</option></select>
-                </label>
-                <label>
-                  <span className="text-[11px] text-app-muted block mb-1">{t("consultant_total_experience")}</span>
-                  <Input type="number" min={0} value={draft.yearsOfExperience ?? ""} onChange={(event) => updateDraft({ ...draft, yearsOfExperience: event.target.value ? Number(event.target.value) : null, yearsOfExperienceSource: "ManuallyConfirmed" })} />
-                </label>
-                <label>
-                  <span className="text-[11px] text-app-muted block mb-1">{t("upload_email")}</span>
-                  <Input value={draft.email ?? ""} onChange={(event) => updateDraft({ ...draft, email: event.target.value || null })} />
-                </label>
-                <label>
-                </label>
-                <label>
-                  <span className="text-[11px] text-app-muted block mb-1">{t("consultant_office")}</span>
-                  <Input value={draft.office ?? ""} onChange={(event) => updateDraft({ ...draft, office: event.target.value || null })} />
-                </label>
-              </div>
-
-              <label className="block">
-                <span className="text-[11px] text-app-muted block mb-1">{t("consultant_summary")}</span>
-                <Textarea value={draft.summary ?? ""} onChange={(event) => updateDraft({ ...draft, summary: event.target.value || null })} rows={4} />
-              </label>
-            </section>
-
-            <section className={reviewStep === 1 ? "space-y-3" : "hidden"}>
-              <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_skills")} ({draft.skills.length})</p>
-              <div className="hidden grid-cols-[1fr_80px_80px_30px] gap-2 px-3 text-[10px] text-app-muted md:grid"><span>{t("upload_field_skill")}</span><span>{t("upload_field_years")}</span><span>{t("upload_field_level")}</span><span>{t("common_actions")}</span></div>
-
-              <div className="space-y-2">
-                {draft.skills.map((skill, index) => (
-                  <div key={index} className="grid grid-cols-[1fr_80px_80px_30px] gap-2 items-center">
-                    <Input
-                      value={skill.name}
-                      aria-label={t("upload_field_skill")} placeholder={t("upload_field_skill")}
-                      onChange={(event) => updateDraft({
-                        ...draft,
-                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, name: event.target.value } : item),
-                      })}
-                    />
-                    <Input
-                      type="number"
-                      min={0}
-                      value={skill.years}
-                      aria-label={t("upload_field_years")} placeholder={t("upload_field_years")}
-                      onChange={(event) => updateDraft({
-                        ...draft,
-                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, years: Number(event.target.value) || 0 } : item),
-                      })}
-                    />
-                    <Input
-                      type="number"
-                      min={0}
-                      max={5}
-                      value={skill.level}
-                      aria-label={t("upload_field_level")} placeholder={t("upload_field_level")}
-                      onChange={(event) => updateDraft({
-                        ...draft,
-                        skills: draft.skills.map((item, currentIndex) => currentIndex === index ? { ...item, level: Number(event.target.value) || 0 } : item),
-                      })}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => updateDraft({ ...draft, skills: draft.skills.filter((_, currentIndex) => currentIndex !== index) })}
-                      className="text-app-faint hover:text-app-secondary"
-                      aria-label={t("upload_remove_skill")}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={() => updateDraft({ ...draft, skills: [...draft.skills, { name: "", level: 0, years: 0, evidence: null }] })} className="inline-flex items-center gap-1 text-xs text-app-brand"><Plus size={13} />{t("common_add")} {t("upload_field_skill").toLowerCase()}</button>
-            </section>
-
-            <section className={reviewStep >= 2 ? "space-y-5" : "hidden"}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wide text-app-faint">{t("upload_step_profile").replace("{step}", String(reviewStep + 1))}</p>
-                  <p className="text-[11px] text-app-muted mt-1">{t("upload_review_help")}</p>
-                </div>
-              </div>
-
-              <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
-              <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
-                <p className="text-xs font-medium text-app-primary">{t("upload_languages")} ({draft.languages.length})</p>
-                <div className="hidden grid-cols-[1fr_1fr_auto] gap-2 px-3 text-[10px] text-app-muted md:grid"><span>{t("consultant_language")}</span><span>{t("upload_language_proficiency")}</span><span>{t("common_actions")}</span></div>
-                {draft.languages.map((item, index) => (
-                  <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                    <Input aria-label={t("consultant_language")} placeholder={t("consultant_language")} value={item.name} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                    <select aria-label={t("upload_language_proficiency")} value={item.proficiency} onChange={(event) => updateDraft({ ...draft, languages: draft.languages.map((row, i) => i === index ? { ...row, proficiency: event.target.value as typeof row.proficiency } : row) })} className="w-full bg-app border border-app-border rounded px-3 py-2 text-xs text-app-primary"><option value="Not specified">{t("common_not_specified")}</option><option value="Low">{t("proficiency_low")}</option><option value="Medium">{t("proficiency_medium")}</option><option value="High">{t("proficiency_high")}</option><option value="Native">{t("proficiency_native")}</option></select>
-                    <button type="button" onClick={() => updateDraft({ ...draft, languages: draft.languages.filter((_, i) => i !== index) })} className="text-app-faint hover:text-app-secondary" aria-label={t("upload_remove_language")}><X size={12} /></button>
-                  </div>
-                ))}
-                {draft.languages.length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_languages")}</p>}
-                <button type="button" onClick={() => updateDraft({ ...draft, languages: [...draft.languages, { name: "", proficiency: "Not specified" }] })} className="inline-flex items-center gap-1 text-xs text-app-brand"><Plus size={13} />{t("upload_add_language")}</button>
-              </div>
-
-</div>
-              <div className={reviewStep === 2 ? "space-y-4" : "hidden"}>
-              <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-app-primary">{t("upload_experience_section")} ({draft.experiences.length})</p>
-                  <Button variant="ghost" onClick={() => updateDraft({ ...draft, experiences: [...draft.experiences, { company: "", role: "", description: null, startDate: null, endDate: null }] })}>{t("upload_add_experience")}</Button>
-                </div>
-                {draft.experiences.map((item, index) => (
-                  <div key={index} className="rounded-md border border-app-border bg-app-surface p-3 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input aria-label={t("upload_role")} placeholder={t("upload_role")} value={item.role} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, role: event.target.value } : row) })} />
-                      <Input aria-label={t("consultant_company")} placeholder={t("consultant_company")} value={item.company} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, company: event.target.value } : row) })} />
-                      <Input type="month" aria-label={t("upload_start_date")} value={item.startDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, startDate: event.target.value || null } : row) })} />
-                      <Input type="month" aria-label={t("upload_end_date")} value={item.endDate ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, endDate: event.target.value || null } : row) })} />
-                    </div>
-                    <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, experiences: draft.experiences.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
-                    <button type="button" onClick={() => updateDraft({ ...draft, experiences: draft.experiences.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted hover:text-app-secondary">{t("consultant_remove_experience")}</button>
-                  </div>
-                ))}
-                {draft.experiences.length === 0 && <p className="text-[11px] text-app-faint">{t("upload_no_experience")}</p>}
-              </div>
-
-</div>
-              <div className={reviewStep === 3 ? "space-y-4" : "hidden"}>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">{t("upload_projects")} ({draft.projects.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, projects: [...draft.projects, { name: "", description: null, technologies: null }] })}>{t("common_add")} {t("upload_projects").toLowerCase()}</Button>
-                  </div>
-                  {draft.projects.map((item, index) => (
-                    <div key={index} className="rounded border border-app-border bg-app-surface p-2 space-y-2">
-                      <Input aria-label={t("upload_project_name")} placeholder={t("upload_project_name")} value={item.name} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                      <Input aria-label={t("upload_technologies")} placeholder={t("upload_technologies")} value={item.technologies ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, technologies: event.target.value || null } : row) })} />
-                      <Textarea aria-label={t("consultant_description")} placeholder={t("consultant_description")} rows={2} value={item.description ?? ""} onChange={(event) => updateDraft({ ...draft, projects: draft.projects.map((row, i) => i === index ? { ...row, description: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, projects: draft.projects.filter((_, i) => i !== index) })} className="text-[11px] text-app-muted">{t("consultant_remove_project")}</button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">{t("upload_education")} ({draft.education.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, education: [...draft.education, { degree: "", school: null, year: null }] })}>{t("common_add")} {t("upload_education").toLowerCase()}</Button>
-                  </div>
-                  {draft.education.map((item, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_1fr_80px_auto] gap-2 items-center">
-                      <Input aria-label={t("upload_degree")} placeholder={t("upload_degree")} value={item.degree} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, degree: event.target.value } : row) })} />
-                      <Input aria-label={t("consultant_school")} placeholder={t("consultant_school")} value={item.school ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, school: event.target.value || null } : row) })} />
-                      <Input aria-label={t("upload_year")} placeholder={t("upload_year")} value={item.year ?? ""} onChange={(event) => updateDraft({ ...draft, education: draft.education.map((row, i) => i === index ? { ...row, year: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, education: draft.education.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_education")}><X size={12} /></button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">{t("upload_certifications")} ({draft.certifications.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, certifications: [...draft.certifications, { name: "", issuer: null, issuedDate: null }] })}>{t("common_add")} {t("upload_certifications").toLowerCase()}</Button>
-                  </div>
-                  {draft.certifications.map((item, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_1fr_110px_auto] gap-2 items-center">
-                      <Input aria-label={t("upload_certification")} placeholder={t("upload_certification")} value={item.name} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, name: event.target.value } : row) })} />
-                      <Input aria-label={t("upload_issuer")} placeholder={t("upload_issuer")} value={item.issuer ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuer: event.target.value || null } : row) })} />
-                      <Input type="month" aria-label={t("upload_issued_date")} value={item.issuedDate ?? ""} onChange={(event) => updateDraft({ ...draft, certifications: draft.certifications.map((row, i) => i === index ? { ...row, issuedDate: event.target.value || null } : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, certifications: draft.certifications.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_certification")}><X size={12} /></button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-lg border border-app-border bg-app-raised p-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-app-primary">{t("upload_industries")} ({draft.industries.length})</p>
-                    <Button variant="ghost" onClick={() => updateDraft({ ...draft, industries: [...draft.industries, ""] })}>{t("common_add")} {t("upload_industries").toLowerCase()}</Button>
-                  </div>
-                  {draft.industries.map((item, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input aria-label={t("upload_industry")} placeholder={t("upload_industry")} value={item} onChange={(event) => updateDraft({ ...draft, industries: draft.industries.map((row, i) => i === index ? event.target.value : row) })} />
-                      <button type="button" onClick={() => updateDraft({ ...draft, industries: draft.industries.filter((_, i) => i !== index) })} className="text-app-faint" aria-label={t("consultant_remove_industry")}><X size={12} /></button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              </div>
-            </section>
-
-            {!canSave && <p className="text-[10px] text-app-faint">{t("upload_save_validation")}</p>}
-
-            <div className="flex justify-between gap-2">
-              <Button variant="ghost" onClick={() => setActiveId(null)}>{t("common_close")}</Button>
-              <div className="flex gap-2">
-                {reviewStep > 0 && <Button variant="ghost" onClick={() => setReviewStep((current) => current - 1)}>{t("common_back")}</Button>}
-                {reviewStep < 3 ? <Button variant="primary" onClick={() => setReviewStep((current) => current + 1)}>{t("common_next")}</Button> : <Button variant="primary" onClick={saveConsultant} disabled={saving || !canSave}>{saving ? t("common_saving") : t("upload_approve_save")}</Button>}
+        </div>
+      </section>
+      <section className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
+        <div className="flex flex-wrap gap-2 items-center justify-between px-4 py-3 border-b border-app-border">
+          <div className="flex flex-wrap gap-1">
+            <button className={tabClass("library")} onClick={() => { setTab("library"); setPage(1); }}>{t("cv_library")}</button>
+            <button className={tabClass("review")} onClick={() => { setTab("review"); setPage(1); }}>{t("cv_review_queue")} ({records.filter((r) => r.status === "Review").length}) {newReviewIds.some((id) => records.some((r) => r.id === id && r.status === "Review")) && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{t("cv_new")}</span>}</button>
+          </div>
+          <div className="flex gap-2">
+            <input aria-label={t("cv_search_label")} className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" placeholder={t("cv_search")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+            <select aria-label={t("cv_status_filter")} className="rounded-md border border-app-border bg-app px-3 py-2 text-xs text-app-primary" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+              {["All", "Extracting", "Review", "Indexed", "Error"].map((x) => <option key={x} value={x}>{localizeStatus(x)}</option>)}
+            </select>
+          </div>
+        </div>
+        {error && <p role="alert" className="mx-4 mt-3 text-xs text-red-500">{error}</p>}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead className="bg-app-raised text-app-muted"><tr><th title={t("cv_file_hint")} className="px-4 py-3">{t("cv_file")} ⓘ</th><th title={t("cv_consultant_hint")} className="px-4 py-3">{t("cv_consultant")} ⓘ</th><th title={t("cv_date_hint")} className="px-4 py-3">{t("cv_uploaded")} ⓘ</th><th title={t("cv_size_hint")} className="px-4 py-3">{t("cv_size")} ⓘ</th><th title={t("cv_status_hint")} className="px-4 py-3">{t("cv_status")} ⓘ</th><th title={t("cv_actions_hint")} className="px-4 py-3 text-right">{t("cv_actions")} ⓘ</th></tr></thead>
+            <tbody>
+              {visibleList.map((r) => (
+                <tr key={r.id} className="border-t border-app-border text-app-secondary">
+                  <td className="px-4 py-3 font-medium text-app-primary">{r.fileName}</td>
+                  <td className="px-4 py-3">{r.consultantId ? <Link className="text-app-brand" to={`/consultants/${r.consultantId}`}>{consultantNames[r.consultantId] || t("cv_consultant_number") + " " + r.consultantId}</Link> : <span className="text-app-muted">{t("cv_unassigned")}</span>}</td>
+                  <td className="px-4 py-3">{new Date(r.uploadedAt).toLocaleDateString(locale === "sv" ? "sv-SE" : locale === "es" ? "es-ES" : "en-US")}</td>
+                  <td className="px-4 py-3">{formatSize(r.fileSize)}</td>
+                  <td className="px-4 py-3"><div className="flex flex-wrap items-center gap-2">{r.isActive ? t("cv_active_status") : localizeStatus(r.status)}{tab === "review" && newReviewIds.includes(r.id) && <span className="rounded-full bg-app-brand-subtle px-2 py-0.5 text-[10px] font-semibold text-app-brand">{t("cv_new")}</span>}</div></td>
+                  <td className="px-4 py-3"><div className="flex justify-end flex-wrap gap-3">
+                    {tab === "library" && r.storageKey && <><a href={`${cvUploadsApi.fileUrl(r.id)}?inline=true`} target="_blank" rel="noreferrer" className="text-app-brand">{t("cv_view")}</a><a href={cvUploadsApi.fileUrl(r.id)} className="text-app-brand">{t("cv_download")}</a></>}
+                    {tab === "review" && <Link className="text-app-brand" to={`/cv-upload/review?uploadId=${r.id}${r.consultantId ? `&replaceConsultantId=${r.consultantId}` : ""}`} onClick={() => { setNewReviewIds((current) => current.filter((id) => id !== r.id)); acknowledgeReview(r.id); }}>{t("cv_review_now")}</Link>}
+                    {tab === "library" && r.consultantId && <Link className="text-app-brand" to={`/cv-upload?replaceConsultantId=${r.consultantId}`}>{t("cv_replace")}</Link>}
+                    <button type="button" className="text-app-muted hover:text-red-500" onClick={() => void remove(r)}>{t("cv_delete")}</button>
+                  </div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!loading && list.length > 0 && (
+            <div className="flex items-center justify-between gap-3 border-t border-app-border bg-app-surface px-4 py-2.5 text-[10px] text-app-muted">
+              <span>{firstRow}–{lastRow} {t("cv_of")} {list.length} CVs</span>
+              <div className="flex items-center gap-3">
+                <span>{t("cv_rows")}</span>
+                <button type="button" aria-label={t("cv_previous")} disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded px-2 py-1 hover:bg-app-raised disabled:opacity-35">‹</button>
+                <span>{t("cv_page")} {currentPage} {t("cv_of")} {pageCount}</span>
+                <button type="button" aria-label={t("cv_next")} disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="rounded px-2 py-1 hover:bg-app-raised disabled:opacity-35">›</button>
               </div>
             </div>
-          </div>
-        </Modal>
-      )}
+          )}
+          {!loading && list.length === 0 && <p className="p-8 text-center text-xs text-app-muted">{t("cv_no_results")}</p>}
+          {loading && <p className="p-8 text-center text-xs text-app-muted">{t("cv_loading")}</p>}
+        </div>
+      </section>
+      <p className="text-xs text-app-muted">{t("cv_storage_note")}</p>
     </div>
   );
 }

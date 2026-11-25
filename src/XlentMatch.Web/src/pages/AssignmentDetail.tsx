@@ -76,7 +76,7 @@ function SkillEditor({
               addSkill();
             }
           }}
-          placeholder={category === "HumanLanguage" ? "e.g. Swedish" : t("assignment_add_skill")}
+          placeholder={category === "HumanLanguage" ? t("assignment_language_example") : t("assignment_add_skill")}
           className="flex-1"
         />
         <Button variant="secondary" icon={<Plus size={12} />} className="px-2.5" onClick={addSkill}>
@@ -290,8 +290,8 @@ export default function AssignmentDetail() {
   const viewSeniorityRequirement = assignment.requirements.find((requirement) => requirement.category === "Seniority");
   const otherRequirements = assignment.requirements.filter((requirement) => !["Skill", "HumanLanguage", "Seniority"].includes(requirement.category));
   const hasLongOverview = (assignment.description?.length ?? 0) > 280;
-  const statusTone = assignment.status === "Done" ? "success" : "neutral";
-  const statusLabel = assignment.status === "Done" ? t("assignment_done") : assignment.status === "Closed" ? t("assignment_closed") : assignment.status === "Draft" ? t("assignment_draft") : assignment.status === "Matching" ? t("assignment_matching") : assignment.status;
+  const statusTone = ["Matched", "Done"].includes(assignment.status) ? "success" : "neutral";
+  const statusLabel = ["Matched", "Done"].includes(assignment.status) ? t("assignment_done") : t("assignment_draft");
 
   return (
     <div className="flex flex-col h-full">
@@ -304,9 +304,9 @@ export default function AssignmentDetail() {
       <EntitySummary
         leading={<div className="w-9 h-9 rounded-lg bg-app-brand-subtle flex items-center justify-center text-app-brand"><Briefcase size={15} /></div>}
         title={assignment.title}
-        metadata={`${assignment.customerName || "—"} · ${displaySeniority(assignment.seniority ?? "—")} · ${assignment.location || t("assignment_location_unspecified")} · ${t("common_updated")} ${formatDate(assignment.updatedAt || assignment.createdAt, locale)}`}
-        badges={<><StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>{(assignment.availability || assignment.requiredStartDate) && <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>{assignment.requiredStartDate ? formatDate(assignment.requiredStartDate, locale) : displayAvailability(assignment.availability ?? "")}</StatusBadge>}</>}
-        actions={<><LinkButton to={"/matching?assignment=" + assignment.id} state={{ fromAssignment: true }} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view_matches")}</LinkButton><LinkButton to={`/client-assignments/${assignment.id}/edit`} variant="secondary" icon={<Edit3 size={12} />}>{t("assignment_edit")}</LinkButton><Button variant="danger" icon={<Trash2 size={12} />} onClick={() => setDeleteOpen(true)}>{t("common_delete")}</Button></>}
+        metadata={[assignment.customerName, assignment.referenceNumber].filter(Boolean).join(" · ")}
+        badges={<><StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>{(assignment.availability || assignment.requiredStartDate || assignment.startDateDescription) && <StatusBadge tone={assignment.availability === "Immediate" ? "success" : "neutral"}>{assignment.requiredStartDate ? formatDate(assignment.requiredStartDate, locale) : assignment.startDateDescription || displayAvailability(assignment.availability ?? "")}</StatusBadge>}</>}
+        actions={<><LinkButton to={"/matching/" + assignment.id} state={{ fromAssignment: true }} variant="secondary" icon={<Eye size={12} />}>{t("assignment_view_matches")}</LinkButton><LinkButton to={`/client-assignments/${assignment.id}/edit`} variant="secondary" icon={<Edit3 size={12} />}>{t("assignment_edit")}</LinkButton><Button variant="danger" icon={<Trash2 size={12} />} onClick={() => setDeleteOpen(true)}>{t("common_delete")}</Button></>}
       />
 
       {error && (
@@ -340,7 +340,7 @@ export default function AssignmentDetail() {
               <div className="flex flex-wrap gap-2">
                 {required.map((skill) => {
                   const requirement = assignment.requirements.find((item) => item.type === "Mandatory" && item.category === "Skill" && item.name === skill);
-                  return <div key={skill} className="space-y-1"><SkillTag variant="required">{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ years` : requirement.minLevel != null ? `Level ${requirement.minLevel}/5` : ""}</p>}</div>;
+                  return <div key={skill} className="space-y-1"><SkillTag variant="required">{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ ${t("assignment_years_unit")}` : requirement.minLevel != null ? `${t("assignment_level")} ${requirement.minLevel}/5` : ""}</p>}</div>;
                 })}
               </div>
             </div>
@@ -354,7 +354,7 @@ export default function AssignmentDetail() {
               <div className="flex flex-wrap gap-2">
                 {preferred.map((skill) => {
                   const requirement = assignment.requirements.find((item) => item.type === "Desired" && item.category === "Skill" && item.name === skill);
-                  return <div key={skill} className="space-y-1"><SkillTag>{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ years` : `Level ${requirement.minLevel}/5`}</p>}</div>;
+                  return <div key={skill} className="space-y-1"><SkillTag>{skill}</SkillTag>{(requirement?.minYears != null || requirement?.minLevel != null) && <p className="text-[9px] text-app-muted">{requirement.minYears != null ? `${requirement.minYears}+ ${t("assignment_years_unit")}` : `${t("assignment_level")} ${requirement.minLevel}/5`}</p>}</div>;
                 })}
               </div>
             </div>

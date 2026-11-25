@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle,
@@ -11,6 +11,7 @@ import {
 } from "../design-system/icons";
 import { useI18n } from "../i18n";
 import { PageHeader } from "../components/ui/PageHeader";
+import { EntitySummary } from "../components/ui/EntitySummary";
 import { LinkButton } from "../components/ui/LinkButton";
 import { assignmentsApi } from "../services/assignmentsApi";
 import { consultantsApi } from "../services/consultantsApi";
@@ -114,17 +115,18 @@ export default function Matching() {
         ? t("matching_partial")
         : t("matching_low");
   };
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { assignmentId: assignmentIdParam } = useParams<{ assignmentId: string }>();
   const location = useLocation();
 
   const [assignments, setAssignments] = useState<AssignmentApi[]>([]);
   const [consultants, setConsultants] = useState<Consultant[]>([]);
+  const [cvEligible, setCvEligible] = useState<Set<number> | null>(null);
   const [results, setResults] = useState<MatchResultApi[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
-  const [success, setSuccess] = useState("");
+  const [matchingAttempt, setMatchingAttempt] = useState(0);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
     "Overview" | "Requirements" | "Experience"
@@ -132,7 +134,7 @@ export default function Matching() {
   const [listFilter, setListFilter] = useState<MatchCategory>("All");
   const [query, setQuery] = useState("");
 
-  const assignmentId = Number(searchParams.get("assignment"));
+  const assignmentId = Number(assignmentIdParam);
   const assignment = assignments.find((item) => item.id === assignmentId);
   const fromAssignment = Boolean(
     (location.state as { fromAssignment?: boolean } | null)?.fromAssignment,
@@ -141,6 +143,7 @@ export default function Matching() {
   useEffect(() => {
     let cancelled = false;
 
+    consultantsApi.getCvEligibility().then(data => { if (!cancelled) setCvEligible(new Set(data.eligibleConsultantIds)); }).catch(() => { if (!cancelled) setCvEligible(null); });
     Promise.all([assignmentsApi.getAll(), consultantsApi.getAll()])
       .then(([assignmentData, consultantData]) => {
         if (cancelled) return;
@@ -162,33 +165,37 @@ export default function Matching() {
   }, []);
 
   useEffect(() => {
-    if (!Number.isInteger(assignmentId) || assignmentId <= 0) {
+    if (!Number.isInteger(assignmentId) || assignmentId <= 0 || loading) {
       setResults([]);
       setSelectedMatchId(null);
       return;
     }
 
     let cancelled = false;
+    setMatching(true);
+    setError("");
+    setResults([]);
+    setSelectedMatchId(null);
+    setExpanded(false);
 
-    matchingApi
-      .getForAssignment(assignmentId)
-      .then((data) => {
-        if (cancelled) return;
-        setResults(data);
-        setSelectedMatchId(data[0]?.id ?? null);
-      })
-      .catch((requestError: unknown) => {
-        if (!cancelled) {
-          setResults([]);
-          setSelectedMatchId(null);
-          setError(t("matching_load_results_error"));
-        }
-      });
+    // Recalculate on every page entry, assignment selection, or explicit retry.
+    matchingApi.run({
+      assignmentId,
+      consultantIds: consultants.map((consultant) => consultant.id),
+    }).then((data) => {
+      if (cancelled) return;
+      setResults(data);
+      setSelectedMatchId(data[0]?.id ?? null);
+    }).catch((requestError: unknown) => {
+      if (cancelled) return;
+      setError(requestError instanceof Error ? requestError.message : t("matching_failed"));
+    }).finally(() => {
+      if (!cancelled) setMatching(false);
+    });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [assignmentId]);
+    return () => { cancelled = true; };
+  }, [assignmentId, loading, matchingAttempt]);
+
 
   const allResults = useMemo(
     () => [...results].sort((a, b) => a.rank - b.rank || b.score - a.score),
@@ -226,51 +233,6 @@ export default function Matching() {
     [consultants],
   );
 
-  const selectAssignment = (id: string) => {
-    setSelectedMatchId(null);
-    setExpanded(false);
-    setResults([]);
-    setError("");
-    setSearchParams(id ? { assignment: id } : {});
-  };
-
-  const runMatching = async () => {
-    if (!assignment || matching || consultants.length === 0) return;
-
-    setMatching(true);
-    setError("");
-    setSuccess("");
-    setExpanded(false);
-
-    try {
-      const data = await matchingApi.run({
-        assignmentId: assignment.id,
-        consultantIds: consultants.map((consultant) => consultant.id),
-      });
-
-      setResults(data);
-      setSelectedMatchId(data[0]?.id ?? null);
-      setAssignments((current) =>
-        current.map((item) =>
-          item.id === assignment.id ? { ...item, status: "Done" } : item,
-        ),
-      );
-      setSuccess(t("assignment_match_complete"));
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : t("matching_failed"),
-      );
-    } finally {
-      setMatching(false);
-    }
-  };
-
-  const required =
-    assignment?.requirements.filter(
-      (requirement) => requirement.type === "Mandatory",
-    ) ?? [];
   const selectedConsultant = selected
     ? consultantById.get(selected.consultantId)
     : undefined;
@@ -342,184 +304,37 @@ export default function Matching() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-none px-6 py-4 bg-app-surface">
+      <div className="flex-none border-b border-app-border bg-app-surface px-6 pt-3 pb-4">
         <PageHeader
           title={t("matching_title")}
           description={
             assignment
               ? t("matching_review_selected")
-              : t("matching_select_then_run")
+              : t("matching_choose_title")
           }
           backTo={
             fromAssignment && assignment
               ? "/client-assignments/" + assignment.id
-              : undefined
+              : "/matching"
           }
-          backLabel={t("matching_back_assignment")}
+          backLabel={fromAssignment ? t("matching_back_assignment") : t("matching_back_selection")}
         />
 
-        {!fromAssignment ? (
-          <div className="mt-4 rounded-lg border border-app-border bg-app px-4 py-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <label className="text-[10px] uppercase tracking-wide text-app-muted block mb-1.5">
-                  {t("matching_client_assignment")}
-                </label>
-
-                <select
-                  value={assignment?.id ?? ""}
-                  onChange={(event) => selectAssignment(event.target.value)}
-                  className="w-full max-w-xl text-xs font-medium rounded px-3 py-2 focus:outline-none"
-                  style={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  <option value="">{t("matching_select_assignment")}</option>
-                  {assignments.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.title} · {item.customerName}
-                    </option>
-                  ))}
-                </select>
-
-                {assignment && (
-                  <div className="mt-2 flex items-center gap-x-3 gap-y-1 flex-wrap text-[10px] text-app-muted">
-                    <span>
-                      {t("assignment_seniority")}:{" "}
-                      <strong className="font-medium text-app-secondary">
-                        {assignment.seniority || "—"}
-                      </strong>
-                    </span>
-                    <span>
-                      {t("assignment_availability")}:{" "}
-                      <strong className="font-medium text-app-secondary">
-                        {assignment.availability || "—"}
-                      </strong>
-                    </span>
-                    <span>
-                      {t("assignment_required_skills")}:{" "}
-                      <strong className="font-medium text-app-secondary">
-                        {required.length}
-                      </strong>
-                    </span>
-                    <span className="truncate max-w-xl">
-                      {required
-                        .slice(0, 4)
-                        .map((item) => item.name)
-                        .join(" · ")}
-                      {required.length > 4 ? " +" + (required.length - 4) : ""}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 self-end">
-                {assignment && (
-                  <LinkButton
-                    to={"/client-assignments/" + assignment.id}
-                    variant="secondary"
-                    icon={<Eye size={12} />}
-                  >
-                    {t("matching_view_assignment")}
-                  </LinkButton>
-                )}
-
-                <button
-                  onClick={runMatching}
-                  disabled={!assignment || matching || consultants.length === 0}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-app-on-brand px-3 py-2 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: "var(--color-brand)" }}
-                >
-                  {matching ? (
-                    <Loader size={12} className="animate-spin" />
-                  ) : (
-                    <Zap size={12} />
-                  )}
-                  {matching
-                    ? t("matching_running")
-                    : results.length > 0
-                      ? t("matching_rerun")
-                      : t("matching_run")}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : assignment ? (
-          <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-app-border bg-app px-4 py-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-semibold text-app-primary truncate">
-                  {assignment.title}
-                </p>
-                <span className="text-[10px] text-app-faint">·</span>
-                <p className="text-xs text-app-secondary truncate">
-                  {assignment.customerName}
-                </p>
-              </div>
-              <div className="mt-1.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[10px] text-app-muted">
-                <span>
-                  {t("assignment_seniority")}:{" "}
-                  <strong className="font-medium text-app-secondary">
-                    {assignment.seniority || "—"}
-                  </strong>
-                </span>
-                <span>
-                  {t("assignment_availability")}:{" "}
-                  <strong className="font-medium text-app-secondary">
-                    {assignment.availability || "—"}
-                  </strong>
-                </span>
-                <span>
-                  {t("assignment_required_skills")}:{" "}
-                  <strong className="font-medium text-app-secondary">
-                    {required.length}
-                  </strong>
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={runMatching}
-              disabled={matching || consultants.length === 0}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-app-on-brand px-3 py-2 rounded-md shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: "var(--color-brand)" }}
-            >
-              {matching ? (
-                <Loader size={12} className="animate-spin" />
-              ) : (
-                <Zap size={12} />
-              )}
-              {matching
-                ? t("matching_running")
-                : results.length > 0
-                  ? t("matching_rerun")
-                  : t("matching_run")}
-            </button>
-          </div>
-        ) : null}
-
-        {success && (
-          <div
-            className="mt-3 rounded-lg px-4 py-3 text-xs text-app-secondary"
-            style={{
-              background: "var(--color-success-soft)",
-              border: "1px solid var(--color-success-border)",
-            }}
-          >
-            <CheckCircle
-              size={11}
-              className="inline mr-1.5"
-              style={{ color: "var(--color-success)" }}
+        {assignment && (
+          <div className="-mx-6 mt-2">
+            <EntitySummary
+              variant="compact"
+              title={assignment.title}
+              metadata={[assignment.customerName, assignment.referenceNumber].filter(Boolean).join(" · ")}
+              actions={<><Link to={`/client-assignments/${assignment.id}`} className="text-xs text-app-brand hover:underline">{t("matching_view_assignment")}</Link><Link to={`/matching/${assignmentId}/ai-ranking`} className="inline-flex items-center rounded-md bg-app-brand px-3 py-1.5 text-xs font-medium text-app-on-brand hover:opacity-90">AI Ranking →</Link></>}
             />
-            {success}
           </div>
         )}
 
         {error && (
           <div className="mt-3 rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary">
-            {error}
+            <span>{error}</span>
+            {assignment && !matching && <button type="button" onClick={() => setMatchingAttempt((n) => n + 1)} className="ml-3 underline text-app-brand">{t("matching_retry")}</button>}
           </div>
         )}
       </div>
@@ -550,6 +365,8 @@ export default function Matching() {
             </p>
           </div>
         </div>
+      ) : error ? (
+        <div className="flex-1 bg-app" />
       ) : results.length === 0 ? (
         <div className="flex-1 flex items-center justify-center bg-app p-6">
           <div className="bg-app-surface border border-app-border rounded-xl p-8 text-center max-w-md shadow-app-surface">
@@ -558,13 +375,15 @@ export default function Matching() {
               {t("matching_ready_title")}
             </h2>
             <p className="text-xs text-app-muted mt-2 leading-relaxed">
-              {t("matching_ready_help")}
+              {t("matching_choose_help")}
             </p>
           </div>
         </div>
       ) : selected ? (
-        <div className="flex-1 flex min-h-0">
-          <aside className="w-80 flex-none border-r border-app-border bg-app-surface flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
+
+                      <div className="flex-1 min-h-0 overflow-y-auto flex items-start">
+              <aside className="w-80 flex-none border-r border-app-border bg-app-surface flex flex-col self-stretch">
             <div className="px-4 py-3 border-b border-app-border">
               <p className="text-sm font-semibold text-app-primary">
                 {t("matching_consultants")}
@@ -637,7 +456,7 @@ export default function Matching() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1">
               {visibleResults.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-5 text-center">
                   <div>
@@ -663,15 +482,7 @@ export default function Matching() {
                     <button
                       key={result.id}
                       onClick={() => setSelectedMatchId(result.id)}
-                      className="w-full text-left px-4 py-3.5 transition-colors border-b border-app-border-subtle"
-                      style={
-                        isSelected
-                          ? {
-                              background: "var(--color-brand-subtle)",
-                              borderLeft: "3px solid var(--color-brand)",
-                            }
-                          : { borderLeft: "3px solid transparent" }
-                      }
+                      className={`w-full text-left px-4 py-3.5 transition-colors border-b border-app-border-subtle border-l-[3px] ${isSelected ? "bg-app-brand-subtle border-l-app-brand" : "bg-app-surface border-l-transparent"}`}
                     >
                       <div className="flex items-start gap-2.5">
                         <span className="text-[10px] font-mono text-app-faint w-4 pt-1">
@@ -690,36 +501,10 @@ export default function Matching() {
                             </span>
                           </div>
                           <p className="text-[10px] text-app-muted truncate mt-0.5">
-                            {consultantById.get(result.consultantId)?.title ||
-                              t("consultant_role")}
+                            {consultantById.get(result.consultantId)?.seniority || "—"}
                           </p>
-                          <div className="mt-2">
-                            {missing.length === 0 ? (
-                              <div
-                                className="flex items-center gap-1 text-[10px]"
-                                style={{ color: "var(--color-success)" }}
-                              >
-                                <CheckCircle size={9} />
-                                {result.matchedMandatory}/
-                                {result.totalMandatory} {t("matching_matched")}
-                              </div>
-                            ) : (
-                              <div
-                                className="flex items-center gap-1 text-[10px]"
-                                style={{ color: "var(--color-warning)" }}
-                              >
-                                <AlertTriangle size={9} />
-                                {t("matching_missing_prefix")}{" "}
-                                {missing
-                                  .slice(0, 2)
-                                  .map((item) => item.requirementName)
-                                  .join(", ")}
-                                {missing.length > 2
-                                  ? ` +${missing.length - 2}`
-                                  : ""}
-                              </div>
-                            )}
-                          </div>
+                          {cvEligible !== null && <p className={`mt-1 text-[10px] ${cvEligible.has(result.consultantId) ? "text-app-success" : "text-app-warning"}`}>{cvEligible.has(result.consultantId) ? t("matching_cv_available") : t("matching_cv_missing")}</p>}
+
                         </div>
                       </div>
                     </button>
@@ -729,8 +514,9 @@ export default function Matching() {
             </div>
           </aside>
 
-          <main className="flex-1 overflow-auto bg-app">
-            <div className="p-6 space-y-5">
+          
+              <main className="flex-1 min-w-0 bg-app">
+                <div className="p-6 space-y-5">
               <section className="flex items-start justify-between gap-5">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-app-brand-subtle flex items-center justify-center text-sm font-semibold text-app-brand flex-none">
@@ -741,7 +527,7 @@ export default function Matching() {
                       {selected.consultantName}
                     </h2>
                     <p className="text-xs text-app-muted truncate">
-                      {selectedConsultant?.title || t("consultant_role")} ·{" "}
+                      {selectedConsultant?.seniority ? `${selectedConsultant.seniority} · ` : ""}
                       {selectedConsultant?.yearsOfExperience ?? 0}{" "}
                       {t("consultant_year_count")}
                     </p>
@@ -859,7 +645,7 @@ export default function Matching() {
                       >
                         <span>{skill.skill?.canonicalName ?? skill.name}</span>
                         <span className="text-app-muted">
-                          {skill.years} {t("consultant_year_count")}
+                          {skill.years == null ? t("common_not_specified") : `${skill.years} ${t("consultant_year_count")}`}
                         </span>
                       </div>
                     ))}
@@ -890,7 +676,7 @@ export default function Matching() {
                           >
                             <CheckCircle
                               size={11}
-                              style={{ color: "var(--color-success)" }}
+                              className="text-app-success"
                             />
                             <span className="text-xs font-mono text-app-primary">
                               {detail.requirementName}
@@ -928,11 +714,10 @@ export default function Matching() {
                             >
                               <AlertTriangle
                                 size={11}
-                                style={{ color: "var(--color-warning)" }}
+                                className="text-app-warning"
                               />
                               <span
-                                className="text-xs font-mono"
-                                style={{ color: "var(--color-warning)" }}
+                                className="text-xs font-mono text-app-warning"
                               >
                                 {detail.requirementName}
                               </span>
@@ -953,7 +738,7 @@ export default function Matching() {
                         <div className="flex items-center gap-2">
                           <CheckCircle
                             size={11}
-                            style={{ color: "var(--color-success)" }}
+                            className="text-app-success"
                           />
                           <span className="text-xs text-app-secondary">
                             {t("match_none_missing")}
@@ -1044,7 +829,7 @@ export default function Matching() {
                             >
                               <CheckCircle
                                 size={11}
-                                style={{ color: "var(--color-brand)" }}
+                                className="text-app-brand"
                               />
                               <span className="text-xs font-mono text-app-secondary">
                                 {detail.requirementName}
@@ -1079,14 +864,12 @@ export default function Matching() {
                             {item.isMatched === true ? (
                               <CheckCircle
                                 size={11}
-                                style={{ color: "var(--color-success)" }}
-                                className="mt-0.5 flex-none"
+                                className="text-app-success mt-0.5 flex-none"
                               />
                             ) : item.isMatched === false ? (
                               <AlertTriangle
                                 size={11}
-                                style={{ color: "var(--color-warning)" }}
-                                className="mt-0.5 flex-none"
+                                className="text-app-warning mt-0.5 flex-none"
                               />
                             ) : (
                               <Info
@@ -1169,12 +952,12 @@ export default function Matching() {
                               {detail.isMatched ? (
                                 <CheckCircle
                                   size={10}
-                                  style={{ color: "var(--color-success)" }}
+                                  className="text-app-success"
                                 />
                               ) : (
                                 <AlertTriangle
                                   size={10}
-                                  style={{ color: "var(--color-warning)" }}
+                                  className="text-app-warning"
                                 />
                               )}
                               <span className="text-[10px] font-mono font-medium text-app-brand">
@@ -1195,7 +978,9 @@ export default function Matching() {
                 </>
               )}
             </div>
-          </main>
+
+              </main>
+            </div>
         </div>
       ) : null}
     </div>

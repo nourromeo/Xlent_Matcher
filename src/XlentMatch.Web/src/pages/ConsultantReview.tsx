@@ -1,3 +1,4 @@
+import { useCvUpload } from "../contexts/CvUploadContext";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus } from "../design-system/icons";
@@ -8,16 +9,25 @@ import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { useI18n } from "../i18n";
 import { consultantsApi } from "../services/consultantsApi";
-import { cvUploadsApi } from "../services/cvUploadsApi";
+import { cvUploadsApi, type ConsultantDetectionMatch } from "../services/cvUploadsApi";
 import type { ConsultantDraft } from "../services/aiApi";
 import type { Consultant } from "../types";
 
 const storageKey = (id: string | null) => `xlent-cv-review-${id ?? "unknown"}`;
 const dateOnly = (value: string | null) => {
   const normalized = value?.trim() || null;
-  if (!normalized) return null;
-  if (/^\d{4}-\d{2}$/.test(normalized)) return `${normalized}-01`;
-  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : null;
+  if (!normalized || /^(nuvarande|pågående|present|current|ongoing)$/i.test(normalized)) return null;
+  // DateOnly requires a day. Do not fabricate January for year-only CV dates.
+  if (/^\d{4}$/.test(normalized)) return null;
+  const candidate = /^\d{4}-\d{2}$/.test(normalized) ? `${normalized}-01` : normalized;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(candidate)) return null;
+  const date = new Date(`${candidate}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === candidate ? candidate : null;
+};
+const invalidCvDate = (value: string | null) => {
+  const raw = value?.trim();
+  return !!raw && !/^(nuvarande|pågående|present|current|ongoing)$/i.test(raw)
+    && !/^\d{4}$/.test(raw) && dateOnly(raw) === null;
 };
 
 function toConsultant(draft: ConsultantDraft): Consultant {
@@ -26,7 +36,6 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     firstName: draft.firstName.trim(),
     lastName: draft.lastName.trim(),
     email: draft.email?.trim() || null,
-    title: draft.title?.trim() || null,
     summary: draft.summary?.trim() || null,
     seniority: draft.seniority?.trim() || null,
     yearsOfExperience: draft.yearsOfExperience,
@@ -34,7 +43,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
     availableAgainDate: null,
     availability: "Available",
     office: draft.office?.trim() || null,
-    originalCvText: null,
+    originalCvText: draft.sourceText?.trim() || null,
     skills: draft.skills
       .filter((x) => x.name.trim())
       .map((x) => ({
@@ -95,6 +104,7 @@ function toConsultant(draft: ConsultantDraft): Consultant {
         name: x.name.trim(),
         issuer: x.issuer?.trim() || null,
         issuedDate: dateOnly(x.issuedDate),
+      issuedYear: x.issuedYear || x.issuedDate?.slice(0, 4) || null,
       })),
   };
 }
@@ -102,25 +112,75 @@ function toConsultant(draft: ConsultantDraft): Consultant {
 export default function ConsultantReview() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { dismiss } = useCvUpload();
+  const [discarding, setDiscarding] = useState(false);
   const [params] = useSearchParams();
   const uploadId = params.get("uploadId");
+  const replaceConsultantId = Number(params.get("replaceConsultantId")) || null;
+  const [detectedConsultantId, setDetectedConsultantId] = useState<number | null>(null);
+  const [detectionMatches, setDetectionMatches] = useState<ConsultantDetectionMatch[]>([]);
+  const [detectionPending, setDetectionPending] = useState(false);
+  const [identityResolved, setIdentityResolved] = useState(Boolean(replaceConsultantId));
+  const linkedConsultantId = replaceConsultantId ?? detectedConsultantId;
+  const [existing, setExisting] = useState<Consultant | null>(null);
   const [draft, setDraft] = useState<ConsultantDraft | null>(null);
   const [step, setStep] = useState(0);
+  const [identitySearch, setIdentitySearch] = useState("");
+  const [identityChoice, setIdentityChoice] = useState<number | "new" | null>(null);
+  const [consultantOptions, setConsultantOptions] = useState<Consultant[]>([]);
+  const [identityError, setIdentityError] = useState(false);
+  const identityStepShown = !replaceConsultantId && (detectionMatches.length > 0 || identityChoice !== null);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [loadingDraft, setLoadingDraft] = useState(true);
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey(uploadId));
-      if (stored) setDraft(JSON.parse(stored) as ConsultantDraft);
-    } catch {
-      setError(t("upload_load_error"));
-    }
-  }, [uploadId, t]);
+    if (!uploadId) { setLoadingDraft(false); return; }
+    let cancelled = false;
+    cvUploadsApi.getAll().then((items) => {
+      const item = items.find((x) => x.id === Number(uploadId));
+      if (!cancelled && item?.draftJson) setDraft(JSON.parse(item.draftJson) as ConsultantDraft);
+      if (!cancelled && !item?.draftJson) setError(t("review_no_data"));
+    }).catch(() => { if (!cancelled) setError(t("review_load_error")); })
+      .finally(() => { if (!cancelled) setLoadingDraft(false); });
+    return () => { cancelled = true; };
+  }, [uploadId]);
   useEffect(() => {
-    if (draft)
-      localStorage.setItem(storageKey(uploadId), JSON.stringify(draft));
-  }, [draft, uploadId]);
+    if (!replaceConsultantId) return;
+    consultantsApi.getById(replaceConsultantId).then(setExisting)
+      .catch(() => setError(t("review_current_error")));
+  }, [replaceConsultantId]);
+  useEffect(() => {
+    if (replaceConsultantId || !draft || identityResolved) return;
+    let cancelled = false;
+    setDetectionPending(true);
+    cvUploadsApi.detectConsultant(draft).then((result) => {
+      if (!cancelled) {
+        setDetectionMatches(result.matches);
+        if (result.matches.length === 0) {
+          setIdentityResolved(true);
+          setDetectedConsultantId(null);
+        }
+      }
+    }).catch(() => {
+      if (!cancelled) setError(t("review_check_error"));
+    }).finally(() => {
+      if (!cancelled) setDetectionPending(false);
+    });
+    return () => { cancelled = true; };
+  }, [replaceConsultantId, draft?.firstName, draft?.lastName, draft?.email, identityResolved]);
+
+  useEffect(() => {
+    if (replaceConsultantId || identityResolved) return;
+    consultantsApi.getAll().then(setConsultantOptions)
+      .catch(() => setIdentityError(true));
+  }, [replaceConsultantId, identityResolved]);
+  useEffect(() => {
+    if (!detectedConsultantId) return;
+    consultantsApi.getById(detectedConsultantId).then(setExisting)
+      .catch(() => setError(t("review_selected_error")));
+  }, [detectedConsultantId]);
+
   const update = (patch: Partial<ConsultantDraft>) =>
     setDraft((current) => (current ? { ...current, ...patch } : current));
   const level = (value: number) =>
@@ -139,26 +199,60 @@ export default function ConsultantReview() {
   );
   const empty = !draft;
   const save = async () => {
+    if (discarding) return;
+    if (!identityResolved || detectionPending) {
+      setError(t("review_confirm_error"));
+      return;
+    }
     if (!draft || !draft.firstName.trim() || !draft.lastName.trim()) {
       setError(t("upload_required_names"));
       setStep(0);
       return;
     }
+    const invalidExperience = draft.experiences.findIndex((x) =>
+      invalidCvDate(x.startDate) || invalidCvDate(x.endDate) ||
+      (dateOnly(x.startDate) && dateOnly(x.endDate) && dateOnly(x.endDate)! < dateOnly(x.startDate)!)
+    );
+    if (invalidExperience !== -1) {
+      setError(`${t("review_invalid_date")} ${invalidExperience + 1}. ${t("review_invalid_date_hint")}`);
+      setStep(2);
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      const saved = await consultantsApi.create(
-        toConsultant(draft),
-        uploadId ? Number(uploadId) : undefined,
-      );
-      if (uploadId)
-        await cvUploadsApi.update(Number(uploadId), {
-          status: "Indexed",
-          consultantId: saved.id,
-          errorMessage: null,
-          draftJson: JSON.stringify(draft),
-        });
-      localStorage.removeItem(storageKey(uploadId));
+      let saved: Consultant;
+      if (linkedConsultantId) {
+        if (!existing) throw new Error(t("review_current_missing"));
+        const extracted = toConsultant(draft);
+        // The reviewed active CV is the source of truth for CV-derived profile data.
+        // Keep internal availability and scheduling information from the existing profile.
+        const merged: Consultant = {
+          ...extracted,
+          id: existing.id,
+          email: extracted.email || existing.email,
+          summary: extracted.summary || existing.summary,
+          seniority: extracted.seniority || existing.seniority,
+          yearsOfExperience: extracted.yearsOfExperience ?? existing.yearsOfExperience,
+          yearsOfExperienceSource: extracted.yearsOfExperienceSource || existing.yearsOfExperienceSource,
+          office: extracted.office || existing.office,
+          skills: extracted.skills.length ? extracted.skills : existing.skills,
+          experiences: extracted.experiences.length ? extracted.experiences : existing.experiences,
+          projects: extracted.projects.length ? extracted.projects : existing.projects,
+          education: extracted.education.length ? extracted.education : existing.education,
+          languages: extracted.languages.length ? extracted.languages : existing.languages,
+          industries: extracted.industries.length ? extracted.industries : existing.industries,
+          certifications: extracted.certifications.length ? extracted.certifications : existing.certifications,
+          availability: existing.availability,
+          availableAgainDate: existing.availableAgainDate,
+          originalCvText: extracted.originalCvText,
+        };
+        if (!uploadId) throw new Error(t("review_upload_missing"));
+        saved = await consultantsApi.approveCv(linkedConsultantId, Number(uploadId), merged);
+      } else {
+        saved = await consultantsApi.create(toConsultant(draft), uploadId ? Number(uploadId) : undefined);
+      }
+      dismiss();
       navigate(`/consultants/${saved.id}`);
     } catch (requestError) {
       setError(
@@ -202,7 +296,7 @@ export default function ConsultantReview() {
         label,
         <Input
           type={type}
-          value={item[name] ?? ""}
+          value={type === "month" ? (item[name] ?? "").slice(0, 7) : (item[name] ?? "")}
           onChange={(e) => setField(name, e.target.value)}
         />,
       );
@@ -251,6 +345,7 @@ export default function ConsultantReview() {
             <>
               {input(t("upload_certification"), "name")}
               {input(t("upload_issuer"), "issuer")}
+              {input(t("review_issue_year"), "issuedYear")}
               {input(t("upload_issued_date"), "issuedDate", "month")}
             </>
           )}
@@ -371,6 +466,24 @@ export default function ConsultantReview() {
       </div>
     );
   };
+  const discardDraft = async () => {
+    if (!uploadId || saving || discarding || !window.confirm(t("cv_delete_confirm"))) return;
+    setDiscarding(true);
+    setError("");
+    try {
+      // Only discard this pending upload, never the consultant's approved CV.
+      const records = await cvUploadsApi.getAll();
+      const record = records.find((item) => item.id === Number(uploadId));
+      if (record && (record.isActive || record.status !== "Review")) {
+        throw new Error(t("review_current_error"));
+      }
+      if (record) await cvUploadsApi.discardDraft(record.id);
+      dismiss();
+      navigate("/cv-upload");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : t("cv_delete_failed"));
+    } finally { setDiscarding(false); }
+  };
   const steps = [
     t("consultant_basic_info"),
     t("consultant_skills"),
@@ -380,23 +493,86 @@ export default function ConsultantReview() {
   if (empty)
     return (
       <div className="p-6 text-sm text-app-secondary">
-        {error || t("upload_load_error")}
+        {loadingDraft ? t("review_draft_loading") : error || t("upload_load_error")}
       </div>
     );
   return (
     <div className="h-full overflow-auto">
       <div className="mx-auto max-w-6xl space-y-5 p-6">
         <PageHeader
-          title={t("upload_review_title")}
+          title={linkedConsultantId ? t("review_existing_cv_title") : t("upload_review_title")}
           description={t("upload_review_description")}
           backTo="/cv-upload"
           actions={
-            <Button variant="ghost" onClick={() => navigate("/cv-upload")}>
-              {t("common_cancel")}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" disabled={saving || discarding} onClick={() => navigate("/cv-upload")}>
+                {t("common_back")}
+              </Button>
+              <Button variant="secondary" disabled={saving || discarding || !uploadId} onClick={() => void discardDraft()}>
+                {t("review_discard_draft")}
+              </Button>
+            </div>
           }
         />
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {!replaceConsultantId && !identityResolved && (
+          <section className="rounded-xl border border-app-border bg-app-surface p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-app-primary">{t("review_identity_title")}</h2>
+            <p className="text-xs text-app-muted">{t("review_identity_desc")}</p>
+            {detectionPending ? <p className="text-xs text-app-muted">{t("review_identity_loading")}</p> : (
+              <>
+                {detectionMatches.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-app-primary">{t("review_identity_suggested")}</p>
+                    {detectionMatches.map((match) => (
+                      <label key={match.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
+                        <input type="radio" name="cv-owner" checked={identityChoice === match.id} onChange={() => setIdentityChoice(match.id)} />
+                        <span className="flex-1"><strong className="block text-app-primary">{match.firstName} {match.lastName}</strong>
+                          <span className="text-app-muted">{match.email || t("review_no_email")} · {match.matchReason === "Email" ? t("review_email_match") : t("review_name_match")}</span></span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-app-primary">{t("review_identity_search")}</label>
+                  <Input value={identitySearch} onChange={(e) => setIdentitySearch(e.target.value)} placeholder={t("review_identity_placeholder")} />
+                  {identitySearch.trim() && consultantOptions.filter((c) =>
+                    [c.firstName, c.lastName, c.email].join(" ").toLowerCase().includes(identitySearch.toLowerCase())
+                  ).slice(0, 10).map((c) => (
+                    <label key={c.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
+                      <input type="radio" name="cv-owner" checked={identityChoice === c.id} onChange={() => setIdentityChoice(c.id)} />
+                      <span>{c.firstName} {c.lastName} · {c.email || t("review_no_email")}</span>
+                    </label>
+                  ))}
+                  {identityError && <p className="text-xs text-red-500">{t("review_identity_error")}</p>}
+                </div>
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-app-border p-3 text-xs">
+                  <input type="radio" name="cv-owner" checked={identityChoice === "new"} onChange={() => setIdentityChoice("new")} />
+                  <span>{t("review_identity_none")}</span>
+                </label>
+                <Button variant="primary" disabled={identityChoice === null || detectionPending} onClick={() => {
+                  setDetectedConsultantId(identityChoice === "new" ? null : identityChoice as number);
+                  setExisting(null);
+                  setIdentityResolved(true);
+                  setError("");
+                }}>{t("review_identity_confirm")}</Button>
+              </>
+            )}
+          </section>
+        )}
+        {identityResolved && (
+          <div className="flex items-center justify-between rounded-lg border border-app-border bg-app-surface p-3 text-xs">
+            <span className="text-app-secondary">{linkedConsultantId
+              ? `${t("review_existing_consultant")}: ${existing ? `${existing.firstName} ${existing.lastName}` : `#${linkedConsultantId}`}`
+              : t("review_new_consultant")}</span>
+            {!replaceConsultantId && <button type="button" className="text-app-brand" onClick={() => {
+              setIdentityResolved(false);
+              setDetectedConsultantId(null);
+              setExisting(null);
+              setIdentityChoice(null);
+            }}>{t("review_identity_change")}</button>}
+          </div>
+        )}
+        {identityResolved && <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {steps.map((label, index) => (
             <button
               type="button"
@@ -404,12 +580,12 @@ export default function ConsultantReview() {
               onClick={() => setStep(index)}
               className={`rounded-lg border px-3 py-2 text-left text-xs ${step === index ? "border-app-brand bg-app-brand-soft text-app-primary" : "border-app-border text-app-muted"}`}
             >
-              <span className="font-semibold">{index + 1}</span>
+              <span className="font-semibold">{index + 1 + (identityStepShown ? 1 : 0)}</span>
               <span className="ml-2">{label}</span>
             </button>
           ))}
-        </div>
-        {error && (
+        </div>}
+        {identityResolved && error && (
           <div
             role="alert"
             className="rounded-lg border border-app-border bg-app-surface px-4 py-3 text-xs text-app-secondary"
@@ -417,7 +593,7 @@ export default function ConsultantReview() {
             {error}
           </div>
         )}
-        <section className="space-y-5 rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
+        {identityResolved && <section className="space-y-5 rounded-xl border border-app-border bg-app-surface p-5 shadow-app-surface">
           {step === 0 && (
             <>
               <h2 className="text-sm font-medium text-app-primary">
@@ -436,13 +612,6 @@ export default function ConsultantReview() {
                   <Input
                     value={draft.lastName}
                     onChange={(e) => update({ lastName: e.target.value })}
-                  />,
-                )}
-                {field(
-                  t("upload_job_title"),
-                  <Input
-                    value={draft.title ?? ""}
-                    onChange={(e) => update({ title: e.target.value || null })}
                   />,
                 )}
                 {field(
@@ -551,14 +720,14 @@ export default function ConsultantReview() {
                             <Input
                               type="number"
                               min={0}
-                              value={item.years}
+                              value={item.years ?? ""}
                               onChange={(e) =>
                                 update({
                                   skills: draft.skills.map((x, i) =>
                                     i === index
                                       ? {
                                           ...x,
-                                          years: Number(e.target.value) || 0,
+                                          years: e.target.value === "" ? null : Number(e.target.value),
                                         }
                                       : x,
                                   ),
@@ -632,10 +801,10 @@ export default function ConsultantReview() {
                         {item.name || t("common_not_specified")}
                       </span>
                       <span className="text-xs text-app-muted">
-                        {item.years} {t("consultant_year_count")}
+                        {item.years == null ? t("common_not_specified") : `${item.years} ${t("consultant_year_count")}`}
                       </span>
                       <span className="text-xs text-app-muted">
-                        {level(item.level)} ({item.level}/5)
+                        {item.level > 0 ? `${level(item.level)} (${item.level}/5)` : t("common_not_specified")}
                       </span>
                       <div className="flex gap-2">
                         <button
@@ -657,7 +826,7 @@ export default function ConsultantReview() {
                     update({
                       skills: [
                         ...draft.skills,
-                        { name: "", level: 0, years: 0, evidence: null },
+                        { name: "", level: 0, years: null, evidence: null },
                       ],
                     });
                     setEditing(`skill-${draft.skills.length}`);
@@ -803,6 +972,19 @@ export default function ConsultantReview() {
                               ? `${item.degree}${item.school ? ` · ${item.school}` : ""}`
                               : item.name}
                         </p>
+                        {"company" in item && (item.startDate || item.endDate) && (
+                          <p className="mt-1 text-xs text-app-muted">
+                            {item.startDate || t("common_not_specified")} – {item.endDate || t("common_not_specified")}
+                          </p>
+                        )}
+                        {"degree" in item && item.year && (
+                          <p className="mt-1 text-xs text-app-muted">
+                            {t("upload_year")}: {item.year}
+                          </p>
+                        )}
+                        {"issuedDate" in item && (item.issuedYear || item.issuedDate) && (
+                          <p className="mt-1 text-xs text-app-muted">{t("common_year")}: {item.issuedYear || item.issuedDate?.slice(0, 4)}</p>
+                        )}
                         {"description" in item && item.description && (
                           <p className="mt-1 text-xs text-app-secondary">
                             {item.description}
@@ -888,12 +1070,6 @@ export default function ConsultantReview() {
                   </div>
                   <div>
                     <p className="text-[10px] text-app-muted">
-                      {t("consultant_role")}
-                    </p>
-                    <p>{draft.title || t("common_not_specified")}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-app-muted">
                       {t("consultant_seniority")}
                     </p>
                     <p>{draft.seniority || t("common_not_specified")}</p>
@@ -934,7 +1110,7 @@ export default function ConsultantReview() {
                       >
                         <span>{x.name}</span>
                         <span>
-                          {x.years} {t("consultant_year_count")}
+                          {x.years == null ? t("common_not_specified") : `${x.years} ${t("consultant_year_count")}`}
                         </span>
                         <span>
                           {level(x.level)} ({x.level}/5)
@@ -969,6 +1145,12 @@ export default function ConsultantReview() {
               )}
             </div>
           )}
+          {linkedConsultantId && step === 3 && (
+            <div className="rounded-lg border border-app-border bg-app-raised p-4 text-xs text-app-secondary">
+              {t("consultant_review_replacement_note")}
+            </div>
+          )}
+          {error && <div role="alert" className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-xs text-red-400">{t("consultant_review_save_failed")}: {error}</div>}
           <div className="flex justify-between">
             <Button
               variant="ghost"
@@ -976,7 +1158,7 @@ export default function ConsultantReview() {
                 step > 0 ? setStep(step - 1) : navigate("/cv-upload")
               }
             >
-              {step > 0 ? t("common_back") : t("common_cancel")}
+              {t("common_back")}
             </Button>
             {step < 3 ? (
               <Button variant="primary" onClick={() => setStep(step + 1)}>
@@ -985,14 +1167,14 @@ export default function ConsultantReview() {
             ) : (
               <Button
                 variant="primary"
-                disabled={saving}
+                disabled={saving || discarding || !identityResolved || detectionPending || (Boolean(linkedConsultantId) && !existing)}
                 onClick={() => void save()}
               >
                 {saving ? t("common_saving") : t("upload_approve_save")}
               </Button>
             )}
           </div>
-        </section>
+        </section>}
       </div>
     </div>
   );

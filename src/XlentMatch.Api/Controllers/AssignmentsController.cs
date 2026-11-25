@@ -1,5 +1,7 @@
+using System.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using XlentMatch.Api.Data;
 using XlentMatch.Api.Models;
 using XlentMatch.Api.Services;
@@ -51,6 +53,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         if (validation is not null) return BadRequest(validation);
 
         assignment.Id = 0;
+        assignment.ReferenceNumber = "";
+        assignment.Status = AssignmentStatus.Draft;
         assignment.CreatedAt = DateTime.UtcNow;
         assignment.UpdatedAt = assignment.CreatedAt;
 
@@ -66,8 +70,46 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         var duplicateError = ValidateDuplicateRequirements(assignment.Requirements);
         if (duplicateError is not null) return BadRequest(duplicateError);
 
-        db.Assignments.Add(assignment);
-        await db.SaveChangesAsync(ct);
+        await using (var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct))
+        {
+            var prefix = $"UPP-{assignment.CreatedAt.Year}-";
+            var connection = db.Database.GetDbConnection();
+            await using var command = connection.CreateCommand();
+            command.Transaction = db.Database.CurrentTransaction!.GetDbTransaction();
+            command.CommandText = @"DECLARE @result int;
+                                    EXEC @result = sp_getapplock
+                                        @Resource = @resource,
+                                        @LockMode = 'Exclusive',
+                                        @LockOwner = 'Transaction';
+                                    SELECT @result;";
+            var lockParameter = command.CreateParameter();
+            lockParameter.ParameterName = "@resource";
+            lockParameter.Value = "AssignmentReference-" + assignment.CreatedAt.Year;
+            command.Parameters.Add(lockParameter);
+            if (Convert.ToInt32(await command.ExecuteScalarAsync(ct)) < 0)
+                throw new InvalidOperationException("Could not acquire assignment reference lock.");
+            command.CommandText = @"UPDATE [AssignmentReferenceCounters] WITH (UPDLOCK, HOLDLOCK)
+                                    SET [LastNumber] = [LastNumber] + 1
+                                    OUTPUT INSERTED.[LastNumber]
+                                    WHERE [Year] = @year";
+            var yearParameter = command.CreateParameter();
+            yearParameter.ParameterName = "@year";
+            yearParameter.Value = assignment.CreatedAt.Year;
+            command.Parameters.Add(yearParameter);
+            var next = await command.ExecuteScalarAsync(ct);
+            if (next is null)
+            {
+                // Serialize first creation of a year using the transaction's serializable isolation.
+                command.CommandText = @"INSERT INTO [AssignmentReferenceCounters] ([Year], [LastNumber])
+                                        VALUES (@year, 1)";
+                await command.ExecuteNonQueryAsync(ct);
+                next = 1;
+            }
+            assignment.ReferenceNumber = $"{prefix}{Convert.ToInt32(next):D4}";
+            db.Assignments.Add(assignment);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
 
         var created = await db.Assignments
             .Include(a => a.Requirements).ThenInclude(r => r.Skill)
@@ -125,6 +167,8 @@ public class AssignmentsController(AppDbContext db, SkillNormalizationService sk
         existing.Seniority = input.Seniority;
         existing.MinYearsExperience = input.MinYearsExperience;
         existing.Availability = input.Availability;
+        existing.RequiredStartDate = input.RequiredStartDate;
+        existing.StartDateDescription = input.StartDateDescription?.Trim();
         existing.Location = input.Location;
         existing.UpdatedAt = DateTime.UtcNow;
         // Any meaningful edit invalidates the previous matching snapshot.
