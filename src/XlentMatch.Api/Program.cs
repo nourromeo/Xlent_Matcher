@@ -63,10 +63,6 @@ using (var scope = app.Services.CreateScope())
     startupLogger.LogInformation("Startup skill catalog completed in {ElapsedMs} ms", stepTimer.ElapsedMilliseconds);
 
     stepTimer.Restart();
-    await SeedData.InitializeAsync(db);
-    startupLogger.LogInformation("Startup seed data completed in {ElapsedMs} ms", stepTimer.ElapsedMilliseconds);
-
-    stepTimer.Restart();
     await PromptSeedData.InitializeAsync(db);
     startupLogger.LogInformation("Startup prompt seed completed in {ElapsedMs} ms", stepTimer.ElapsedMilliseconds);
 }
