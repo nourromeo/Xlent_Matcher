@@ -47,24 +47,38 @@ var app = builder.Build();
 var startupTimer = Stopwatch.StartNew();
 var startupLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("StartupPerformance");
 
-using (var scope = app.Services.CreateScope())
+// Data initialization is an explicit operation, not part of normal API startup.
+// In Development, keep automatic migrations for local convenience.
+var initializeData = args.Contains("--initialize-data", StringComparer.OrdinalIgnoreCase);
+if (initializeData || app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
     if (app.Environment.IsDevelopment())
     {
         var step = Stopwatch.StartNew();
         await db.Database.MigrateAsync();
-        startupLogger.LogInformation("Startup database migrations completed in {ElapsedMs} ms", step.ElapsedMilliseconds);
+        startupLogger.LogInformation("Development database migrations completed in {ElapsedMs} ms", step.ElapsedMilliseconds);
     }
 
-    var skillNormalization = scope.ServiceProvider.GetRequiredService<SkillNormalizationService>();
-    var stepTimer = Stopwatch.StartNew();
-    await skillNormalization.EnsureCatalogAsync();
-    startupLogger.LogInformation("Startup skill catalog completed in {ElapsedMs} ms", stepTimer.ElapsedMilliseconds);
+    if (initializeData)
+    {
+        var step = Stopwatch.StartNew();
+        var skillNormalization = scope.ServiceProvider.GetRequiredService<SkillNormalizationService>();
+        await skillNormalization.EnsureCatalogAsync();
+        startupLogger.LogInformation("Skill catalog initialized in {ElapsedMs} ms", step.ElapsedMilliseconds);
 
-    stepTimer.Restart();
-    await PromptSeedData.InitializeAsync(db);
-    startupLogger.LogInformation("Startup prompt seed completed in {ElapsedMs} ms", stepTimer.ElapsedMilliseconds);
+        step.Restart();
+        await PromptSeedData.InitializeAsync(db);
+        startupLogger.LogInformation("AI prompts initialized in {ElapsedMs} ms", step.ElapsedMilliseconds);
+    }
+}
+
+if (initializeData)
+{
+    startupLogger.LogInformation("Database data initialization completed in {ElapsedMs} ms", startupTimer.ElapsedMilliseconds);
+    return;
 }
 
 if (app.Environment.IsDevelopment())
