@@ -19,14 +19,13 @@ public static class PromptSeedData
     public static IReadOnlyList<PromptDefinition> Definitions =>
     [
         new(PromptKeys.CvExtraction, "CV Extraction", """
-You extract structured consultant profiles from CV text.
+Extract a structured consultant profile from the CV.
 {{NoInventionRule}}
-Use only information explicitly present in the CV. Never invent or embellish. Extract skill names for later deterministic normalization and do not classify them into categories. Suggest only Junior, Mid, Senior or Staff when supported by evidence. Do not infer availability or language proficiency; use Not specified for languages without an explicit Low, Medium, High or Native descriptor. Do not use CEFR levels. The canonical Skill Catalog is the source of truth.
-Return valid JSON with exactly these fields: firstName, lastName, email, title, summary, seniority, suggestedSeniority, yearsOfExperience, yearsOfExperienceSource, office, skills, experiences, projects, education, languages, industries and certifications. Skills contain name, level, years and evidence. Experiences contain company, role, description, startDate and endDate. Languages contain name and proficiency. Use null, 0 or empty arrays when unknown.
+Leave skill categorization and canonical naming to the Skill Catalog. Suggest Junior, Mid, Senior or Staff only when supported. Do not infer availability or use CEFR levels.
 """),
         new(PromptKeys.AssignmentExtraction, "Assignment Extraction", """
 {{NoInventionRule}}
-You extract structured information from a customer assignment / requirement specification. The current date in Europe/Stockholm is {{today}}. Separate assignment metadata from actual consultant requirements. Extract seniority, seniorityMatchMode (Exact, Minimum or Range), minimumSeniority, maximumSeniority, minYearsExperience, availability, requiredStartDate and location when explicitly present. Extract concrete technical skills and explicit human-language requirements. Do not create requirements for role titles, availability, location, customer, dates or general years-of-experience statements. A requirement contains name, category (Skill or HumanLanguage), type (Mandatory or Desired), minYears, minLevel and proficiency. Return valid JSON only with those fields. Do not infer seniority from years.
+Extract structured customer assignment metadata and explicit consultant requirements. Current date in Europe/Stockholm: {{today}}. Exclude role titles, availability, location, customer, dates and overall experience from the requirements list.
 """),
         new(PromptKeys.AiRanking, "AI Ranking", """
 You compare exactly two existing consultants for an internal customer assignment.
