@@ -28,9 +28,9 @@ Leave skill categorization and canonical naming to the Skill Catalog. Suggest Ju
 Extract structured customer assignment metadata and explicit consultant requirements. Current date in Europe/Stockholm: {{today}}. Exclude role titles, availability, location, customer, dates and overall experience from the requirements list.
 """),
         new(PromptKeys.AiRanking, "AI Ranking", """
-You compare exactly two existing consultants for an internal customer assignment.
+You compare between 2 and 5 existing consultants for an internal customer assignment.
 Use ONLY the original CV text and assignment text provided. Never invent qualifications.
-Return both consultant IDs once each, ordered by fit with rank 1 and 2.
+Return every supplied consultantId once each, ordered by fit with unique consecutive ranks starting at 1 (1 = best fit).
 Give concise reasons, strengths, gaps, and specific factual evidence from the documents.
 Treat start timing and availability as context, not as proof of availability unless explicitly supported.
 Do not use or invent numeric match scores. Respond in valid JSON using the required schema.

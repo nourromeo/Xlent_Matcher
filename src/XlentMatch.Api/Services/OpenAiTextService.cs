@@ -39,14 +39,24 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             consultants = cvs.Select(x => new { consultantId = x.ConsultantId, originalCvText = x.CvText })
         }, Json);
         var result = await AskForJsonAsync<AiRankingResultDto>(operation, system, input, ct);
-        var ids = cvs.Select(x => x.ConsultantId).ToHashSet();
-        if (result.Rankings.Count != cvs.Count ||
-            result.Rankings.Select(x => x.ConsultantId).Distinct().Count() != cvs.Count ||
-            result.Rankings.Any(x => !ids.Contains(x.ConsultantId)) ||
-            !result.Rankings.Select(x => x.Rank).Order().SequenceEqual(Enumerable.Range(1, cvs.Count)))
+        if (!IsValidRanking(result, cvs))
+        {
+            var reminder = system + "\n\nRETRY REMINDER: Return exactly one rankings entry for every supplied consultantId, with unique consecutive ranks starting at 1. Do not omit any consultant.";
+            result = await AskForJsonAsync<AiRankingResultDto>(operation, reminder, input, ct);
+        }
+        if (!IsValidRanking(result, cvs))
             throw new InvalidOperationException("AI returned an invalid consultant ranking.");
         result.Locale = normalizedLocale;
         return result;
+    }
+
+    private static bool IsValidRanking(AiRankingResultDto result, IReadOnlyList<(int ConsultantId, string CvText)> cvs)
+    {
+        var ids = cvs.Select(x => x.ConsultantId).ToHashSet();
+        return result.Rankings.Count == cvs.Count &&
+               result.Rankings.Select(x => x.ConsultantId).Distinct().Count() == cvs.Count &&
+               !result.Rankings.Any(x => !ids.Contains(x.ConsultantId)) &&
+               result.Rankings.Select(x => x.Rank).Order().SequenceEqual(Enumerable.Range(1, cvs.Count));
     }
 
     public static string NormalizeLocale(string? locale) => locale?.Trim().ToLowerInvariant() switch
@@ -85,7 +95,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         "For minYearsExperience, extract an explicit overall minimum experience requirement when the source states one, such as 'at least 5 years of experience', and return the JSON integer 5. If no explicit overall minimum is stated, return JSON null.  " +
         "Preserve explicit seniority labels using the canonical values Junior, Mid, Senior or Staff; do not default to Mid and do not infer seniority from years. " +
         "Extract availability only when the source explicitly states it; otherwise return null. Extract location exactly when stated. If both a place and an explicit work mode such as hybrid are stated and the existing single location field is used, preserve both in that field (for example, Stockholm / Hybrid). " +
-        "Only create Skill or HumanLanguage requirements when the source expresses consultant competence or qualification, such as experience of, must have, required, mandatory, desirable, competence in, knowledge of, or an equivalent phrase in English, Swedish or Spanish. Responsibility or assignment-description language alone is not a requirement: do not extract activities such as working with, developing, maintaining, participating in, responsible for, or the work involves as skills. If the same sentence also explicitly requires experience with a technology, extract only that technology requirement. Keep technologies explicitly required elsewhere. " +
+        "Only create Skill or HumanLanguage requirements when the source expresses consultant competence or qualification, such as experience of, must have, required, mandatory, desirable, competence in, knowledge of, or an equivalent phrase in English, Swedish or Spanish. Responsibility or assignment-description language alone is not a requirement: do not extract activities such as working with, developing, maintaining, participating in, responsible for, or the work involves as skills. If the same sentence also explicitly requires experience with a technology, extract only that technology requirement. Keep technologies explicitly required elsewhere. For every requirement, populate evidence with the exact verbatim quote from the source text that establishes the requirement before setting category, type, minYears, minLevel, or proficiency. " +
         "For each requirement, Type must be the JSON string Mandatory or Desired; Name and Category must be JSON strings; MinYears and MinLevel must be JSON integers or JSON null; MaximumSeniority must be a JSON string or JSON null. MatchMode is applicable only to Seniority requirements and must be exactly one of the JSON strings \"Exact\", \"Minimum\" or \"Range\", or JSON null where not applicable. Do not return translated or descriptive values, empty strings, numbers, or alternative spellings for MatchMode. For Skill and HumanLanguage requirements, MatchMode must be JSON null. Do not return empty strings for numeric fields. " +
         "Skill requirements may populate skill-specific minYears only when skill-specific years are explicitly stated, and may populate MinLevel only when an explicit numeric skill level on the existing 1-5 scale is stated; otherwise return null. Do not use MinLevel for language proficiency or seniority labels. " +
         "HumanLanguage requirements may populate Proficiency only with exactly null or one of: Not specified, Low, Medium, High, Native; MinYears and MinLevel must be null. Never return display translations or CEFR levels. " +
@@ -287,6 +297,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         ["properties"] = new JsonObject
         {
             ["name"] = new JsonObject { ["type"] = "string" },
+            ["evidence"] = NullableString(),
             ["type"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("Mandatory", "Desired") },
             ["minYears"] = NullableInteger(),
             ["minLevel"] = NullableInteger(1, 5),
@@ -295,7 +306,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
             ["maximumSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]),
             ["category"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("Skill", "HumanLanguage") }
         },
-        ["required"] = Required("name", "type", "minYears", "minLevel", "proficiency", "matchMode", "maximumSeniority", "category")
+        ["required"] = Required("name", "evidence", "type", "minYears", "minLevel", "proficiency", "matchMode", "maximumSeniority", "category")
     };
 
     private static JsonObject CvSchema() => new()
@@ -305,7 +316,7 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         {
             ["firstName"] = new JsonObject { ["type"] = "string" }, ["lastName"] = new JsonObject { ["type"] = "string" },
             ["email"] = NullableString(), ["summary"] = NullableString(), ["seniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["suggestedSeniority"] = NullableString(["Junior", "Mid", "Senior", "Staff"]), ["yearsOfExperience"] = NullableInteger(), ["yearsOfExperienceSource"] = NullableString(), ["office"] = NullableString(),
-            ["skills"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["level"] = new JsonObject { ["type"] = "integer" }, ["years"] = NullableInteger(), ["evidence"] = NullableString() }, ["required"] = Required("name", "level", "years", "evidence") }),
+            ["skills"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["evidence"] = NullableString(), ["level"] = new JsonObject { ["type"] = "integer" }, ["years"] = NullableInteger() }, ["required"] = Required("name", "evidence", "level", "years") }),
             ["experiences"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["company"] = new JsonObject { ["type"] = "string" }, ["role"] = new JsonObject { ["type"] = "string" }, ["description"] = NullableString(), ["startDate"] = NullableString(), ["endDate"] = NullableString() }, ["required"] = Required("company", "role", "description", "startDate", "endDate") }),
             ["projects"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["name"] = new JsonObject { ["type"] = "string" }, ["description"] = NullableString(), ["technologies"] = NullableString() }, ["required"] = Required("name", "description", "technologies") }),
             ["education"] = ArrayOf(new JsonObject { ["type"] = "object", ["additionalProperties"] = false, ["properties"] = new JsonObject { ["degree"] = new JsonObject { ["type"] = "string" }, ["school"] = NullableString(), ["year"] = NullableString() }, ["required"] = Required("degree", "school", "year") }),
@@ -331,13 +342,13 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
                 ["properties"] = new JsonObject
                 {
                     ["consultantId"] = new JsonObject { ["type"] = "integer" },
-                    ["rank"] = new JsonObject { ["type"] = "integer" },
-                    ["reason"] = new JsonObject { ["type"] = "string" },
+                    ["evidence"] = ArrayOf(new JsonObject { ["type"] = "string" }),
                     ["strengths"] = ArrayOf(new JsonObject { ["type"] = "string" }),
                     ["gaps"] = ArrayOf(new JsonObject { ["type"] = "string" }),
-                    ["evidence"] = ArrayOf(new JsonObject { ["type"] = "string" })
+                    ["rank"] = new JsonObject { ["type"] = "integer" },
+                    ["reason"] = new JsonObject { ["type"] = "string" }
                 },
-                ["required"] = Required("consultantId", "rank", "reason", "strengths", "gaps", "evidence")
+                ["required"] = Required("consultantId", "evidence", "strengths", "gaps", "rank", "reason")
             }),
             ["skippedWithoutCv"] = new JsonObject { ["type"] = "integer" }
         },
@@ -349,14 +360,14 @@ public class OpenAiTextService(HttpClient http, IOptions<OpenAiOptions> options,
         ["type"] = "object", ["additionalProperties"] = false,
         ["properties"] = new JsonObject
         {
-            ["overallAssessment"] = new JsonObject { ["type"] = "string" },
+            ["evidence"] = ArrayOf(new JsonObject { ["type"] = "string" }),
             ["strengths"] = ArrayOf(new JsonObject { ["type"] = "string" }),
             ["relevantExperience"] = ArrayOf(new JsonObject { ["type"] = "string" }),
             ["missingOrWeakAreas"] = ArrayOf(new JsonObject { ["type"] = "string" }),
             ["suggestedImprovements"] = ArrayOf(new JsonObject { ["type"] = "string" }),
-            ["evidence"] = ArrayOf(new JsonObject { ["type"] = "string" })
+            ["overallAssessment"] = new JsonObject { ["type"] = "string" }
         },
-        ["required"] = Required("overallAssessment", "strengths", "relevantExperience", "missingOrWeakAreas", "suggestedImprovements", "evidence")
+        ["required"] = Required("evidence", "strengths", "relevantExperience", "missingOrWeakAreas", "suggestedImprovements", "overallAssessment")
     };
 
     private static JsonObject NullableString(string[]? values = null)

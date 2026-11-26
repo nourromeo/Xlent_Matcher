@@ -194,13 +194,16 @@ public class PromptServiceTests
         using var document = JsonDocument.Parse(json);
         var schema = document.RootElement.GetProperty("json_schema").GetProperty("schema");
         var rootProperties = schema.GetProperty("properties");
-        var categories = schema.GetProperty("properties").GetProperty("requirements").GetProperty("items").GetProperty("properties").GetProperty("category").GetProperty("enum");
+        var requirementItems = schema.GetProperty("properties").GetProperty("requirements").GetProperty("items");
+        var categories = requirementItems.GetProperty("properties").GetProperty("category").GetProperty("enum");
+        var requiredRequirementProperties = requirementItems.GetProperty("required").EnumerateArray().Select(value => value.GetString()).ToHashSet(StringComparer.Ordinal);
 
         Assert.True(rootProperties.TryGetProperty("seniority", out _));
         Assert.True(rootProperties.TryGetProperty("seniorityMatchMode", out _));
         Assert.True(rootProperties.TryGetProperty("minimumSeniority", out _));
         Assert.True(rootProperties.TryGetProperty("maximumSeniority", out _));
         Assert.DoesNotContain(categories.EnumerateArray(), value => value.GetString() == "Seniority");
+        Assert.Equal(requirementItems.GetProperty("properties").EnumerateObject().Select(property => property.Name).ToHashSet(StringComparer.Ordinal), requiredRequirementProperties);
         Assert.Contains("Extract assignment seniority only into the root", OpenAiTextService.AssignmentExtractionSchemaInstruction);
         Assert.Contains("Requirements[] may contain only Skill and HumanLanguage items", OpenAiTextService.AssignmentExtractionSchemaInstruction);
     }
