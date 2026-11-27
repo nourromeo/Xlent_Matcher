@@ -432,7 +432,7 @@ export default function Admin() {
                     <section className="rounded-lg border border-app-border bg-app-surface p-5 space-y-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h3 className="text-sm font-semibold text-app-primary">Prompt Content · v{selectedPromptVersion.version}</h3>
+                          <h3 className="text-sm font-semibold text-app-primary">{t("admin_prompt_content_label")} · v{selectedPromptVersion.version}</h3>
                           <p className="mt-1 text-xs text-app-muted">{t("admin_version_note")}</p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -440,7 +440,7 @@ export default function Admin() {
                           <Button variant="ghost" onClick={() => void copyText(selectedPromptVersion.content, "prompt")}>{copiedItem === "prompt" ? t("admin_copied") : t("admin_copy_prompt")}</Button>
                         </div>
                       </div>
-                      <p className="text-xs text-app-muted">Created {formatDateTime(selectedPromptVersion.createdAt, locale)}{selectedPromptVersion.changeNote ? ` · ${selectedPromptVersion.changeNote}` : ""}</p>
+                      <p className="text-xs text-app-muted">{t("common_created")} {formatDateTime(selectedPromptVersion.createdAt, locale)}{selectedPromptVersion.changeNote ? ` · ${selectedPromptVersion.changeNote}` : ""}</p>
                       {editingPrompt ? (
                         <div className="space-y-3">
                           <p className="text-xs text-app-brand">{t("prompt_editing_based")} v{selectedPromptVersion.version}</p>
@@ -698,10 +698,10 @@ export default function Admin() {
                   <div className="flex items-center gap-5">
                     <div className="flex-1">
                       <div className="flex items-baseline gap-2">
-                        <p className="text-xs font-medium text-app-primary">{factor.label}</p>
-                        <span className="text-xs font-mono font-semibold text-app-brand">{factor.value}%</span>
+                        <p className="text-xs font-medium text-app-primary">{t(factor.key === "mandatory" ? "admin_weight_mandatory_label" : "admin_weight_desired_label")}</p>
+                        <span className="text-xs font-mono font-semibold text-app-brand">{factor.value}</span>
                       </div>
-                      <p className="text-xs text-app-muted mt-1">{factor.description}</p>
+                      <p className="text-xs text-app-muted mt-1">{t(factor.key === "mandatory" ? "admin_weight_mandatory_desc" : "admin_weight_desired_desc")}</p>
                     </div>
 
                     <input
@@ -727,7 +727,7 @@ export default function Admin() {
               <p>{t("admin_mandatory_weight_explanation")}</p>
               <p className="font-mono">{t("admin_score_formula")}</p>
               <p>{t("admin_score_scope")}</p>
-              <p>{t("admin_score_example")}: 3 Mandatory + 2 Desired. Total = (3 × {weightValues.mandatory || 0}) + (2 × {weightValues.desired || 0}) = {mandatoryWeight * 3 + desiredWeight * 2}. Matching 2 Mandatory + 2 Desired gives {(mandatoryWeight * 2 + desiredWeight * 2)} / {(mandatoryWeight * 3 + desiredWeight * 2)} × 100 = {((mandatoryWeight * 2 + desiredWeight * 2) / Math.max(1, mandatoryWeight * 3 + desiredWeight * 2) * 100).toFixed(2)}%.</p>
+              <p>{t("admin_score_example")}: 3 {t("admin_example_mandatory")} + 2 {t("admin_example_desired")}. {t("admin_example_total")} = (3 × {weightValues.mandatory || 0}) + (2 × {weightValues.desired || 0}) = {mandatoryWeight * 3 + desiredWeight * 2}. {t("admin_example_matching")} 2 {t("admin_example_mandatory")} + 2 {t("admin_example_desired")} {t("admin_example_gives")} {(mandatoryWeight * 2 + desiredWeight * 2)} / {(mandatoryWeight * 3 + desiredWeight * 2)} × 100 = {((mandatoryWeight * 2 + desiredWeight * 2) / Math.max(1, mandatoryWeight * 3 + desiredWeight * 2) * 100).toFixed(2)}%.</p>
             </div>
 
             <div className="flex items-center justify-between">
