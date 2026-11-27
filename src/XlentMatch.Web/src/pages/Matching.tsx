@@ -1,3 +1,4 @@
+import { formatAssignmentReference } from "../services/assignmentReference";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
@@ -325,7 +326,7 @@ export default function Matching() {
             <EntitySummary
               variant="compact"
               title={assignment.title}
-              metadata={[assignment.customerName, assignment.referenceNumber].filter(Boolean).join(" · ")}
+              metadata={[assignment.customerName, formatAssignmentReference(assignment.referenceNumber)].filter(Boolean).join(" · ")}
               actions={<><Link to={`/client-assignments/${assignment.id}`} className="text-xs text-app-brand hover:underline">{t("matching_view_assignment")}</Link><Link to={`/matching/${assignmentId}/ai-ranking`} className="inline-flex items-center rounded-md bg-app-brand px-3 py-1.5 text-xs font-medium text-app-on-brand hover:opacity-90">AI Ranking →</Link></>}
             />
           </div>

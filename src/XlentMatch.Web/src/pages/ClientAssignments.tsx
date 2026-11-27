@@ -1,3 +1,4 @@
+import { formatAssignmentReference } from "../services/assignmentReference";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -506,7 +507,7 @@ export function NewAssignmentPage() {
                 variant="ghost"
                 className="text-app-danger hover:text-app-danger"
               >
-                Avsluta
+                {t("common_exit")}
               </Button>
             </>
           }
@@ -1379,7 +1380,7 @@ export default function ClientAssignments() {
 
     return (
       assignment.title.toLowerCase().includes(search) ||
-      assignment.referenceNumber.toLowerCase().includes(search) ||
+      (formatAssignmentReference(assignment.referenceNumber).toLowerCase().includes(search) || assignment.referenceNumber.toLowerCase().includes(search)) ||
       assignment.customerName.toLowerCase().includes(search) ||
       (assignment.description ?? "").toLowerCase().includes(search) ||
       (assignment.seniority ?? "").toLowerCase().includes(search) ||
@@ -1454,7 +1455,7 @@ export default function ClientAssignments() {
                 <div className="min-w-0">
                   <p className="truncate font-medium text-app-primary">{assignment.title}</p>
                   <p className="truncate text-[10px] text-app-muted">
-                    {assignment.referenceNumber}
+                    {formatAssignmentReference(assignment.referenceNumber)}
                   </p>
                 </div>
               ),

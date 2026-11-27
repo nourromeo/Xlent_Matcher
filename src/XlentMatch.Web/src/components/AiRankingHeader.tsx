@@ -1,3 +1,4 @@
+import { formatAssignmentReference } from "../services/assignmentReference";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../i18n";
@@ -43,7 +44,7 @@ export default function AiRankingHeader({ assignmentId, section }: { assignmentI
           {loading ? <p className="mt-1 text-sm text-app-muted">{t("ai_assignment_loading")}</p> : assignment ? (
             <>
               <p className="mt-1 truncate text-sm font-semibold text-app-primary">{assignment.title}</p>
-              <p className="mt-1 text-xs text-app-muted">{assignment.referenceNumber} · {assignment.customerName}</p>
+              <p className="mt-1 text-xs text-app-muted">{formatAssignmentReference(assignment.referenceNumber)} · {assignment.customerName}</p>
             </>
           ) : <p className="mt-1 text-sm text-app-danger">{t("ai_assignment_not_found")}</p>}
         </div>

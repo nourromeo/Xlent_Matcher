@@ -1,3 +1,4 @@
+import { formatAssignmentReference } from "../services/assignmentReference";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "../design-system/icons";
@@ -42,6 +43,7 @@ export default function MatchingSelection() {
       const searchable = [
         item.title,
         item.customerName,
+        formatAssignmentReference(item.referenceNumber),
         item.referenceNumber,
         item.location ?? "",
         item.seniority ?? "",
@@ -91,7 +93,7 @@ export default function MatchingSelection() {
                   header: t("assignment_title"),
                   sortable: true,
                   sortValue: (item) => item.title,
-                  render: (item) => <div className="min-w-0"><p className="truncate font-medium text-app-primary">{item.title}</p><p className="truncate text-[10px] text-app-muted">{item.referenceNumber}</p></div>,
+                  render: (item) => <div className="min-w-0"><p className="truncate font-medium text-app-primary">{item.title}</p><p className="truncate text-[10px] text-app-muted">{formatAssignmentReference(item.referenceNumber)}</p></div>,
                 },
                 {
                   key: "client",
